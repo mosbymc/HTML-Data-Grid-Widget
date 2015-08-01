@@ -1,0 +1,117 @@
+<html>
+	<head>
+		<link rel="stylesheet" href="grid.css" />
+		<script src="dominator.js"></script>
+		<script src="grid.js"></script>
+		<script>
+			function init() {
+				var gridData = [
+					{
+						Service: "New Brakes",
+						Labor: "2 hours",
+						Cost: "$55.00"
+					},
+					{
+						Service: "Tire Rotation",
+						Labor: "1 hours",
+						Cost: "$40.00"
+					},
+					{
+						Service: "New Transmission",
+						Labor: "12 hours",
+						Cost: "$800.00"
+					},
+					{
+						Service: "Oil Change",
+						EmptyRow: "Let's see how this looks",
+						Labor: "0.5 hours",
+						Cost: "$55.00"
+					},
+					{
+						Service: "New Brakes",
+						Labor: "1.5 hours",
+						Cost: "$45.00"
+					},
+					{
+						Service: "New Clutch",
+						Labor: "5 hours",
+						Cost: "$200.00"
+					},
+					{
+						Service: "Oil Change",
+						Labor: "0.5 hours",
+						Cost: "$70.00"
+					},
+					{
+						Service: "New Spark Plugs",
+						Labor: "0.5 hours",
+						Cost: "$65.00"
+					},
+					{
+						Service: "Emission Check",
+						Labor: "0.25 hours",
+						Cost: "$25.00"
+					},
+					{
+						Service: "New Exhaust",
+						Labor: "2 hours",
+						Cost: "$250.00"
+					},
+					{
+						Service: "New Row Test",
+						EmptyRow: "Let's see how this works",
+						Labor: "2 hours",
+						Cost: "$250.00"
+					}
+				];
+				grid.create(gridData, document.getElementById("mGrid"));
+			}
+			
+			function addNewGridColumn() {
+				var newData = [
+					{
+						Employee: "Mosby"
+					},
+					{
+						Employee: "Hill"
+					},
+					{
+						Employee: "Taylor"
+					},
+					{
+						Employee: "Taylor"
+					},
+					{
+						Employee: "Mosby"
+					},
+					{
+						Employee: "Mosby"
+					},
+					{
+						Employee: "Hill"
+					},
+					{
+						Employee: "Mosby"
+					},
+					{
+						Employee: "Taylor"
+					},
+					{
+						Employee: "Hill"
+					},
+					{
+						Employee: "Hill"
+					}
+				];
+
+				grid.addNewColumns(newData, document.getElementById("mGrid"));
+			}
+		</script>
+	</head>
+	<body onload="init()">
+		<div id="mGrid" style="width:1000px; margin-left:auto; margin-right:auto; margin-top:100px;">
+		</div>
+		<br><br><br>
+		<input type="button" value="Add New Column" onclick="addNewGridColumn()" style="width:150px; margin-left:auto; margin-right:auto;">
+	</body>
+</html>
