@@ -1,5 +1,5 @@
 # HTML-Data-Grid-Widget
-A JavaScript controller HTML data-grid widget
+A JavaScript controlled, HTML data-grid widget
 
 Currently the master branch has no code, but the develop branch contains the working copy. This project is a long way off from 
 its first master branch commit, but feel free to clone the develop branch and play around with the code base.
