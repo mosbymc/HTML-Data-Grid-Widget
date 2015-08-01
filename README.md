@@ -11,6 +11,7 @@ Planned functionality:
 2) Filterable columns
 
 3) Reorderable columns
+
 4) In-cells editing
 
 5) Dynamically add new columns
