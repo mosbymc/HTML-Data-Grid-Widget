@@ -5,16 +5,27 @@ Currently the master branch has no code, but the develop branch contains the wor
 its first master branch commit, but feel free to clone the develop branch and play around with the code base.
 
 Planned functionality:
+
 1) Sortable columns
+
 2) Filterable columns
+
 3) Reorderable columns
+
 4) In-cells editing
+
 5) Dynamically add new columns
+
 6) Dynamically add new rows
+
 7) Server-side and client-side paging
+
 8) Nested drill-down grids
+
 9) Export grid to .cvs
+
 10) Event hooks
+
 11) Graphics/logo support
 
 The file dominator.js is currently needed by grid.js for it to run. [dominator.js](https://github.com/mosbymc/dominator) also has its own github repo and is currently 
