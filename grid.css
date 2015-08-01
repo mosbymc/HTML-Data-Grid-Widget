@@ -1,0 +1,72 @@
+.m-grid-wrapper {
+	width: 100%;
+	border: 1px solid;
+	border-color: #e6e6e6;
+}
+
+.m-grid-header-div {
+	width: 100%;
+	border-bottom: 1px solid;
+	border-color: #e6e6e6;
+}
+
+.m-grid-header-div table thead tr {
+	border-color: rgb(128, 128, 128);
+}
+
+.m-grid-header-div th{
+	text-align: left;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 14px;
+	font-style: normal;
+	color: #a8a8a8;
+	border-color: #e6e6e6;
+	border-left: 1px solid;
+	border-collapse: separate;
+	padding-left: 8px;
+	padding-right: 8px;
+	padding-top: 6px;
+	padding-bottom: 6px;
+}
+
+.m-grid-header-div th:first-child{
+	border-left-width: 0;
+}
+
+.m-grid-content-div {
+	width: 100%;
+	overflow-y: scroll;
+	overflow-x: auto;
+}
+
+.m-grid-content-div td {
+	border-bottom-color: rgb(230, 230, 230);
+	border-bottom-style: solid;
+	border-bottom-width: 1px;
+	border-collapse: separate;
+	padding-left: 8px;
+	padding-right: 8px;
+	padding-top: 6px;
+	padding-bottom: 6px;
+}
+
+.m-grid-content-div tr:last-child td {
+	border-bottom-width: 0;
+}
+
+.m-grid-footer-div {
+	text-align: left;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 14px;
+	font-style: normal;
+	width: 100%;
+	text-align: left;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 14px;
+	font-style: normal;
+	color: #a8a8a8;
+	padding-top: 6px;
+	padding-bottom: 6px;
+	border-color: rgb(230, 230, 230);
+	border-top: 1px solid;
+}
