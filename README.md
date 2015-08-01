@@ -12,7 +12,7 @@ Planned functionality:
 
 3) Reorderable columns
 
-4) In-cells editing
+4) In-cell editing
 
 5) Dynamically add new columns
 
