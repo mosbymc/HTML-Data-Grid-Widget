@@ -21,3 +21,5 @@ The file dominator.js is currently need by grid.js for it to run. dominator.js a
 only available on its develop branch. I have a JQuery dependent client-side form [validator](https://github.com/mosbymc/validator) that I am trying to remove JQuery 
 from and the dominator is a collection of functions that I've created to reproduce some of the JQuery functionality. However, 
 it has not been extensively tested and is also a long way from being released on a master branch.
+
+The grid.html file is my test page for the functionality in the grid widget. It requires grid.js, grid.css, and dominator.js to run properly.
