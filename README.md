@@ -1,36 +1,32 @@
 # HTML-Data-Grid-Widget
-A JavaScript controlled, HTML data-grid widget
+A JQuery-dependent, HTML data-grid widget
 
 Currently the master branch has no code, but the develop branch contains the working copy. This project is a long way off from 
-its first master branch commit and the code is still pretty rough, but feel free to clone the develop branch and play around with the code base.
+its first master branch commit, but feel free to clone the develop branch and play around with the code base.
+
+Currently Implemented Functionality:
+- Resizable Columns
+- Reorderable Columns
+- Filterable Columns
+- Sortable Columns
+- In-cell Editing
+- Client-side paging
 
 Planned functionality:
+- Dynamically add new columns
+- Dynamically add new rows
+- Server-side paging
+- Nested drill-down grids
+- Export grid to cvs
+- Event hooks
+- Graphics/logo support
+- Integration with [validator.js](https://github.com/mosbymc/validator)
 
-1) Sortable columns
 
-2) Filterable columns
+The grid.html file is my test page for the functionality in the grid widget. It requires grid.js, and grid.css to run properly.
 
-3) Reorderable columns
+It's been a while since I first created this repo and I decided to make my first real commit. The code on the develop branch is still a long way from being truely released on the master branch, but the grid does now support some functionaltiy.
 
-4) In-cell editing
+Note that while the grid does indeed support the above list of implemented functionalities, there are some bugs with it. If you're interested in this repo, then I would suggest cloning the grid to just play around with it and get familiar with how it works, but do not use this in any production site for the time being - or if you do, I'd steer clear of the in-cell editing and know that filtering only works well on string and numbers right now.
 
-5) Dynamically add new columns
-
-6) Dynamically add new rows
-
-7) Server-side and client-side paging
-
-8) Nested drill-down grids
-
-9) Export grid to .cvs
-
-10) Event hooks
-
-11) Graphics/logo support
-
-The file dominator.js is currently needed by grid.js for it to run. [dominator.js](https://github.com/mosbymc/dominator) also has its own github repo and is currently 
-only available on its develop branch. I have a JQuery dependent client-side form [validator](https://github.com/mosbymc/validator) that I am trying to remove JQuery 
-from and the dominator is a collection of functions that I've created to reproduce some of the JQuery functionality. However, 
-it has not been extensively tested and is also a long way from being released on a master branch.
-
-If there is any additional functionality you'd like to see, or you notice a bug with the grid, feel free to create an issue for me and I'll make sure to address it.
+My plan is to get the remaining bugs/issues sorted out, and start on server-side paging/updates next. Check back here later because I will continue to make commits to this project.
