@@ -17,7 +17,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 var grid = (function grid($) {
 	function create(gridData, gridDiv) {
 		if (gridData && gridDiv) {
-			var id = storage.count();
+			var id = storage.count;
 			gridDiv = $(gridDiv);
 			var wrapperDiv = $("<div id='grid-wrapper-" + id + "' data-grid_id='" + id +"' class=grid-wrapper></div>").appendTo(gridDiv);
 			var headerDiv = $("<div id='grid-header-" + id + "' data-grid_header_id='" + id + "' class=grid-header-div></div>").appendTo(wrapperDiv);
@@ -25,14 +25,14 @@ var grid = (function grid($) {
 			wrapperDiv.append("<div id='grid-content-" + id + "' data-grid_content_id='" + id + "' class=grid-content-div></div>");
 			wrapperDiv.append("<div id='grid-footer-" + id + "' data-grid_footer_id='" + id + "' class=grid-footer-div></div>");
 
-			storage.grids[id] = gridData;
+			storage.grids[id] = cloneGridData(gridData);
 			storage.grids[id].pageNum = 1;
 			storage.grids[id].pageSize = gridData.pageSize || 25;
-			storage.grids[id].originalData = cloneGridData(gridData.dataSource.data);
+			if (gridData.dataSource.data) storage.grids[id].originalData = cloneGridData(gridData.dataSource.data);
 			storage.grids[id].grid = gridDiv;
 			storage.grids[id].currentEdit = {};
-			if (!storage.grids[id].dataSource.count) storage.grids[id].dataSource.count = gridData.dataSource.data.length;
-
+			storage.grids[id].pageRequest = {};
+			if (!storage.grids[id].dataSource.rowCount) storage.grids[id].dataSource.rowCount = gridData.dataSource.data.length;
 			gridDiv[0].addNewColumns = addNewColumns;
 
 			if (gridData.constructor === Array) {
@@ -40,6 +40,8 @@ var grid = (function grid($) {
 			}
 			else {
 				createGridHeaders(gridData, gridDiv, true);
+				storage.grids[id].pageRequest.eventType = "newGrid";
+				preparePageDataGetRequest(id);
 			}
 		}
 	}
@@ -68,7 +70,7 @@ var grid = (function grid($) {
 		create(oldData, gridDiv);
 	}
 
-	function createGridHeaders(gridData, gridDiv, isNewGrid) {
+	function createGridHeaders(gridData, gridDiv) {
 		var gridHeader = gridDiv.find(".grid-header-div");
 		var gridHeadWrap = gridHeader.find(".grid-header-wrapper");
 		var headerTable = $("<table></table>").appendTo(gridHeadWrap)
@@ -85,6 +87,12 @@ var grid = (function grid($) {
 			var text = gridData.columns[col].title || col;
 			var th = $("<th id='" + col + "_grid_id_" + gridHeader.data("grid_header_id") + "' data-field='" + col + "' data-index='" + index + "' class=grid-header-cell></th>").appendTo(headerRow);
 			th.text(text);
+
+			if (gridData.columns[col].columnClassList && gridData.columns[col].columnClassList.constructor ===  Array) {
+				for (var i = 0; i < gridData.columns[col].columnClassList.length; i++) {
+					th.addClass(gridData.columns[col].columnClassList[i]);
+				} 
+			}
 
 			if (gridData.reorderable || gridData.columns[col].reorderable) {
 				th.prop('draggable', true);
@@ -134,7 +142,6 @@ var grid = (function grid($) {
 		}
 		headerTable.css("width","");
 		createGridFooter(gridDiv, gridData);
-		createGridContent(gridData, gridDiv, isNewGrid);
 	}
 
 	function buildRummaryRow(gridData) {
@@ -144,18 +151,18 @@ var grid = (function grid($) {
 			var textVal = getCellFormatting(gridData, col, type, null, null);
 			switch (gridData.summaryRow[col]) {
 				case "count":
-					sRow[col] = "Count: " + textVal.prefix + gridData.dataSource.count + textVal.postfix;
+					sRow[col] = "Count: " + textVal.prefix + gridData.dataSource.rowCount + textVal.postfix;
 					break;
 				case "average":
 					var total = 0;
-					for (var i = 0; i < gridData.dataSource.count; i++) {
+					for (var i = 0; i < gridData.dataSource.rowCount; i++) {
 						total += parseFloat(gridData.dataSource.data[i][col]);
 					}
-					sRow[col] = "Avg: " + textVal.prefix + parseFloat(total/parseFloat(gridData.dataSource.count)).toFixed(2) + textVal.postfix;
+					sRow[col] = "Avg: " + textVal.prefix + parseFloat(total/parseFloat(gridData.dataSource.rowCount)).toFixed(2) + textVal.postfix;
 					break;
 				case "total":
 					var total = 0;
-					for (var i = 0; i < gridData.dataSource.count; i++) {
+					for (var i = 0; i < gridData.dataSource.rowCount; i++) {
 						total += parseFloat(gridData.dataSource.data[i][col]);
 					}
 					if (type === "currency") total = total.toFixed(2);
@@ -163,14 +170,14 @@ var grid = (function grid($) {
 					break;
 				case "min":
 					var min;
-					for (var i = 0; i < gridData.dataSource.count; i++) {
+					for (var i = 0; i < gridData.dataSource.rowCount; i++) {
 						if (!min || parseFloat(gridData.dataSource.data[i][col]) < min) min = parseFloat(gridData.dataSource.data[i][col]);
 					}
 					sRow[col] = "Minimum: " + textVal.prefix + min + textVal.postfix;
 					break;
 				case "max":
 					var max;
-					for (var i = 0; i < gridData.dataSource.count; i++) {
+					for (var i = 0; i < gridData.dataSource.rowCount; i++) {
 						if (!max || parseFloat(gridData.dataSource.data[i][col]) > max) max = parseFloat(gridData.dataSource.data[i][col]);
 					}
 					sRow[col] = "Maximum: " + textVal.prefix + max + textVal.postfix;
@@ -205,16 +212,24 @@ var grid = (function grid($) {
 
 		var pageSize = storage.grids[gridContent.data("grid_content_id")].pageSize;
 		var rowStart = 1 + (pageSize*(pageNum-1));
-		var rowEnd = gridData.dataSource.count >= (pageSize + rowStart) ? (pageSize + rowStart) : gridData.dataSource.count;
+		var rowEnd = gridData.dataSource.rowCount >= (pageSize + rowStart) ? (pageSize + rowStart) : gridData.dataSource.rowCount;
 
 		for (var i = (rowStart-1); i < rowEnd; i++) {
 			var tr = $("<tr></tr>").appendTo(contentTBody);
+			if (!!(i % 2))
+					tr.addClass('alt-row');
 			for (var j = 0; j < columns.length; j++) {
 				var td = $("<td data-field='" + columns[j] + "' class='grid-content-cell'></td>").appendTo(tr);
+				if (gridData.columns[columns[j]].cellClassList && gridData.columns[columns[j]].cellClassList.constructor === Array) {
+					for (var z = 0; z < gridData.columns[columns[j]].cellClassList.length; z++) {
+						td.addClass(gridData.columns[columns[j]].cellClassList[z]);
+					}
+				}
 				var type = gridData.columns[columns[j]].type || "";
 				var textVal = getCellFormatting(gridData, columns[j], type, gridData.dataSource.data[i][columns[j]], i);
+				var text = gridData.columns[columns[j]].template ? gridData.columns[columns[j]].template.replace("{{data}}", textVal.text) : textVal.text;
 				if (gridData.dataSource.data[i][columns[j]] !== undefined) {
-					td.text(textVal.prefix + textVal.text + textVal.postfix);
+					td.text(text);
 				}
 
 				if (gridData.columns[columns[j]].editable) {
@@ -239,14 +254,14 @@ var grid = (function grid($) {
 						switch (type) {
 							case "bool":
 								input = $("<input type='checkbox' class='input checkbox'/>").appendTo(cell);
-								if (val == "true") {
+								if (val || val === "true") {
 									input[0].checked = true;
 								}
 								else input[0].checked = false;
 								break;
 							case "number":
 							case "currency":
-								var inputval = val;//numberWithCommas(val);
+								var inputval = val;
 								input = $("<input type='text' value='" + inputval + "' class='input textbox cell-edit-input'/>").appendTo(cell);
 								dataType = 'numeric';
 								break;
@@ -266,16 +281,18 @@ var grid = (function grid($) {
 
 						if (dataType && dataType !== "date") {
 							input.on("keypress", function restrictCharsHandler(e) {
-			                			 var code = event.charCode? event.charCode : event.keyCode,
-						        	key = String.fromCharCode(code);
-						        	var newVal = insertKey($(this), key);
-						        	var re = new RegExp(dataTypes[dataType]);
-						        	if (!re.test(newVal)) {
-						        		e.preventDefault();
-						        		return false;
-						        	}
-					        		var id = $(this).parents(".grid-wrapper").data("grid_id");
-			                			 storage.grids[id].currentEdit[field] = newVal;
+			                    var code = event.charCode? event.charCode : event.keyCode,
+					        	key = String.fromCharCode(code);
+					        	var newVal = insertKey($(this), key);
+					        	//var re = new RegExp(dataTypes[dataType]);
+					        	var re = dataTypes[dataType];
+					        	var temp = re.test(newVal);
+					        	if (!re.test(newVal)) {
+					        		e.preventDefault();
+					        		return false;
+					        	}
+					        	var id = $(this).parents(".grid-wrapper").data("grid_id");
+			                    storage.grids[id].currentEdit[field] = newVal;
 							});
 						}
 
@@ -305,7 +322,9 @@ var grid = (function grid($) {
 		        					if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index + addend][field];
 									var tempVal = parseFloat(val.replace(",", ""));
 									saveVal = tempVal.toFixed(2);
-									parentCell.text(prePostFix.prefix + numberWithCommas(val) + prePostFix.postfix);
+									var printVal = numberWithCommas(val);
+									var text = gridData.columns[field].template ? gridData.columns[field].template.replace("{{data}}", numberWithCommas(val)) : numberWithCommas(val);
+									parentCell.text(text);
 									break;
 								case "date":
 									var parseDate = Date.parse(val);
@@ -334,8 +353,11 @@ var grid = (function grid($) {
 							storage.grids[id].currentEdit[field] = null;
 							var previousVal = storage.grids[id].dataSource.data[index + addend][field];
 							if (previousVal !== saveVal && !("" === saveVal && undefined === previousVal)) {	//if the value didn't change, don't "save" the new val, and don't apply the "dirty" span
-								storage.grids[id].dataSource.data[index][field] = saveVal;
+								storage.grids[id].dataSource.data[index + addend][field] = saveVal;
 								parentCell.prepend("<span class='dirty'></span>");
+							}
+							else {
+								storage.grids[id].dataSource.data[index + addend][field] = previousVal;
 							}
 						});
 					});
@@ -378,16 +400,20 @@ var grid = (function grid($) {
 							var parentCell = select.parents("td");
 							select.remove();
 							var id = gridContent.data("grid_content_id");
+							var pageNum = storage.grids[id].pageNum;
+							var rowNum = storage.grids[id].pageSize;
+							var addend = (pageNum-1)*rowNum;
 
 							var index = parentCell.parents("tr").index();
 							var field = parentCell.data("field");
 							var type = gridData.columns[field].type || "";
-							var inputVal = getCellFormatting(gridData, field, type, val, index);
-							parentCell.text(inputVal.prefix + val + inputVal.postfix);
+							var inputVal = getCellFormatting(gridData, field, type, val, (index + addend));
+							var text = gridData.columns[field].template ? gridData.columns[field].template.replace("{{data}}", val) : val;
+							parentCell.text(text);
 							var previousVal = storage.grids[id].dataSource.data[index + addend][field];
 							if (previousVal !== val) {	//if the value didn't change, don't "save" the new val, and don't apply the "dirty" span
 								parentCell.prepend("<span class='dirty'></span>");
-								storage.grids[id].dataSource.data[index][field] = inputVal.prefix + val + inputVal.postfix;
+								storage.grids[id].dataSource.data[index + addend][field] = inputVal.prefix + val + inputVal.postfix;
 							}
 						});
 					});
@@ -518,9 +544,9 @@ var grid = (function grid($) {
 		if ($("#grid_" + id + "_toolbar").length)	//if the toolbar had already been created, don't create it again.
 			return;
 
-		var saveBar = $("<div id='grid_" + id + "_toolbar' class='toolbar'></div>").prependTo(gridDiv);
+		var saveBar = $("<div id='grid_" + id + "_toolbar' class='toolbar clearfix'></div>").prependTo(gridDiv);
 		var saveAnchor = $("<a href='#' class='toolbarAnchor saveToolbar'></a>").appendTo(saveBar);
-		saveAnchor.append("<span class='toolbarSpan saveToolbarSpan'>Save Changes</span>");
+		saveAnchor.append("<span class='toolbarSpan saveToolbarSpan'></span>Save Changes");
 
 		var deleteAnchor = $("<a href='#' class='toolbarAnchor deleteToolbar'></a>").appendTo(saveBar);
 		deleteAnchor.append("<span class='toolbarSpan deleteToolbarSpan'>Delete Changes</span>");
@@ -559,13 +585,29 @@ var grid = (function grid($) {
 					var rowNum = storage.grids[id].pageSize;
 					var addend = (pageNum-1)*rowNum;
 					var inputVal = getCellFormatting(gridData, field, type, dirtyCells[i].text(), index);
-					var cellVal = storage.grids[id].originalData[index][field] || "";
-					dirtyCells[i].text(inputVal.prefix + cellVal + inputVal.postfix);
+					var cellVal = storage.grids[id].originalData[index][field] !== undefined ? storage.grids[id].originalData[index][field] : "";
+					var text = gridData.columns[field].template ? gridData.columns[field].template.replace("{{data}}", cellVal) : cellVal;
+					dirtyCells[i].text(text);
 					dirtyCells[i].find(".dirty").remove();
 					storage.grids[id].dataSource.data[index + addend][field] = storage.grids[id].originalData[index + addend][field];
 				}
 			}
 		});
+
+		if (storage.grids[id].groupable) {
+			var columnsList = $("<select class='input select group_select' style='float:right; display: inline; width: auto;'></select>").appendTo(saveBar);
+			columnsList.append("<option value='none'>None</option>");
+			for (var col in storage.grids[id].columns) {
+				if (storage.grids[id].columns[col].groupable !== false) {
+					columnsList.append("<option value='" + col + "'>" + col + "</option>");
+				}
+			}
+			columnsList.on('change', function groupBySelectCallback(e) {
+				storage.grids[id].pageRequest.groupedBy = this.value;
+				storage.grids[id].pageRequest.eventType = "group";
+				preparePageDataGetRequest(id);
+			});
+		}
 	}
 
 	function getCellFormatting(gridData, field, type, val, idx) {
@@ -605,7 +647,7 @@ var grid = (function grid($) {
 	function createGridFooter(gridDiv, gridData) {
 		var gridFooter = gridDiv.find(".grid-footer-div");
 		var id = gridFooter.data("grid_footer_id");
-		var count = storage.grids[id].dataSource.count;
+		var count = storage.grids[id].dataSource.rowCount;
 		var displayedRows = (count - storage.grids[id].pageSize) > 0 ? storage.grids[id].pageSize : count;
 		var remainingPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) : 0;
 		var pageNum = storage.grids[parseInt(gridFooter.data("grid_footer_id"))].pageNum;
@@ -634,13 +676,10 @@ var grid = (function grid($) {
 
 			sizeSelect.on('change', function pageSizeSelectorClickHandler(e) {
 				var pageSize = $(this).val();
-				storage.grids[id].pageSize = pageSize;
 				var grid = storage.grids[id].grid;
-				grid.find(".grid-content-div").empty();
-				grid.find(".grid-footer-div").empty();
-
-				createGridFooter(grid, storage.grids[id]);
-				createGridContent(storage.grids[id], grid, false);
+				storage.grids[id].pageRequest.pageSize = parseInt(pageSize);
+				storage.grids[id].pageRequest.eventType = "pageSize";
+				preparePageDataGetRequest(id);
 			});
 		}
 
@@ -718,7 +757,9 @@ var grid = (function grid($) {
 				pagerSpan.text("Page " + pageNum + "/" + totalPages);
 				pagerInfo.text(rowStart + " - " + rowEnd + " of " + gridData.dataSource.data.length + " rows");
 				storage.grids[id].grid.find(".grid-content-div").empty();
-				createGridContent(gridData, storage.grids[id].grid, false);
+				storage.grids[id].pageRequest.eventType = "page";
+				storage.grids[id].pageRequest.pageNum = pageNum;
+				preparePageDataGetRequest(id);
 			});
 		});
 	}
@@ -812,6 +853,7 @@ var grid = (function grid($) {
 				select.append("<option value='eq'>Equal to:</option>");
 				select.append("<option value='neq'>Not equal to:</option>");
 				select.append("<option value='ct'>Contains:</option>");
+				select.append("<option value='nct'>Does not contain:</option>");
 				filterDiv.append("<input class='filterInput input' type='text' id='filterInput" + type + field + "'></input>");
 				var button = $("<input type='button' value='Filter' class='filterButton button' data-field='" + field + "'></input>").appendTo(filterDiv);
 
@@ -826,127 +868,17 @@ var grid = (function grid($) {
 		var selected = filterDiv.find(".filterSelect").val();
 		var value = filterDiv.find(".filterInput").val();
 		var gridId = filterDiv.parents(".grid-wrapper").data("grid_id");
+		var gridData = storage.grids[gridId];
 
-		if (value && value !== "") {
-			filterGrid(selected, value, $(this).data("field"), gridId);
-		}
-		if (value == "") {
-			storage.grids[gridId].dataSource.data = cloneGridData(storage.grids[gridId].originalData);
-			storage.grids[gridId].dataSource.count = storage.grids[gridId].dataSource.data.length;
-			storage.grids[gridId].grid.find(".grid-footer-div").empty();
-			storage.grids[gridId].grid.find(".grid-content-div").empty();
-			if (!!storage.grids[gridId].dataSource.sorted) {
-				var sortedFilter = mergeSort(storage.grids[gridId].dataSource.data, storage.grids[gridId].dataSource.sortOn, storage.grids[gridId].dataSource.sortBy);
-				var headerTable = filterDiv.parents(".grid-wrapper").find(".grid-header-div").find("table");
-				var sortedElem = headerTable.find("[data-field='" + storage.grids[gridId].dataSource.sortOn + "']");
-				if (sortedElem[0].dataset["order"] === "asc") sortedFilter.reverse();
-				storage.grids[gridId].dataSource.data = sortedFilter;
-			}
-			createGridFooter(storage.grids[gridId].grid, storage.grids[gridId]);
-			createGridContent(storage.grids[gridId], storage.grids[gridId].grid, false);
-		}
+		if (value === "" && gridData.filterVal === "") return;
+
 		filterDiv.addClass("hiddenFilter");
-	}
 
-	function filterGrid(filterType, value, field, gridId) {
-		var gridData = storage.grids[gridId].originalData;
-		// Types: date, number, string, boolean, percent, currency, time
-		var type = storage.grids[gridId].columns[field].type || "string";
-		var filteredData = [];
-
-		for (var i = 0, length = gridData.length; i < length; i++) {
-			switch (filterType) {
-				case "eq": 	//Equal
-					if (type === "number" || type === "percent" || type === "currency") {
-						if (parseFloat(gridData[i][field]) === parseFloat(value))
-							filteredData.push(gridData[i]);
-					}
-					else if (type === "date") {
-						if (new Date(gridData[i][field] === new Date(value)))
-							filteredData.push(gridData[i]);
-					}
-					else if (gridData[i][field].toLowerCase() === value.toLowerCase())
-						filteredData.push(gridData[i]);
-					break;
-				case "neq": 	//not equal
-					if (type === "number" || type === "percent" || type === "currency") {
-						if (parseFloat(gridData[i][field]) !== parseFloat(value))
-							filteredData.push(gridData[i]);
-					}
-					else if (type === "date") {
-						if (new Date(gridData[i][field] !== new Date(value)))
-							filteredData.push(gridData[i]);
-					}
-					else if (gridData[i][field].toLowerCase() !== value.toLowerCase())
-						filteredData.push(gridData[i])
-					break;
-				case "gte": 	//greater than or equal to
-					if (type === "number" || type === "percent" || type === "currency") {
-						if (parseFloat(gridData[i][field]) >= parseFloat(value))
-							filteredData.push(gridData[i]);
-					}
-					else if (type === "date") {
-						if (new Date(gridData[i][field] >= new Date(value)))
-							filteredData.push(gridData[i]);
-					}
-					else if (gridData[i][field] >= value)
-						filteredData.push(gridData[i]);
-					break;
-				case "gt": 	//greater than
-					if (type === "number" || type === "percent" || type === "currency") {
-						if (parseFloat(gridData[i][field]) > parseFloat(value))
-							filteredData.push(gridData[i]);
-					}
-					else if (type === "date") {
-						if (new Date(gridData[i][field] > new Date(value)))
-							filteredData.push(gridData[i]);
-					}
-					else if (gridData[i][field] > value)
-						filteredData.push(gridData[i]);
-					break;
-				case "lte": 	//less than or equal to
-					if (type === "number" || type === "percent" || type === "currency") {
-						if (parseFloat(gridData[i][field]) <= parseFloat(value))
-							filteredData.push(gridData[i]);
-					}
-					else if (type === "date") {
-						if (new Date(gridData[i][field] <= new Date(value)))
-							filteredData.push(gridData[i]);
-					}
-					else if (gridData[i][field] <= value)
-						filteredData.push(gridData[i]);
-						break;
-				case "lt": 	//less than
-					if (type === "number" || type === "percent" || type === "currency") {
-						if (parseFloat(gridData[i][field]) < parseFloat(value))
-							filteredData.push(gridData[i]);
-					}
-					else if (type === "date") {
-						if (new Date(gridData[i][field] < new Date(value)))
-							filteredData.push(gridData[i]);
-					}
-					else if (gridData[i][field] < value)
-						filteredData.push(gridData[i]);
-						break;
-				case "ct": 	//contains
-					if (gridData[i][field].toLowerCase().indexOf(value.toLowerCase()) !== -1) {
-						filteredData.push(gridData[i]);
-					}
-			}
-		}
-		if (storage.grids[gridId].dataSource.sorted) {
-			var sortedFilter = mergeSort(filteredData, storage.grids[gridId].dataSource.sortOn, storage.grids[gridId].dataSource.sortBy);
-			var headerTable = storage.grids[gridId].grid.find(".grid-header-div").find("table");
-			var sortedElem = headerTable.find("[data-field='" + storage.grids[gridId].dataSource.sortOn + "']");
-			if (sortedElem[0].dataset["order"] === "asc") sortedFilter.reverse();
-			filteredData = sortedFilter;
-		}
-		storage.grids[gridId].dataSource.data = filteredData;
-		storage.grids[gridId].dataSource.count = filteredData.length;
-		storage.grids[gridId].grid.find(".grid-footer-div").empty();
-		storage.grids[gridId].grid.find(".grid-content-div").empty();
-		createGridFooter(storage.grids[gridId].grid, storage.grids[gridId]);
-		createGridContent(storage.grids[gridId], storage.grids[gridId].grid, false);
+		gridData.pageRequest.filteredOn = $(this).data("field");
+		gridData.pageRequest.filterVal = value;
+		gridData.pageRequest.filterType = selected;
+		gridData.pageRequest.eventType = "filter";
+		preparePageDataGetRequest(gridId);
 	}
 
 	function createGridColumnsFromArray(gridData, gridDiv) {
@@ -958,6 +890,9 @@ var grid = (function grid($) {
 					headerCol[col] = {};
 					headerCol[col].field = col;
 					headerCol[col].title = col;
+					//headerCol[col].index = index;
+					//headerCol[col].editable = true;
+					//headerCol[col].selectable = true;
 					headerCol[col].reorderable = true;
 					headerCol[col].sortable = true;
 					index++;
@@ -992,13 +927,29 @@ var grid = (function grid($) {
 			var droppedIndex = droppedCol[0].dataset["index"];
 			var targetIndex = targetCol[0].dataset["index"];
 
-			var droppedClone = droppedCol.clone(true, true);
-			var targetClone = targetCol.clone(true, true);
+			var droppedClone = droppedCol.clone(false, true);
+			var targetClone = targetCol.clone(false, true);
+
+			var droppedEvents = $._data(elem[0], 'events');
+			var targetEvents = $._data(targetCol[0], 'events');
+			if (droppedEvents.click)
+				setSortableClickListener(droppedClone);
+			setDragAndDropListeners(droppedClone);
+			if (targetEvents.click)
+				setSortableClickListener(targetClone);
+			setDragAndDropListeners(targetClone);
+
+			if (droppedClone.find('a').length)
+				attachFilterListener(droppedClone.find('a'));
+			if (targetClone.find('a').length)
+				attachFilterListener(targetClone.find('a'));
+
 			droppedCol.replaceWith(targetClone);
 			targetCol.replaceWith(droppedClone);
 
 			droppedClone[0].dataset["index"] = targetIndex;
 			targetClone[0].dataset["index"] = droppedIndex;
+
 			swapContentCells(parentDivId, tempIndex, targetIndex);
 
 			var targetWidth = $(colGroups[0].children[droppedIndex]).width();
@@ -1082,8 +1033,8 @@ var grid = (function grid($) {
 								space -= -3;
 								width -= -3;
 							}
-							scrollLeft = contentDiv.scrollLeft();
 
+							scrollLeft = contentDiv.scrollLeft();
 
 							for (var i = 0; i < colGroups.length; i++) {
 								var currWidth = $(tables[i]).width();
@@ -1108,37 +1059,303 @@ var grid = (function grid($) {
 			var headerDiv = elem.parents(".grid-header-div");
 			var id = parseInt(headerDiv.data("grid_header_id"));
 			var previousSorted = headerDiv.find("[data-order]");
-			var order = elem[0].dataset["order"] === undefined ? "desc" : elem[0].dataset["order"] === "desc" ? "asc" : "desc";
+			var order;// = elem[0].dataset["order"] === undefined ? "desc" : elem[0].dataset["order"] === "desc" ? "asc" : "desc";
+			if (elem[0].dataset["order"] === undefined || elem[0].dataset["order"] == "default") 
+				order = "desc";
+			else if (elem[0].dataset["order"] === "desc") 
+				order = "asc";
+			else
+				order = "default";
+
 			elem[0].dataset["order"] = order;
 			var sameCol = false;
 			if (previousSorted.length) {
 				if (previousSorted.data("field") !== elem.data("field")) {
 					$(".sortSpan").remove();	//may need to target the "previousSorted" element before removing the sortSpan, but something isn't working correctly with that, so for now this'll do.
 					previousSorted[0].removeAttribute("data-order");
-					var className = elem[0].dataset["order"] === "desc" ? "sort-desc sortSpan" : "sort-asc sortSpan";
+					var className;// = elem[0].dataset["order"] === "desc" ? "sort-desc sortSpan" : "sort-asc sortSpan";
+					if (order === "desc")
+						className = "sort-desc sortSpan";
+					else if (order === "asc")
+						className = "sort-asc sortSpan";
+					else
+						className = "";
 					elem.append("<span class='" + className + "'>Sort</span>");
 				}
 				else {
 					sameCol = true;
 					var span = elem.find(".sortSpan");
-					var className = elem[0].dataset["order"] === "desc" ? span.addClass("sort-desc").removeClass("sort-asc") : span.removeClass("sort-desc").addClass("sort-asc");
+					var className;// = elem[0].dataset["order"] === "desc" ? span.addClass("sort-desc").removeClass("sort-asc") : span.removeClass("sort-desc").addClass("sort-asc");
+					if (order === "desc")
+						span.addClass("sort-desc").removeClass("sort-asc");
+					else if (order === "asc")
+						span.removeClass("sort-desc").addClass("sort-asc");
+					else
+						span.removeClass("sort-desc").removeClass("sort-asc");
 				}
 			}
 			else {
-				var className = elem.data("order") === "desc" ? "sort-desc sortSpan" : "sort-asc sortSpan";
+				var className;// = elem.data("order") === "desc" ? "sort-desc sortSpan" : "sort-asc sortSpan";
+				if (order === "desc")
+					className = "sort-desc sortSpan";
+				else if (order === "asc")
+					className = "sort-asc sortSpan";
+				else
+					className = "";
 				elem.append("<span class='" + className + "'>Sort</span>");
 			}
-			var gridData = storage.grids[id];
-			var field = elem.data("field");
-			var sortedData = mergeSort(gridData.dataSource.data, field, gridData.columns[field].type || "string");
-			if (elem[0].dataset["order"] === "asc") sortedData.reverse();
-			storage.grids[id].dataSource.data = sortedData;
-			storage.grids[id].dataSource.sortBy = elem[0].dataset["order"];
-			storage.grids[id].dataSource.sortOn = field;
-			storage.grids[id].dataSource.sorted = true;
-			$(storage.grids[id].grid).find(".grid-content-div").empty();
-			createGridContent(gridData, storage.grids[id].grid, false);
+			storage.grids[id].pageRequest.sortedOn = elem.data("field");
+			storage.grids[id].pageRequest.sortedBy = order;
+			storage.grids[id].pageRequest.eventType = "sort";
+			preparePageDataGetRequest(id);
 		});
+	}
+
+	function swapContentCells(gridId, droppedIndex, targetIndex) {
+		$("#grid-content-" + gridId).find("tr").each(function iterateContentRowsCallback(idx, val) {
+			var droppedIdx = 1 + parseInt(droppedIndex);
+			var targetIdx = 1 + parseInt(targetIndex);
+			var droppedCell = $(val).children("td:nth-child(" + droppedIdx + ")");
+			var targetCell = $(val).children("td:nth-child(" + targetIdx + ")");
+
+			var droppedClone = droppedCell.clone(true, true);
+			var targetClone = targetCell.clone(true, true);
+			targetCell.replaceWith(droppedClone);
+			droppedCell.replaceWith(targetClone);
+
+			droppedClone[0].dataset["index"] = targetIndex;
+			targetClone[0].dataset["index"] = droppedIndex;
+		});
+	}
+
+	//All page request-related functions call here. This sets up the request object and then calls either
+	//the internal or the supplied GET function to get a new page of grid data.
+	function preparePageDataGetRequest(id) {
+		var gridData = storage.grids[id];
+		var pageNum = gridData.pageRequest.pageNum || gridData.pageNum;
+		var pageSize = gridData.pageRequest.pageSize || gridData.pageSize;
+		var sortedOn = gridData.pageRequest.sortedOn || gridData.sortedOn || null;
+		var sortedBy = gridData.pageRequest.sortedBy || gridData.sortedBy || null;
+		var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
+		var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
+		var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
+		var groupedBy = gridData.pageRequest.groupedBy || gridData.groupedBy || null;
+
+		var requestObj = {};
+		if (gridData.sortable) {
+			requestObj.sortedOn = sortedOn;
+			requestObj.sortedBy = sortedBy;
+		}
+
+		if (gridData.filterable) {
+			requestObj.filteredOn = filteredOn;
+			requestObj.filterVal = filterVal;
+			requestObj.filterType = filterType;
+		}
+
+		if (gridData.groupable) {
+			requestObj.groupedBy = groupedBy;
+		}
+
+		requestObj.pageSize = pageSize;
+		requestObj.pageNum = pageNum;
+
+		gridData.grid.find(".grid-content-div").empty();
+
+		if (gridData.dataSource.get && typeof gridData.dataSource.get === "function")
+			gridData.dataSource.get(requestObj, getPageDataRequestCallback);
+		else {
+			getPageData(requestObj, id, getPageDataRequestCallback);
+		}
+
+		function getPageDataRequestCallback(response) {
+			gridData.dataSource.data = response.data;
+			gridData.pageSize = requestObj.pageSize;
+			gridData.pageNum = requestObj.pageNum;
+			gridData.dataSource.rowCount = response.rowCount || response.length;
+			gridData.groupedBy = requestObj.groupedBy;
+			gridData.sortedOn = requestObj.sortedOn;
+			gridData.sortedBy = requestObj.sortedBy;
+			gridData.filteredOn = requestObj.filteredOn;
+			gridData.filterVal = requestObj.filterVal;
+			gridData.filterType = requestObj.filterType;
+			createGridContent(gridData, storage.grids[id].grid, (gridData.pageRequest.eventType === "newGrid"));
+			if (gridData.pageRequest.eventType === "filter" || gridData.pageRequest.eventType === "pageSize") {
+				gridData.grid.find(".grid-footer-div").empty();
+				createGridFooter(gridData.grid, gridData);
+			}
+				
+			gridData.pageRequest = {};
+		}
+	}
+
+	//Default update function - used for client-side updates to grid data
+	function prepareGridDataUpdateRequest() {
+
+	}
+
+	//Default GET function - used for client-side page updates
+	//As long as there isn't a "remove sort" functionality, and a filter hasn't been applied or removed,
+	//then I only need to do one of the data manipulations below. Adding or removing a filter complicates things,
+	//as does removing sorting. For now, I am going to do things the "dumb" way, but I may revisit this later to
+	//see if there is a faster way to manipulate the data.
+	function getPageData(requestObj, id, callback) {
+		var eventType = storage.grids[id].pageRequest.eventType;
+		var fullGridData = requestObj.filteredOn ? cloneGridData(storage.grids[id].originalData) : storage.grids[id].dataSource.data;
+
+		if (eventType === "page" || eventType === "pageSize" || eventType === "newGrid") {
+			callback({ rowCount: storage.grids[id].dataSource.rowCount, data: storage.grids[id].dataSource.data });
+			return;
+		}
+
+		if (requestObj.filteredOn) {
+			if (requestObj.filterVal !== "") {
+				var dataType = storage.grids[id].columns[requestObj.filteredOn].type || "string";
+				fullGridData = filterGridData(requestObj.filterType, requestObj.filterVal, requestObj.filteredOn, dataType, fullGridData);
+			}
+			else fullGridData = cloneGridData(storage.grids[id].originalData);
+			requestObj.pageNum = 1;		//reset the page to the first page when a filter is applied or removed.
+		}
+
+		if (requestObj.groupedBy) {	//Need to group the columns first, before sorting. Sorting grouped columns is going to be a bitch!
+			var groupedData = groupColumns(fullGridData, requestObj.groupedBy);
+			if (requestObj.sortedOn && requestObj.sortedBy !== "default") {
+				var sortedGroup = [];
+				for (var group in groupedData.groupings) {
+					sortedGroup.concat(mergeSort(groupedData[group], requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || "string"));
+				}
+				if (requestObj.sortedBy === "asc") sortedGroup.reverse();
+				callback({ rowCount: sortedGroup.length, data: sortedGroup });
+				return;
+			}
+			callback({ rowCount: groupedData.groupedData.length, data: groupedData.groupedData });
+			return;
+		}
+
+		if (requestObj.sortedOn && ! requestObj.groupedBy) {
+			if (requestObj.sortedBy !== "default") {
+				fullGridData = mergeSort(fullGridData, requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || "string");
+				if (requestObj.sortedBy === "asc") fullGridData.reverse();
+			}
+			else {
+				fullGridData = storage.grids[id].originalData;
+			}
+		}
+
+		callback({ rowCount: fullGridData.length, data: fullGridData });
+	}
+
+	//==========================================================================================================================//
+	//																															//
+	//													HELPER FUNCTIONS														//
+	//==========================================================================================================================//
+
+	function filterGridData(filterType, value, field, dataType, gridData) {
+		// Types: date, number, string, boolean, percent, currency, time
+		var filteredData = [];
+
+		for (var i = 0, length = gridData.length; i < length; i++) {
+			switch (filterType) {
+				case "eq": 	//Equal
+					if (dataType === "number" || dataType === "percent" || dataType === "currency") {
+						if (parseFloat(gridData[i][field]) === parseFloat(value))
+							filteredData.push(gridData[i]);
+					}
+					else if (dataType === "date") {
+						if (new Date(gridData[i][field] === new Date(value)))
+							filteredData.push(gridData[i]);
+					}
+					else if (gridData[i][field].toLowerCase() === value.toLowerCase())
+						filteredData.push(gridData[i]);
+					break;
+				case "neq": 	//not equal
+					if (dataType === "number" || dataType === "percent" || dataType === "currency") {
+						if (parseFloat(gridData[i][field]) !== parseFloat(value))
+							filteredData.push(gridData[i]);
+					}
+					else if (dataType === "date") {
+						if (new Date(gridData[i][field] !== new Date(value)))
+							filteredData.push(gridData[i]);
+					}
+					else if (gridData[i][field].toLowerCase() !== value.toLowerCase())
+						filteredData.push(gridData[i])
+					break;
+				case "gte": 	//greater than or equal to
+					if (dataType === "number" || dataType === "percent" || dataType === "currency") {
+						if (parseFloat(gridData[i][field]) >= parseFloat(value))
+							filteredData.push(gridData[i]);
+					}
+					else if (dataType === "date") {
+						if (new Date(gridData[i][field] >= new Date(value)))
+							filteredData.push(gridData[i]);
+					}
+					else if (gridData[i][field] >= value)
+						filteredData.push(gridData[i]);
+					break;
+				case "gt": 	//greater than
+					if (dataType === "number" || dataType === "percent" || dataType === "currency") {
+						if (parseFloat(gridData[i][field]) > parseFloat(value))
+							filteredData.push(gridData[i]);
+					}
+					else if (dataType === "date") {
+						if (new Date(gridData[i][field] > new Date(value)))
+							filteredData.push(gridData[i]);
+					}
+					else if (gridData[i][field] > value)
+						filteredData.push(gridData[i]);
+					break;
+				case "lte": 	//less than or equal to
+					if (dataType === "number" || dataType === "percent" || dataType === "currency") {
+						if (parseFloat(gridData[i][field]) <= parseFloat(value))
+							filteredData.push(gridData[i]);
+					}
+					else if (dataType === "date") {
+						if (new Date(gridData[i][field] <= new Date(value)))
+							filteredData.push(gridData[i]);
+					}
+					else if (gridData[i][field] <= value)
+						filteredData.push(gridData[i]);
+						break;
+				case "lt": 	//less than
+					if (dataType === "number" || dataType === "percent" || dataType === "currency") {
+						if (parseFloat(gridData[i][field]) < parseFloat(value))
+							filteredData.push(gridData[i]);
+					}
+					else if (dataType === "date") {
+						if (new Date(gridData[i][field] < new Date(value)))
+							filteredData.push(gridData[i]);
+					}
+					else if (gridData[i][field] < value)
+						filteredData.push(gridData[i]);
+						break;
+				case "ct": 	//contains
+					if (gridData[i][field].toLowerCase().indexOf(value.toLowerCase()) !== -1) {
+						filteredData.push(gridData[i]);
+					}
+				case "nct": //does not contain
+					if (gridData[i][field].toLowerCase().indexOf(value.toLowerCase()) === -1) {
+						filteredData.push(gridData[i]);
+					}
+			}
+		}
+		return filteredData;
+	}
+
+	function groupColumns(data, field) {
+		var groupings = {};
+		for (var i = 0; i < data.length; i++) {
+			if (groupings[data[i][field]])
+				groupings[data[i][field]].push(data[i]);
+			else
+				groupings[data[i][field]] = [data[i]];
+		}
+
+		var groupedData = [];
+		for (var group in groupings) {
+			groupedData = groupedData.concat(groupings[group]);
+		}
+
+		return { groupings: groupings, groupedData: groupedData };
 	}
 
 	function mergeSort(data, field, type) {
@@ -1187,28 +1404,6 @@ var grid = (function grid($) {
 	    return result;
 	}
 
-	function swapContentCells(gridId, droppedIndex, targetIndex) {
-		$("#grid-content-" + gridId).find("tr").each(function iterateContentRowsCallback(idx, val) {
-			var droppedIdx = 1 + parseInt(droppedIndex);
-			var targetIdx = 1 + parseInt(targetIndex);
-			var droppedCell = $(val).children("td:nth-child(" + droppedIdx + ")");
-			var targetCell = $(val).children("td:nth-child(" + targetIdx + ")");
-
-			var droppedClone = droppedCell.clone(true, true);
-			var targetClone = targetCell.clone(true, true);
-			targetCell.replaceWith(droppedClone);
-			droppedCell.replaceWith(targetClone);
-
-			droppedClone[0].dataset["index"] = targetIndex;
-			targetClone[0].dataset["index"] = droppedIndex;
-		});
-	}
-
-	//==========================================================================================================================//
-	//																															//
-	//													HELPER FUNCTIONS														//
-	//==========================================================================================================================//
-
 	function numberWithCommas(x) {
 	    return x.toString().replace(/\B(?=(?:\d{3})+(?!\d))/g, ",");
 	}
@@ -1238,8 +1433,10 @@ var grid = (function grid($) {
     };
 
     var dataTypes = {
-    	numeric: "^\-?([1-9]{1}[0-9]{0,2}(\,[0-9]{3})*(\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(\.[0-9]{0,2})?|0(\.[0-9]{0,2})?|(\.[0-9]{1,2})?)$",
-    	integer: "^\-?\d+$"
+    	numeric: /^\-?([1-9]{1}[0-9]{0,2}(\,[0-9]{3})*(\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(\.[0-9]{0,2})?|0(\.[0-9]{0,2})?|(\.[0-9]{1,2})?)$/,
+    	numericTemp: "^-?(?:[1-9]{1}[0-9]{0,2}(?:,[0-9]{3})*(?:\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(?:\\.[0-9]{0,2})?|0(?:\\.[0-9]{0,2})?|(?:\\.[0-9]{1,2})?)$",
+    	integer: /^\-?\d+$/,
+    	integerTemp: "^\-?\d+$"
     };
 
     var insertKey = function(input, key) {		//Inserts the new character to it's position in the string based on cursor position
@@ -1305,11 +1502,14 @@ var grid = (function grid($) {
 	}
 
 	var storage = {
-		count: function count() {
-			return storage.gridCount++;
-		},
+		//count: function count() {
+		//	return storage.gridCount++;
+		//},
 		gridCount: 0,
-		grids: {}
+		grids: {},
+		get count() {
+			return this.gridCount++;
+		}
 	};
 
 	var resizing = false;
