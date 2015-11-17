@@ -510,6 +510,7 @@
 .select {
 	border-radius: 5px;
 	padding: 4px;
+	width: 100%;
 }
 
 .button {
@@ -829,7 +830,6 @@ input {
 
 .toolbarAnchor {
 	color: white;
-	margin: 5px;
 	background-color: #3343a4;
     border-color: #3f51b5;
     -webkit-box-shadow: none;
@@ -840,6 +840,7 @@ input {
     box-sizing: border-box;
     overflow: visible;
     /*text-align: center;*/
+    display: inline-block;
     cursor: pointer;
     list-style-image: none;
 	list-style-position: outside;
@@ -872,4 +873,17 @@ input {
 	border-radius: 5px;
 	border-style: inset;
     outline: none;
+}
+
+.clearfix:after { 
+   content: "."; 
+   visibility: hidden; 
+   display: block; 
+   height: 0; 
+   clear: both;
+}
+
+.group_select {
+	margin-top: 2.5px;
+	margin-bottom: 2.5px;
 }
