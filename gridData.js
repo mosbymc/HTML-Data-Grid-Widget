@@ -1,46 +1,8 @@
-/*var oldStorage = {
-	pageNum: 1,
-	pageSize: 2,
-	originalData: {
-		columns: {},
-		groupable: true,
-		reorderable: true,
-		sortable: true,
-		data: [],
-		summaryRow: {}
-	},
-	data: {
-		columns: {},
-		groupable: true,
-		reorderable: true,
-		sortable: true,
-		data: [],
-		summaryRow: {}
-	}
-};
-
-var newStorage = {
-	pageNum: 1,
-	pageSize: 1,
-	columns: {},
-	groupable: true,
-	reorderable: true,
-	sortable: true,
-	pagingOptions: [25, 50, 100],
-	summaryRow: {},
-	originalData: [],
-	dataSource: {
-		data: [],
-		get: "ASDASDAS",
-		update: "ASDASDAS",
-		count: 54
-	}
-};*/
-
 var gridData = {
 	sortable: true,
 	reorderable: true,
 	groupable: true,
+	filterable: true,
 	pagingOptions: [25, 50, 100],
 	//pageSize: 50,
 	summaryRow: {
@@ -57,7 +19,9 @@ var gridData = {
 		Service: {
 			filterable: true,
 			editable: true,
-			width: 160
+			width: 160,
+			cellClassList: ["custom-class", "anotherOne"],
+			columnClassList: ["custom-class"]
 		},
 		Customer: {
 			type: "string",
@@ -66,6 +30,7 @@ var gridData = {
 		Labor: {
 			type: "time",
 			measurement: "hours",
+			template: "{{data}} hour(s)",
 			selectable: true,
 			options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
 			width: 160
@@ -73,6 +38,7 @@ var gridData = {
 		Cost: {
 			type: "currency",
 			symbol: "$",
+			template: "${{data}}",
 			filterable: true,
 			editable: true,
 			min: 1,
@@ -82,6 +48,7 @@ var gridData = {
 		Billed: {
 			type: "currency",
 			symbol: "$",
+			template: "${{data}}",
 			width: 125
 		},
 		Date: {
@@ -100,7 +67,7 @@ var gridData = {
 	dataSource: {
 		get: "localhost:8080/grid_data",
 		update: "localhost:8080/grid_data",
-		count: 54,
+		rowCount: 54,
 		data: [
 			{
 				Service: "New Brakes",
