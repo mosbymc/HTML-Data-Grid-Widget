@@ -1193,12 +1193,7 @@ var grid = (function grid($) {
 	function prepareGridDataUpdateRequest() {
 
 	}
-
-	//Default GET function - used for client-side page updates
-	//As long as there isn't a "remove sort" functionality, and a filter hasn't been applied or removed,
-	//then I only need to do one of the data manipulations below. Adding or removing a filter complicates things,
-	//as does removing sorting. For now, I am going to do things the "dumb" way, but I may revisit this later to
-	//see if there is a faster way to manipulate the data.
+	
 	function getPageData(requestObj, id, callback) {
 		var eventType = storage.grids[id].pageRequest.eventType;
 		var fullGridData = requestObj.filteredOn ? cloneGridData(storage.grids[id].originalData) : storage.grids[id].dataSource.data;
