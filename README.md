@@ -11,6 +11,7 @@ Currently Implemented Functionality:
 - Sortable Columns
 - In-cell Editing
 - Client-side paging
+- Partial integration with [validator.js](https://github.com/mosbymc/validator)... more to come
 
 Planned functionality:
 - Dynamically add new columns
@@ -20,7 +21,6 @@ Planned functionality:
 - Export grid to cvs
 - Event hooks
 - Graphics/logo support
-- Integration with [validator.js](https://github.com/mosbymc/validator)
 
 
 The grid.html file is my test page for the functionality in the grid widget. It requires grid.js, and grid.css to run properly.
