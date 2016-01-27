@@ -6,7 +6,6 @@ var gridData = {
 	groupable: true,
 	filterable: true,
 	pagingOptions: [25, 50, 100],
-	//pageSize: 50,
 	summaryRow: {
 		Service: {
 			type: "count"
@@ -48,8 +47,11 @@ var gridData = {
 			filterable: true,
 			editable: true,
 			width: 160,
-			cellClassList: ["custom-class", "anotherOne"],
-			columnClassList: ["custom-class"]
+			attributes: {
+				cellClasses: ["custom-class", "anotherOne"],
+				style: "font: bold;",
+				headerClasses: ["custom-class"]
+			}
 		},
 		Customer: {
 			type: "string",
