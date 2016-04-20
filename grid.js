@@ -850,151 +850,10 @@ var grid = (function _grid($) {
                 }
 
                 if (gridData.columns[columns[j]].editable) {
-                    createCellEditSaveDiv(gridDiv);
-                    td.on('click', function editableCellClickHandler(e) {
-                        if (e.target !== e.currentTarget) return;
-                        if (gridContent.find('.invalid').length)
-                            return;
-                        var cell = $(e.currentTarget);
-                        cell.text('');
-
-                        if (storage.grids[id].updating) return;
-                        var index = cell.parents('tr').index();
-                        var field = cell.data('field');
-                        var type = storage.grids[id].columns[field].type || '';
-                        var input;
-                        var val = storage.grids[id].dataSource.data[index][field];
-                        var dataType;
-                        var dataAttributes = '';
-                        var gridValidation = storage.grids[id].columns[field].validation;
-
-                        if (gridValidation && storage.grids[id].useValidator && window.validator) {
-                            dataAttributes = setupCellValidation(gridValidation, dataAttributes);
-                            var gridBodyId = 'grid-content-' + id.toString();
-                            dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
-                        }
-
-                        if (storage.grids[id].useFormatter && storage.grids[id].columns[field].inputFormat)
-                            dataAttributes += ' data-inputformat="' + storage.grids[id].columns[field].inputFormat + '"';
-
-                        switch (type) {
-                            case 'bool':
-                                input = $('<input type="checkbox" class="input checkbox active-cell"' + dataAttributes + '/>').appendTo(cell);
-                                if (val || val === 'true') {
-                                    input[0].checked = true;
-                                }
-                                else input[0].checked = false;
-                                break;
-                            case 'number':
-                            case 'currency':
-                                var decimalPlaces = typeof gridData.columns[field].decimals === 'number' ?  gridData.columns[field].decimals : 2;
-                                var inputval = parseFloat(val).toFixed(decimalPlaces);
-                                input = $('<input type="text" value="' + inputval + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
-                                dataType = 'numeric';
-                                break;
-                            case 'time':
-                                input = $('<input type="text" value="' + val + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
-                                dataType = 'time';
-                                break;
-                            case 'date':
-                                var dateVal = val === undefined ? new Date(Date.now()) : new Date(Date.parse(val));
-                                var inputVal = dateVal.toISOString().split('T')[0];
-                                input = $('<input type="date" value="' + inputVal + '" class="input textbox active-cell"' + dataAttributes + '/>').appendTo(cell);
-                                dataType = 'date';
-                                break;
-                            default:
-                                input = $('<input type="text" value="' + val + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
-                                dataType = null;
-                                break;
-                        }
-
-                        if (gridValidation) input.addClass('inputValidate');
-
-                        input[0].focus();
-
-                        if (dataType && dataType !== 'date' && dataType !== 'time') {
-                            input.on('keypress', function restrictCharsHandler(e) {
-                                var code = e.charCode? e.charCode : e.keyCode,
-                                    key = String.fromCharCode(code);
-                                var newVal = insertKey($(this), key);
-                                var re = new RegExp(dataTypes[dataType]);
-                                if (!re.test(newVal)) {
-                                    e.preventDefault();
-                                    return false;
-                                }
-                                var id = $(this).parents('.grid-wrapper').data('grid_id');
-                                storage.grids[id].currentEdit[field] = newVal;
-                            });
-                        }
-
-                        if (gridValidation && dataAttributes !== '') {
-                            attachValidationListener(input[0]);
-                        }
-                        else {
-                            input.on('blur', function cellEditBlurHandler() {
-                                saveCellEditData(input);
-                            });
-                        }
-                        if (gridData.beforeCellEdit && gridData.beforeCellEdit.length) {
-                            for (var x = 0; x < gridData.beforeCellEdit.length; x++) {
-                                gridData.beforeCellEdit[x].call(this, null);
-                            }
-                        }
-                    });
+                    makeCellEditable(gridDiv, id, td);
                 }
                 else if (gridData.columns[columns[j]].selectable) {	//attach event handlers to save data
-                    createCellEditSaveDiv(gridDiv);
-                    td.on('click', function selectableCellClickHandler(e) {
-                        if (e.target !== e.currentTarget) return;
-                        if (gridContent.find('.invalid').length)
-                            return;
-                        var cell = $(e.currentTarget);
-                        cell.text('');
-                        var index = cell.parents('tr').index();
-                        var field = cell.data('field');
-                        if (storage.grids[id].updating) return;		//can't edit a cell if the grid is updating
-
-                        var gridValidation;
-                        var dataAttributes = '';
-
-                        if (gridValidation = storage.grids[id].columns[field].validation) {
-                            dataAttributes = setupCellValidation(gridValidation, dataAttributes);
-                            var gridBodyId = 'grid-content-' + id.toString();
-                            dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
-                        }
-
-                        var select = $('<select class="input select active-cell"' + dataAttributes + '></select>').appendTo(cell);
-                        var options = [];
-                        var setVal = gridData.dataSource.data[index][field];
-                        options.push(setVal);
-                        for (var z = 0, length = gridData.columns[field].options.length; z < length; z++) {
-                            if (setVal !== gridData.columns[field].options[z]) {
-                                options.push(gridData.columns[field].options[z]);
-                            }
-                        }
-                        for (var k = 0; k < options.length; k++) {
-                            var opt = $('<option value="' + options[k] + '">' + options[k] + '</option>');
-                            select.append(opt);
-                        }
-                        select.val(setVal);
-                        select[0].focus();
-
-                        if (gridValidation) select.addClass('inputValidate');
-
-                        if (gridValidation && dataAttributes !== '') {
-                            attachValidationListener(select[0]);
-                        }
-                        else {
-                            select.on('blur', function cellEditBlurHandler() {
-                                saveCellSelectData(select);
-                            });
-                        }
-                        if (gridData.beforeCellEdit && gridData.beforeCellEdit.length) {
-                            for (var x = 0; x < gridData.beforeCellEdit.length; x++) {
-                                gridData.beforeCellEdit[x].call(this, null);
-                            }
-                        }
-                    });
+                    makeCellSelectable(gridDiv, id, td);
                 }
             }
         }
@@ -1054,6 +913,159 @@ var grid = (function _grid($) {
         storage.grids[id].dataSource.data = gridData.dataSource.data;
         loader.remove();
         storage.grids[id].updating = false;
+    }
+
+    function makeCellEditable(gridDiv, id, td) {
+        createCellEditSaveDiv(gridDiv);
+        td.on('click', function editableCellClickHandler(e) {
+            var gridContent = storage.grids[id].grid.find('.grid-content-div');
+            var gridData = storage.grids[id];
+            if (e.target !== e.currentTarget) return;
+            if (gridContent.find('.invalid').length)
+                return;
+            var cell = $(e.currentTarget);
+            cell.text('');
+
+            if (storage.grids[id].updating) return;
+            var index = cell.parents('tr').index();
+            var field = cell.data('field');
+            var type = storage.grids[id].columns[field].type || '';
+            var input;
+            var val = storage.grids[id].dataSource.data[index][field];
+            var dataType;
+            var dataAttributes = '';
+            var gridValidation = storage.grids[id].columns[field].validation;
+
+            if (gridValidation && storage.grids[id].useValidator && window.validator) {
+                dataAttributes = setupCellValidation(gridValidation, dataAttributes);
+                var gridBodyId = 'grid-content-' + id.toString();
+                dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
+            }
+
+            if (storage.grids[id].useFormatter && storage.grids[id].columns[field].inputFormat)
+                dataAttributes += ' data-inputformat="' + storage.grids[id].columns[field].inputFormat + '"';
+
+            switch (type) {
+                case 'bool':
+                    input = $('<input type="checkbox" class="input checkbox active-cell"' + dataAttributes + '/>').appendTo(cell);
+                    if (val || val === 'true') {
+                        input[0].checked = true;
+                    }
+                    else input[0].checked = false;
+                    break;
+                case 'number':
+                case 'currency':
+                    var decimalPlaces = typeof gridData.columns[field].decimals === 'number' ?  gridData.columns[field].decimals : 2;
+                    var inputval = parseFloat(val).toFixed(decimalPlaces);
+                    input = $('<input type="text" value="' + inputval + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
+                    dataType = 'numeric';
+                    break;
+                case 'time':
+                    input = $('<input type="text" value="' + val + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
+                    dataType = 'time';
+                    break;
+                case 'date':
+                    var dateVal = val === undefined ? new Date(Date.now()) : new Date(Date.parse(val));
+                    var inputVal = dateVal.toISOString().split('T')[0];
+                    input = $('<input type="date" value="' + inputVal + '" class="input textbox active-cell"' + dataAttributes + '/>').appendTo(cell);
+                    dataType = 'date';
+                    break;
+                default:
+                    input = $('<input type="text" value="' + val + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
+                    dataType = null;
+                    break;
+            }
+
+            if (gridValidation) input.addClass('inputValidate');
+
+            input[0].focus();
+
+            if (dataType && dataType !== 'date' && dataType !== 'time') {
+                input.on('keypress', function restrictCharsHandler(e) {
+                    var code = e.charCode? e.charCode : e.keyCode,
+                        key = String.fromCharCode(code);
+                    var newVal = insertKey($(this), key);
+                    var re = new RegExp(dataTypes[dataType]);
+                    if (!re.test(newVal)) {
+                        e.preventDefault();
+                        return false;
+                    }
+                    var id = $(this).parents('.grid-wrapper').data('grid_id');
+                    storage.grids[id].currentEdit[field] = newVal;
+                });
+            }
+
+            if (gridValidation && dataAttributes !== '') {
+                attachValidationListener(input[0]);
+            }
+            else {
+                input.on('blur', function cellEditBlurHandler() {
+                    saveCellEditData(input);
+                });
+            }
+            if (gridData.beforeCellEdit && gridData.beforeCellEdit.length) {
+                for (var x = 0; x < gridData.beforeCellEdit.length; x++) {
+                    gridData.beforeCellEdit[x].call(this, null);
+                }
+            }
+        });
+    }
+
+    function makeCellSelectable(gridDiv, id, td) {
+        createCellEditSaveDiv(gridDiv);
+        td.on('click', function selectableCellClickHandler(e) {
+            var gridContent = storage.grids[id].grid.find('.grid-content-div');
+            var gridData = storage.grids[id];
+            if (e.target !== e.currentTarget) return;
+            if (gridContent.find('.invalid').length)
+                return;
+            var cell = $(e.currentTarget);
+            cell.text('');
+            var index = cell.parents('tr').index();
+            var field = cell.data('field');
+            if (storage.grids[id].updating) return;		//can't edit a cell if the grid is updating
+
+            var gridValidation;
+            var dataAttributes = '';
+
+            if (gridValidation = storage.grids[id].columns[field].validation) {
+                dataAttributes = setupCellValidation(gridValidation, dataAttributes);
+                var gridBodyId = 'grid-content-' + id.toString();
+                dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
+            }
+
+            var select = $('<select class="input select active-cell"' + dataAttributes + '></select>').appendTo(cell);
+            var options = [];
+            var setVal = gridData.dataSource.data[index][field];
+            options.push(setVal);
+            for (var z = 0; z < gridData.columns[field].options.length; z++) {
+                if (setVal !== gridData.columns[field].options[z]) {
+                    options.push(gridData.columns[field].options[z]);
+                }
+            }
+            for (var k = 0; k < options.length; k++) {
+                var opt = $('<option value="' + options[k] + '">' + options[k] + '</option>');
+                select.append(opt);
+            }
+            select.val(setVal);
+            select[0].focus();
+
+            if (gridValidation) select.addClass('inputValidate');
+
+            if (gridValidation && dataAttributes !== '') {
+                attachValidationListener(select[0]);
+            }
+            else {
+                select.on('blur', function cellEditBlurHandler() {
+                    saveCellSelectData(select);
+                });
+            }
+            if (gridData.beforeCellEdit && gridData.beforeCellEdit.length) {
+                for (var x = 0; x < gridData.beforeCellEdit.length; x++) {
+                    gridData.beforeCellEdit[x].call(this, null);
+                }
+            }
+        });
     }
 
     function setupCellValidation(columnValidation, dataAttributes) {
@@ -1619,13 +1631,11 @@ var grid = (function _grid($) {
     function createFilterDiv(type, field, grid, title) {
         var filterDiv = $('<div class="filter-div" data-parentfield="' + field + '" data-type="' + type + '"></div>').appendTo(grid);
         var domName = title ? title : type;
-        var filterInput, span, select, resetButton, button;
+        var filterInput, resetButton, button,
+            span = $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv),
+            select = $('<select class="filterSelect select"></select>').appendTo(filterDiv);
         switch (type) {
             case 'number':
-            case 'currency':
-            case 'percent':
-                span = $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv);
-                select = $('<select class="filterSelect select"></select>').appendTo(filterDiv);
                 select.append('<option value="eq">Equal to:</option>');
                 select.append('<option value="neq">Not equal to:</option>');
                 select.append('<option value="gte">Greater than or equal to:</option>');
@@ -1633,74 +1643,44 @@ var grid = (function _grid($) {
                 select.append('<option value="gt">Greater than:</option>');
                 select.append('<option value="lte">Less than or equal to:</option>');
                 select.append('<option value="lt">Less than:</option>');
-
                 filterInput = $('<input type="text" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
-                resetButton = $('<input type="button" value="Reset" class="button resetButton" data-field="' + field + '"/>').appendTo(filterDiv);
-                button = $('<input type="button" value="Filter" class="filterButton button" data-field="' + field + '"/>').appendTo(filterDiv);
-
-                resetButton.on('click', resetButtonClickHandler);
-                button.on('click', filterButtonClickHandler);
                 break;
             case 'date':
-            case 'datetime':
-                span = $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv);
-                select = $('<select class="filterSelect select"></select>').appendTo(filterDiv);
                 select.append('<option value="eq">Equal to:</option>');
                 select.append('<option value="neq">Not equal to:</option>');
                 select.append('<option value="gte">Equal to or later than:</option>');
                 select.append('<option value="gt">Later than:</option>');
                 select.append('<option value="lte">Equal to or before:</option>');
                 select.append('<option value="lt">Before:</option>');
-
                 filterInput = $('<input type="date" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
-                resetButton = $('<input type="button" value="Reset" class="button resetButton" data-field="' + field + '"/>').appendTo(filterDiv);
-                button = $('<input type="button" value="Filter" class="filterButton button" data-field="' + field + '"/>').appendTo(filterDiv);
-                resetButton.on('click', resetButtonClickHandler);
-                button.on('click', filterButtonClickHandler);
                 break;
             case 'time':
-                span = $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv);
-                select = $('<select class="filterSelect select"></select>').appendTo(filterDiv);
                 select.append('<option value="eq">Equal to:</option>');
                 select.append('<option value="neq">Not equal to:</option>');
                 select.append('<option value="gte">Equal to or later than:</option>');
                 select.append('<option value="gt">Later than:</option>');
                 select.append('<option value="lte">Equal to or before:</option>');
                 select.append('<option value="lt">Before:</option>');
-
                 filterInput = $('<input type="text" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
-                resetButton = $('<input type="button" value="Reset" class="button resetButton" data-field="' + field + '"/>').appendTo(filterDiv);
-                button = $('<input type="button" value="Filter" class="filterButton button" data-field="' + field + '"/>').appendTo(filterDiv);
-                resetButton.on('click', resetButtonClickHandler);
-                button.on('click', filterButtonClickHandler);
                 break;
             case 'boolean':
-                span = $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv);
-                select = $('<select class="filterSelect select"></select>').appendTo(filterDiv);
                 select.append('<option value="eq">Equal to:</option>');
-
                 var optSelect = $('<select class="filterSelect"></select>').appendTo(span);
                 optSelect.append('<option value="true">True</option>');
                 optSelect.append('<option value="false">False</option>');
-                resetButton = $('<input type="button" value="Reset" class="button resetButton" data-field="' + field + '"/>').appendTo(filterDiv);
-                button = $('<input type="button" value="Filter" class="filterButton button" data-field="' + field + '"/>').appendTo(filterDiv);
-                resetButton.on('click', resetButtonClickHandler);
-                button.on('click', filterButtonClickHandler);
                 break;
             case 'string':
-                span = $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv);
-                select = $('<select class="filterSelect select"></select>').appendTo(filterDiv);
                 select.append('<option value="eq">Equal to:</option>');
                 select.append('<option value="neq">Not equal to:</option>');
                 select.append('<option value="ct">Contains:</option>');
                 select.append('<option value="nct">Does not contain:</option>');
                 filterInput = $('<input class="filterInput input" type="text" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
-                resetButton = $('<input type="button" value="Reset" class="button resetButton" data-field="' + field + '"/>').appendTo(filterDiv);
-                button = $('<input type="button" value="Filter" class="filterButton button" data-field="' + field + '"/>').appendTo(filterDiv);
-                resetButton.on('click', resetButtonClickHandler);
-                button.on('click', filterButtonClickHandler);
                 break;
         }
+        resetButton = $('<input type="button" value="Reset" class="button resetButton" data-field="' + field + '"/>').appendTo(filterDiv);
+        button = $('<input type="button" value="Filter" class="filterButton button" data-field="' + field + '"/>').appendTo(filterDiv);
+        resetButton.on('click', resetButtonClickHandler);
+        button.on('click', filterButtonClickHandler);
         if (filterInput && type !=='time' && type !== 'date')
             filterInputValidation(filterInput);
     }
@@ -2502,14 +2482,38 @@ var grid = (function _grid($) {
     }
 
     function cloneGridData(gridData) { //Clones grid data so pass-by-reference doesn't mess up the values in other grids.
-        if (gridData == null || typeof (gridData) != 'object')
+        if (gridData == null || typeof (gridData) !== 'object')
             return gridData;
 
+        if (isArray(gridData))
+            return cloneArray(gridData);
         var temp = {};
         for (var key in gridData)
             temp[key] = cloneGridData(gridData[key]);
 
         return temp;
+    }
+
+    function isArray(obj) {
+        if (typeof obj !== 'object')
+            return false;
+        return Object.prototype.toString.call(obj) === '[object Array]';
+    }
+
+    function cloneArray(arr) {
+        var length = arr.length,
+            newArr = new arr.constructor(length);
+
+        if (length && typeof arr[0] == 'string' && hasOwnProperty.call(arr, 'index')) {
+            newArr.index = arr.index;
+            newArr.input = arr.input;
+        }
+
+        var index = -1;
+        while (++index < length) {
+            newArr[index] = arr[index];
+        }
+        return newArr;
     }
 
     storage = {
