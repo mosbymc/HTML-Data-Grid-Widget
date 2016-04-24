@@ -1,0 +1,14 @@
+{
+  "disallowAnonymousFunctions": true,
+  "disallowArrowFunctions": true,
+  "disallowKeywords": ["with", "eval", "class"],
+  "disallowShorthandArrowFunctions": true,
+  "requireSemicolons": true,
+  "disallowMultipleLineBreaks": true,
+  "disallowSpaceAfterPrefixUnaryOperators": ["++", "--", "+", "-", "~", "!"],
+  "disallowSpaceBeforePostfixUnaryOperators": ["++", "--"],
+  "disallowSpacesInCallExpression": true,
+  "disallowTrailingComma": true,
+  "validateQuoteMarks": "'",
+  "excludeFiles": ["./routes/**", "./tests/**", "./**", "./public/**"]
+}

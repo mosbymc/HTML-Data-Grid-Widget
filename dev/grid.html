@@ -1,0 +1,23 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+        "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+    <link rel="stylesheet" href="http://localhost:3000/dev/styles/grid.css" />
+    <link rel="stylesheet" href="http://localhost:3000/dev/styles/gridCustom.css" />
+    <link rel="stylesheet" href="http://localhost:3000/dev/styles/form.css" />
+    <script type="text/javascript" src="http://localhost:3000/dev/scripts/jquery-1.11.1.js"></script>
+    <script type="text/javascript" src="http://localhost:3000/dev/scripts/gridData2.js"></script>
+    <script type="text/javascript" src="http://localhost:3000/dev/scripts/grid.js"></script>
+    <script type="text/javascript" src="http://localhost:3000/dev/scripts/validator.js"></script>
+    <script type="text/javascript" src="http://localhost:3000/dev/scripts/formatter.js"></script>
+    <!--<script type="text/javascript" src="http://cdn.datatables.net/1.11.1/js/jquery.dataTables.min.js"></script>-->
+    <script type="text/javascript">
+        function init() {
+            grid.createGrid(gridData, document.getElementById("mGrid"));
+        }
+    </script>
+</head>
+<body id="body" onload="init()">
+<div id="mGrid" style="width:1600px; margin-left:auto; margin-right:auto; margin-top:100px;"></div>
+</body>
+</html>

@@ -1,6 +1,3 @@
-# Build directory
-build
-
 # Temp directory
 .tmp
 
@@ -17,3 +14,5 @@ node_modules
 jsdoc
 esdoc
 yuidoc
+
+.idea

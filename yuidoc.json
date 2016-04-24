@@ -1,0 +1,8 @@
+{
+  "name": "Grid Widget",
+  "description": "An HTML grid widget",
+  "options": {
+    "outdir": "./yuidoc",
+    "paths": "./src/scripts/grid.js"
+  }
+}
