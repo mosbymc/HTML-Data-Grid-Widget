@@ -13,6 +13,7 @@ BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR P
 NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+/*
 /*exported grid*/
 /**
  * grid module - object for creating and manipulating grid widgets
@@ -528,7 +529,7 @@ var grid = (function _grid($) {
      */
     function getInitialGridData(dataSource, callback) {
         if (dataSource.data)
-            callback(null, dataSource.data);
+            callback(null, { data: dataSource.data, rowCount: dataSource.rowCount });
         else if (typeof dataSource.get == 'function') {
             dataSource.get({
                 pageSize: 25,
@@ -565,10 +566,8 @@ var grid = (function _grid($) {
         storage.grids[id].putRequest = {};
         if (!storage.grids[id].dataSource.rowCount) storage.grids[id].dataSource.rowCount = gridData.dataSource.data.length;
 
-        var buildSummary = (gridData.summaryRow && gridData.summaryRow.positionAt === 'top');
-        if (buildSummary) {
-            buildHeaderAggregations(gridData, id);
-        }
+        if (gridData.summaryRow && gridData.summaryRow.positionAt === 'top') buildHeaderAggregations(gridData, id);
+
         createGridFooter(gridDiv, gridData);
         createGridContent(gridData, gridDiv, true);
     }
@@ -640,33 +639,7 @@ var grid = (function _grid($) {
                 setSortableClickListener(th);
             }
             if (gridData.columns[col].filterable) {
-                var type = gridData.columns[col].type || 'string';
-                var anchor = $('<a href="#"></a>').appendTo(th);
-                anchor.append('<span class="filterSpan" data-type="' + type + '" data-field="' + th.data('field') + '"></span>');
-                attachFilterListener(anchor);
-                $(document).on('click', function hideFilterHandler(e) {
-                    if (!$(e.target).hasClass('filter-div')) {
-                        if ($(e.target).parents('.filter-div').length < 1) {
-                            $(document).find('.filter-div').each(function iterateFilterDivsCallback(idx, val) {
-                                $(val).addClass('hiddenFilter');
-                            });
-                        }
-                    }
-                });
-                $(document).on('scroll', function scrollFilterHandler() {
-                    $(document).find('.filter-div').each(function iterateFilterDivsCallback(idx, val) {
-                        var filter = $(val);
-                        if (!filter.hasClass('hiddenFilter')) {
-                            var gridWrapper = filter.parents('.grid-wrapper');
-                            var filterCell = gridWrapper.find('th').filter(function headerIterationCallback(idx, val) {
-                                return $(val).data('field') === filter.data('parentfield');
-                            });
-                            var filterCellOffset = filterCell.offset();
-                            filter.css('top', (filterCellOffset.top + filterCell.height() - $(window).scrollTop()));
-                            filter.css('left', (filterCellOffset.left + filterCell.width() - $(window).scrollLeft()));
-                        }
-                    });
-                });
+                setFilterableClickListener(th, gridData, col);
             }
             index++;
         }
@@ -714,6 +687,10 @@ var grid = (function _grid($) {
         for (var col in gridData.columns) {
             var type = gridData.columns[col].type || '';
             var text;
+            if (!gridData.summaryRow[col]) {
+                sRow[col] = '';
+                continue;
+            }
             if (gridData.summaryRow[col].value) {
                 if (gridData.summaryRow[col].type) {
                     text = getFormattedCellText(gridId, col, gridData.summaryRow[col].value);
@@ -858,20 +835,6 @@ var grid = (function _grid($) {
             }
         }
 
-        $('.group_acc_link').each(function iterateAccordionsCallback(idx, val) {
-            $(val).data('state', 'open');
-        }).on('click', function groupedAccordionsClickListenerCallback(e) {
-            var accRow = $(e.currentTarget).parents('tr');
-            if ($(e.currentTarget).data('state') === 'open') {
-                $(e.currentTarget).data('state', 'closed').removeClass('sort-desc').addClass('sort-asc');
-                accRow.nextUntil('.grouped_row_header').css('display', 'none');
-            }
-            else {
-                $(e.currentTarget).data('state', 'open').removeClass('sort-asc').addClass('sort-desc');
-                accRow.nextUntil('.grouped_row_header').css('display', 'table-row');
-            }
-        });
-
         for (var k = 0; k < columns.length; k++) {
             colGroup.append('<col/>');
         }
@@ -885,6 +848,8 @@ var grid = (function _grid($) {
                 sumRow.append('<td data-field="' + col + '" class="summary-cell-footer">' + sum[col] + '</td>');
             }
         }
+
+        createGroupTrEventHandlers();
 
         gridContent.on('scroll', function contentDivScrollCallback(e) {
             if (resizing) return;
@@ -913,6 +878,22 @@ var grid = (function _grid($) {
         storage.grids[id].dataSource.data = gridData.dataSource.data;
         loader.remove();
         storage.grids[id].updating = false;
+    }
+
+    function createGroupTrEventHandlers() {
+        $('.group_acc_link').each(function iterateAccordionsCallback(idx, val) {
+            $(val).data('state', 'open');
+        }).on('click', function groupedAccordionsClickListenerCallback(e) {
+            var accRow = $(e.currentTarget).parents('tr');
+            if ($(e.currentTarget).data('state') === 'open') {
+                $(e.currentTarget).data('state', 'closed').removeClass('sort-desc').addClass('sort-asc');
+                accRow.nextUntil('.grouped_row_header').css('display', 'none');
+            }
+            else {
+                $(e.currentTarget).data('state', 'open').removeClass('sort-asc').addClass('sort-desc');
+                accRow.nextUntil('.grouped_row_header').css('display', 'table-row');
+            }
+        });
     }
 
     function makeCellEditable(gridDiv, id, td) {
@@ -948,9 +929,7 @@ var grid = (function _grid($) {
             switch (type) {
                 case 'bool':
                     input = $('<input type="checkbox" class="input checkbox active-cell"' + dataAttributes + '/>').appendTo(cell);
-                    if (val || val === 'true') {
-                        input[0].checked = true;
-                    }
+                    if (val || val === 'true') input[0].checked = true;
                     else input[0].checked = false;
                     break;
                 case 'number':
@@ -2020,6 +1999,36 @@ var grid = (function _grid($) {
         });
     }
 
+    function setFilterableClickListener(elem, gridData, col) {
+        var type = gridData.columns[col].type || 'string';
+        var anchor = $('<a href="#"></a>').appendTo(elem);
+        anchor.append('<span class="filterSpan" data-type="' + type + '" data-field="' + elem.data('field') + '"></span>');
+        attachFilterListener(anchor);
+        $(document).on('click', function hideFilterHandler(e) {
+            if (!$(e.target).hasClass('filter-div')) {
+                if ($(e.target).parents('.filter-div').length < 1) {
+                    $(document).find('.filter-div').each(function iterateFilterDivsCallback(idx, val) {
+                        $(val).addClass('hiddenFilter');
+                    });
+                }
+            }
+        });
+        $(document).on('scroll', function scrollFilterHandler() {
+            $(document).find('.filter-div').each(function iterateFilterDivsCallback(idx, val) {
+                var filter = $(val);
+                if (!filter.hasClass('hiddenFilter')) {
+                    var gridWrapper = filter.parents('.grid-wrapper');
+                    var filterCell = gridWrapper.find('th').filter(function headerIterationCallback(idx, val) {
+                        return $(val).data('field') === filter.data('parentfield');
+                    });
+                    var filterCellOffset = filterCell.offset();
+                    filter.css('top', (filterCellOffset.top + filterCell.height() - $(window).scrollTop()));
+                    filter.css('left', (filterCellOffset.left + filterCell.width() - $(window).scrollLeft()));
+                }
+            });
+        });
+    }
+
     function swapContentCells(gridId, droppedIndex, targetIndex) {
         var gridData = storage.grids[gridId];
         $('#grid-content-' + gridId).find('tr').each(function iterateContentRowsCallback(idx, val) {
@@ -2485,19 +2494,14 @@ var grid = (function _grid($) {
         if (gridData == null || typeof (gridData) !== 'object')
             return gridData;
 
-        if (isArray(gridData))
+        if (Object.prototype.toString.call(gridData) === '[object Array]')
             return cloneArray(gridData);
+
         var temp = {};
         for (var key in gridData)
             temp[key] = cloneGridData(gridData[key]);
 
         return temp;
-    }
-
-    function isArray(obj) {
-        if (typeof obj !== 'object')
-            return false;
-        return Object.prototype.toString.call(obj) === '[object Array]';
     }
 
     function cloneArray(arr) {
