@@ -1,0 +1,44 @@
+@import "grid-fonts";
+@import "grid-colors";
+
+.grid-th-td() {
+  border-collapse: separate;
+  padding: 10px 12px;
+  display: table-cell;
+  box-sizing: content-box;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.font-settings(@font-size: @base-font-size, @font-weight: @base-font-weight) {
+  font-size: @font-size;
+  font-family: @base-font-family;
+  font-variant: @base-font-variant;
+  font-style: @base-font-style;
+  font-weight: @font-weight;
+}
+
+.page-span-styles(@url: '') {
+  background: @black url(@url) no-repeat;
+  border-color: @black;
+  box-sizing: content-box;
+  color: @dark-grey;
+  cursor: pointer;
+  display: inline-block;
+  .font-settings(0, @base-font-weight);
+  height: 16px;
+  line-height: 0;
+  .list-styles;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  text-align: center;
+  vertical-align: middle;
+  white-space: normal;
+  width: 16px;
+  zoom: 1;
+}
+
+.list-styles() {
+  list-style: none outside none;
+}
