@@ -1,75 +1,3 @@
-/*
- Grid Features
-
- - dynamic columns
- - nested drill down
- - loading graphic
- - event hooks
- - graphic/logo support
- - labeling/color schemes
- - export to excel (JQuery DataTables - table tools)
- - Column formatting
-
- Types: date, number, string, boolean, currency, time, datetime
-
- TODO:
- - Need to reattach event listeners for sorting and filtering when columns are reordered. - DONE
- - Need to reorder summary row on column reorder - DONE
- - Remove click handlers on in-cell edit to stop event propagation and check the event target/currentTarget - DONE
- - On cell edit/select, need to make sure that the prefix/postfix is applied to the value in the cell - DONE
- - Work on resizing columns - DONE
- - Need to figure out how to properly display the last cell in the header row - DONE
- - Figure out column sizing - DONE
- - Specify a min-width for column re-sizing, beyond which the cell cannot be made smaller - DONE
- - Add loading icon (fa fa-spinner fa-pulse fa-2x) - DONE
- - Fix editable/selectable cells with client-side paging - DONE
- - Fix column sizing issue - DONE
- - Fix paging + row counter - DONE
- - Add max and min for sum row - DONE
- - Refactor class names and ids + storage attr names - DONE
- - Stop page from jumping when links are clicked - DONE
- - Make sure reordered columns don't swap sizes - DONE
- - Prevent horizontal scroll when sorting/filtering - DONE
- - Make sure when removing filter that it remain sorted - DONE
- - Figure out loader placement - DONE
- - Fix column resizing after column reordering (resize, then reorder, then resize) - DONE
- - Fix saving the new value to work on empty string/undefined - DONE
- - Should probably clone grid data on create. Maintain a separate copy of data from what Devs have access to - DONE
- - Need to create grid content from "create" function, not headers function - DONE
- - Add a "rowCount" field to the dateSource for server-side actions - DONE
- - Fix page size changing to stay on correct page, and display the correct rows - DONE
- - Fix filtering on empty string - DONE
- - Fix "Delete Changes" when a new value has been selected twice before saving - DONE
- - Figure out why "insertKey" isn't working on highlights - DONE
- - Add ability to alternate row colors - DONE
- - Fix resizing on grouped rows - DONE
- - Add "undo" filter/sort/group ability in toolbar - DONE
- - During paging, grouped and/or sorted data is being un-grouped (filtered data too likely) - DONE
- - Fix paging on filtered data - DONE
- - Redo summary row so that it works with server-side paging as well - DONE
- - Fix reordering on grouped grid - DONE
- - See about only giving the dataSource.data the needed data for the current grid page - DONE
- - Add a template field for column data - DONE
- - Fix NaN/Undefined rows on filter/sorting - DONE
- - Add a field for custom classes to be applied to cells/rows - DONE
- - Change class setters for columns/rows to "attributes", include style attr - DONE
- - Redo aggregates on filter - DONE
- - Fire event on cell edit/select - DONE
- - Disable all buttons/inputs on grid when waiting for page content - DONE
- - Add getters for page data, selected row, column, cell - DONE
- - Add 'destroy' function to remove dom elements and events - DONE
- - Figure out how to get correct row index of 'originalData' when updating cell data on save - DONE
- - Add function to programatically update grid display data; dirty flag - DONE
- - Implement true aggregates + fix naming of row grouping - DONE
- - Ensure all types are implemented across the board (number, time, date, dateTime, boolean, string)
- - Add server paging + data saving/filtering/sorting
- - Add "transform" function to be called for the cell data in a column
- - Fix filtering/sorting on time
- - Prevent filtering on non-safe values/add character validation on input to filtering divs
- - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
- - Update API event methods to work with array and namespace
- - Check aggregations for existence of column before trying to build row's aggregates
- */
 /*exported grid*/
 /**
  * grid module - object for creating and manipulating grid widgets
@@ -121,10 +49,10 @@ var grid = (function _grid($) {
 
             createGridInstanceMethods(gridDiv, id);
 
-            if (gridData.useValidator && window.validator && typeof validator.setAdditionalEvents === 'function') validator.setAdditionalEvents(['blur', 'change']);
+            if (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') validator.setAdditionalEvents(['blur', 'change']);
             else gridData.useValidator = false;
 
-            if (!gridData.useFormatter || !window.formatter || typeof formatter.getFormattedInput !== 'function')
+            if (!gridData.useFormatter === true || !window.formatter || typeof formatter.getFormattedInput !== 'function')
                 gridData.useFormatter = false;
 
             if (gridData.constructor === Array) {
