@@ -13,22 +13,7 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
-
-
 /*
- Grid Features
-
- - dynamic columns
- - nested drill down
- - loading graphic
- - event hooks
- - graphic/logo support
- - labeling/color schemes
- - export to excel (JQuery DataTables - table tools)
- - Column formatting
-
- Types: date, number, string, boolean, currency, time, datetime
-
  TODO:
  - Need to reattach event listeners for sorting and filtering when columns are reordered. - DONE
  - Need to reorder summary row on column reorder - DONE
@@ -108,7 +93,7 @@ var grid = (function _grid($) {
      * @param {object} gridDiv - The DOM element that should be used to create the grid widget
      */
     function create(gridData, gridDiv) {
-        if (gridData && gridDiv) {
+        if (gridData && isDomElement(gridDiv)) {
             var id = storage.count;
             if (id > 0) {   //test to check if previously created grids still exist
                 var tmp = id - 1;
@@ -2594,6 +2579,10 @@ var grid = (function _grid($) {
             newArr[index] = arr[index];
         }
         return newArr;
+    }
+
+    function isDomElement(node) {
+        return node && node instanceof Element && node instanceof Node && typeof node.ownerDocument != null;
     }
 
     storage = {

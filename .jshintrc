@@ -7,7 +7,7 @@
   "unused": true,
   "eqnull": true,
   "validthis": true,
-  "predef": ["require", "console", "window", "document", "validator", "formatter", "module", "process", "setTimeout"],
+  "predef": ["require", "console", "window", "document", "validator", "formatter", "module", "process", "setTimeout", "Node", "Element"],
   "loopfunc": true,
   "boss": true,
   "expr": true,
