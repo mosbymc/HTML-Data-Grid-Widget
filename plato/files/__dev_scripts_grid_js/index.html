@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.29</p>
+      <p class="stat">55.28</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2542</p>
+      <p class="stat">2543</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">176.77</p>
+      <p class="stat">176.95</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">44.14</p>
+      <p class="stat">44.24</p>
     </div>
   </div>
 </div>
@@ -90,6 +90,23 @@
 <div class="container">
   <div class="row">
     <textarea id="file-source" class="col-md-12">/*
+ The MIT License (MIT)
+ Copyright © 2014 &lt;copyright holders&gt;
+
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”),
+ to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*/
+
+
+/*
  Grid Features
 
  - dynamic columns
@@ -160,6 +177,8 @@
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Update API event methods to work with array and namespace
  - Check aggregations for existence of column before trying to build row&#039;s aggregates
+ - Add integration tests if possible
+ - Add type checking - passed in grid data
  */
 /*exported grid*/
 /**
@@ -212,11 +231,12 @@ var grid = (function _grid($) {
 
             createGridInstanceMethods(gridDiv, id);
 
-            if (gridData.useValidator &amp;&amp; window.validator &amp;&amp; typeof validator.setAdditionalEvents === &#039;function&#039;) validator.setAdditionalEvents([&#039;blur&#039;, &#039;change&#039;]);
+            if (gridData.useValidator === true &amp;&amp; window.validator &amp;&amp; typeof validator.setAdditionalEvents === &#039;function&#039;) validator.setAdditionalEvents([&#039;blur&#039;, &#039;change&#039;]);
             else gridData.useValidator = false;
 
-            if (!gridData.useFormatter || !window.formatter || typeof formatter.getFormattedInput !== &#039;function&#039;)
-                gridData.useFormatter = false;
+            if (gridData.useFormatter === true &amp;&amp; window.formatter &amp;&amp; typeof formatter.getFormattedInput === &#039;function&#039;)
+                gridData.useFormatter = true;
+            else gridData.useFormatter = false;
 
             if (gridData.constructor === Array) {
                 createGridColumnsFromArray(gridData, gridDiv);
@@ -778,11 +798,11 @@ var grid = (function _grid($) {
                 }
             }
 
-            if (gridData.reorderable || gridData.columns[col].reorderable) {
+            if (gridData.reorderable &amp;&amp; (typeof gridData.columns[col].reorderable === &#039;undefined&#039; || gridData.columns[col].reorderable)) {
                 th.prop(&#039;draggable&#039;, true);
                 setDragAndDropListeners(th);
             }
-            if (gridData.sortable || gridData.columns[col].sortable) {
+            if (gridData.sortable &amp;&amp; (typeof gridData.columns[col].sortable === &#039;undefined&#039; || gridData.columns[col].sortable)) {
                 setSortableClickListener(th);
             }
             if (gridData.columns[col].filterable) {

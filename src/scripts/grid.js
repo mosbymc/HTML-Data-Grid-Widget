@@ -1,4 +1,21 @@
 /*
+ The MIT License (MIT)
+ Copyright © 2014 <copyright holders>
+
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”),
+ to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*/
+
+
+/*
  Grid Features
 
  - dynamic columns
@@ -69,6 +86,8 @@
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Update API event methods to work with array and namespace
  - Check aggregations for existence of column before trying to build row's aggregates
+ - Add integration tests if possible
+ - Add type checking - passed in grid data
  */
 /*exported grid*/
 /**
@@ -121,11 +140,12 @@ var grid = (function _grid($) {
 
             createGridInstanceMethods(gridDiv, id);
 
-            if (gridData.useValidator && window.validator && typeof validator.setAdditionalEvents === 'function') validator.setAdditionalEvents(['blur', 'change']);
+            if (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') validator.setAdditionalEvents(['blur', 'change']);
             else gridData.useValidator = false;
 
-            if (!gridData.useFormatter || !window.formatter || typeof formatter.getFormattedInput !== 'function')
-                gridData.useFormatter = false;
+            if (gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function')
+                gridData.useFormatter = true;
+            else gridData.useFormatter = false;
 
             if (gridData.constructor === Array) {
                 createGridColumnsFromArray(gridData, gridDiv);
@@ -687,11 +707,11 @@ var grid = (function _grid($) {
                 }
             }
 
-            if (gridData.reorderable || gridData.columns[col].reorderable) {
+            if (gridData.reorderable && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable)) {
                 th.prop('draggable', true);
                 setDragAndDropListeners(th);
             }
-            if (gridData.sortable || gridData.columns[col].sortable) {
+            if (gridData.sortable && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable)) {
                 setSortableClickListener(th);
             }
             if (gridData.columns[col].filterable) {
