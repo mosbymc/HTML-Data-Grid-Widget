@@ -128,9 +128,7 @@ var grid = (function _grid($) {
             if (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') validator.setAdditionalEvents(['blur', 'change']);
             else gridData.useValidator = false;
 
-            if (gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function')
-                gridData.useFormatter = true;
-            else gridData.useFormatter = false;
+            gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function';
 
             if (gridData.constructor === Array) {
                 createGridColumnsFromArray(gridData, gridDiv);
@@ -140,7 +138,7 @@ var grid = (function _grid($) {
                 getInitialGridData(gridData.dataSource, function initialGridDataCallback(err, res) {
                     if (!err) {
                         gridData.dataSource.data = res.data;
-                        gridData.dataSource.rowCount = res.rowCount;
+                        gridData.dataSource.rowCount = res.rowCount || 25;
                         if (res.aggregations) {
                             for (var col in gridData.summaryRow) {
                                 if (res.aggregations[col])
@@ -589,7 +587,7 @@ var grid = (function _grid($) {
      * @param {function} callback - The callback function
      */
     function getInitialGridData(dataSource, callback) {
-        if (dataSource.data)
+        if (dataSource && typeof dataSource.data === 'object')
             callback(null, { data: dataSource.data, rowCount: dataSource.rowCount });
         else if (typeof dataSource.get == 'function') {
             dataSource.get({
@@ -681,25 +679,27 @@ var grid = (function _grid($) {
         }
 
         for (var col in gridData.columns) {
+            if (typeof col !== 'object')
+                continue;
             $('<col/>').appendTo(colgroup);
             var text = gridData.columns[col].title || col;
             var th = $('<th id="' + col + '_grid_id_' + gridHeader.data('grid_header_id') + '" data-field="' + col + '" data-index="' + index + '" class=grid-header-cell></th>').appendTo(headerRow);
             th.text(text);
 
-            if (gridData.columns[col].attributes && gridData.columns[col].attributes.headerClasses && gridData.columns[col].attributes.headerClasses.constructor ===  Array) {
+            if (typeof gridData.columns[col].attributes === 'object' && gridData.columns[col].attributes.headerClasses && gridData.columns[col].attributes.headerClasses.constructor ===  Array) {
                 for (var i = 0; i < gridData.columns[col].attributes.headerClasses.length; i++) {
                     th.addClass(gridData.columns[col].attributes.headerClasses[i]);
                 }
             }
 
-            if (gridData.reorderable && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable)) {
+            if (gridData.reorderable === true && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable === true)) {
                 th.prop('draggable', true);
                 setDragAndDropListeners(th);
             }
-            if (gridData.sortable && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable)) {
+            if (gridData.sortable === true && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable === true)) {
                 setSortableClickListener(th);
             }
-            if (gridData.columns[col].filterable) {
+            if (gridData.columns[col].filterable === true) {
                 setFilterableClickListener(th, gridData, col);
             }
             index++;
@@ -746,7 +746,7 @@ var grid = (function _grid($) {
             data = gridData.alteredData ? gridData.alteredData :  gridData.dataSource.data,
             total, i;
         for (var col in gridData.columns) {
-            var type = gridData.columns[col].type || '';
+            var type = typeof gridData.columns[col].type === 'string' ? gridData.columns[col].type : '';
             var text;
             if (!gridData.summaryRow[col]) {
                 sRow[col] = '';
