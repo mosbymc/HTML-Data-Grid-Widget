@@ -90,9 +90,9 @@ gridDataHelpers.merge = function tmpMerge(left, right, field, type) {
             leftVal = gridDataHelpers.getNumbersFromTime(left[0][field]);
             rightVal = gridDataHelpers.getNumbersFromTime(right[0][field]);
 
-            if (left[0][field].indexOf('PM') > -1)
+            if (~left[0][field].indexOf('PM'))
                 leftVal[0] += 12;
-            if (right[0][field].indexOf('PM') > -1)
+            if (~right[0][field].indexOf('PM'))
                 rightVal[0] += 12;
 
             leftVal = gridDataHelpers.convertTimeArrayToSeconds(leftVal);
@@ -133,7 +133,7 @@ gridDataHelpers.getNumbersFromTime = function getNumbersFromTime(val) {
     if (timeGroups[2]) {
         minutes = +timeGroups[3] || 0;
         seconds = +timeGroups[4]  || 0;
-        meridiem = +timeGroups[5] || null;
+        meridiem = timeGroups[5] || null;
     }
     else if (timeGroups[6]) {
         minutes = +timeGroups[8] || 0;
@@ -152,7 +152,8 @@ gridDataHelpers.getNumbersFromTime = function getNumbersFromTime(val) {
 };
 
 gridDataHelpers.convertTimeArrayToSeconds = function convertTimeArrayToSeconds(timeArray) {
-    return 3660*timeArray[0] + 60*timeArray[1] + timeArray[2];
+    var hourVal = timeArray[0] === 12 || timeArray[0] === 24 ? timeArray[0] - 12 : timeArray[0];
+    return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
 };
 
 var dataTypes = {

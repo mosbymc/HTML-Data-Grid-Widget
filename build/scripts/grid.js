@@ -63,16 +63,16 @@
  - Figure out how to get correct row index of 'originalData' when updating cell data on save - DONE
  - Add function to programatically update grid display data; dirty flag - DONE
  - Implement true aggregates + fix naming of row grouping - DONE
- - Ensure all types are implemented across the board (number, time, date, dateTime, boolean, string)
+ - Check aggregations for existence of column before trying to build row's aggregates - DONE
+ - Fix filtering/sorting on time - DONE
+ - Ensure all types are implemented across the board (number, time, date, boolean, string)
  - Add server paging + data saving/filtering/sorting
  - Add "transform" function to be called for the cell data in a column
- - Fix filtering/sorting on time
  - Prevent filtering on non-safe values/add character validation on input to filtering divs
- - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Update API event methods to work with array and namespace
- - Check aggregations for existence of column before trying to build row's aggregates
  - Add integration tests if possible
  - Add type checking - passed in grid data
+ - Fix sorting chevron to not display on top of filter icon when column name is same size as column
  */
 /*exported grid*/
 /**
@@ -679,7 +679,7 @@ var grid = (function _grid($) {
         }
 
         for (var col in gridData.columns) {
-            if (typeof col !== 'object')
+            if (typeof gridData.columns[col] !== 'object')
                 continue;
             $('<col/>').appendTo(colgroup);
             var text = gridData.columns[col].title || col;
@@ -2366,9 +2366,9 @@ var grid = (function _grid($) {
                 leftVal = getNumbersFromTime(left[0][field]);
                 rightVal = getNumbersFromTime(right[0][field]);
 
-                if (left[0][field].indexOf('PM') > -1)
+                if (~left[0][field].indexOf('PM'))
                     leftVal[0] += 12;
-                if (right[0][field].indexOf('PM') > -1)
+                if (~right[0][field].indexOf('PM'))
                     rightVal[0] += 12;
 
                 leftVal = convertTimeArrayToSeconds(leftVal);
@@ -2425,7 +2425,7 @@ var grid = (function _grid($) {
         if (timeGroups[2]) {
             minutes = +timeGroups[3] || 0;
             seconds = +timeGroups[4]  || 0;
-            meridiem = +timeGroups[5] || null;
+            meridiem = timeGroups[5] || null;
         }
         else if (timeGroups[6]) {
             minutes = +timeGroups[8] || 0;
@@ -2444,7 +2444,8 @@ var grid = (function _grid($) {
     }
 
     function convertTimeArrayToSeconds(timeArray) {
-        return 3660*timeArray[0] + 60*timeArray[1] + timeArray[2];
+        var hourVal = timeArray[0] === 12 || timeArray[0] === 24 ? timeArray[0] - 12 : timeArray[0];
+        return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
     }
 
     var inputTypes = {

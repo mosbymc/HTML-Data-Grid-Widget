@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2547</p>
+      <p class="stat">2548</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">180.34</p>
+      <p class="stat">180.24</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">44.45</p>
+      <p class="stat">44.53</p>
     </div>
   </div>
 </div>
@@ -154,16 +154,16 @@
  - Figure out how to get correct row index of &#039;originalData&#039; when updating cell data on save - DONE
  - Add function to programatically update grid display data; dirty flag - DONE
  - Implement true aggregates + fix naming of row grouping - DONE
- - Ensure all types are implemented across the board (number, time, date, dateTime, boolean, string)
+ - Check aggregations for existence of column before trying to build row&#039;s aggregates - DONE
+ - Fix filtering/sorting on time - DONE
+ - Ensure all types are implemented across the board (number, time, date, boolean, string)
  - Add server paging + data saving/filtering/sorting
  - Add &quot;transform&quot; function to be called for the cell data in a column
- - Fix filtering/sorting on time
  - Prevent filtering on non-safe values/add character validation on input to filtering divs
- - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Update API event methods to work with array and namespace
- - Check aggregations for existence of column before trying to build row&#039;s aggregates
  - Add integration tests if possible
  - Add type checking - passed in grid data
+ - Fix sorting chevron to not display on top of filter icon when column name is same size as column
  */
 /*exported grid*/
 /**
@@ -770,7 +770,7 @@ var grid = (function _grid($) {
         }
 
         for (var col in gridData.columns) {
-            if (typeof col !== &#039;object&#039;)
+            if (typeof gridData.columns[col] !== &#039;object&#039;)
                 continue;
             $(&#039;&lt;col/&gt;&#039;).appendTo(colgroup);
             var text = gridData.columns[col].title || col;
@@ -2457,9 +2457,9 @@ var grid = (function _grid($) {
                 leftVal = getNumbersFromTime(left[0][field]);
                 rightVal = getNumbersFromTime(right[0][field]);
 
-                if (left[0][field].indexOf(&#039;PM&#039;) &gt; -1)
+                if (~left[0][field].indexOf(&#039;PM&#039;))
                     leftVal[0] += 12;
-                if (right[0][field].indexOf(&#039;PM&#039;) &gt; -1)
+                if (~right[0][field].indexOf(&#039;PM&#039;))
                     rightVal[0] += 12;
 
                 leftVal = convertTimeArrayToSeconds(leftVal);
@@ -2516,7 +2516,7 @@ var grid = (function _grid($) {
         if (timeGroups[2]) {
             minutes = +timeGroups[3] || 0;
             seconds = +timeGroups[4]  || 0;
-            meridiem = +timeGroups[5] || null;
+            meridiem = timeGroups[5] || null;
         }
         else if (timeGroups[6]) {
             minutes = +timeGroups[8] || 0;
@@ -2535,7 +2535,8 @@ var grid = (function _grid($) {
     }
 
     function convertTimeArrayToSeconds(timeArray) {
-        return 3660*timeArray[0] + 60*timeArray[1] + timeArray[2];
+        var hourVal = timeArray[0] === 12 || timeArray[0] === 24 ? timeArray[0] - 12 : timeArray[0];
+        return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
     }
 
     var inputTypes = {
