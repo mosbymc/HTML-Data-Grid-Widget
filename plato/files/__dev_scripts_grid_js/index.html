@@ -917,7 +917,7 @@ var grid = (function _grid($) {
         var gcOffsets = gridContent.offset();
         var top = gcOffsets.top + (gridContent.height()/2) + $(window).scrollTop();
         var left = gcOffsets.left + (gridContent.width()/2) + $(window).scrollLeft();
-        var loader = $(&#039;&lt;span id=&quot;loader-span&quot; class=&quot;fa fa-spinner fa-pulse fa-2x&quot;&gt;&lt;/span&gt;&#039;).appendTo(gridContent).css(&#039;top&#039;, top).css(&#039;left&#039;, left);
+        var loader = $(&#039;&lt;span id=&quot;loader-span&quot; class=&quot;spinner&quot;&gt;&lt;/span&gt;&#039;).appendTo(gridContent).css(&#039;top&#039;, top).css(&#039;left&#039;, left);
         var contentTable = $(&#039;&lt;table id=&quot;&#039; + gridElem[0].id + &#039;_content&quot; style=&quot;height:auto;&quot;&gt;&lt;/table&gt;&#039;).appendTo(gridContent);
         var colGroup = $(&#039;&lt;colgroup&gt;&lt;/colgroup&gt;&#039;).appendTo(contentTable);
         var contentTBody = $(&#039;&lt;tbody&gt;&lt;/tbody&gt;&#039;).appendTo(contentTable);

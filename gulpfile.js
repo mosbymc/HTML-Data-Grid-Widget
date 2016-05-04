@@ -77,6 +77,7 @@ gulp.task('styles', ['clean-styles'], function() {
         .pipe(_.less())
         .pipe(_.plumber())
         .pipe(_.autoprefixer({ browsers: ['last 3 version', '> 5%']}))
+        .pipe(gulp.dest(config.dev + '/styles'))
         .pipe(gulp.dest(config.temp))
         .pipe(gulp.dest(config.build + 'styles'))
         .pipe(gulp.dest(config.source + 'styles'));
@@ -98,7 +99,7 @@ gulp.task('clean', function(done) {
 });
 
 gulp.task('clean-styles', function(done) {
-    clean([config.temp + '**/*.css', config.build + 'styles/**/*.css', config.source + 'styles/**/*.css'], done);
+    clean([config.devCss, config.temp + '**/*.css', config.build + 'styles/**/*.css', config.source + 'styles/**/*.css'], done);
 });
 
 gulp.task('clean-images', function(done) {

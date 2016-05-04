@@ -8,6 +8,7 @@ module.exports = function _gulpConfig() {
     return {
         buildJs: build + 'scripts/grid.js',
         buildCss: build + 'styles/grid.css',
+        devCss: dev + 'styles/grid.css',
         build: build,
         source: source,
         buildFiles: [build + 'styles', build + 'scripts'],
