@@ -68,6 +68,7 @@
  - Ensure all types are implemented across the board (number, time, date, boolean, string)
  - Add server paging + data saving/filtering/sorting
  - Add "transform" function to be called for the cell data in a column
+ - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Prevent filtering on non-safe values/add character validation on input to filtering divs
  - Update API event methods to work with array and namespace
  - Add integration tests if possible
@@ -90,10 +91,10 @@ var grid = (function _grid($) {
      * @function create
      * @static
      * @param {object} gridData - The dataSource object needed to initialize the grid
-     * @param {object} gridDiv - The DOM element that should be used to create the grid widget
+     * @param {object} gridElem - The DOM element that should be used to create the grid widget
      */
-    function create(gridData, gridDiv) {
-        if (gridData && isDomElement(gridDiv)) {
+    function create(gridData, gridElem) {
+        if (gridData && isDomElement(gridElem)) {
             var id = storage.count;
             if (id > 0) {   //test to check if previously created grids still exist
                 var tmp = id - 1;
@@ -103,8 +104,8 @@ var grid = (function _grid($) {
                     tmp--;
                 }
             }
-            gridDiv = $(gridDiv);
-            var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class=grid-wrapper></div>').appendTo(gridDiv);
+            gridElem = $(gridElem);
+            var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class=grid-wrapper></div>').appendTo(gridElem);
             var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class=grid-header-div></div>').appendTo(wrapperDiv);
             headerDiv.append('<div class=grid-header-wrapper></div>');
             wrapperDiv.append('<div id="grid-content-' + id + '" data-grid_content_id="' + id + '" class=grid-content-div></div>');
@@ -121,9 +122,9 @@ var grid = (function _grid($) {
                     columnReorder: []
                 }
             };
-            gridDiv[0].grid = {};
+            gridElem[0].grid = {};
 
-            createGridInstanceMethods(gridDiv, id);
+            createGridInstanceMethods(gridElem, id);
 
             if (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') validator.setAdditionalEvents(['blur', 'change']);
             else gridData.useValidator = false;
@@ -131,10 +132,10 @@ var grid = (function _grid($) {
             gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function';
 
             if (gridData.constructor === Array) {
-                createGridColumnsFromArray(gridData, gridDiv);
+                createGridColumnsFromArray(gridData, gridElem);
             }
             else {
-                createGridHeaders(gridData, gridDiv);
+                createGridHeaders(gridData, gridElem);
                 getInitialGridData(gridData.dataSource, function initialGridDataCallback(err, res) {
                     if (!err) {
                         gridData.dataSource.data = res.data;
@@ -145,7 +146,7 @@ var grid = (function _grid($) {
                                     gridData.summaryRow[col].value = res.aggregations[col];
                             }
                         }
-                        initializeGrid(id, gridData, gridDiv);
+                        initializeGrid(id, gridData, gridElem);
                     }
                     else {
                         //TODO: do something here
@@ -160,12 +161,12 @@ var grid = (function _grid($) {
      * passed to the 'create' function to initialize the grid widget
      * @method createGridInstanceMethods
      * @private
-     * @param {object} gridDiv - The DOM element that should be used to create the grid widget
+     * @param {object} gridElem - The DOM element that should be used to create the grid widget
      * @param {integer} gridId - The id of this grid's instance
      */
-    function createGridInstanceMethods(gridDiv, gridId) {
+    function createGridInstanceMethods(gridElem, gridId) {
         Object.defineProperty(
-            gridDiv[0].grid,
+            gridElem[0].grid,
             'activeCellData',
             {
                 /**
@@ -179,7 +180,7 @@ var grid = (function _grid($) {
                  * @returns {string|null} - cell data
                  */
                 get: function _getActiveCellData() {
-                    var cell = gridDiv.find('.active-cell');
+                    var cell = gridElem.find('.active-cell');
                     if (!cell.length)
                         return null;
                     if (cell[0].type === 'checkbox')
@@ -189,7 +190,7 @@ var grid = (function _grid($) {
             });
 
         Object.defineProperty(
-            gridDiv[0].grid,
+            gridElem[0].grid,
             'selectedRow',
             {
                 /**
@@ -203,7 +204,7 @@ var grid = (function _grid($) {
                  * @returns {integer} - cell row index
                  */
                 get: function _getSelectedRow() {
-                    var cell = gridDiv.find('.active-cell');
+                    var cell = gridElem.find('.active-cell');
                     if (!cell.length)
                         return null;
                     return cell.parents('tr').index();
@@ -211,7 +212,7 @@ var grid = (function _grid($) {
             });
 
         Object.defineProperty(
-            gridDiv[0].grid,
+            gridElem[0].grid,
             'selectedColumn',
             {
                 /**
@@ -226,7 +227,7 @@ var grid = (function _grid($) {
                  * @returns {Object|null} - {field: 'grid column name', columnIndex: 'column index'}
                  */
                 get: function _getSelectedColumn() {
-                    var cell = gridDiv.find('.active-cell');
+                    var cell = gridElem.find('.active-cell');
                     if (!cell.length)
                         return null;
                     var field = cell.parents('td').data('field');
@@ -236,7 +237,7 @@ var grid = (function _grid($) {
             });
 
         Object.defineProperties(
-            gridDiv[0].grid, {
+            gridElem[0].grid, {
                 'bindEvent': {
                     /**
                      * Binds event handlers to events
@@ -571,9 +572,9 @@ var grid = (function _grid($) {
                 }
             });
 
-        var keys = Object.getOwnPropertyNames(gridDiv[0].grid);
+        var keys = Object.getOwnPropertyNames(gridElem[0].grid);
         for (var i = 0 ; i < keys.length; i++) {
-            Object.preventExtensions(gridDiv[0].grid[keys[i]]);
+            Object.preventExtensions(gridElem[0].grid[keys[i]]);
         }
     }
 
@@ -612,14 +613,14 @@ var grid = (function _grid($) {
      * @private
      * @param {integer} id
      * @param {object} gridData
-     * @param {object} gridDiv
+     * @param {object} gridElem
      */
-    function initializeGrid(id, gridData, gridDiv) {
+    function initializeGrid(id, gridData, gridElem) {
         storage.grids[id] = cloneGridData(gridData);
         storage.grids[id].originalData = cloneGridData(gridData.dataSource.data);
         storage.grids[id].pageNum = 1;
         storage.grids[id].pageSize = gridData.pageSize || 25;
-        storage.grids[id].grid = gridDiv;
+        storage.grids[id].grid = gridElem;
         storage.grids[id].currentEdit = {};
         storage.grids[id].pageRequest = {};
         storage.grids[id].putRequest = {};
@@ -627,12 +628,12 @@ var grid = (function _grid($) {
 
         if (gridData.summaryRow && gridData.summaryRow.positionAt === 'top') buildHeaderAggregations(gridData, id);
 
-        createGridFooter(gridDiv, gridData);
-        createGridContent(gridData, gridDiv, true);
+        createGridFooter(gridElem, gridData);
+        createGridContent(gridData, gridElem, true);
     }
 
-    function addNewColumns(newData, gridDiv) {
-        var oldGrid = $(gridDiv).find('.grid-wrapper');
+    function addNewColumns(newData, gridElem) {
+        var oldGrid = $(gridElem).find('.grid-wrapper');
         var id = oldGrid.data('grid_id');
         var oldData = storage.grids[id].data;
 
@@ -651,8 +652,8 @@ var grid = (function _grid($) {
             }
         }
 
-        gridDiv.removeChild(oldGrid);
-        create(oldData, gridDiv);
+        gridElem.removeChild(oldGrid);
+        create(oldData, gridElem);
     }
 
     /**
@@ -661,10 +662,10 @@ var grid = (function _grid($) {
      * @for grid
      * @private
      * @param {object} gridData
-     * @param {object} gridDiv
+     * @param {object} gridElem
      */
-    function createGridHeaders(gridData, gridDiv) {
-        var gridHeader = gridDiv.find('.grid-header-div');
+    function createGridHeaders(gridData, gridElem) {
+        var gridHeader = gridElem.find('.grid-header-div');
         var gridHeadWrap = gridHeader.find('.grid-header-wrapper');
         var headerTable = $('<table></table>').appendTo(gridHeadWrap);
         headerTable.css('width','auto');
@@ -816,21 +817,21 @@ var grid = (function _grid($) {
      * @for grid
      * @private
      * @param {object} gridData
-     * @param {object} gridDiv
+     * @param {object} gridElem
      * @param {boolean} isNewGrid
      */
-    function createGridContent(gridData, gridDiv, isNewGrid) {
-        var gridContent = gridDiv.find('.grid-content-div').css('height', '250px');
+    function createGridContent(gridData, gridElem, isNewGrid) {
+        var gridContent = gridElem.find('.grid-content-div').css('height', '250px');
         var id = gridContent.data('grid_content_id');
         var gcOffsets = gridContent.offset();
         var top = gcOffsets.top + (gridContent.height()/2) + $(window).scrollTop();
         var left = gcOffsets.left + (gridContent.width()/2) + $(window).scrollLeft();
         var loader = $('<span id="loader-span" class="fa fa-spinner fa-pulse fa-2x"></span>').appendTo(gridContent).css('top', top).css('left', left);
-        var contentTable = $('<table id="' + gridDiv[0].id + '_content" style="height:auto;"></table>').appendTo(gridContent);
+        var contentTable = $('<table id="' + gridElem[0].id + '_content" style="height:auto;"></table>').appendTo(gridContent);
         var colGroup = $('<colgroup></colgroup>').appendTo(contentTable);
         var contentTBody = $('<tbody></tbody>').appendTo(contentTable);
         var columns = [];
-        gridDiv.find('th').each(function headerIterationCallback(idx, val) {
+        gridElem.find('th').each(function headerIterationCallback(idx, val) {
             if (!$(val).hasClass('group_spacer'))
                 columns.push($(val).data('field'));
         });
@@ -888,10 +889,10 @@ var grid = (function _grid($) {
                 }
 
                 if (gridData.columns[columns[j]].editable) {
-                    makeCellEditable(gridDiv, id, td);
+                    makeCellEditable(gridElem, id, td);
                 }
                 else if (gridData.columns[columns[j]].selectable) {	//attach event handlers to save data
-                    makeCellSelectable(gridDiv, id, td);
+                    makeCellSelectable(gridElem, id, td);
                 }
             }
         }
@@ -933,8 +934,8 @@ var grid = (function _grid($) {
         //any time the grid is paged, sorted, filtered, etc., the cell widths shouldn't change, the new data should just be dumped into
         //the grid.
 
-        if (isNewGrid) setColWidths(gridData, gridDiv);
-        else copyGridWidth(gridData, gridDiv);
+        if (isNewGrid) setColWidths(gridData, gridElem);
+        else copyGridWidth(gridData, gridElem);
 
         storage.grids[id].dataSource.data = gridData.dataSource.data;
         loader.remove();
@@ -957,8 +958,8 @@ var grid = (function _grid($) {
         });
     }
 
-    function makeCellEditable(gridDiv, id, td) {
-        createCellEditSaveDiv(gridDiv);
+    function makeCellEditable(gridElem, id, td) {
+        createCellEditSaveDiv(gridElem);
         td.on('click', function editableCellClickHandler(e) {
             var gridContent = storage.grids[id].grid.find('.grid-content-div');
             var gridData = storage.grids[id];
@@ -1051,8 +1052,8 @@ var grid = (function _grid($) {
         });
     }
 
-    function makeCellSelectable(gridDiv, id, td) {
-        createCellEditSaveDiv(gridDiv);
+    function makeCellSelectable(gridElem, id, td) {
+        createCellEditSaveDiv(gridElem);
         td.on('click', function selectableCellClickHandler(e) {
             var gridContent = storage.grids[id].grid.find('.grid-content-div');
             var gridData = storage.grids[id];
@@ -1149,14 +1150,14 @@ var grid = (function _grid($) {
      * @for grid
      * @private
      * @param {object} gridData
-     * @param {object} gridDiv
+     * @param {object} gridElem
      */
-    function setColWidths(gridData, gridDiv) {
-        var tableCells = gridDiv.find('th, td'),
-            tables = gridDiv.find('table'),
+    function setColWidths(gridData, gridElem) {
+        var tableCells = gridElem.find('th, td'),
+            tables = gridElem.find('table'),
             columnNames = {},
             name;
-        var gridContent = gridDiv.find('.grid-content-div');
+        var gridContent = gridElem.find('.grid-content-div');
         for (name in gridData.columns) {
             columnNames[name] = gridData.columns[name].width || 0;
         }
@@ -1175,7 +1176,7 @@ var grid = (function _grid($) {
             columnList.push(name);
         }
 
-        var colGroups = gridDiv.find('col');
+        var colGroups = gridElem.find('col');
 
         //If there's more room available to display the grid than is currently needed
         if (totalWidth <= gridContent[0].clientWidth) {
@@ -1247,13 +1248,13 @@ var grid = (function _grid($) {
      * @for grid
      * @private
      * @param {object} gridData
-     * @param {object} gridDiv
+     * @param {object} gridElem
      */
-    function copyGridWidth(gridData, gridDiv) {
-        var headerCols = gridDiv.find('.grid-header-div').find('col');
-        var contentCols = gridDiv.find('.grid-content-div').find('col');
-        var headerTable = gridDiv.find('.grid-header-div').find('table');
-        var contentTable = gridDiv.find('.grid-content-div').find('table');
+    function copyGridWidth(gridData, gridElem) {
+        var headerCols = gridElem.find('.grid-header-div').find('col');
+        var contentCols = gridElem.find('.grid-content-div').find('col');
+        var headerTable = gridElem.find('.grid-header-div').find('table');
+        var contentTable = gridElem.find('.grid-content-div').find('table');
 
         contentTable.css('width', headerTable[0].clientWidth);
 
@@ -1409,12 +1410,12 @@ var grid = (function _grid($) {
         }
     }
 
-    function createCellEditSaveDiv(gridDiv) {
-        var id = gridDiv.find('.grid-wrapper').data('grid_id');
+    function createCellEditSaveDiv(gridElem) {
+        var id = gridElem.find('.grid-wrapper').data('grid_id');
         if ($('#grid_' + id + '_toolbar').length)	//if the toolbar has already been created, don't create it again.
             return;
 
-        var saveBar = $('<div id="grid_' + id + '_toolbar" class="toolbar clearfix"></div>').prependTo(gridDiv);
+        var saveBar = $('<div id="grid_' + id + '_toolbar" class="toolbar clearfix"></div>').prependTo(gridElem);
         var saveAnchor = $('<a href="#" class="toolbarAnchor saveToolbar"></a>').appendTo(saveBar);
         saveAnchor.append('<span class="toolbarSpan saveToolbarSpan"></span>Save Changes');
 
@@ -1425,7 +1426,7 @@ var grid = (function _grid($) {
             if (storage.grids[id].updating) return;
             var dirtyCells = [],
                 pageNum = storage.grids[id].pageNum, i;
-            gridDiv.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
+            gridElem.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
                 dirtyCells.push($(val).parents('td'));
             });
 
@@ -1456,7 +1457,7 @@ var grid = (function _grid($) {
         deleteAnchor.on('click', function deleteChangeHandler() {
             if (storage.grids[id].updating) return;
             var dirtyCells = [];
-            gridDiv.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
+            gridElem.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
                 dirtyCells.push($(val).parents('td'));
             });
 
@@ -1509,8 +1510,8 @@ var grid = (function _grid($) {
         }
     }
 
-    function createGridFooter(gridDiv, gridData) {
-        var gridFooter = gridDiv.find('.grid-footer-div');
+    function createGridFooter(gridElem, gridData) {
+        var gridFooter = gridElem.find('.grid-footer-div');
         var id = gridFooter.data('grid_footer_id');
         var count = storage.grids[id].dataSource.rowCount;
         var displayedRows = (count - storage.grids[id].pageSize) > 0 ? storage.grids[id].pageSize : count;
@@ -1815,7 +1816,7 @@ var grid = (function _grid($) {
         preparePageDataGetRequest(gridId);
     }
 
-    function createGridColumnsFromArray(gridData, gridDiv) {
+    function createGridColumnsFromArray(gridData, gridElem) {
         var headerCol = {};
         var index = 0;
         for (var i = 0; i < gridData.length; i++) {
@@ -1834,7 +1835,7 @@ var grid = (function _grid($) {
             columns: headerCol,
             data: gridData
         };
-        createGridHeaders(newGridData, gridDiv);
+        createGridHeaders(newGridData, gridElem);
     }
 
     function setDragAndDropListeners(elem) {
