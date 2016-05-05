@@ -445,7 +445,7 @@ var grid = (function _grid($) {
                             storage.grids[gridId].grid.find('.grid-content-div').empty();
                             createGridContent(storage.grids[gridId], storage.grids[gridId].grid, false);
                             storage.grids[gridId].grid.find('.grid-footer-div').empty();
-                            createGridFooter(storage.grids[gridId].grid, storage.grids[gridId]);
+                            createGridFooter(storage.grids[gridId], storage.grids[gridId].grid);
                             buildHeaderAggregations(storage.grids[gridId], gridId);
                         }
                     },
@@ -481,7 +481,7 @@ var grid = (function _grid($) {
                             storage.grids[gridId].grid.find('.grid-content-div').empty();
                             createGridContent(storage.grids[gridId], storage.grids[gridId].grid, false);
                             storage.grids[gridId].grid.find('.grid-footer-div').empty();
-                            createGridFooter(storage.grids[gridId].grid, storage.grids[gridId]);
+                            createGridFooter(storage.grids[gridId], storage.grids[gridId].grid);
                             buildHeaderAggregations(storage.grids[gridId], gridId);
                         }
                     },
@@ -628,7 +628,7 @@ var grid = (function _grid($) {
 
         if (gridData.summaryRow && gridData.summaryRow.positionAt === 'top') buildHeaderAggregations(gridData, id);
 
-        createGridFooter(gridElem, gridData);
+        createGridFooter(gridData, gridElem);
         createGridContent(gridData, gridElem, true);
     }
 
@@ -935,7 +935,7 @@ var grid = (function _grid($) {
         //the grid.
 
         if (isNewGrid) setColWidths(gridData, gridElem);
-        else copyGridWidth(gridData, gridElem);
+        else copyGridWidth(gridElem);
 
         storage.grids[id].dataSource.data = gridData.dataSource.data;
         loader.remove();
@@ -1247,10 +1247,9 @@ var grid = (function _grid($) {
      * @method copyGridWidth
      * @for grid
      * @private
-     * @param {object} gridData
      * @param {object} gridElem
      */
-    function copyGridWidth(gridData, gridElem) {
+    function copyGridWidth(gridElem) {
         var headerCols = gridElem.find('.grid-header-div').find('col');
         var contentCols = gridElem.find('.grid-content-div').find('col');
         var headerTable = gridElem.find('.grid-header-div').find('table');
@@ -2173,7 +2172,7 @@ var grid = (function _grid($) {
             createGridContent(gridData, storage.grids[id].grid, ((gridData.pageRequest.eventType === 'newGrid') || (gridData.groupedBy && gridData.groupedBy !== 'none')));
             if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === 'pageSize') {
                 gridData.grid.find('.grid-footer-div').empty();
-                createGridFooter(gridData.grid, gridData);
+                createGridFooter(gridData, gridData.grid);
             }
             if (gridData.pageRequest.eventType === 'filter' && gridData.summaryRow && gridData.summaryRow.positionAt === 'top') {
                 buildHeaderAggregations(gridData, id);
