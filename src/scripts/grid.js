@@ -74,6 +74,7 @@
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Fix sorting chevron to not display on top of filter icon when column name is same size as column
+ - Rework setting column widths (setColWidthRedux)
  */
 /*exported grid*/
 /**
@@ -1142,6 +1143,30 @@ var grid = (function _grid($) {
         return dataAttributes;
     }
 
+    /*function setColWidthRedux(gridData, gridElem) {
+        var tableCells = gridElem.find('th, td'),
+            tables = gridElem.find('table'),
+            columnNames = {},
+            name,
+            totalWidth = 0,
+            columnList = [];
+        var gridContent = gridElem.find('.grid-content-div');
+        for (name in gridData.columns) {
+            columnNames[name] = gridData.columns[name].width || 0;
+        }
+
+        tableCells.each(function iterateTableCellsCallback(idx, val) {
+            var column = $(val).data('field');
+            if (val.clientWidth > columnNames[column]) {
+                columnNames[column] = val.clientWidth;
+                totalWidth += columnNames[column];
+                columnList.push(column);
+            }
+        });
+
+        var colGroups = gridElem.find('col');
+    }*/
+
     /**
      * Sets the column widths for each column in the grid. If column widths
      * were not specified, it checks both the headers and content widths and chooses
@@ -1509,7 +1534,7 @@ var grid = (function _grid($) {
         }
     }
 
-    function createGridFooter(gridElem, gridData) {
+    function createGridFooter(gridData, gridElem) {
         var gridFooter = gridElem.find('.grid-footer-div');
         var id = gridFooter.data('grid_footer_id');
         var count = storage.grids[id].dataSource.rowCount;

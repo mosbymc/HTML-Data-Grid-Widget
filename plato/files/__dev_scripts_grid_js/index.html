@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2547</p>
+      <p class="stat">2571</p>
     </div>
   </div>
   <div class="row historical">
@@ -165,6 +165,7 @@
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Fix sorting chevron to not display on top of filter icon when column name is same size as column
+ - Rework setting column widths (setColWidthRedux)
  */
 /*exported grid*/
 /**
@@ -1233,6 +1234,30 @@ var grid = (function _grid($) {
         return dataAttributes;
     }
 
+    /*function setColWidthRedux(gridData, gridElem) {
+        var tableCells = gridElem.find(&#039;th, td&#039;),
+            tables = gridElem.find(&#039;table&#039;),
+            columnNames = {},
+            name,
+            totalWidth = 0,
+            columnList = [];
+        var gridContent = gridElem.find(&#039;.grid-content-div&#039;);
+        for (name in gridData.columns) {
+            columnNames[name] = gridData.columns[name].width || 0;
+        }
+
+        tableCells.each(function iterateTableCellsCallback(idx, val) {
+            var column = $(val).data(&#039;field&#039;);
+            if (val.clientWidth &gt; columnNames[column]) {
+                columnNames[column] = val.clientWidth;
+                totalWidth += columnNames[column];
+                columnList.push(column);
+            }
+        });
+
+        var colGroups = gridElem.find(&#039;col&#039;);
+    }*/
+
     /**
      * Sets the column widths for each column in the grid. If column widths
      * were not specified, it checks both the headers and content widths and chooses
@@ -1600,7 +1625,7 @@ var grid = (function _grid($) {
         }
     }
 
-    function createGridFooter(gridElem, gridData) {
+    function createGridFooter(gridData, gridElem) {
         var gridFooter = gridElem.find(&#039;.grid-footer-div&#039;);
         var id = gridFooter.data(&#039;grid_footer_id&#039;);
         var count = storage.grids[id].dataSource.rowCount;
