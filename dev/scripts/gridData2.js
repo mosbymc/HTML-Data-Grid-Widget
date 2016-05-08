@@ -173,7 +173,7 @@ var gridData = {
         Paid: {
             type: "bool",
             editable: true,
-            width: 100
+            //width: 100
         }
     },
     dataSource: {

@@ -821,7 +821,7 @@ var grid = (function _grid($) {
      * @param {object} gridElem
      * @param {boolean} isNewGrid
      */
-    function createGridContent(gridData, gridElem, isNewGrid) {
+    function createGridContent(gridData, gridElem/*, isNewGrid*/) {
         var gridContent = gridElem.find('.grid-content-div').css('height', '250px');
         var id = gridContent.data('grid_content_id');
         var gcOffsets = gridContent.offset();
@@ -935,8 +935,11 @@ var grid = (function _grid($) {
         //any time the grid is paged, sorted, filtered, etc., the cell widths shouldn't change, the new data should just be dumped into
         //the grid.
 
-        if (isNewGrid) setColWidths(gridData, gridElem);
-        else copyGridWidth(gridElem);
+        setColWidthRedux(gridData, gridElem, '.grid-header-div');
+        setColWidthRedux(gridData, gridElem, '.grid-content-div');
+
+        //if (isNewGrid) setColWidths(gridData, gridElem);
+        //else copyGridWidth(gridElem);
 
         storage.grids[id].dataSource.data = gridData.dataSource.data;
         loader.remove();
@@ -1143,29 +1146,31 @@ var grid = (function _grid($) {
         return dataAttributes;
     }
 
-    /*function setColWidthRedux(gridData, gridElem) {
-        var tableCells = gridElem.find('th, td'),
-            tables = gridElem.find('table'),
-            columnNames = {},
+    function setColWidthRedux(gridData, gridElem, tableDivSelector) {
+        var columnNames = {},
             name,
-            totalWidth = 0,
+            //totalWidth = 0,
             columnList = [];
-        var gridContent = gridElem.find('.grid-content-div');
+        var tableDiv = gridElem.find(tableDivSelector);
         for (name in gridData.columns) {
-            columnNames[name] = gridData.columns[name].width || 0;
+            columnNames[name] = isNumber(gridData.columns[name].width) ? gridData.columns[name].width : null;
+            columnList.push(name);
+            //totalWidth += gridData.columns[name].width;
         }
 
-        tableCells.each(function iterateTableCellsCallback(idx, val) {
-            var column = $(val).data('field');
-            if (val.clientWidth > columnNames[column]) {
-                columnNames[column] = val.clientWidth;
-                totalWidth += columnNames[column];
-                columnList.push(column);
+        var colGroups = tableDiv.find('col').each(function iterateColsCallback(idx, val) {
+            var i = idx;
+            if (gridData.groupedBy && gridData.groupedBy !== 'none') {
+                i = (idx%(colGroups.length/2)) - 1;
+            }
+            if (gridData.groupedBy && gridData.groupedBy !== 'none' && idx === 0) {
+                $(val).css('width', 27);
+            }
+            else if (columnNames[columnList[i]] != null) {
+                    $(val).css('width', columnNames[columnList[i]]);
             }
         });
-
-        var colGroups = gridElem.find('col');
-    }*/
+    }
 
     /**
      * Sets the column widths for each column in the grid. If column widths
@@ -1177,7 +1182,7 @@ var grid = (function _grid($) {
      * @param {object} gridData
      * @param {object} gridElem
      */
-    function setColWidths(gridData, gridElem) {
+    /*function setColWidths(gridData, gridElem) {
         var tableCells = gridElem.find('th, td'),
             tables = gridElem.find('table'),
             columnNames = {},
@@ -1264,7 +1269,7 @@ var grid = (function _grid($) {
                 }
             });
         }
-    }
+    }*/
 
     /**
      * Copies the grid's column's widths to subsequent page data so that a consistent
@@ -1274,7 +1279,7 @@ var grid = (function _grid($) {
      * @private
      * @param {object} gridElem
      */
-    function copyGridWidth(gridElem) {
+    /*function copyGridWidth(gridElem) {
         var headerCols = gridElem.find('.grid-header-div').find('col');
         var contentCols = gridElem.find('.grid-content-div').find('col');
         var headerTable = gridElem.find('.grid-header-div').find('table');
@@ -1288,7 +1293,7 @@ var grid = (function _grid($) {
             var width = $(headerCols[idx]).width();
             $(val).css('width', width);
         });
-    }
+    }*/
 
     /**
      * Attaches an event listener to a specific grid cell for the
@@ -2609,6 +2614,10 @@ var grid = (function _grid($) {
 
     function isDomElement(node) {
         return node && node instanceof Element && node instanceof Node && typeof node.ownerDocument != null;
+    }
+
+    function isNumber(value) {
+        return typeof value === 'number' && value === value;
     }
 
     storage = {

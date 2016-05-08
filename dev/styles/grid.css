@@ -59,9 +59,10 @@
   background-position: center;*/
 }
 .grid-header-div table {
+  box-sizing: content-box;
   max-width: none;
   table-layout: fixed;
-  width: auto;
+  width: 100%;
   /*border-spacing: 0; -- This seems to be the setting needed to make the header borders stretch from top to bottom
                             but when applied, it won't allow the table to expand past it's container div
     */
@@ -70,6 +71,8 @@
   empty-cells: show;
   border-width: 0;
   outline: 0;
+  list-style: none;
+  line-height: normal;
 }
 .grid-header-div table thead {
   display: table-header-group;
@@ -178,7 +181,7 @@
 .grid-content-div table {
   max-width: none;
   table-layout: fixed;
-  width: auto;
+  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   empty-cells: show;

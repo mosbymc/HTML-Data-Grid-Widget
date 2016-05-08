@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2571</p>
+      <p class="stat">2580</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">180.19</p>
+      <p class="stat">176.98</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">44.52</p>
+      <p class="stat">43.03</p>
     </div>
   </div>
 </div>
@@ -912,7 +912,7 @@ var grid = (function _grid($) {
      * @param {object} gridElem
      * @param {boolean} isNewGrid
      */
-    function createGridContent(gridData, gridElem, isNewGrid) {
+    function createGridContent(gridData, gridElem/*, isNewGrid*/) {
         var gridContent = gridElem.find(&#039;.grid-content-div&#039;).css(&#039;height&#039;, &#039;250px&#039;);
         var id = gridContent.data(&#039;grid_content_id&#039;);
         var gcOffsets = gridContent.offset();
@@ -1026,8 +1026,11 @@ var grid = (function _grid($) {
         //any time the grid is paged, sorted, filtered, etc., the cell widths shouldn&#039;t change, the new data should just be dumped into
         //the grid.
 
-        if (isNewGrid) setColWidths(gridData, gridElem);
-        else copyGridWidth(gridElem);
+        setColWidthRedux(gridData, gridElem, &#039;.grid-header-div&#039;);
+        setColWidthRedux(gridData, gridElem, &#039;.grid-content-div&#039;);
+
+        //if (isNewGrid) setColWidths(gridData, gridElem);
+        //else copyGridWidth(gridElem);
 
         storage.grids[id].dataSource.data = gridData.dataSource.data;
         loader.remove();
@@ -1234,29 +1237,31 @@ var grid = (function _grid($) {
         return dataAttributes;
     }
 
-    /*function setColWidthRedux(gridData, gridElem) {
-        var tableCells = gridElem.find(&#039;th, td&#039;),
-            tables = gridElem.find(&#039;table&#039;),
-            columnNames = {},
+    function setColWidthRedux(gridData, gridElem, tableDivSelector) {
+        var columnNames = {},
             name,
-            totalWidth = 0,
+            //totalWidth = 0,
             columnList = [];
-        var gridContent = gridElem.find(&#039;.grid-content-div&#039;);
+        var tableDiv = gridElem.find(tableDivSelector);
         for (name in gridData.columns) {
-            columnNames[name] = gridData.columns[name].width || 0;
+            columnNames[name] = isNumber(gridData.columns[name].width) ? gridData.columns[name].width : null;
+            columnList.push(name);
+            //totalWidth += gridData.columns[name].width;
         }
 
-        tableCells.each(function iterateTableCellsCallback(idx, val) {
-            var column = $(val).data(&#039;field&#039;);
-            if (val.clientWidth &gt; columnNames[column]) {
-                columnNames[column] = val.clientWidth;
-                totalWidth += columnNames[column];
-                columnList.push(column);
+        var colGroups = tableDiv.find(&#039;col&#039;).each(function iterateColsCallback(idx, val) {
+            var i = idx;
+            if (gridData.groupedBy &amp;&amp; gridData.groupedBy !== &#039;none&#039;) {
+                i = (idx%(colGroups.length/2)) - 1;
+            }
+            if (gridData.groupedBy &amp;&amp; gridData.groupedBy !== &#039;none&#039; &amp;&amp; idx === 0) {
+                $(val).css(&#039;width&#039;, 27);
+            }
+            else if (columnNames[columnList[i]] != null) {
+                    $(val).css(&#039;width&#039;, columnNames[columnList[i]]);
             }
         });
-
-        var colGroups = gridElem.find(&#039;col&#039;);
-    }*/
+    }
 
     /**
      * Sets the column widths for each column in the grid. If column widths
@@ -1268,7 +1273,7 @@ var grid = (function _grid($) {
      * @param {object} gridData
      * @param {object} gridElem
      */
-    function setColWidths(gridData, gridElem) {
+    /*function setColWidths(gridData, gridElem) {
         var tableCells = gridElem.find(&#039;th, td&#039;),
             tables = gridElem.find(&#039;table&#039;),
             columnNames = {},
@@ -1355,7 +1360,7 @@ var grid = (function _grid($) {
                 }
             });
         }
-    }
+    }*/
 
     /**
      * Copies the grid&#039;s column&#039;s widths to subsequent page data so that a consistent
@@ -1365,7 +1370,7 @@ var grid = (function _grid($) {
      * @private
      * @param {object} gridElem
      */
-    function copyGridWidth(gridElem) {
+    /*function copyGridWidth(gridElem) {
         var headerCols = gridElem.find(&#039;.grid-header-div&#039;).find(&#039;col&#039;);
         var contentCols = gridElem.find(&#039;.grid-content-div&#039;).find(&#039;col&#039;);
         var headerTable = gridElem.find(&#039;.grid-header-div&#039;).find(&#039;table&#039;);
@@ -1379,7 +1384,7 @@ var grid = (function _grid($) {
             var width = $(headerCols[idx]).width();
             $(val).css(&#039;width&#039;, width);
         });
-    }
+    }*/
 
     /**
      * Attaches an event listener to a specific grid cell for the
@@ -2700,6 +2705,10 @@ var grid = (function _grid($) {
 
     function isDomElement(node) {
         return node &amp;&amp; node instanceof Element &amp;&amp; node instanceof Node &amp;&amp; typeof node.ownerDocument != null;
+    }
+
+    function isNumber(value) {
+        return typeof value === &#039;number&#039; &amp;&amp; value === value;
     }
 
     storage = {
