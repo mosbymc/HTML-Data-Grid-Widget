@@ -66,6 +66,8 @@
  - Check aggregations for existence of column before trying to build row's aggregates - DONE
  - Fix filtering/sorting on time - DONE
  - Rework setting column widths - DONE
+ - Fix sorting chevron to not display on top of filter icon when column name is same size as column - DONE
+ - Examine headers and fix DOM structure - DONE
  - Ensure all types are implemented across the board (number, time, date, boolean, string)
  - Add server paging + data saving/filtering/sorting
  - Add "transform" function to be called for the cell data in a column
@@ -74,7 +76,6 @@
  - Update API event methods to work with array and namespace
  - Add integration tests if possible
  - Add type checking - passed in grid data
- - Fix sorting chevron to not display on top of filter icon when column name is same size as column
  - Make far left column expand when resizing another to be smaller that the total width of the table
  */
 /*exported grid*/
@@ -687,7 +688,6 @@ var grid = (function _grid($) {
             $('<col/>').appendTo(colgroup);
             var text = gridData.columns[col].title || col;
             var th = $('<th id="' + col + '_grid_id_' + gridHeader.data('grid_header_id') + '" data-field="' + col + '" data-index="' + index + '" class=grid-header-cell></th>').appendTo(headerRow);
-            th.text(text);
 
             if (typeof gridData.columns[col].attributes === 'object' && gridData.columns[col].attributes.headerClasses && gridData.columns[col].attributes.headerClasses.constructor ===  Array) {
                 for (var i = 0; i < gridData.columns[col].attributes.headerClasses.length; i++) {
@@ -709,6 +709,9 @@ var grid = (function _grid($) {
 
             if (gridData.columns[col].editable || gridData.columns[col].selectable)
                 createCellEditSaveDiv(gridElem);
+
+            $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
+
             index++;
         }
         headerTable.css('width','');
@@ -1626,7 +1629,6 @@ var grid = (function _grid($) {
                 select.append('<option value="eq">Equal to:</option>');
                 select.append('<option value="neq">Not equal to:</option>');
                 select.append('<option value="gte">Greater than or equal to:</option>');
-                select.append('<option value="ct">Contains:</option>');
                 select.append('<option value="gt">Greater than:</option>');
                 select.append('<option value="lte">Less than or equal to:</option>');
                 select.append('<option value="lt">Less than:</option>');
@@ -1819,10 +1821,10 @@ var grid = (function _grid($) {
                 setSortableClickListener(targetClone);
             setDragAndDropListeners(targetClone);
 
-            if (droppedClone.find('a').length)
-                attachFilterListener(droppedClone.find('a'));
-            if (targetClone.find('a').length)
-                attachFilterListener(targetClone.find('a'));
+            if (droppedClone.find('.filterSpan').length)
+                attachFilterListener(droppedClone.find('.filterSpan'));
+            if (targetClone.find('.filterSpan').length)
+                attachFilterListener(targetClone.find('.filterSpan'));
 
             droppedCol.replaceWith(targetClone);
             targetCol.replaceWith(droppedClone);
@@ -1975,7 +1977,7 @@ var grid = (function _grid($) {
                         className = '';
                         storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
                     }
-                    elem.append('<span class="' + className + '">Sort</span>');
+                    elem.find('.header-anchor').append('<span class="' + className + '">Sort</span>');
                 }
                 else {
                     var span = elem.find('.sortSpan');
@@ -1998,7 +2000,7 @@ var grid = (function _grid($) {
                     className = '';
                     storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
                 }
-                elem.append('<span class="' + className + '">Sort</span>');
+                elem.find('.header-anchor').append('<span class="' + className + '">Sort</span>');
             }
             storage.grids[id].pageRequest.sortedOn = elem.data('field');
             storage.grids[id].pageRequest.sortedBy = order;

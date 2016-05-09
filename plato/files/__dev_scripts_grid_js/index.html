@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2501</p>
+      <p class="stat">2502</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">177.91</p>
+      <p class="stat">177.52</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">43.82</p>
+      <p class="stat">43.88</p>
     </div>
   </div>
 </div>
@@ -157,6 +157,8 @@
  - Check aggregations for existence of column before trying to build row&#039;s aggregates - DONE
  - Fix filtering/sorting on time - DONE
  - Rework setting column widths - DONE
+ - Fix sorting chevron to not display on top of filter icon when column name is same size as column - DONE
+ - Examine headers and fix DOM structure - DONE
  - Ensure all types are implemented across the board (number, time, date, boolean, string)
  - Add server paging + data saving/filtering/sorting
  - Add &quot;transform&quot; function to be called for the cell data in a column
@@ -165,7 +167,7 @@
  - Update API event methods to work with array and namespace
  - Add integration tests if possible
  - Add type checking - passed in grid data
- - Fix sorting chevron to not display on top of filter icon when column name is same size as column
+ - Make far left column expand when resizing another to be smaller that the total width of the table
  */
 /*exported grid*/
 /**
@@ -777,7 +779,6 @@ var grid = (function _grid($) {
             $(&#039;&lt;col/&gt;&#039;).appendTo(colgroup);
             var text = gridData.columns[col].title || col;
             var th = $(&#039;&lt;th id=&quot;&#039; + col + &#039;_grid_id_&#039; + gridHeader.data(&#039;grid_header_id&#039;) + &#039;&quot; data-field=&quot;&#039; + col + &#039;&quot; data-index=&quot;&#039; + index + &#039;&quot; class=grid-header-cell&gt;&lt;/th&gt;&#039;).appendTo(headerRow);
-            th.text(text);
 
             if (typeof gridData.columns[col].attributes === &#039;object&#039; &amp;&amp; gridData.columns[col].attributes.headerClasses &amp;&amp; gridData.columns[col].attributes.headerClasses.constructor ===  Array) {
                 for (var i = 0; i &lt; gridData.columns[col].attributes.headerClasses.length; i++) {
@@ -799,6 +800,9 @@ var grid = (function _grid($) {
 
             if (gridData.columns[col].editable || gridData.columns[col].selectable)
                 createCellEditSaveDiv(gridElem);
+
+            $(&#039;&lt;a class=&quot;header-anchor&quot; href=&quot;#&quot;&gt;&lt;/a&gt;&#039;).appendTo(th).text(text);
+
             index++;
         }
         headerTable.css(&#039;width&#039;,&#039;&#039;);
@@ -918,11 +922,11 @@ var grid = (function _grid($) {
      */
     function createGridContent(gridData, gridElem) {
         var contentHeight;
-        var footerHeight = gridElem.find(&#039;.grid-footer-div&#039;).css(&#039;height&#039;);
-        var headerHeight = gridElem.find(&#039;.grid-header-div&#039;).css(&#039;height&#039;);
+        var footerHeight = parseFloat(gridElem.find(&#039;.grid-footer-div&#039;).css(&#039;height&#039;));
+        var headerHeight = parseFloat(gridElem.find(&#039;.grid-header-div&#039;).css(&#039;height&#039;));
         var toolbarHeight = 0;
         if (gridElem.find(&#039;.toolbar&#039;))
-            toolbarHeight = gridElem.find(&#039;.toolbar&#039;).css(&#039;height&#039;);
+            toolbarHeight = parseFloat(gridElem.find(&#039;.toolbar&#039;).css(&#039;height&#039;));
 
         contentHeight = gridData.height &amp;&amp; isNumber(gridData.height) ? gridData.height - (headerHeight + footerHeight + toolbarHeight) + &#039;px&#039; : &#039;250px&#039;;
         var gridContent = gridElem.find(&#039;.grid-content-div&#039;).css(&#039;height&#039;, contentHeight);
@@ -1716,7 +1720,6 @@ var grid = (function _grid($) {
                 select.append(&#039;&lt;option value=&quot;eq&quot;&gt;Equal to:&lt;/option&gt;&#039;);
                 select.append(&#039;&lt;option value=&quot;neq&quot;&gt;Not equal to:&lt;/option&gt;&#039;);
                 select.append(&#039;&lt;option value=&quot;gte&quot;&gt;Greater than or equal to:&lt;/option&gt;&#039;);
-                select.append(&#039;&lt;option value=&quot;ct&quot;&gt;Contains:&lt;/option&gt;&#039;);
                 select.append(&#039;&lt;option value=&quot;gt&quot;&gt;Greater than:&lt;/option&gt;&#039;);
                 select.append(&#039;&lt;option value=&quot;lte&quot;&gt;Less than or equal to:&lt;/option&gt;&#039;);
                 select.append(&#039;&lt;option value=&quot;lt&quot;&gt;Less than:&lt;/option&gt;&#039;);
@@ -1909,10 +1912,10 @@ var grid = (function _grid($) {
                 setSortableClickListener(targetClone);
             setDragAndDropListeners(targetClone);
 
-            if (droppedClone.find(&#039;a&#039;).length)
-                attachFilterListener(droppedClone.find(&#039;a&#039;));
-            if (targetClone.find(&#039;a&#039;).length)
-                attachFilterListener(targetClone.find(&#039;a&#039;));
+            if (droppedClone.find(&#039;.filterSpan&#039;).length)
+                attachFilterListener(droppedClone.find(&#039;.filterSpan&#039;));
+            if (targetClone.find(&#039;.filterSpan&#039;).length)
+                attachFilterListener(targetClone.find(&#039;.filterSpan&#039;));
 
             droppedCol.replaceWith(targetClone);
             targetCol.replaceWith(droppedClone);
@@ -2065,7 +2068,7 @@ var grid = (function _grid($) {
                         className = &#039;&#039;;
                         storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
                     }
-                    elem.append(&#039;&lt;span class=&quot;&#039; + className + &#039;&quot;&gt;Sort&lt;/span&gt;&#039;);
+                    elem.find(&#039;.header-anchor&#039;).append(&#039;&lt;span class=&quot;&#039; + className + &#039;&quot;&gt;Sort&lt;/span&gt;&#039;);
                 }
                 else {
                     var span = elem.find(&#039;.sortSpan&#039;);
@@ -2088,7 +2091,7 @@ var grid = (function _grid($) {
                     className = &#039;&#039;;
                     storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
                 }
-                elem.append(&#039;&lt;span class=&quot;&#039; + className + &#039;&quot;&gt;Sort&lt;/span&gt;&#039;);
+                elem.find(&#039;.header-anchor&#039;).append(&#039;&lt;span class=&quot;&#039; + className + &#039;&quot;&gt;Sort&lt;/span&gt;&#039;);
             }
             storage.grids[id].pageRequest.sortedOn = elem.data(&#039;field&#039;);
             storage.grids[id].pageRequest.sortedBy = order;

@@ -101,6 +101,26 @@
 .grid-header-div th:first-child {
   border-left-width: 0;
 }
+.grid-header-div th .header-anchor {
+  padding: 0;
+  margin: 0;
+  min-height: 16px;
+  line-height: inherit;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: content-box;
+  cursor: pointer;
+  font-variant: normal;
+  font-weight: normal;
+  text-decoration: none;
+  outline: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  color: #a8a8a8;
+  border-color: #e6e6e6;
+}
 .grid-header-div td {
   text-align: left;
   font-family: Arial, Helvetica, sans-serif;
@@ -165,10 +185,10 @@
   background-image: url('../images/arrowUp.svg');
 }
 .filterSpan {
-  float: right;
   background: rgba(0, 0, 0, 0) url('../images/menu.svg') no-repeat;
   width: 12px;
   height: 12px;
+  float: right;
 }
 .filterSpan:visited {
   color: rgba(0, 0, 0, 0);
