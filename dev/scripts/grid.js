@@ -65,6 +65,7 @@
  - Implement true aggregates + fix naming of row grouping - DONE
  - Check aggregations for existence of column before trying to build row's aggregates - DONE
  - Fix filtering/sorting on time - DONE
+ - Rework setting column widths - DONE
  - Ensure all types are implemented across the board (number, time, date, boolean, string)
  - Add server paging + data saving/filtering/sorting
  - Add "transform" function to be called for the cell data in a column
@@ -74,7 +75,7 @@
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Fix sorting chevron to not display on top of filter icon when column name is same size as column
- - Rework setting column widths (setColWidthRedux)
+ - Make far left column expand when resizing another to be smaller that the total width of the table
  */
 /*exported grid*/
 /**
@@ -703,11 +704,15 @@ var grid = (function _grid($) {
             }
             if (gridData.columns[col].filterable === true) {
                 setFilterableClickListener(th, gridData, col);
+                createCellEditSaveDiv(gridElem);
             }
+
+            if (gridData.columns[col].editable || gridData.columns[col].selectable)
+                createCellEditSaveDiv(gridElem);
             index++;
         }
         headerTable.css('width','');
-        setColWidthRedux(gridData, gridElem);
+        setColWidth(gridData, gridElem);
     }
 
     /**
@@ -822,7 +827,15 @@ var grid = (function _grid($) {
      * @param {object} gridElem
      */
     function createGridContent(gridData, gridElem) {
-        var gridContent = gridElem.find('.grid-content-div').css('height', '250px');
+        var contentHeight;
+        var footerHeight = parseFloat(gridElem.find('.grid-footer-div').css('height'));
+        var headerHeight = parseFloat(gridElem.find('.grid-header-div').css('height'));
+        var toolbarHeight = 0;
+        if (gridElem.find('.toolbar'))
+            toolbarHeight = parseFloat(gridElem.find('.toolbar').css('height'));
+
+        contentHeight = gridData.height && isNumber(gridData.height) ? gridData.height - (headerHeight + footerHeight + toolbarHeight) + 'px' : '250px';
+        var gridContent = gridElem.find('.grid-content-div').css('height', contentHeight);
         var id = gridContent.data('grid_content_id');
         var gcOffsets = gridContent.offset();
         var top = gcOffsets.top + (gridContent.height()/2) + $(window).scrollTop();
@@ -890,10 +903,10 @@ var grid = (function _grid($) {
                 }
 
                 if (gridData.columns[columns[j]].editable) {
-                    makeCellEditable(gridElem, id, td);
+                    makeCellEditable(id, td);
                 }
                 else if (gridData.columns[columns[j]].selectable) {	//attach event handlers to save data
-                    makeCellSelectable(gridElem, id, td);
+                    makeCellSelectable(id, td);
                 }
             }
         }
@@ -935,11 +948,6 @@ var grid = (function _grid($) {
         //any time the grid is paged, sorted, filtered, etc., the cell widths shouldn't change, the new data should just be dumped into
         //the grid.
         copyGridWidth(gridElem);
-        //setColWidthRedux(gridData, gridElem, '.grid-header-div');
-        //setColWidthRedux(gridData, gridElem, '.grid-content-div');
-
-        //if (isNewGrid) setColWidths(gridData, gridElem);
-        //else copyGridWidth(gridElem);
 
         storage.grids[id].dataSource.data = gridData.dataSource.data;
         loader.remove();
@@ -962,8 +970,7 @@ var grid = (function _grid($) {
         });
     }
 
-    function makeCellEditable(gridElem, id, td) {
-        createCellEditSaveDiv(gridElem);
+    function makeCellEditable(id, td) {
         td.on('click', function editableCellClickHandler(e) {
             var gridContent = storage.grids[id].grid.find('.grid-content-div');
             var gridData = storage.grids[id];
@@ -1056,8 +1063,7 @@ var grid = (function _grid($) {
         });
     }
 
-    function makeCellSelectable(gridElem, id, td) {
-        createCellEditSaveDiv(gridElem);
+    function makeCellSelectable(id, td) {
         td.on('click', function selectableCellClickHandler(e) {
             var gridContent = storage.grids[id].grid.find('.grid-content-div');
             var gridData = storage.grids[id];
@@ -1146,16 +1152,21 @@ var grid = (function _grid($) {
         return dataAttributes;
     }
 
-    function setColWidthRedux(gridData, gridElem) {
+    /**
+     * Sets the column widths of the grid's header. If width properties are supplied as part
+     * of a column's metadata, the specified value is used; otherwise this function lets
+     * the column choose an auto-width.
+     * @param {object} gridData
+     * @param {object} gridElem
+     */
+    function setColWidth(gridData, gridElem) {
         var columnNames = {},
             name,
-            //totalWidth = 0,
             columnList = [];
         var tableDiv = gridElem.find('.grid-header-wrapper');
         for (name in gridData.columns) {
             columnNames[name] = isNumber(gridData.columns[name].width) ? gridData.columns[name].width : null;
             columnList.push(name);
-            //totalWidth += gridData.columns[name].width;
         }
         var colGroups = tableDiv.find('col');
 
@@ -1172,105 +1183,6 @@ var grid = (function _grid($) {
             }
         });
     }
-
-    /**
-     * Sets the column widths for each column in the grid. If column widths
-     * were not specified, it checks both the headers and content widths and chooses
-     * the wider of the two.
-     * @method setColWidths
-     * @for grid
-     * @private
-     * @param {object} gridData
-     * @param {object} gridElem
-     */
-    /*function setColWidths(gridData, gridElem) {
-        var tableCells = gridElem.find('th, td'),
-            tables = gridElem.find('table'),
-            columnNames = {},
-            name;
-        var gridContent = gridElem.find('.grid-content-div');
-        for (name in gridData.columns) {
-            columnNames[name] = gridData.columns[name].width || 0;
-        }
-
-        tableCells.each(function iterateTableCellsCallback(idx, val) {
-            var column = $(val).data('field');
-            if (val.clientWidth > columnNames[column]) {
-                columnNames[column] = val.clientWidth;
-            }
-        });
-
-        var totalWidth = 0;
-        var columnList = [];
-        for (name in columnNames) {
-            totalWidth += columnNames[name];
-            columnList.push(name);
-        }
-
-        var colGroups = gridElem.find('col');
-
-        //If there's more room available to display the grid than is currently needed
-        if (totalWidth <= gridContent[0].clientWidth) {
-            var curWidth = 0;
-            var headerSizes = [];
-            colGroups.each(function iterateColGroupsCallback(idx, val) {
-                var i = idx%(colGroups.length/2);
-                var corrector = 0;
-                if (gridData.groupedBy && gridData.groupedBy !== 'none') {
-                    i = (idx%(colGroups.length/2)) - 1;
-                    corrector = -1;
-                }
-                if (gridData.groupedBy && gridData.groupedBy !== 'none' && (idx === 0 || idx === colGroups.length/2)) {
-                    $(val).css('width', 27);
-                }
-                else {
-                    if (idx > ((colGroups.length/2)-1)) {
-                        $(val).css('width', headerSizes[idx + corrector]);
-                    }
-                    else {
-                        var widthToAdd = columnNames[columnList[i]];
-                        var len = colGroups.length/2;
-                        if (idx === len) {
-                            curWidth = widthToAdd;
-                        }
-                        else if (idx === len-1 || idx === colGroups.length-1) {
-
-                        }
-                        else {
-                            curWidth += widthToAdd;
-                        }
-
-                        if (idx === (colGroups.length-1) || idx === ((colGroups.length/2)-1)) {
-                            var remainingWidth = gridContent[0].clientWidth - curWidth;
-                            $(val).css('width', remainingWidth);
-                            widthToAdd = remainingWidth;
-                        }
-                        else $(val).css('width', widthToAdd);
-                        headerSizes[(i + (colGroups.length/2))] = widthToAdd;
-                    }
-                }
-            });
-        }
-        else {	//There's less room than what's available
-            tables.each(function tableIterationCallback(idx, val) {
-                $(val).css('width', totalWidth);
-            });
-            colGroups.each(function iterateColGroupsCallback(idx, val) {
-                var i = idx%(colGroups.length/2);
-                if (gridData.groupedBy && gridData.groupedBy !== 'none')
-                    i = (idx%(colGroups.length/2)) - 1;
-                if (gridData.groupedBy && gridData.groupedBy !== 'none' && (idx === 0 || idx === colGroups.length/2)) {
-                    $(val).css('width', 27);
-                }
-                else {
-                    if (gridData.groupedBy && gridData.groupedBy !== 'none' && i === 0)
-                        return;
-                    if (idx === (colGroups.length-1) || idx === ((colGroups.length/2)-1)) $(val).css('width', (columnNames[columnList[i]]));
-                    else $(val).css('width', columnNames[columnList[i]]);
-                }
-            });
-        }
-    }*/
 
     /**
      * Copies the grid's column's widths to subsequent page data so that a consistent
@@ -1971,8 +1883,8 @@ var grid = (function _grid($) {
 
             if (Math.abs(mousePos.x - (targetOffset.left + targetWidth)) < 10) {
                 if (!sliderDiv.length) {
-                    var parentRow = target.parent();
-                    sliderDiv = $('<div id=sliderDiv style="width:10px; height:' + target.innerHeight() + 'px; cursor: col-resize;" draggable=true><div></div></div>').appendTo(parentRow);
+                    var parentDiv = target.parents('.grid-header-wrapper');
+                    sliderDiv = $('<div id=sliderDiv style="width:10px; height:' + target.innerHeight() + 'px; cursor: col-resize; position: absolute" draggable=true><div></div></div>').appendTo(parentDiv);
                     sliderDiv.on('dragstart', function handleDragStartCallback(e) {
                         e.originalEvent.dataTransfer.setData('text', e.currentTarget.id);
                         resizing = true;
@@ -2207,7 +2119,7 @@ var grid = (function _grid($) {
             gridData.groupingStatusChanged = false;
 
             if (gridData.pageRequest.eventType === 'newGrid' || groupingStatus)
-                setColWidthRedux(gridData, storage.grids[id].grid);
+                setColWidth(gridData, storage.grids[id].grid);
 
             createGridContent(gridData, storage.grids[id].grid);
             if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === 'pageSize') {

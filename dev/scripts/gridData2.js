@@ -1,4 +1,5 @@
 var gridData = {
+    height: 400,
     useValidator: true,
     useFormatter: true,
     sortable: true,
