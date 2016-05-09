@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.34</p>
+      <p class="stat">55.41</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2580</p>
+      <p class="stat">2590</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">176.98</p>
+      <p class="stat">177.59</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">43.03</p>
+      <p class="stat">43.51</p>
     </div>
   </div>
 </div>
@@ -535,7 +535,7 @@ var grid = (function _grid($) {
                             storage.grids[gridId].dataSource.data = data;
                             storage.grids[gridId].pageSize = data.length;
                             storage.grids[gridId].grid.find(&#039;.grid-content-div&#039;).empty();
-                            createGridContent(storage.grids[gridId], storage.grids[gridId].grid, false);
+                            createGridContent(storage.grids[gridId], storage.grids[gridId].grid);
                             storage.grids[gridId].grid.find(&#039;.grid-footer-div&#039;).empty();
                             createGridFooter(storage.grids[gridId], storage.grids[gridId].grid);
                             buildHeaderAggregations(storage.grids[gridId], gridId);
@@ -571,7 +571,7 @@ var grid = (function _grid($) {
 
                         if (appliedUpdate) {
                             storage.grids[gridId].grid.find(&#039;.grid-content-div&#039;).empty();
-                            createGridContent(storage.grids[gridId], storage.grids[gridId].grid, false);
+                            createGridContent(storage.grids[gridId], storage.grids[gridId].grid);
                             storage.grids[gridId].grid.find(&#039;.grid-footer-div&#039;).empty();
                             createGridFooter(storage.grids[gridId], storage.grids[gridId].grid);
                             buildHeaderAggregations(storage.grids[gridId], gridId);
@@ -721,7 +721,7 @@ var grid = (function _grid($) {
         if (gridData.summaryRow &amp;&amp; gridData.summaryRow.positionAt === &#039;top&#039;) buildHeaderAggregations(gridData, id);
 
         createGridFooter(gridData, gridElem);
-        createGridContent(gridData, gridElem, true);
+        createGridContent(gridData, gridElem);
     }
 
     function addNewColumns(newData, gridElem) {
@@ -798,6 +798,7 @@ var grid = (function _grid($) {
             index++;
         }
         headerTable.css(&#039;width&#039;,&#039;&#039;);
+        setColWidthRedux(gridData, gridElem);
     }
 
     /**
@@ -910,9 +911,8 @@ var grid = (function _grid($) {
      * @private
      * @param {object} gridData
      * @param {object} gridElem
-     * @param {boolean} isNewGrid
      */
-    function createGridContent(gridData, gridElem/*, isNewGrid*/) {
+    function createGridContent(gridData, gridElem) {
         var gridContent = gridElem.find(&#039;.grid-content-div&#039;).css(&#039;height&#039;, &#039;250px&#039;);
         var id = gridContent.data(&#039;grid_content_id&#039;);
         var gcOffsets = gridContent.offset();
@@ -1025,9 +1025,9 @@ var grid = (function _grid($) {
         //Once the column widths have been set (i.e. the first time creating the grid), they should change size again....
         //any time the grid is paged, sorted, filtered, etc., the cell widths shouldn&#039;t change, the new data should just be dumped into
         //the grid.
-
-        setColWidthRedux(gridData, gridElem, &#039;.grid-header-div&#039;);
-        setColWidthRedux(gridData, gridElem, &#039;.grid-content-div&#039;);
+        copyGridWidth(gridElem);
+        //setColWidthRedux(gridData, gridElem, &#039;.grid-header-div&#039;);
+        //setColWidthRedux(gridData, gridElem, &#039;.grid-content-div&#039;);
 
         //if (isNewGrid) setColWidths(gridData, gridElem);
         //else copyGridWidth(gridElem);
@@ -1237,19 +1237,20 @@ var grid = (function _grid($) {
         return dataAttributes;
     }
 
-    function setColWidthRedux(gridData, gridElem, tableDivSelector) {
+    function setColWidthRedux(gridData, gridElem) {
         var columnNames = {},
             name,
             //totalWidth = 0,
             columnList = [];
-        var tableDiv = gridElem.find(tableDivSelector);
+        var tableDiv = gridElem.find(&#039;.grid-header-wrapper&#039;);
         for (name in gridData.columns) {
             columnNames[name] = isNumber(gridData.columns[name].width) ? gridData.columns[name].width : null;
             columnList.push(name);
             //totalWidth += gridData.columns[name].width;
         }
+        var colGroups = tableDiv.find(&#039;col&#039;);
 
-        var colGroups = tableDiv.find(&#039;col&#039;).each(function iterateColsCallback(idx, val) {
+        colGroups.each(function iterateColsCallback(idx, val) {
             var i = idx;
             if (gridData.groupedBy &amp;&amp; gridData.groupedBy !== &#039;none&#039;) {
                 i = (idx%(colGroups.length/2)) - 1;
@@ -1370,7 +1371,7 @@ var grid = (function _grid($) {
      * @private
      * @param {object} gridElem
      */
-    /*function copyGridWidth(gridElem) {
+    function copyGridWidth(gridElem) {
         var headerCols = gridElem.find(&#039;.grid-header-div&#039;).find(&#039;col&#039;);
         var contentCols = gridElem.find(&#039;.grid-content-div&#039;).find(&#039;col&#039;);
         var headerTable = gridElem.find(&#039;.grid-header-div&#039;).find(&#039;table&#039;);
@@ -1381,10 +1382,11 @@ var grid = (function _grid($) {
         contentCols.each(function colIterationCallback(idx, val) {
             if ($(val).hasClass(&#039;group_col&#039;))
                 return;
-            var width = $(headerCols[idx]).width();
-            $(val).css(&#039;width&#039;, width);
+            var width;
+            if (width = $(headerCols[idx]).width())
+                $(val).css(&#039;width&#039;, width);
         });
-    }*/
+    }
 
     /**
      * Attaches an event listener to a specific grid cell for the
@@ -1611,6 +1613,8 @@ var grid = (function _grid($) {
             columnsList.on(&#039;change&#039;, function groupBySelectCallback() {
                 if (storage.grids[id].updating) return;
                 if (Object.keys(storage.grids[id].columns).length === storage.grids[id].grid.find(&#039;colgroup&#039;).first().find(&#039;col&#039;).length &amp;&amp; this.value !== &#039;none&#039;) {
+                    if (!storage.grids[id].groupedBy)
+                        storage.grids[id].groupingStatusChanged = true;
                     var colGroups = storage.grids[id].grid.find(&#039;colgroup&#039;);
                     colGroups.each(function iterateColGroupsForInsertCallback(idx, val) {
                         $(val).prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
@@ -1619,6 +1623,7 @@ var grid = (function _grid($) {
                     storage.grids[id].grid.find(&#039;.summary-row-header&#039;).prepend(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
                 }
                 else if (this.value === &#039;none&#039;) {
+                    storage.grids[id].groupingStatusChanged = true;
                     storage.grids[id].grid.find(&#039;colgroup&#039;).find(&#039;.group_col&#039;).remove();
                     storage.grids[id].grid.find(&#039;.group_spacer&#039;).remove();
                     storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
@@ -2279,6 +2284,7 @@ var grid = (function _grid($) {
         }
 
         function getPageDataRequestCallback(response) {
+            var groupingStatus = gridData.groupingStatusChanged;
             gridData.dataSource.data = response.data;
             gridData.pageSize = requestObj.pageSize;
             gridData.pageNum = requestObj.pageNum;
@@ -2289,8 +2295,12 @@ var grid = (function _grid($) {
             gridData.filteredOn = requestObj.filteredOn;
             gridData.filterVal = requestObj.filterVal;
             gridData.filterType = requestObj.filterType;
+            gridData.groupingStatusChanged = false;
 
-            createGridContent(gridData, storage.grids[id].grid, ((gridData.pageRequest.eventType === &#039;newGrid&#039;) || (gridData.groupedBy &amp;&amp; gridData.groupedBy !== &#039;none&#039;)));
+            if (gridData.pageRequest.eventType === &#039;newGrid&#039; || groupingStatus)
+                setColWidthRedux(gridData, storage.grids[id].grid);
+
+            createGridContent(gridData, storage.grids[id].grid);
             if (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === &#039;pageSize&#039;) {
                 gridData.grid.find(&#039;.grid-footer-div&#039;).empty();
                 createGridFooter(gridData, gridData.grid);

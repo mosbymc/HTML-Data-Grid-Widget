@@ -444,7 +444,7 @@ var grid = (function _grid($) {
                             storage.grids[gridId].dataSource.data = data;
                             storage.grids[gridId].pageSize = data.length;
                             storage.grids[gridId].grid.find('.grid-content-div').empty();
-                            createGridContent(storage.grids[gridId], storage.grids[gridId].grid, false);
+                            createGridContent(storage.grids[gridId], storage.grids[gridId].grid);
                             storage.grids[gridId].grid.find('.grid-footer-div').empty();
                             createGridFooter(storage.grids[gridId], storage.grids[gridId].grid);
                             buildHeaderAggregations(storage.grids[gridId], gridId);
@@ -480,7 +480,7 @@ var grid = (function _grid($) {
 
                         if (appliedUpdate) {
                             storage.grids[gridId].grid.find('.grid-content-div').empty();
-                            createGridContent(storage.grids[gridId], storage.grids[gridId].grid, false);
+                            createGridContent(storage.grids[gridId], storage.grids[gridId].grid);
                             storage.grids[gridId].grid.find('.grid-footer-div').empty();
                             createGridFooter(storage.grids[gridId], storage.grids[gridId].grid);
                             buildHeaderAggregations(storage.grids[gridId], gridId);
@@ -630,7 +630,7 @@ var grid = (function _grid($) {
         if (gridData.summaryRow && gridData.summaryRow.positionAt === 'top') buildHeaderAggregations(gridData, id);
 
         createGridFooter(gridData, gridElem);
-        createGridContent(gridData, gridElem, true);
+        createGridContent(gridData, gridElem);
     }
 
     function addNewColumns(newData, gridElem) {
@@ -707,6 +707,7 @@ var grid = (function _grid($) {
             index++;
         }
         headerTable.css('width','');
+        setColWidthRedux(gridData, gridElem);
     }
 
     /**
@@ -819,9 +820,8 @@ var grid = (function _grid($) {
      * @private
      * @param {object} gridData
      * @param {object} gridElem
-     * @param {boolean} isNewGrid
      */
-    function createGridContent(gridData, gridElem/*, isNewGrid*/) {
+    function createGridContent(gridData, gridElem) {
         var gridContent = gridElem.find('.grid-content-div').css('height', '250px');
         var id = gridContent.data('grid_content_id');
         var gcOffsets = gridContent.offset();
@@ -934,9 +934,9 @@ var grid = (function _grid($) {
         //Once the column widths have been set (i.e. the first time creating the grid), they should change size again....
         //any time the grid is paged, sorted, filtered, etc., the cell widths shouldn't change, the new data should just be dumped into
         //the grid.
-
-        setColWidthRedux(gridData, gridElem, '.grid-header-div');
-        setColWidthRedux(gridData, gridElem, '.grid-content-div');
+        copyGridWidth(gridElem);
+        //setColWidthRedux(gridData, gridElem, '.grid-header-div');
+        //setColWidthRedux(gridData, gridElem, '.grid-content-div');
 
         //if (isNewGrid) setColWidths(gridData, gridElem);
         //else copyGridWidth(gridElem);
@@ -1146,19 +1146,20 @@ var grid = (function _grid($) {
         return dataAttributes;
     }
 
-    function setColWidthRedux(gridData, gridElem, tableDivSelector) {
+    function setColWidthRedux(gridData, gridElem) {
         var columnNames = {},
             name,
             //totalWidth = 0,
             columnList = [];
-        var tableDiv = gridElem.find(tableDivSelector);
+        var tableDiv = gridElem.find('.grid-header-wrapper');
         for (name in gridData.columns) {
             columnNames[name] = isNumber(gridData.columns[name].width) ? gridData.columns[name].width : null;
             columnList.push(name);
             //totalWidth += gridData.columns[name].width;
         }
+        var colGroups = tableDiv.find('col');
 
-        var colGroups = tableDiv.find('col').each(function iterateColsCallback(idx, val) {
+        colGroups.each(function iterateColsCallback(idx, val) {
             var i = idx;
             if (gridData.groupedBy && gridData.groupedBy !== 'none') {
                 i = (idx%(colGroups.length/2)) - 1;
@@ -1279,7 +1280,7 @@ var grid = (function _grid($) {
      * @private
      * @param {object} gridElem
      */
-    /*function copyGridWidth(gridElem) {
+    function copyGridWidth(gridElem) {
         var headerCols = gridElem.find('.grid-header-div').find('col');
         var contentCols = gridElem.find('.grid-content-div').find('col');
         var headerTable = gridElem.find('.grid-header-div').find('table');
@@ -1290,10 +1291,11 @@ var grid = (function _grid($) {
         contentCols.each(function colIterationCallback(idx, val) {
             if ($(val).hasClass('group_col'))
                 return;
-            var width = $(headerCols[idx]).width();
-            $(val).css('width', width);
+            var width;
+            if (width = $(headerCols[idx]).width())
+                $(val).css('width', width);
         });
-    }*/
+    }
 
     /**
      * Attaches an event listener to a specific grid cell for the
@@ -1520,6 +1522,8 @@ var grid = (function _grid($) {
             columnsList.on('change', function groupBySelectCallback() {
                 if (storage.grids[id].updating) return;
                 if (Object.keys(storage.grids[id].columns).length === storage.grids[id].grid.find('colgroup').first().find('col').length && this.value !== 'none') {
+                    if (!storage.grids[id].groupedBy)
+                        storage.grids[id].groupingStatusChanged = true;
                     var colGroups = storage.grids[id].grid.find('colgroup');
                     colGroups.each(function iterateColGroupsForInsertCallback(idx, val) {
                         $(val).prepend('<col class="group_col"/>');
@@ -1528,6 +1532,7 @@ var grid = (function _grid($) {
                     storage.grids[id].grid.find('.summary-row-header').prepend('<td class="group_spacer">&nbsp</td>');
                 }
                 else if (this.value === 'none') {
+                    storage.grids[id].groupingStatusChanged = true;
                     storage.grids[id].grid.find('colgroup').find('.group_col').remove();
                     storage.grids[id].grid.find('.group_spacer').remove();
                     storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
@@ -2188,6 +2193,7 @@ var grid = (function _grid($) {
         }
 
         function getPageDataRequestCallback(response) {
+            var groupingStatus = gridData.groupingStatusChanged;
             gridData.dataSource.data = response.data;
             gridData.pageSize = requestObj.pageSize;
             gridData.pageNum = requestObj.pageNum;
@@ -2198,8 +2204,12 @@ var grid = (function _grid($) {
             gridData.filteredOn = requestObj.filteredOn;
             gridData.filterVal = requestObj.filterVal;
             gridData.filterType = requestObj.filterType;
+            gridData.groupingStatusChanged = false;
 
-            createGridContent(gridData, storage.grids[id].grid, ((gridData.pageRequest.eventType === 'newGrid') || (gridData.groupedBy && gridData.groupedBy !== 'none')));
+            if (gridData.pageRequest.eventType === 'newGrid' || groupingStatus)
+                setColWidthRedux(gridData, storage.grids[id].grid);
+
+            createGridContent(gridData, storage.grids[id].grid);
             if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === 'pageSize') {
                 gridData.grid.find('.grid-footer-div').empty();
                 createGridFooter(gridData, gridData.grid);
