@@ -76,7 +76,6 @@
  - Update API event methods to work with array and namespace
  - Add integration tests if possible
  - Add type checking - passed in grid data
- - Make far left column expand when resizing another to be smaller that the total width of the table
  */
 /*exported grid*/
 /**
@@ -87,7 +86,7 @@
  */
 var grid = (function _grid($) {
     'use strict';
-    var dataTypes, events, storage, aggregates, resizing = false;
+    var dataTypes, events, storage, aggregates;
 
     /**
      * Exposed on the grid module. Called to create a grid widget.
@@ -103,7 +102,7 @@ var grid = (function _grid($) {
                 var tmp = id - 1;
                 while (tmp > -1) {  //iterate through all previous grids
                     if (storage.grids[tmp] != null && !$('body').find('#' + storage.grids[tmp].grid[0].id).length)     //if not found in the body
-                        storage.grids[tmp] = null;      //remove the data from storage
+                        delete storage.grids[tmp];      //remove the data from storage
                     tmp--;
                 }
             }
@@ -114,17 +113,7 @@ var grid = (function _grid($) {
             wrapperDiv.append('<div id="grid-content-' + id + '" data-grid_content_id="' + id + '" class=grid-content-div></div>');
             wrapperDiv.append('<div id="grid-footer-' + id + '" data-grid_footer_id="' + id + '" class=grid-footer-div></div>');
 
-            storage.grids[id] = {
-                events: {
-                    beforeCellEdit: [],
-                    cellEditChange: [],
-                    afterCellEdit: [],
-                    pageRequest: [],
-                    beforeDataBind: [],
-                    afterDataBind: [],
-                    columnReorder: []
-                }
-            };
+            storage.grids[id] = {};
             gridElem[0].grid = {};
 
             createGridInstanceMethods(gridElem, id);
@@ -445,6 +434,7 @@ var grid = (function _grid($) {
                         if (data != null && typeof data === 'object' && data.constructor === Array) {
                             storage.grids[gridId].dataSource.data = data;
                             storage.grids[gridId].pageSize = data.length;
+                            storage.grids[gridId].dataSource.rowCount = data.length;
                             storage.grids[gridId].grid.find('.grid-content-div').empty();
                             createGridContent(storage.grids[gridId], storage.grids[gridId].grid);
                             storage.grids[gridId].grid.find('.grid-footer-div').empty();
@@ -558,7 +548,7 @@ var grid = (function _grid($) {
                      */
                     value: function _destroy() {
                         findChildren(storage.grids[gridId].grid.children());
-                        storage.grids[gridId] = null;
+                        delete storage.grids[gridId];
 
                         function findChildren(nodes) {
                             for (var i = 0; i < nodes.length; i++) {
@@ -620,6 +610,15 @@ var grid = (function _grid($) {
      */
     function initializeGrid(id, gridData, gridElem) {
         storage.grids[id] = cloneGridData(gridData);
+        storage.grids[id].events = {
+            beforeCellEdit: [],
+            cellEditChange: [],
+            afterCellEdit: [],
+            pageRequest: [],
+            beforeDataBind: [],
+            afterDataBind: [],
+            columnReorder: []
+        };
         storage.grids[id].originalData = cloneGridData(gridData.dataSource.data);
         storage.grids[id].pageNum = 1;
         storage.grids[id].pageSize = gridData.pageSize || 25;
@@ -627,6 +626,7 @@ var grid = (function _grid($) {
         storage.grids[id].currentEdit = {};
         storage.grids[id].pageRequest = {};
         storage.grids[id].putRequest = {};
+        storage.grids[id].resizing = false;
         if (!storage.grids[id].dataSource.rowCount) storage.grids[id].dataSource.rowCount = gridData.dataSource.data.length;
 
         if (gridData.summaryRow && gridData.summaryRow.positionAt === 'top') buildHeaderAggregations(gridData, id);
@@ -931,9 +931,10 @@ var grid = (function _grid($) {
         createGroupTrEventHandlers();
 
         gridContent.on('scroll', function contentDivScrollCallback(e) {
-            if (resizing) return;
             var cDiv = $(e.currentTarget);
             var headWrap = cDiv.parents('.grid-wrapper').find('.grid-header-wrapper');
+            if (storage.grids[headWrap.parent().data('grid_header_id')].resizing)
+                return;
             headWrap.scrollLeft(cDiv.scrollLeft());
         });
 
@@ -1058,9 +1059,9 @@ var grid = (function _grid($) {
                     saveCellEditData(input);
                 });
             }
-            if (gridData.beforeCellEdit && gridData.beforeCellEdit.length) {
-                for (var x = 0; x < gridData.beforeCellEdit.length; x++) {
-                    gridData.beforeCellEdit[x].call(this, null);
+            if (gridData.events.beforeCellEdit && gridData.events.beforeCellEdit.length) {
+                for (var x = 0; x < gridData.events.beforeCellEdit.length; x++) {
+                    gridData.events.beforeCellEdit[x].call(gridData.grid, null);
                 }
             }
         });
@@ -1114,9 +1115,9 @@ var grid = (function _grid($) {
                     saveCellSelectData(select);
                 });
             }
-            if (gridData.beforeCellEdit && gridData.beforeCellEdit.length) {
-                for (var x = 0; x < gridData.beforeCellEdit.length; x++) {
-                    gridData.beforeCellEdit[x].call(this, null);
+            if (gridData.events.beforeCellEdit && gridData.events.beforeCellEdit.length) {
+                for (var x = 0; x < gridData.events.beforeCellEdit.length; x++) {
+                    gridData.events.beforeCellEdit[x].call(gridData.grid, null);
                 }
             }
         });
@@ -1328,9 +1329,9 @@ var grid = (function _grid($) {
         else {
             storage.grids[id].dataSource.data[index][field] = previousVal;
         }
-        if (storage.grids[id].afterCellEdit && storage.grids[id].afterCellEdit.length) {
-            for (var x = 0; x < storage.grids[id].afterCellEdit.length; x++)
-                storage.grids[id].afterCellEdit[x].call(this, null);
+        if (storage.grids[id].events.afterCellEdit && storage.grids[id].events.afterCellEdit.length) {
+            for (var x = 0; x < storage.grids[id].events.afterCellEdit.length; x++)
+                storage.grids[id].events.afterCellEdit[x].call(storage.grids[id].grid, null);
         }
     }
 
@@ -1350,9 +1351,9 @@ var grid = (function _grid($) {
             parentCell.prepend('<span class="dirty"></span>');
             storage.grids[id].dataSource.data[index][field] = val;
         }
-        if (storage.grids[id].afterCellEdit && storage.grids[id].afterCellEdit.length) {
-            for (var x = 0; x < storage.grids[id].afterCellEdit.length; x++)
-                storage.grids[id].afterCellEdit[x].call(this, null);
+        if (storage.grids[id].events.afterCellEdit && storage.grids[id].events.afterCellEdit.length) {
+            for (var x = 0; x < storage.grids[id].events.afterCellEdit.length; x++)
+                storage.grids[id].events.afterCellEdit[x].call(storage.grids[id].grid, null);
         }
     }
 
@@ -1408,7 +1409,6 @@ var grid = (function _grid($) {
             });
 
             if (dirtyCells.length) {
-                //var gridData = storage.grids[id];
                 for (var i = 0; i < dirtyCells.length; i++) {
                     var field = dirtyCells[i].data('field');
                     var index = dirtyCells[i].parents('tr').index();
@@ -1868,9 +1868,9 @@ var grid = (function _grid($) {
                 droppedIndex: droppedIndex,
                 targetIndex: targetIndex
             };
-            if (storage.grids[id].columnReorder && storage.grids[id].columnReorder.length) {
-                for (var x = 0; x < storage.grids[id].columnReorder.length; x++)
-                    storage.grids[id].columnReorder[x].call(this, evtObj);
+            if (storage.grids[id].events.columnReorder && storage.grids[id].events.columnReorder.length) {
+                for (var x = 0; x < storage.grids[id].events.columnReorder.length; x++)
+                    storage.grids[id].events.columnReorder[x].call(storage.grids[id].grid, evtObj);
             }
         });
         elem.on('dragover', function handleHeaderDragOverCallback(e) {
@@ -1889,10 +1889,10 @@ var grid = (function _grid($) {
                     sliderDiv = $('<div id=sliderDiv style="width:10px; height:' + target.innerHeight() + 'px; cursor: col-resize; position: absolute" draggable=true><div></div></div>').appendTo(parentDiv);
                     sliderDiv.on('dragstart', function handleDragStartCallback(e) {
                         e.originalEvent.dataTransfer.setData('text', e.currentTarget.id);
-                        resizing = true;
+                        storage.grids[parentDiv.parent().data('grid_header_id')].resizing = true;
                     });
                     sliderDiv.on('dragend', function handleDragStartCallback() {
-                        resizing = false;
+                        storage.grids[parentDiv.parent().data('grid_header_id')].resizing = true;
                     });
                     sliderDiv.on('dragover', function handleHeaderDragOverCallback(e) {
                         e.preventDefault();
@@ -2531,7 +2531,7 @@ var grid = (function _grid($) {
 
         var index = -1;
         while (++index < length) {
-            newArr[index] = arr[index];
+            newArr[index] = cloneGridData(arr[index]);
         }
         return newArr;
     }

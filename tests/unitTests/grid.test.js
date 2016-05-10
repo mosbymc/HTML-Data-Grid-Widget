@@ -5,7 +5,7 @@
  */
 
 //List of available events to bind a handler to
-var events = ["cellEditChange", "beforeCellEdit", "afterCellEdit", "pageRequested", "beforeDataBind", "afterDataBind", "columnReorder"];
+var events = ["cellEditChange", "beforeCellEdit", "afterCellEdit", "pageRequest", "beforeDataBind", "afterDataBind", "columnReorder"];
 
 //Tests based around successful grid creation
 QUnit.module('Successful grid creation tests', {
@@ -13,7 +13,7 @@ QUnit.module('Successful grid creation tests', {
         var tmp = $("#qunit-fixture")[0];
         if (tmp.grid)
             tmp.grid.destroy();
-        grid.create(gridData, document.getElementById("qunit-fixture"));
+        grid.createGrid(gridData, document.getElementById("qunit-fixture"));
     }
 });
 
@@ -31,7 +31,7 @@ QUnit.test('Grid creation should succeed', function gridCreationTests(assert) {
         assert.ok(tmp === 'object' || tmp === 'function', 'Grid API - ' + keys[i] + ' object created');
     }
 
-    assert.ok(typeof grid.create === 'function', "grid.create is a function");
+    assert.ok(typeof grid.createGrid === 'function', "grid.create is a function");
 
     assert.ok(typeof gridApi.bindEvent == 'function', "gridApi.bindEvent is a function");
     assert.ok(typeof gridApi.destroy === 'function', "gridApi.destroy is a function");
@@ -71,40 +71,41 @@ QUnit.module('Grid API Tests', {
         var tmp = $("#qunit-fixture")[0];
         if (tmp.grid)
             tmp.grid.destroy();
-        grid.create(gridData, document.getElementById("qunit-fixture"));
+        grid.createGrid(gridData, document.getElementById("qunit-fixture"));
     }
 });
 
 //Is the handler for the 'cellEditChange' event succesfully bound?
 QUnit.test('General grid API tests', function gridEventTests(assert) {
     var evt = "cellEditChange";
+    var noop = function(){};
     var gridApi = $('#qunit-fixture')[0].grid;
-    gridApi.bindEvent(evt, function(){});
+    gridApi.bindEvent(evt, noop);
     var eventListeners = gridApi.getHandledEvents();
     assert.ok(~eventListeners[0].indexOf(evt), "An event handler for 'cellEditChange' was attached to the grid");
 
-    gridApi.unbindEvent(evt);
+    gridApi.unbindEvent(evt, noop);
     evt = "asdasda";
-    gridApi.bindEvent(evt, function(){});
+    gridApi.bindEvent(evt, noop);
     var eventListeners = gridApi.getHandledEvents();
     assert.notOk(eventListeners.length && ~eventListeners[0].indexOf(evt), "No event handler for 'asdasda' was attached to the grid");
 
-    gridApi.bindEvent('cellEditChange', function(){});
+    gridApi.bindEvent('cellEditChange', noop);
     var gridEvents = gridApi.getHandledEvents();
     assert.ok(~gridEvents.indexOf('cellEditChange'), 'cellEditChange is handled');
 
-    gridApi.unbindEvent('cellEditChange');
-    gridApi.bindEvent('cellEditChange', function(){});
-    gridApi.unbindEvent('cellEditChange');
+    gridApi.unbindEvent('cellEditChange', noop);
+    gridApi.bindEvent('cellEditChange', noop);
+    gridApi.unbindEvent('cellEditChange', noop);
     gridEvents = gridApi.getHandledEvents();
     assert.ok(!~gridEvents.indexOf('cellEditChange'), 'cellEditChange event handler was removed');
 
-    gridApi.bindEvent('cellEditChange', function(){});
-    gridApi.unbindEvent('sdsdfg');
+    gridApi.bindEvent('cellEditChange', noop);
+    gridApi.unbindEvent('sdsdfg', noop);
     gridEvents = gridApi.getHandledEvents();
     assert.ok(~gridEvents.indexOf('cellEditChange'), 'cellEditChange event handler is still attached');
 
-    gridApi.unbindEvent('cellEditChange');
+    gridApi.unbindEvent('cellEditChange', noop);
     gridApi.bindEvent(evt);
     assert.notOk(gridApi.getHandledEvents()[0] === evt, "Cannot pass 'undefined' for function parameter");
 
@@ -165,13 +166,13 @@ QUnit.test('General grid API tests', function gridEventTests(assert) {
     }
 
     var currentGridData = gridApi.getCurrentDataSourceData();
-    assert.ok(currentGridData.length === 25, 'Full grid data was returned');
+    assert.ok(currentGridData.length === 54, 'Full grid data was returned');
 
     currentGridData = gridApi.getCurrentDataSourceData(-1);
-    assert.ok(currentGridData.length === 25, 'Full grid data was returned');
+    assert.ok(currentGridData.length === 54, 'Full grid data was returned');
 
     currentGridData = gridApi.getCurrentDataSourceData({});
-    assert.ok(currentGridData.length === 25, 'Full grid data was returned');
+    assert.ok(currentGridData.length === 54, 'Full grid data was returned');
 
     currentGridData = gridApi.getCurrentDataSourceData(2);
     assert.ok(currentGridData.length === 1, 'One grid data model was returned');
@@ -206,7 +207,7 @@ QUnit.module('Grid API Tests: updateCellData', {
         var tmp = $("#qunit-fixture")[0];
         if (tmp.grid)
             tmp.grid.destroy();
-        grid.create(gridData, document.getElementById("qunit-fixture"));
+        grid.createGrid(gridData, document.getElementById("qunit-fixture"));
     }
 });
 
@@ -302,7 +303,7 @@ QUnit.module('Grid API Tests: updateRowData', {
         var tmp = $("#qunit-fixture")[0];
         if (tmp.grid)
             tmp.grid.destroy();
-        grid.create(gridData, document.getElementById("qunit-fixture"));
+        grid.createGrid(gridData, document.getElementById("qunit-fixture"));
     }
 });
 
@@ -395,7 +396,7 @@ QUnit.module('Grid API Tests: updatePageData', {
         var tmp = $("#qunit-fixture")[0];
         if (tmp.grid)
             tmp.grid.destroy();
-        grid.create(gridData, document.getElementById("qunit-fixture"));
+        grid.createGrid(gridData, document.getElementById("qunit-fixture"));
     }
 });
 

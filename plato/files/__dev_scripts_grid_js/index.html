@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.34</p>
+      <p class="stat">55.31</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2502</p>
+      <p class="stat">2503</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">177.52</p>
+      <p class="stat">179.07</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">43.88</p>
+      <p class="stat">44.30</p>
     </div>
   </div>
 </div>
@@ -167,7 +167,6 @@
  - Update API event methods to work with array and namespace
  - Add integration tests if possible
  - Add type checking - passed in grid data
- - Make far left column expand when resizing another to be smaller that the total width of the table
  */
 /*exported grid*/
 /**
@@ -178,7 +177,7 @@
  */
 var grid = (function _grid($) {
     &#039;use strict&#039;;
-    var dataTypes, events, storage, aggregates, resizing = false;
+    var dataTypes, events, storage, aggregates;
 
     /**
      * Exposed on the grid module. Called to create a grid widget.
@@ -194,7 +193,7 @@ var grid = (function _grid($) {
                 var tmp = id - 1;
                 while (tmp &gt; -1) {  //iterate through all previous grids
                     if (storage.grids[tmp] != null &amp;&amp; !$(&#039;body&#039;).find(&#039;#&#039; + storage.grids[tmp].grid[0].id).length)     //if not found in the body
-                        storage.grids[tmp] = null;      //remove the data from storage
+                        delete storage.grids[tmp];      //remove the data from storage
                     tmp--;
                 }
             }
@@ -205,17 +204,7 @@ var grid = (function _grid($) {
             wrapperDiv.append(&#039;&lt;div id=&quot;grid-content-&#039; + id + &#039;&quot; data-grid_content_id=&quot;&#039; + id + &#039;&quot; class=grid-content-div&gt;&lt;/div&gt;&#039;);
             wrapperDiv.append(&#039;&lt;div id=&quot;grid-footer-&#039; + id + &#039;&quot; data-grid_footer_id=&quot;&#039; + id + &#039;&quot; class=grid-footer-div&gt;&lt;/div&gt;&#039;);
 
-            storage.grids[id] = {
-                events: {
-                    beforeCellEdit: [],
-                    cellEditChange: [],
-                    afterCellEdit: [],
-                    pageRequest: [],
-                    beforeDataBind: [],
-                    afterDataBind: [],
-                    columnReorder: []
-                }
-            };
+            storage.grids[id] = {};
             gridElem[0].grid = {};
 
             createGridInstanceMethods(gridElem, id);
@@ -536,6 +525,7 @@ var grid = (function _grid($) {
                         if (data != null &amp;&amp; typeof data === &#039;object&#039; &amp;&amp; data.constructor === Array) {
                             storage.grids[gridId].dataSource.data = data;
                             storage.grids[gridId].pageSize = data.length;
+                            storage.grids[gridId].dataSource.rowCount = data.length;
                             storage.grids[gridId].grid.find(&#039;.grid-content-div&#039;).empty();
                             createGridContent(storage.grids[gridId], storage.grids[gridId].grid);
                             storage.grids[gridId].grid.find(&#039;.grid-footer-div&#039;).empty();
@@ -649,7 +639,7 @@ var grid = (function _grid($) {
                      */
                     value: function _destroy() {
                         findChildren(storage.grids[gridId].grid.children());
-                        storage.grids[gridId] = null;
+                        delete storage.grids[gridId];
 
                         function findChildren(nodes) {
                             for (var i = 0; i &lt; nodes.length; i++) {
@@ -711,6 +701,15 @@ var grid = (function _grid($) {
      */
     function initializeGrid(id, gridData, gridElem) {
         storage.grids[id] = cloneGridData(gridData);
+        storage.grids[id].events = {
+            beforeCellEdit: [],
+            cellEditChange: [],
+            afterCellEdit: [],
+            pageRequest: [],
+            beforeDataBind: [],
+            afterDataBind: [],
+            columnReorder: []
+        };
         storage.grids[id].originalData = cloneGridData(gridData.dataSource.data);
         storage.grids[id].pageNum = 1;
         storage.grids[id].pageSize = gridData.pageSize || 25;
@@ -718,6 +717,7 @@ var grid = (function _grid($) {
         storage.grids[id].currentEdit = {};
         storage.grids[id].pageRequest = {};
         storage.grids[id].putRequest = {};
+        storage.grids[id].resizing = false;
         if (!storage.grids[id].dataSource.rowCount) storage.grids[id].dataSource.rowCount = gridData.dataSource.data.length;
 
         if (gridData.summaryRow &amp;&amp; gridData.summaryRow.positionAt === &#039;top&#039;) buildHeaderAggregations(gridData, id);
@@ -1022,9 +1022,10 @@ var grid = (function _grid($) {
         createGroupTrEventHandlers();
 
         gridContent.on(&#039;scroll&#039;, function contentDivScrollCallback(e) {
-            if (resizing) return;
             var cDiv = $(e.currentTarget);
             var headWrap = cDiv.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-header-wrapper&#039;);
+            if (storage.grids[headWrap.parent().data(&#039;grid_header_id&#039;)].resizing)
+                return;
             headWrap.scrollLeft(cDiv.scrollLeft());
         });
 
@@ -1149,9 +1150,9 @@ var grid = (function _grid($) {
                     saveCellEditData(input);
                 });
             }
-            if (gridData.beforeCellEdit &amp;&amp; gridData.beforeCellEdit.length) {
-                for (var x = 0; x &lt; gridData.beforeCellEdit.length; x++) {
-                    gridData.beforeCellEdit[x].call(this, null);
+            if (gridData.events.beforeCellEdit &amp;&amp; gridData.events.beforeCellEdit.length) {
+                for (var x = 0; x &lt; gridData.events.beforeCellEdit.length; x++) {
+                    gridData.events.beforeCellEdit[x].call(gridData.grid, null);
                 }
             }
         });
@@ -1205,9 +1206,9 @@ var grid = (function _grid($) {
                     saveCellSelectData(select);
                 });
             }
-            if (gridData.beforeCellEdit &amp;&amp; gridData.beforeCellEdit.length) {
-                for (var x = 0; x &lt; gridData.beforeCellEdit.length; x++) {
-                    gridData.beforeCellEdit[x].call(this, null);
+            if (gridData.events.beforeCellEdit &amp;&amp; gridData.events.beforeCellEdit.length) {
+                for (var x = 0; x &lt; gridData.events.beforeCellEdit.length; x++) {
+                    gridData.events.beforeCellEdit[x].call(gridData.grid, null);
                 }
             }
         });
@@ -1419,9 +1420,9 @@ var grid = (function _grid($) {
         else {
             storage.grids[id].dataSource.data[index][field] = previousVal;
         }
-        if (storage.grids[id].afterCellEdit &amp;&amp; storage.grids[id].afterCellEdit.length) {
-            for (var x = 0; x &lt; storage.grids[id].afterCellEdit.length; x++)
-                storage.grids[id].afterCellEdit[x].call(this, null);
+        if (storage.grids[id].events.afterCellEdit &amp;&amp; storage.grids[id].events.afterCellEdit.length) {
+            for (var x = 0; x &lt; storage.grids[id].events.afterCellEdit.length; x++)
+                storage.grids[id].events.afterCellEdit[x].call(storage.grids[id].grid, null);
         }
     }
 
@@ -1441,9 +1442,9 @@ var grid = (function _grid($) {
             parentCell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
             storage.grids[id].dataSource.data[index][field] = val;
         }
-        if (storage.grids[id].afterCellEdit &amp;&amp; storage.grids[id].afterCellEdit.length) {
-            for (var x = 0; x &lt; storage.grids[id].afterCellEdit.length; x++)
-                storage.grids[id].afterCellEdit[x].call(this, null);
+        if (storage.grids[id].events.afterCellEdit &amp;&amp; storage.grids[id].events.afterCellEdit.length) {
+            for (var x = 0; x &lt; storage.grids[id].events.afterCellEdit.length; x++)
+                storage.grids[id].events.afterCellEdit[x].call(storage.grids[id].grid, null);
         }
     }
 
@@ -1499,7 +1500,6 @@ var grid = (function _grid($) {
             });
 
             if (dirtyCells.length) {
-                //var gridData = storage.grids[id];
                 for (var i = 0; i &lt; dirtyCells.length; i++) {
                     var field = dirtyCells[i].data(&#039;field&#039;);
                     var index = dirtyCells[i].parents(&#039;tr&#039;).index();
@@ -1959,9 +1959,9 @@ var grid = (function _grid($) {
                 droppedIndex: droppedIndex,
                 targetIndex: targetIndex
             };
-            if (storage.grids[id].columnReorder &amp;&amp; storage.grids[id].columnReorder.length) {
-                for (var x = 0; x &lt; storage.grids[id].columnReorder.length; x++)
-                    storage.grids[id].columnReorder[x].call(this, evtObj);
+            if (storage.grids[id].events.columnReorder &amp;&amp; storage.grids[id].events.columnReorder.length) {
+                for (var x = 0; x &lt; storage.grids[id].events.columnReorder.length; x++)
+                    storage.grids[id].events.columnReorder[x].call(storage.grids[id].grid, evtObj);
             }
         });
         elem.on(&#039;dragover&#039;, function handleHeaderDragOverCallback(e) {
@@ -1980,10 +1980,10 @@ var grid = (function _grid($) {
                     sliderDiv = $(&#039;&lt;div id=sliderDiv style=&quot;width:10px; height:&#039; + target.innerHeight() + &#039;px; cursor: col-resize; position: absolute&quot; draggable=true&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;&#039;).appendTo(parentDiv);
                     sliderDiv.on(&#039;dragstart&#039;, function handleDragStartCallback(e) {
                         e.originalEvent.dataTransfer.setData(&#039;text&#039;, e.currentTarget.id);
-                        resizing = true;
+                        storage.grids[parentDiv.parent().data(&#039;grid_header_id&#039;)].resizing = true;
                     });
                     sliderDiv.on(&#039;dragend&#039;, function handleDragStartCallback() {
-                        resizing = false;
+                        storage.grids[parentDiv.parent().data(&#039;grid_header_id&#039;)].resizing = true;
                     });
                     sliderDiv.on(&#039;dragover&#039;, function handleHeaderDragOverCallback(e) {
                         e.preventDefault();
@@ -2622,7 +2622,7 @@ var grid = (function _grid($) {
 
         var index = -1;
         while (++index &lt; length) {
-            newArr[index] = arr[index];
+            newArr[index] = cloneGridData(arr[index]);
         }
         return newArr;
     }

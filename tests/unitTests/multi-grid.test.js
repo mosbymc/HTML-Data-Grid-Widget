@@ -15,8 +15,8 @@ QUnit.module('Grid API tests', {
             tmp1.grid.destroy();
         if (tmp2.grid)
             tmp2.grid.destroy();
-        grid.create(gridData, tmp1);
-        grid.create(testGridData, tmp2);
+        grid.createGrid(gridData, tmp1);
+        grid.createGrid(testGridData, tmp2);
     }
 });
 
@@ -25,15 +25,16 @@ QUnit.test('Closure should prevent cross-contamination', function gridApiTestsCa
         gridApi1 = $('#grid1')[0].grid,
         gridApi2 = $('#grid2')[0].grid;
 
-    gridApi1.bindEvent(evt, function(){});
+    var eventHandler = function(){};
+    gridApi1.bindEvent(evt, eventHandler);
 
     var eventListeners1 = gridApi1.getHandledEvents(),
         eventListeners2 = gridApi2.getHandledEvents();
     assert.ok(~eventListeners1.indexOf(evt), "An event handler for 'cellEditChange' was attached to grid1");
     assert.ok(!eventListeners2.length, "An event handler for 'cellEditChange' was  not attached to grid2");
 
-    gridApi2.bindEvent(evt, function(){});
-    gridApi1.unbindEvent(evt);
+    gridApi2.bindEvent(evt, eventHandler);
+    gridApi1.unbindEvent(evt, eventHandler);
 
     eventListeners1 = gridApi1.getHandledEvents();
     eventListeners2 = gridApi2.getHandledEvents();
@@ -91,14 +92,14 @@ QUnit.module('Grid API Tests: updateCellData', {
             tmp1.grid.destroy();
         if (tmp2.grid)
             tmp2.grid.destroy();
-        grid.create(gridData, tmp1);
-        grid.create(testGridData, tmp2);
+        grid.createGrid(gridData, tmp1);
+        grid.createGrid(testGridData, tmp2);
     }
 });
 
 QUnit.test('Closure should prevent cell updates across grids', function cellUpdateTestCallback(assert) {
-    var gridApi1 = $('#grid1')[0].grid;
-    gridApi2 = $('#grid2')[0].grid;
+    var gridApi1 = $('#grid1')[0].grid,
+        gridApi2 = $('#grid2')[0].grid;
 
     var dataCell1 = $('#grid1').find('.grid-content-div').find('table').find('tr').first().children('td')[0],
         dataCell2 = $('#grid2').find('.grid-content-div').find('table').find('tr').first().children('td')[0],
@@ -188,8 +189,8 @@ QUnit.module('Grid API Tests: updateRowData', {
             tmp1.grid.destroy();
         if (tmp2.grid)
             tmp2.grid.destroy();
-        grid.create(gridData, tmp1);
-        grid.create(testGridData, tmp2);
+        grid.createGrid(gridData, tmp1);
+        grid.createGrid(testGridData, tmp2);
     }
 });
 
@@ -236,8 +237,8 @@ QUnit.module('Grid API Tests: updatePageData', {
             tmp1.grid.destroy();
         if (tmp2.grid)
             tmp2.grid.destroy();
-        grid.create(gridData, tmp1);
-        grid.create(testGridData, tmp2);
+        grid.createGrid(gridData, tmp1);
+        grid.createGrid(testGridData, tmp2);
     }
 });
 
