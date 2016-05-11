@@ -5,12 +5,14 @@
  */
 
 //List of available events to bind a handler to
-var events = ["cellEditChange", "beforeCellEdit", "afterCellEdit", "pageRequest", "beforeDataBind", "afterDataBind", "columnReorder"];
+var events = ["cellEditChange", "beforeCellEdit", "afterCellEdit", "pageRequested", "beforeDataBind", "afterDataBind", "columnReorder"],
+    qunitFixture = '#qunit-fixture',
+    contentDiv = '.grid-content-div';
 
 //Tests based around successful grid creation
 QUnit.module('Successful grid creation tests', {
     beforeEach: function destroyAndRecreateGrid() {
-        var tmp = $("#qunit-fixture")[0];
+        var tmp = $(qunitFixture)[0];
         if (tmp.grid)
             tmp.grid.destroy();
         grid.createGrid(gridData, document.getElementById("qunit-fixture"));
@@ -19,7 +21,7 @@ QUnit.module('Successful grid creation tests', {
 
 //Is there at least one table element inside the div that was used for the grid?
 QUnit.test('Grid creation should succeed', function gridCreationTests(assert) {
-    var gridElem = $('#qunit-fixture');
+    var gridElem = $(qunitFixture);
     var gridApi = gridElem[0].grid;
     var keys = Object.getOwnPropertyNames(gridElem[0].grid);
 
@@ -68,18 +70,18 @@ QUnit.test('Grid creation should succeed', function gridCreationTests(assert) {
 
 QUnit.module('Grid API Tests', {
     beforeEach: function() {
-        var tmp = $("#qunit-fixture")[0];
+        var tmp = $(qunitFixture)[0];
         if (tmp.grid)
             tmp.grid.destroy();
         grid.createGrid(gridData, document.getElementById("qunit-fixture"));
     }
 });
 
-//Is the handler for the 'cellEditChange' event succesfully bound?
+//Is the handler for the 'cellEditChange' event successfully bound?
 QUnit.test('General grid API tests', function gridEventTests(assert) {
     var evt = "cellEditChange";
     var noop = function(){};
-    var gridApi = $('#qunit-fixture')[0].grid;
+    var gridApi = $(qunitFixture)[0].grid;
     gridApi.bindEvent(evt, noop);
     var eventListeners = gridApi.getHandledEvents();
     assert.ok(~eventListeners[0].indexOf(evt), "An event handler for 'cellEditChange' was attached to the grid");
@@ -87,7 +89,7 @@ QUnit.test('General grid API tests', function gridEventTests(assert) {
     gridApi.unbindEvent(evt, noop);
     evt = "asdasda";
     gridApi.bindEvent(evt, noop);
-    var eventListeners = gridApi.getHandledEvents();
+    eventListeners = gridApi.getHandledEvents();
     assert.notOk(eventListeners.length && ~eventListeners[0].indexOf(evt), "No event handler for 'asdasda' was attached to the grid");
 
     gridApi.bindEvent('cellEditChange', noop);
@@ -177,7 +179,7 @@ QUnit.test('General grid API tests', function gridEventTests(assert) {
     currentGridData = gridApi.getCurrentDataSourceData(2);
     assert.ok(currentGridData.length === 1, 'One grid data model was returned');
 
-    var currentGridData = gridApi.getCurrentPageData();
+    currentGridData = gridApi.getCurrentPageData();
     assert.ok(currentGridData.length === 25, 'Full grid data was returned');
 
     currentGridData = gridApi.getCurrentPageData(-1);
@@ -193,18 +195,18 @@ QUnit.test('General grid API tests', function gridEventTests(assert) {
     assert.ok(gridApi.selectedRow === null, 'null was returned when no active cell');
     assert.ok(gridApi.selectedColumn === null, 'null was returned when no active cell');
 
-    $('#qunit-fixture').find('.grid-content-div').find('table').find('tr').find('td').first()[0].click();
+    $(qunitFixture).find(contentDiv).find('table').find('tr').find('td').first()[0].click();
     var cellVal = gridApi.activeCellData;
     assert.ok(gridApi.activeCellData === 'New Brakes', 'New Brakes was returned when the first rows first column was clicked');
     assert.ok(gridApi.selectedRow === 0, 'The selected cell\'s parent row index was returned');
-    var cell = $('#qunit-fixture').find('.grid-content-div').find('table').find('tr').find('td').first()[0];
+    var cell = $(qunitFixture).find(contentDiv).find('table').find('tr').find('td').first()[0];
     var colIndex = $(cell).parents(".grid-wrapper").find(".grid-header-wrapper").find(".grid-headerRow").children("[data-field='" + $(cell).data("field") + "']").data("index");
     assert.deepEqual(gridApi.selectedColumn, { field: $(cell).data("field"), columnIndex: colIndex }, 'null was returned when no active cell');
 });
 
 QUnit.module('Grid API Tests: updateCellData', {
     beforeEach: function() {
-        var tmp = $("#qunit-fixture")[0];
+        var tmp = $(qunitFixture)[0];
         if (tmp.grid)
             tmp.grid.destroy();
         grid.createGrid(gridData, document.getElementById("qunit-fixture"));
@@ -213,39 +215,39 @@ QUnit.module('Grid API Tests: updateCellData', {
 
 //Does the 'UpdateCellData' API call result in a new UI value, the same grid model value, and a dirty flag?
 QUnit.test('UpdateCellData grid API tests', function gridUpdateCellDataTests(assert) {
-    var dataCell = $('#qunit-fixture').find('.grid-content-div').find('table').find('tr').first().children('td')[0];
+    var dataCell = $(qunitFixture).find(contentDiv).find('table').find('tr').first().children('td')[0];
     var initialGridValue = dataCell.outerText;
-    var initialDataValue = $('#qunit-fixture')[0].grid.getCurrentDataSourceData(0)[0]["Service"];
+    var initialDataValue = $(qunitFixture)[0].grid.getCurrentDataSourceData(0)[0]["Service"];
 
-    $('#qunit-fixture')[0].grid.updateCellData({index: 0, field: "Service", value: "Old Brakes"}, true /*setAsDirty*/);
+    $(qunitFixture)[0].grid.updateCellData({index: 0, field: "Service", value: "Old Brakes"}, true /*setAsDirty*/);
 
-    var currentGridValue = $('#qunit-fixture').find('.grid-content-div').find('table').find('tr').first().children('td')[0].outerText;
-    var currentDataValue = $('#qunit-fixture')[0].grid.getCurrentDataSourceData(0)[0]["Service"];
+    var currentGridValue = $(qunitFixture).find(contentDiv).find('table').find('tr').first().children('td')[0].outerText;
+    var currentDataValue = $(qunitFixture)[0].grid.getCurrentDataSourceData(0)[0]["Service"];
 
     assert.ok(initialGridValue !== currentGridValue, 'Previous UI value: ' + initialGridValue + " does not equal the current UI value: " + currentGridValue);
     assert.ok(initialDataValue !== currentDataValue, initialDataValue + " equals " + currentDataValue);
     assert.ok($(dataCell).children('span').hasClass('dirty'), "Grid cell is dirty");
 
-    var row = $('#qunit-fixture').find('.grid-content-div').find('table').find('tr')[4];
-    dataCell1 = $(row).children('td')[4];
+    var row = $(qunitFixture).find(contentDiv).find('table').find('tr')[4];
+    var dataCell1 = $(row).children('td')[4];
     var dataCell2 = $(row).children('td')[5];
 
     var initialGridValue1 = dataCell1.outerText;
-    var initialDataValue1 = $('#qunit-fixture')[0].grid.getCurrentDataSourceData(4)[0]["Billed"];
+    var initialDataValue1 = $(qunitFixture)[0].grid.getCurrentDataSourceData(4)[0]["Billed"];
 
     var initialGridValue2 = dataCell2.outerText;
-    var initialDataValue2 = $('#qunit-fixture')[0].grid.getCurrentDataSourceData(4)[0]["Markup"];
+    var initialDataValue2 = $(qunitFixture)[0].grid.getCurrentDataSourceData(4)[0]["Markup"];
 
-    $('#qunit-fixture')[0].grid.updateCellData([
+    $(qunitFixture)[0].grid.updateCellData([
             {index: 4, field: "Billed", value: (parseInt(initialDataValue1) + 5)},
             {index: 4, field: "Markup", value: 533.86}],
         false /*setAsDirty*/);
 
     var currentGridValue1 = $(row).children('td')[4].outerText;
-    var currentDataValue1 = $('#qunit-fixture')[0].grid.getCurrentDataSourceData(4)[0]["Billed"];
+    var currentDataValue1 = $(qunitFixture)[0].grid.getCurrentDataSourceData(4)[0]["Billed"];
 
     var currentGridValue2 = $(row).children('td')[5].outerText;
-    var currentDataValue2 = $('#qunit-fixture')[0].grid.getCurrentDataSourceData(4)[0]["Markup"];
+    var currentDataValue2 = $(qunitFixture)[0].grid.getCurrentDataSourceData(4)[0]["Markup"];
 
     assert.notEqual(initialGridValue1, currentGridValue1, initialGridValue1 + " does not equal " + currentGridValue1);
     assert.ok(initialDataValue1 !== currentDataValue1, initialDataValue1 + " equals " + currentDataValue1);
@@ -255,43 +257,43 @@ QUnit.test('UpdateCellData grid API tests', function gridUpdateCellDataTests(ass
     assert.ok(initialDataValue2 !== currentDataValue2, initialDataValue2 + " equals " + currentDataValue2);
     assert.notOk($(dataCell2).children('span').hasClass('dirty'), "The second grid cell is not dirty");
 
-    row = $('#qunit-fixture').find('.grid-content-div').find('table').find('tr')[1];
+    row = $(qunitFixture).find(contentDiv).find('table').find('tr')[1];
     dataCell = $(row).children('td')[1];
-    var initialGridValue = dataCell.outerText;
-    var initialDataValue = $('#qunit-fixture')[0].grid.getCurrentDataSourceData(1)[0]["Labor"];
+    initialGridValue = dataCell.outerText;
+    initialDataValue = $(qunitFixture)[0].grid.getCurrentDataSourceData(1)[0]["Labor"];
 
-    $('#qunit-fixture')[0].grid.updateCellData({field: "Labor", value: (parseInt(initialDataValue) + 5)}, true /*setAsDirty*/);
+    $(qunitFixture)[0].grid.updateCellData({field: "Labor", value: (parseInt(initialDataValue) + 5)}, true /*setAsDirty*/);
 
-    var currentGridValue = $(row).children('td')[1].outerText;
-    var currentDataValue = $('#qunit-fixture')[0].grid.getCurrentDataSourceData(1)[0]["Labor"];
+    currentGridValue = $(row).children('td')[1].outerText;
+    currentDataValue = $(qunitFixture)[0].grid.getCurrentDataSourceData(1)[0]["Labor"];
 
     assert.equal(initialGridValue, currentGridValue, 'Previous UI value: ' + initialGridValue + " equals the current UI value: " + currentGridValue);
     assert.ok(initialDataValue === currentDataValue, initialDataValue + " equals " + currentDataValue);
     assert.ok(!$(dataCell).children('span').hasClass('dirty'), "Grid cell is not dirty");
 
-    row = $('#qunit-fixture').find('.grid-content-div').find('table').find('tr')[2];
+    row = $(qunitFixture).find(contentDiv).find('table').find('tr')[2];
     dataCell = $(row).children('td')[2];
     initialGridValue = dataCell.outerText;
-    initialDataValue = $('#qunit-fixture')[0].grid.getCurrentDataSourceData(2)[0]["Labor"];
+    initialDataValue = $(qunitFixture)[0].grid.getCurrentDataSourceData(2)[0]["Labor"];
 
-    $('#qunit-fixture')[0].grid.updateCellData({field: "Labor", value: (parseInt(initialDataValue) + 5)}, true /*setAsDirty*/);
+    $(qunitFixture)[0].grid.updateCellData({field: "Labor", value: (parseInt(initialDataValue) + 5)}, true /*setAsDirty*/);
 
     currentGridValue = $(row).children('td')[2].outerText;
-    currentDataValue = $('#qunit-fixture')[0].grid.getCurrentDataSourceData(2)[0]["Labor"];
+    currentDataValue = $(qunitFixture)[0].grid.getCurrentDataSourceData(2)[0]["Labor"];
 
     assert.equal(initialGridValue, currentGridValue, 'Previous UI value: ' + initialGridValue + " does not equal the current UI value: " + currentGridValue);
     assert.ok(initialDataValue === currentDataValue, initialDataValue + " equals " + currentDataValue);
     assert.ok(!$(dataCell).children('span').hasClass('dirty'), "Grid cell is not dirty");
 
-    row = $('#qunit-fixture').find('.grid-content-div').find('table').find('tr')[3];
+    row = $(qunitFixture).find(contentDiv).find('table').find('tr')[3];
     dataCell = $(row).children('td')[3];
     initialGridValue = dataCell.outerText;
-    initialDataValue = $('#qunit-fixture')[0].grid.getCurrentDataSourceData(3)[0]["Labor"];
+    initialDataValue = $(qunitFixture)[0].grid.getCurrentDataSourceData(3)[0]["Labor"];
 
-    $('#qunit-fixture')[0].grid.updateCellData(undefined, true /*setAsDirty*/);
+    $(qunitFixture)[0].grid.updateCellData(undefined, true /*setAsDirty*/);
 
     currentGridValue = $(row).children('td')[3].outerText;
-    currentDataValue = $('#qunit-fixture')[0].grid.getCurrentDataSourceData(3)[0]["Labor"];
+    currentDataValue = $(qunitFixture)[0].grid.getCurrentDataSourceData(3)[0]["Labor"];
 
     assert.equal(initialGridValue, currentGridValue, 'Previous UI value: ' + initialGridValue + " does not equal the current UI value: " + currentGridValue);
     assert.ok(initialDataValue === currentDataValue, initialDataValue + " equals " + currentDataValue);
@@ -300,7 +302,7 @@ QUnit.test('UpdateCellData grid API tests', function gridUpdateCellDataTests(ass
 
 QUnit.module('Grid API Tests: updateRowData', {
     beforeEach: function() {
-        var tmp = $("#qunit-fixture")[0];
+        var tmp = $(qunitFixture)[0];
         if (tmp.grid)
             tmp.grid.destroy();
         grid.createGrid(gridData, document.getElementById("qunit-fixture"));
@@ -308,7 +310,7 @@ QUnit.module('Grid API Tests: updateRowData', {
 });
 
 QUnit.test('updateRowData grid API tests', function gridUpdateRowDataTests1(assert) {
-    var gridApi = $('#qunit-fixture')[0].grid;
+    var gridApi = $(qunitFixture)[0].grid;
     var dataSourceModel = gridApi.getCurrentDataSourceData(5);
     var rowModel = gridApi.getCurrentPageData(5);
 
@@ -393,7 +395,7 @@ QUnit.test('updateRowData grid API tests', function gridUpdateRowDataTests1(asse
 
 QUnit.module('Grid API Tests: updatePageData', {
     beforeEach: function() {
-        var tmp = $("#qunit-fixture")[0];
+        var tmp = $(qunitFixture)[0];
         if (tmp.grid)
             tmp.grid.destroy();
         grid.createGrid(gridData, document.getElementById("qunit-fixture"));
@@ -401,7 +403,7 @@ QUnit.module('Grid API Tests: updatePageData', {
 });
 
 QUnit.test('updatePageData grid API tests', function gridUpdatePageDataTests(assert) {
-    var gridApi = $('#qunit-fixture')[0].grid;
+    var gridApi = $(qunitFixture)[0].grid;
     var dataSource = gridApi.getCurrentDataSourceData();
     var pageData = gridApi.getCurrentPageData();
 

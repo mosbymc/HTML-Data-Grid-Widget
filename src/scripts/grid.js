@@ -141,7 +141,7 @@ var grid = (function _grid($) {
                         initializeGrid(id, gridData, gridElem);
                     }
                     else {
-                        //TODO: do something here
+                        //TODO: do something here - unable to create grid due to lack of data
                     }
                 });
             }
@@ -609,30 +609,61 @@ var grid = (function _grid($) {
      * @param {object} gridElem
      */
     function initializeGrid(id, gridData, gridElem) {
-        storage.grids[id] = cloneGridData(gridData);
-        storage.grids[id].events = {
-            beforeCellEdit: [],
-            cellEditChange: [],
-            afterCellEdit: [],
-            pageRequest: [],
-            beforeDataBind: [],
-            afterDataBind: [],
-            columnReorder: []
+        var storageData = {};
+        var x;
+        storageData = cloneGridData(gridData);
+        storageData.events = {
+            beforeCellEdit: typeof storageData.beforeCellEdit === 'object' && storageData.beforeCellEdit.constructor === Array ? storageData.beforeCellEdit : [],
+            cellEditChange: typeof storageData.cellEditChange === 'object' && storageData.cellEditChange.constructor === Array ? storageData.cellEditChange : [],
+            afterCellEdit: typeof storageData.afterCellEdit === 'object' && storageData.afterCellEdit.constructor === Array ? storageData.afterCellEdit : [],
+            pageRequested: typeof storageData.pageRequested === 'object' && storageData.pageRequested.constructor === Array ? storageData.pageRequested : [],
+            beforeDataBind: typeof storageData.beforeDataBind === 'object' && storageData.beforeDataBind.constructor === Array ? storageData.beforeDataBind : [],
+            afterDataBind: typeof storageData.afterDataBind === 'object' && storageData.afterDataBind.constructor === Array ? storageData.afterDataBind : [],
+            columnReorder: typeof storageData.columnReorder === 'object' && storageData.columnReorder.constructor === Array ? storageData.columnReorder : []
         };
-        storage.grids[id].originalData = cloneGridData(gridData.dataSource.data);
-        storage.grids[id].pageNum = 1;
-        storage.grids[id].pageSize = gridData.pageSize || 25;
-        storage.grids[id].grid = gridElem;
-        storage.grids[id].currentEdit = {};
-        storage.grids[id].pageRequest = {};
-        storage.grids[id].putRequest = {};
-        storage.grids[id].resizing = false;
-        if (!storage.grids[id].dataSource.rowCount) storage.grids[id].dataSource.rowCount = gridData.dataSource.data.length;
+
+        for (var event in storageData.events) {
+            if (storageData.events[event].length) {
+                storageData.events[event] = storageData.events[event].map(function mapEventsCallback(fn) {
+                    if (typeof fn == 'function') return fn;
+                });
+            }
+        }
+
+        delete storageData.beforeCellEdit;
+        delete storageData.cellEditChange;
+        delete storageData.afterCellEdit;
+        delete storageData.pageRequested;
+        delete storageData.beforeDataBind;
+        delete storageData.afterDataBind;
+        delete storageData.columnReorder;
+
+        storageData.originalData = cloneGridData(gridData.dataSource.data);
+        storageData.pageNum = 1;
+        storageData.pageSize = gridData.pageSize || 25;
+        storageData.grid = gridElem;
+        storageData.currentEdit = {};
+        storageData.pageRequest = {};
+        storageData.putRequest = {};
+        storageData.resizing = false;
+        if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
+
+        if (storageData.events.beforeDataBind && storageData.events.beforeDataBind.length) {
+            for (x = 0; x < storageData.events.beforeDataBind.length; x++)
+                storageData.events.beforeDataBind[x].call(storageData.grid, { element: storageData.grid });
+        }
+
+        storage.grids[id] = storageData;
 
         if (gridData.summaryRow && gridData.summaryRow.positionAt === 'top') buildHeaderAggregations(gridData, id);
 
         createGridFooter(gridData, gridElem);
         createGridContent(gridData, gridElem);
+
+        if (storageData.events.afterDataBind && storageData.events.afterDataBind.length) {
+            for (x = 0; x < storageData.events.afterDataBind.length; x++)
+                storageData.events.afterDataBind[x].call(storageData.grid, { element: storageData.grid });
+        }
     }
 
     function addNewColumns(newData, gridElem) {
@@ -1863,6 +1894,7 @@ var grid = (function _grid($) {
             }
             e.preventDefault();
             var evtObj = {
+                element: storage.grids[id].grid,
                 droppedColumn: droppedCol.data('field'),
                 targetColumn: targetCol.data('field'),
                 droppedIndex: droppedIndex,
@@ -2097,6 +2129,11 @@ var grid = (function _grid($) {
         requestObj.pageNum = gridData.eventType === 'filter' ? 1 : pageNum;
 
         gridData.grid.find('.grid-content-div').empty();
+
+        if (storage.grids[id].events.pageRequested && storage.grids[id].events.pageRequested.length) {
+            for (var x = 0; x < storage.grids[id].events.pageRequested.length; x++)
+                storage.grids[id].events.pageRequested[x].call(gridData.grid, { element: gridData.grid });
+        }
 
         if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function')
             gridData.dataSource.get(requestObj, getPageDataRequestCallback);
@@ -2445,7 +2482,7 @@ var grid = (function _grid($) {
         '(?:(?:(:|\\.)([0-5]\\d))(?:\\32([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\37([0-5]\\d))?)$)$'
     };
 
-    events = ['cellEditChange', 'beforeCellEdit', 'afterCellEdit', 'pageRequest', 'beforeDataBind', 'afterDataBind', 'columnReorder'];
+    events = ['cellEditChange', 'beforeCellEdit', 'afterCellEdit', 'pageRequested', 'beforeDataBind', 'afterDataBind', 'columnReorder'];
 
     aggregates = {
         count: 'Count: ',

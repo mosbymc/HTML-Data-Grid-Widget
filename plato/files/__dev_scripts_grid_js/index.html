@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.31</p>
+      <p class="stat">55.10</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2503</p>
+      <p class="stat">2540</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">179.07</p>
+      <p class="stat">182.43</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">44.30</p>
+      <p class="stat">45.43</p>
     </div>
   </div>
 </div>
@@ -232,7 +232,7 @@ var grid = (function _grid($) {
                         initializeGrid(id, gridData, gridElem);
                     }
                     else {
-                        //TODO: do something here
+                        //TODO: do something here - unable to create grid due to lack of data
                     }
                 });
             }
@@ -700,30 +700,61 @@ var grid = (function _grid($) {
      * @param {object} gridElem
      */
     function initializeGrid(id, gridData, gridElem) {
-        storage.grids[id] = cloneGridData(gridData);
-        storage.grids[id].events = {
-            beforeCellEdit: [],
-            cellEditChange: [],
-            afterCellEdit: [],
-            pageRequest: [],
-            beforeDataBind: [],
-            afterDataBind: [],
-            columnReorder: []
+        var storageData = {};
+        var x;
+        storageData = cloneGridData(gridData);
+        storageData.events = {
+            beforeCellEdit: typeof storageData.beforeCellEdit === &#039;object&#039; &amp;&amp; storageData.beforeCellEdit.constructor === Array ? storageData.beforeCellEdit : [],
+            cellEditChange: typeof storageData.cellEditChange === &#039;object&#039; &amp;&amp; storageData.cellEditChange.constructor === Array ? storageData.cellEditChange : [],
+            afterCellEdit: typeof storageData.afterCellEdit === &#039;object&#039; &amp;&amp; storageData.afterCellEdit.constructor === Array ? storageData.afterCellEdit : [],
+            pageRequested: typeof storageData.pageRequested === &#039;object&#039; &amp;&amp; storageData.pageRequested.constructor === Array ? storageData.pageRequested : [],
+            beforeDataBind: typeof storageData.beforeDataBind === &#039;object&#039; &amp;&amp; storageData.beforeDataBind.constructor === Array ? storageData.beforeDataBind : [],
+            afterDataBind: typeof storageData.afterDataBind === &#039;object&#039; &amp;&amp; storageData.afterDataBind.constructor === Array ? storageData.afterDataBind : [],
+            columnReorder: typeof storageData.columnReorder === &#039;object&#039; &amp;&amp; storageData.columnReorder.constructor === Array ? storageData.columnReorder : []
         };
-        storage.grids[id].originalData = cloneGridData(gridData.dataSource.data);
-        storage.grids[id].pageNum = 1;
-        storage.grids[id].pageSize = gridData.pageSize || 25;
-        storage.grids[id].grid = gridElem;
-        storage.grids[id].currentEdit = {};
-        storage.grids[id].pageRequest = {};
-        storage.grids[id].putRequest = {};
-        storage.grids[id].resizing = false;
-        if (!storage.grids[id].dataSource.rowCount) storage.grids[id].dataSource.rowCount = gridData.dataSource.data.length;
+
+        for (var event in storageData.events) {
+            if (storageData.events[event].length) {
+                storageData.events[event] = storageData.events[event].map(function mapEventsCallback(fn) {
+                    if (typeof fn == &#039;function&#039;) return fn;
+                });
+            }
+        }
+
+        delete storageData.beforeCellEdit;
+        delete storageData.cellEditChange;
+        delete storageData.afterCellEdit;
+        delete storageData.pageRequested;
+        delete storageData.beforeDataBind;
+        delete storageData.afterDataBind;
+        delete storageData.columnReorder;
+
+        storageData.originalData = cloneGridData(gridData.dataSource.data);
+        storageData.pageNum = 1;
+        storageData.pageSize = gridData.pageSize || 25;
+        storageData.grid = gridElem;
+        storageData.currentEdit = {};
+        storageData.pageRequest = {};
+        storageData.putRequest = {};
+        storageData.resizing = false;
+        if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
+
+        if (storageData.events.beforeDataBind &amp;&amp; storageData.events.beforeDataBind.length) {
+            for (x = 0; x &lt; storageData.events.beforeDataBind.length; x++)
+                storageData.events.beforeDataBind[x].call(storageData.grid, { element: storageData.grid });
+        }
+
+        storage.grids[id] = storageData;
 
         if (gridData.summaryRow &amp;&amp; gridData.summaryRow.positionAt === &#039;top&#039;) buildHeaderAggregations(gridData, id);
 
         createGridFooter(gridData, gridElem);
         createGridContent(gridData, gridElem);
+
+        if (storageData.events.afterDataBind &amp;&amp; storageData.events.afterDataBind.length) {
+            for (x = 0; x &lt; storageData.events.afterDataBind.length; x++)
+                storageData.events.afterDataBind[x].call(storageData.grid, { element: storageData.grid });
+        }
     }
 
     function addNewColumns(newData, gridElem) {
@@ -1954,6 +1985,7 @@ var grid = (function _grid($) {
             }
             e.preventDefault();
             var evtObj = {
+                element: storage.grids[id].grid,
                 droppedColumn: droppedCol.data(&#039;field&#039;),
                 targetColumn: targetCol.data(&#039;field&#039;),
                 droppedIndex: droppedIndex,
@@ -2188,6 +2220,11 @@ var grid = (function _grid($) {
         requestObj.pageNum = gridData.eventType === &#039;filter&#039; ? 1 : pageNum;
 
         gridData.grid.find(&#039;.grid-content-div&#039;).empty();
+
+        if (storage.grids[id].events.pageRequested &amp;&amp; storage.grids[id].events.pageRequested.length) {
+            for (var x = 0; x &lt; storage.grids[id].events.pageRequested.length; x++)
+                storage.grids[id].events.pageRequested[x].call(gridData.grid, { element: gridData.grid });
+        }
 
         if (gridData.dataSource.get &amp;&amp; typeof gridData.dataSource.get === &#039;function&#039;)
             gridData.dataSource.get(requestObj, getPageDataRequestCallback);
@@ -2536,7 +2573,7 @@ var grid = (function _grid($) {
         &#039;(?:(?:(:|\\.)([0-5]\\d))(?:\\32([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\37([0-5]\\d))?)$)$&#039;
     };
 
-    events = [&#039;cellEditChange&#039;, &#039;beforeCellEdit&#039;, &#039;afterCellEdit&#039;, &#039;pageRequest&#039;, &#039;beforeDataBind&#039;, &#039;afterDataBind&#039;, &#039;columnReorder&#039;];
+    events = [&#039;cellEditChange&#039;, &#039;beforeCellEdit&#039;, &#039;afterCellEdit&#039;, &#039;pageRequested&#039;, &#039;beforeDataBind&#039;, &#039;afterDataBind&#039;, &#039;columnReorder&#039;];
 
     aggregates = {
         count: &#039;Count: &#039;,
