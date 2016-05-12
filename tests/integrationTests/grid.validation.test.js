@@ -46,9 +46,9 @@ QUnit.test('General grid API tests', function gridEventTests(assert) {
                 assert.ok(!costInput.hasClass('invalid'), 'The input is in a valid state.');
                 assert.ok($(document).find('.errorMessage').length === 0, 'There are no error messages.');
 
-                /*var tmp = $("#qunit-fixture")[0];
+                var tmp = $("#qunit-fixture")[0];
                 if (tmp.grid)
-                    tmp.grid.destroy();*/
+                    tmp.grid.destroy();
                 done();
             }, 0);
         }, 0);

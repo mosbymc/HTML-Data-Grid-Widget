@@ -185,10 +185,16 @@ var gridData = {
                 data: req,
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
-                success: function _success(json) {
+                /*success: function _success(json) {
                     var tmp = json;
                     cb(json);
-                }
+                }*/
+            })
+            .done(function pageDataSuccessCallback(data) {
+                cb(data);
+            })
+            .fail(function pageDataFailureCallback(){
+                cb();
             });
         },
         put: function _updateGridData(req, cb) {

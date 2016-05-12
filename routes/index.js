@@ -28,6 +28,7 @@ var getGridPageData = function _getGridPageData(req, response) {
         if (!err && res.statusCode == 200) {
             determinePageData(req.query, JSON.parse(body), function(err, data) {
                 response.send(data);
+                //response.send(null);
                 response.end()
             });
         }
