@@ -76,6 +76,8 @@
  - Update API event methods to work with array and namespace
  - Add integration tests if possible
  - Add type checking - passed in grid data
+ - Remove unused regex values & update 'inputTypes' to use validateCharacter function
+ - Thoroughly test date & time regex usages
  */
 /*exported grid*/
 /**
@@ -1047,6 +1049,7 @@ var grid = (function _grid($) {
                 case 'bool':
                     input = $('<input type="checkbox" class="input checkbox active-cell"' + dataAttributes + '/>').appendTo(cell);
                     input[0].checked = !!(val || val === 'true');
+                    dataType = 'bool';
                     break;
                 case 'number':
                 case 'currency':
@@ -1067,7 +1070,7 @@ var grid = (function _grid($) {
                     break;
                 default:
                     input = $('<input type="text" value="' + val + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
-                    dataType = null;
+                    dataType = 'string';
                     break;
             }
 
@@ -1077,16 +1080,16 @@ var grid = (function _grid($) {
 
             if (dataType && dataType !== 'date' && dataType !== 'time') {
                 input.on('keypress', function restrictCharsHandler(e) {
-                    var code = e.charCode? e.charCode : e.keyCode,
-                        key = String.fromCharCode(code);
-                    var newVal = insertKey($(this), key);
-                    var re = new RegExp(dataTypes[dataType]);
-                    if (!re.test(newVal)) {
+                    var code = e.charCode ? e.charCode : e.keyCode,
+                        newVal;
+                    if (newVal = validateCharacter.call(this, code, dataType)) {
+                        var id = $(this).parents('.grid-wrapper').data('grid_id');
+                        storage.grids[id].currentEdit[field] = newVal;
+                    }
+                    else {
                         e.preventDefault();
                         return false;
                     }
-                    var id = $(this).parents('.grid-wrapper').data('grid_id');
-                    storage.grids[id].currentEdit[field] = newVal;
                 });
             }
 
@@ -1716,11 +1719,8 @@ var grid = (function _grid($) {
     function filterInputValidation(input) {
         input.on('keypress', function restrictCharsHandler(e) {
             var code = e.charCode? e.charCode : e.keyCode,
-                key = String.fromCharCode(code);
-            var type = $(this).parents('.filter-div').data('type');
-            var newVal = insertKey($(this), key);
-            var re = new RegExp(dataTypes[type]);
-            if (!re.test(newVal)) {
+                type = $(this).parents('.filter-div').data('type');
+            if (!validateCharacter.call(this, code, type)) {
                 e.preventDefault();
                 return false;
             }
@@ -1735,6 +1735,7 @@ var grid = (function _grid($) {
         var gridData = storage.grids[gridId];
 
         if (value === '' && gridData.filterVal === '') return;
+        filterDiv.find('.filterInput').val('');
 
         filterDiv.addClass('hiddenFilter');
 
@@ -1750,15 +1751,15 @@ var grid = (function _grid($) {
     }
 
     function filterButtonClickHandler(e) {
-        var filterDiv = $(e.currentTarget).parents('.filter-div');
-        var selected = filterDiv.find('.filterSelect').val();
-        var value = filterDiv.find('.filterInput').val();
-        var gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
+        var filterDiv = $(e.currentTarget).parents('.filter-div'),
+            selected = filterDiv.find('.filterSelect').val(),
+            value = filterDiv.find('.filterInput').val(),
+            gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
         if (storage.grids[gridId].updating) return;		//can't filter if grid is updating
-        var gridData = storage.grids[gridId];
-        var type = filterDiv.data('type');
-        var errors = filterDiv.find('.filter-div-error');
-        var re, dateVal;
+        var gridData = storage.grids[gridId],
+            type = filterDiv.data('type'),
+            errors = filterDiv.find('.filter-div-error'),
+            re;
 
         if (dataTypes[type]) {
             re = new RegExp(dataTypes[filterDiv.data('type')]);
@@ -1769,23 +1770,11 @@ var grid = (function _grid($) {
             }
         }
         else if (type === 'date') {
-            var parseDate = Date.parse(value);
-            if (!isNaN(parseDate)) {
-                var tempDate = new Date(parseDate);
-                var dd = tempDate.getUTCDate();
-                var mm = tempDate.getUTCMonth() + 1;
-                var yy = tempDate.getUTCFullYear();
-                var template = 'mm/dd/yyyy';
-                dateVal = template.replace('mm', mm.toString()).replace('dd', dd.toString()).replace('yyyy', yy.toString());
-            }
-            re = new RegExp(dataTypes.USDate);
-            if (!re.test(dateVal)) {
-                re = new RegExp(dataTypes.EUDate);
-                if (!re.test(dateVal)) {
-                    if (!errors.length)
-                        $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
-                    return;
-                }
+            re = new RegExp(dataTypes.tempDate);
+            if (!re.test(value)) {
+                if (!errors.length)
+                    $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
+                return;
             }
         }
 
@@ -1932,7 +1921,7 @@ var grid = (function _grid($) {
                         storage.grids[parentDiv.parent().data('grid_header_id')].resizing = true;
                     });
                     sliderDiv.on('dragend', function handleDragStartCallback() {
-                        storage.grids[parentDiv.parent().data('grid_header_id')].resizing = true;
+                        storage.grids[parentDiv.parent().data('grid_header_id')].resizing = false;
                     });
                     sliderDiv.on('dragover', function handleHeaderDragOverCallback(e) {
                         e.preventDefault();
@@ -2257,6 +2246,16 @@ var grid = (function _grid($) {
         limitPageData(requestObj, fullGridData, callback);
     }
 
+    function validateCharacter(code, dataType) {
+        var key = String.fromCharCode(code),
+            newVal = insertKey($(this), key),
+            re = new RegExp(dataTypes[dataType]);
+        if (!re.test(newVal)) {
+            return null;
+        }
+        return newVal;
+    }
+
     //==========================================================================================================================//
     //																															//
     //													HELPER FUNCTIONS														//
@@ -2487,7 +2486,12 @@ var grid = (function _grid($) {
         dateTime: '^((?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\3|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\6))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\9)|(?:(29|30)(\\/|-|\\.)(0?[1,3-9]|1[0-2])\\12)))))' +
         '((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)29\\16)|(?:(29)(\\/|-|\\.)(0?2))\\18)(?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00))))' +
         '|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)((?:1[6-9]|[2-9]\\d)?\\d{2})))\\ ((0?[1-9]|1[012])' +
-        '(?:(?:(:|\\.)([0-5]\\d))(?:\\32([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\37([0-5]\\d))?)$)$'
+        '(?:(?:(:|\\.)([0-5]\\d))(?:\\32([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\37([0-5]\\d))?)$)$',
+        tempDate: '(^((?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\4|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\7))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\10)|(?:(29|30)(\\/|-|\\.)' +
+        '(0?[1,3-9]|1[0-2])\\13)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)29\\17)|(?:(29)(\\/|-|\\.)(0?2))\\19)(?:(?:(1[6-9]|[2-9]\\d)?' +
+        '(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\25|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)' +
+        '((?:0?[1-9])|(?:1[0-2]))\\28)((?:1[6-9]|[2-9]\\d)?\\d{2}))))|((?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)' +
+        '(?:(?:(?:(0?2)(?:\\35)29)))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)(?:(?:(?:(0?[13578]|1[02])\\39(31))|(?:(0?[1,3-9]|1[0-2])\\39(29|30)))|(?:(?:0?[1-9])|(?:1[0-2]))\\39(0?[1-9]|1\\d|2[0-8])))$)'
     };
 
     events = ['cellEditChange', 'beforeCellEdit', 'afterCellEdit', 'pageRequested', 'beforeDataBind', 'afterDataBind', 'columnReorder'];

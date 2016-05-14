@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.02</p>
+      <p class="stat">55.15</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2548</p>
+      <p class="stat">2550</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">183.22</p>
+      <p class="stat">181.52</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">45.60</p>
+      <p class="stat">45.38</p>
     </div>
   </div>
 </div>
@@ -167,6 +167,8 @@
  - Update API event methods to work with array and namespace
  - Add integration tests if possible
  - Add type checking - passed in grid data
+ - Remove unused regex values &amp; update &#039;inputTypes&#039; to use validateCharacter function
+ - Thoroughly test date &amp; time regex usages
  */
 /*exported grid*/
 /**
@@ -1138,6 +1140,7 @@ var grid = (function _grid($) {
                 case &#039;bool&#039;:
                     input = $(&#039;&lt;input type=&quot;checkbox&quot; class=&quot;input checkbox active-cell&quot;&#039; + dataAttributes + &#039;/&gt;&#039;).appendTo(cell);
                     input[0].checked = !!(val || val === &#039;true&#039;);
+                    dataType = &#039;bool&#039;;
                     break;
                 case &#039;number&#039;:
                 case &#039;currency&#039;:
@@ -1158,7 +1161,7 @@ var grid = (function _grid($) {
                     break;
                 default:
                     input = $(&#039;&lt;input type=&quot;text&quot; value=&quot;&#039; + val + &#039;&quot; class=&quot;input textbox cell-edit-input active-cell&quot;&#039; + dataAttributes + &#039;/&gt;&#039;).appendTo(cell);
-                    dataType = null;
+                    dataType = &#039;string&#039;;
                     break;
             }
 
@@ -1168,16 +1171,16 @@ var grid = (function _grid($) {
 
             if (dataType &amp;&amp; dataType !== &#039;date&#039; &amp;&amp; dataType !== &#039;time&#039;) {
                 input.on(&#039;keypress&#039;, function restrictCharsHandler(e) {
-                    var code = e.charCode? e.charCode : e.keyCode,
-                        key = String.fromCharCode(code);
-                    var newVal = insertKey($(this), key);
-                    var re = new RegExp(dataTypes[dataType]);
-                    if (!re.test(newVal)) {
+                    var code = e.charCode ? e.charCode : e.keyCode,
+                        newVal;
+                    if (newVal = validateCharacter.call(this, code, dataType)) {
+                        var id = $(this).parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
+                        storage.grids[id].currentEdit[field] = newVal;
+                    }
+                    else {
                         e.preventDefault();
                         return false;
                     }
-                    var id = $(this).parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
-                    storage.grids[id].currentEdit[field] = newVal;
                 });
             }
 
@@ -1807,11 +1810,8 @@ var grid = (function _grid($) {
     function filterInputValidation(input) {
         input.on(&#039;keypress&#039;, function restrictCharsHandler(e) {
             var code = e.charCode? e.charCode : e.keyCode,
-                key = String.fromCharCode(code);
-            var type = $(this).parents(&#039;.filter-div&#039;).data(&#039;type&#039;);
-            var newVal = insertKey($(this), key);
-            var re = new RegExp(dataTypes[type]);
-            if (!re.test(newVal)) {
+                type = $(this).parents(&#039;.filter-div&#039;).data(&#039;type&#039;);
+            if (!validateCharacter.call(this, code, type)) {
                 e.preventDefault();
                 return false;
             }
@@ -1826,6 +1826,7 @@ var grid = (function _grid($) {
         var gridData = storage.grids[gridId];
 
         if (value === &#039;&#039; &amp;&amp; gridData.filterVal === &#039;&#039;) return;
+        filterDiv.find(&#039;.filterInput&#039;).val(&#039;&#039;);
 
         filterDiv.addClass(&#039;hiddenFilter&#039;);
 
@@ -1841,15 +1842,15 @@ var grid = (function _grid($) {
     }
 
     function filterButtonClickHandler(e) {
-        var filterDiv = $(e.currentTarget).parents(&#039;.filter-div&#039;);
-        var selected = filterDiv.find(&#039;.filterSelect&#039;).val();
-        var value = filterDiv.find(&#039;.filterInput&#039;).val();
-        var gridId = filterDiv.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
+        var filterDiv = $(e.currentTarget).parents(&#039;.filter-div&#039;),
+            selected = filterDiv.find(&#039;.filterSelect&#039;).val(),
+            value = filterDiv.find(&#039;.filterInput&#039;).val(),
+            gridId = filterDiv.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
         if (storage.grids[gridId].updating) return;		//can&#039;t filter if grid is updating
-        var gridData = storage.grids[gridId];
-        var type = filterDiv.data(&#039;type&#039;);
-        var errors = filterDiv.find(&#039;.filter-div-error&#039;);
-        var re, dateVal;
+        var gridData = storage.grids[gridId],
+            type = filterDiv.data(&#039;type&#039;),
+            errors = filterDiv.find(&#039;.filter-div-error&#039;),
+            re;
 
         if (dataTypes[type]) {
             re = new RegExp(dataTypes[filterDiv.data(&#039;type&#039;)]);
@@ -1860,23 +1861,11 @@ var grid = (function _grid($) {
             }
         }
         else if (type === &#039;date&#039;) {
-            var parseDate = Date.parse(value);
-            if (!isNaN(parseDate)) {
-                var tempDate = new Date(parseDate);
-                var dd = tempDate.getUTCDate();
-                var mm = tempDate.getUTCMonth() + 1;
-                var yy = tempDate.getUTCFullYear();
-                var template = &#039;mm/dd/yyyy&#039;;
-                dateVal = template.replace(&#039;mm&#039;, mm.toString()).replace(&#039;dd&#039;, dd.toString()).replace(&#039;yyyy&#039;, yy.toString());
-            }
-            re = new RegExp(dataTypes.USDate);
-            if (!re.test(dateVal)) {
-                re = new RegExp(dataTypes.EUDate);
-                if (!re.test(dateVal)) {
-                    if (!errors.length)
-                        $(&#039;&lt;span class=&quot;filter-div-error&quot;&gt;Invalid &#039; + type + &#039;&lt;/span&gt;&#039;).appendTo(filterDiv);
-                    return;
-                }
+            re = new RegExp(dataTypes.tempDate);
+            if (!re.test(value)) {
+                if (!errors.length)
+                    $(&#039;&lt;span class=&quot;filter-div-error&quot;&gt;Invalid &#039; + type + &#039;&lt;/span&gt;&#039;).appendTo(filterDiv);
+                return;
             }
         }
 
@@ -2023,7 +2012,7 @@ var grid = (function _grid($) {
                         storage.grids[parentDiv.parent().data(&#039;grid_header_id&#039;)].resizing = true;
                     });
                     sliderDiv.on(&#039;dragend&#039;, function handleDragStartCallback() {
-                        storage.grids[parentDiv.parent().data(&#039;grid_header_id&#039;)].resizing = true;
+                        storage.grids[parentDiv.parent().data(&#039;grid_header_id&#039;)].resizing = false;
                     });
                     sliderDiv.on(&#039;dragover&#039;, function handleHeaderDragOverCallback(e) {
                         e.preventDefault();
@@ -2348,6 +2337,16 @@ var grid = (function _grid($) {
         limitPageData(requestObj, fullGridData, callback);
     }
 
+    function validateCharacter(code, dataType) {
+        var key = String.fromCharCode(code),
+            newVal = insertKey($(this), key),
+            re = new RegExp(dataTypes[dataType]);
+        if (!re.test(newVal)) {
+            return null;
+        }
+        return newVal;
+    }
+
     //==========================================================================================================================//
     //																															//
     //													HELPER FUNCTIONS														//
@@ -2578,7 +2577,12 @@ var grid = (function _grid($) {
         dateTime: &#039;^((?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\3|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\6))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\9)|(?:(29|30)(\\/|-|\\.)(0?[1,3-9]|1[0-2])\\12)))))&#039; +
         &#039;((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)29\\16)|(?:(29)(\\/|-|\\.)(0?2))\\18)(?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00))))&#039; +
         &#039;|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)((?:1[6-9]|[2-9]\\d)?\\d{2})))\\ ((0?[1-9]|1[012])&#039; +
-        &#039;(?:(?:(:|\\.)([0-5]\\d))(?:\\32([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\37([0-5]\\d))?)$)$&#039;
+        &#039;(?:(?:(:|\\.)([0-5]\\d))(?:\\32([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\37([0-5]\\d))?)$)$&#039;,
+        tempDate: &#039;(^((?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\4|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\7))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\10)|(?:(29|30)(\\/|-|\\.)&#039; +
+        &#039;(0?[1,3-9]|1[0-2])\\13)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)29\\17)|(?:(29)(\\/|-|\\.)(0?2))\\19)(?:(?:(1[6-9]|[2-9]\\d)?&#039; +
+        &#039;(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\25|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)&#039; +
+        &#039;((?:0?[1-9])|(?:1[0-2]))\\28)((?:1[6-9]|[2-9]\\d)?\\d{2}))))|((?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)&#039; +
+        &#039;(?:(?:(?:(0?2)(?:\\35)29)))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)(?:(?:(?:(0?[13578]|1[02])\\39(31))|(?:(0?[1,3-9]|1[0-2])\\39(29|30)))|(?:(?:0?[1-9])|(?:1[0-2]))\\39(0?[1-9]|1\\d|2[0-8])))$)&#039;
     };
 
     events = [&#039;cellEditChange&#039;, &#039;beforeCellEdit&#039;, &#039;afterCellEdit&#039;, &#039;pageRequested&#039;, &#039;beforeDataBind&#039;, &#039;afterDataBind&#039;, &#039;columnReorder&#039;];
