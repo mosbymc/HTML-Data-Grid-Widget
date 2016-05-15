@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.00</p>
+      <p class="stat">55.10</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2521</p>
+      <p class="stat">2513</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">179.85</p>
+      <p class="stat">178.87</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">44.81</p>
+      <p class="stat">44.69</p>
     </div>
   </div>
 </div>
@@ -855,7 +855,7 @@ var grid = (function _grid($) {
      * @param {integer} gridId
      */
     function buildHeaderAggregations(gridData, gridId) {
-        var sum = buildSummaryRow(gridData, gridId);
+        var sum = buildAggregatesRow(gridData, gridId);
         if (sum) {
             var headerTHead = $(&#039;#grid-header-&#039; + gridId).find(&#039;thead&#039;);
             var sumRow = headerTHead.find(&#039;.summary-row-header&#039;);
@@ -875,37 +875,37 @@ var grid = (function _grid($) {
     /**
      * Gets the aggregations - either passed in with metadata if server-side paging,
      * or calculates the aggregations if client-side paging.
-     * @method buildSummaryRow
+     * @method buildAggregatesRow
      * @for grid
      * @private
      * @param {object} gridData
      * @param {integer} gridId
      * @returns {object}
      */
-    function buildSummaryRow(gridData, gridId) {
-        var sRow = {},
+    function buildAggregatesRow(gridData, gridId) {
+        var aggData = {},
             data = gridData.alteredData ? gridData.alteredData :  gridData.dataSource.data,
             total, i;
         for (var col in gridData.columns) {
             var type = typeof gridData.columns[col].type === &#039;string&#039; ? gridData.columns[col].type : &#039;&#039;;
             var text;
             if (!gridData.summaryRow[col]) {
-                sRow[col] = &#039;&#039;;
+                aggData[col] = &#039;&#039;;
                 continue;
             }
             if (typeof gridData.dataSource.get === &#039;function&#039;) {
                 if (gridData.summaryRow[col].type &amp;&amp; gridData.summaryRow[col].value) {
                     text = getFormattedCellText(gridId, col, gridData.summaryRow[col].value);
-                    sRow[col] = aggregates[gridData.summaryRow[col].type] + text;
+                    aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
                 }
                 else
-                    sRow[col] = null;
+                    aggData[col] = null;
             }
             else {
                 switch (gridData.summaryRow[col].type) {
                     case &#039;count&#039;:
                         text = getFormattedCellText(gridId, col, gridData.dataSource.rowCount);
-                        sRow[col] = aggregates[gridData.summaryRow[col].type] + text;
+                        aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
                         break;
                     case &#039;average&#039;:
                         total = 0;
@@ -914,7 +914,7 @@ var grid = (function _grid($) {
                         }
                         var avg = parseFloat(total/parseFloat(gridData.dataSource.rowCount)).toFixed(2);
                         text = getFormattedCellText(gridId, col, avg);
-                        sRow[col] = aggregates[gridData.summaryRow[col].type] + text;
+                        aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
                         break;
                     case &#039;total&#039;:
                         total = 0;
@@ -923,7 +923,7 @@ var grid = (function _grid($) {
                         }
                         if (type === &#039;currency&#039;) total = total.toFixed(2);
                         text = getFormattedCellText(gridId, col, total);
-                        sRow[col] = aggregates[gridData.summaryRow[col].type] + text;
+                        aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
                         break;
                     case &#039;min&#039;:
                         var min;
@@ -931,7 +931,7 @@ var grid = (function _grid($) {
                             if (!min || parseFloat(data[i][col]) &lt; min) min = parseFloat(data[i][col]);
                         }
                         text = getFormattedCellText(gridId, col, min);
-                        sRow[col] = aggregates[gridData.summaryRow[col].type] + text;
+                        aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
                         break;
                     case &#039;max&#039;:
                         var max;
@@ -939,17 +939,17 @@ var grid = (function _grid($) {
                             if (!max || parseFloat(data[i][col]) &gt; max) max = parseFloat(data[i][col]);
                         }
                         text = getFormattedCellText(gridId, col, max);
-                        sRow[col] = aggregates[gridData.summaryRow[col].type] + text;
+                        aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
                         break;
                     case &#039;&#039;:
-                        sRow[col] = null;
+                        aggData[col] = null;
                         break;
                 }
             }
         }
         for (col in gridData.columns) {
-            if (sRow[col] != null)
-                return sRow;
+            if (aggData[col] != null)
+                return aggData;
         }
         return null;
     }
@@ -1055,7 +1055,7 @@ var grid = (function _grid($) {
             colGroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
 
         if (gridData.summaryRow &amp;&amp; gridData.summaryRow.positionAt === &#039;bottom&#039;) {
-            var sum = buildSummaryRow(gridData, id);
+            var sum = buildAggregatesRow(gridData, id);
             var sumRow = $(&#039;&lt;tr class=&quot;summary-row-footer&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
             for (var col in sum) {
                 sumRow.append(&#039;&lt;td data-field=&quot;&#039; + col + &#039;&quot; class=&quot;summary-cell-footer&quot;&gt;&#039; + sum[col] + &#039;&lt;/td&gt;&#039;);
@@ -1124,10 +1124,10 @@ var grid = (function _grid($) {
                 type = storage.grids[id].columns[field].type || &#039;&#039;,
                 val = storage.grids[id].dataSource.data[index][field],
                 dataAttributes = &#039;&#039;,
-                gridValidation = storage.grids[id].columns[field].validation,
+                gridValidation = storage.grids[id].useValidator ? storage.grids[id].columns[field].validation : null,
                 dataType, input, inputVal;
 
-            if (gridValidation &amp;&amp; storage.grids[id].useValidator &amp;&amp; window.validator) {
+            if (gridValidation) {
                 dataAttributes = setupCellValidation(gridValidation, dataAttributes);
                 var gridBodyId = &#039;grid-content-&#039; + id.toString();
                 dataAttributes += &#039; data-validateon=&quot;blur&quot; data-offsetHeight=&quot;-6&quot; data-offsetWidth=&quot;8&quot; data-modalid=&quot;&#039; + gridBodyId + &#039;&quot;&#039;;
@@ -1213,10 +1213,10 @@ var grid = (function _grid($) {
             var field = cell.data(&#039;field&#039;);
             if (storage.grids[id].updating) return;		//can&#039;t edit a cell if the grid is updating
 
-            var gridValidation;
+            var gridValidation = storage.grids[id].useValidator ? storage.grids[id].columns[field].validation : null;
             var dataAttributes = &#039;&#039;;
 
-            if (gridValidation = storage.grids[id].columns[field].validation) {
+            if (gridValidation) {
                 dataAttributes = setupCellValidation(gridValidation, dataAttributes);
                 var gridBodyId = &#039;grid-content-&#039; + id.toString();
                 dataAttributes += &#039; data-validateon=&quot;blur&quot; data-offsetHeight=&quot;-6&quot; data-offsetWidth=&quot;8&quot; data-modalid=&quot;&#039; + gridBodyId + &#039;&quot;&#039;;
@@ -1600,13 +1600,14 @@ var grid = (function _grid($) {
         var remainingPages = (count - displayedRows) &gt; 0 ? Math.ceil((count - displayedRows)/displayedRows) : 0;
         var pageNum = storage.grids[parseInt(gridFooter.data(&#039;grid_footer_id&#039;))].pageNum;
 
-        gridFooter.append(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link link-disabled&quot; data-link=&quot;first&quot; title=&quot;First Page&quot;&gt;&lt;span class=&quot;grid-page-span span-first&quot;&gt;First Page&lt;/span&gt;&lt;/a&gt;&#039;);
-        gridFooter.append(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link link-disabled&quot; data-link=&quot;prev&quot; title=&quot;Previous Page&quot;&gt;&lt;span class=&quot;grid-page-span span-prev&quot;&gt;Prev Page&lt;/span&gt;&lt;/a&gt;&#039;);
+        gridFooter.append(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link link-disabled&quot; data-link=&quot;first&quot; data-pagenum=&quot;1&quot; title=&quot;First Page&quot;&gt;&lt;span class=&quot;grid-page-span span-first&quot;&gt;First Page&lt;/span&gt;&lt;/a&gt;&#039;);
+        gridFooter.append(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link link-disabled&quot; data-link=&quot;prev&quot; data-pagenum=&quot;1&quot; title=&quot;Previous Page&quot;&gt;&lt;span class=&quot;grid-page-span span-prev&quot;&gt;Prev Page&lt;/span&gt;&lt;/a&gt;&#039;);
         var text = &#039;Page &#039; + storage.grids[parseInt(gridFooter.data(&#039;grid_footer_id&#039;))].pageNum + &#039;/&#039; + (remainingPages + 1);
         gridFooter.append(&#039;&lt;span class=&quot;grid-pagenum-span page-counter&quot;&gt;&#039; + text + &#039;&lt;/span&gt;&#039;);
-        var next = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;next&quot; title=&quot;Next Page&quot;&gt;&lt;span class=&quot;grid-page-span span-next&quot;&gt;Next Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
-        var last = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;last&quot; title=&quot;Last Page&quot;&gt;&lt;span class=&quot;grid-page-span span-last&quot;&gt;Last Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
+        var next = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;next&quot; data-pagenum=&quot;2&quot; title=&quot;Next Page&quot;&gt;&lt;span class=&quot;grid-page-span span-next&quot;&gt;Next Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
+        var last = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;last&quot; data-pagenum=&quot;&#039; + (remainingPages + 1) + &#039;&quot; title=&quot;Last Page&quot;&gt;&lt;span class=&quot;grid-page-span span-last&quot;&gt;Last Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
 
+        //TODO: investigate if the prev and first links should be disabled here as well
         if (!remainingPages) {
             next.addClass(&#039;link-disabled&#039;);
             last.addClass(&#039;link-disabled&#039;);
@@ -1651,63 +1652,54 @@ var grid = (function _grid($) {
                 var id = parseInt(link.parents(&#039;.grid-wrapper&#039;)[0].dataset.grid_id);
                 if (storage.grids[id].updating) return;		//can&#039;t page if grid is updating
                 var gridData = storage.grids[id];
-                var pageSize = storage.grids[id].pageSize;
+                var pageSize = gridData.pageSize;
                 var pagerInfo = gridFooter.find(&#039;.pageinfo&#039;);
                 var pagerSpan = gridFooter.find(&#039;.grid-pagenum-span&#039;);
                 var totalPages = (gridData.dataSource.rowCount - pageSize) &gt; 0 ? Math.ceil((gridData.dataSource.rowCount - pageSize)/pageSize) + 1 : 1;
-                var pageNum, rowStart, rowEnd;
+                var pageNum = parseInt(link[0].dataset.pagenum);
+                gridData.pageNum = pageNum;
+                var rowStart = 1 + (pageSize * (pageNum - 1));
+                var rowEnd = pageSize * pageNum;
 
                 switch (link.data(&#039;link&#039;)) {
                     case &#039;first&#039;:
-                        storage.grids[id].pageNum = 1;
-                        pageNum = storage.grids[id].pageNum;
-                        rowStart = 1 + (pageSize*(pageNum-1));
-                        rowEnd = pageSize*pageNum;
                         link.addClass(&#039;link-disable&#039;);
-                        $(allPagers[1]).addClass(&#039;link-disabled&#039;);
-                        $(allPagers[2]).removeClass(&#039;link-disabled&#039;);
+                        $(allPagers[1]).addClass(&#039;link-disabled&#039;)[0].dataset.pagenum = 1;
+                        $(allPagers[2]).removeClass(&#039;link-disabled&#039;)[0].dataset.pagenum = pageNum + 1;
                         $(allPagers[3]).removeClass(&#039;link-disabled&#039;);
                         break;
                     case &#039;prev&#039;:
-                        storage.grids[id].pageNum--;
-                        pageNum = storage.grids[id].pageNum;
-                        rowStart = 1 + (pageSize*(pageNum-1));
-                        rowEnd = pageSize*pageNum;
+                        link[0].dataset.pagenum = pageNum - 1;
                         if (pageNum === 1) {
                             link.addClass(&#039;link-disabled&#039;);
                             $(allPagers[0]).addClass(&#039;link-disabled&#039;);
                         }
-                        $(allPagers[2]).removeClass(&#039;link-disabled&#039;);
+                        $(allPagers[2]).removeClass(&#039;link-disabled&#039;)[0].dataset.pagenum = pageNum + 1;
                         $(allPagers[3]).removeClass(&#039;link-disabled&#039;);
                         break;
                     case &#039;next&#039;:
-                        storage.grids[id].pageNum++;
-                        pageNum = storage.grids[id].pageNum;
-                        rowStart = 1 + (pageSize*(pageNum-1));
-                        rowEnd = gridData.dataSource.rowCount &lt; pageSize*pageNum ? gridData.dataSource.rowCount : pageSize*pageNum;
+                        rowEnd = gridData.dataSource.rowCount &lt; pageSize * pageNum ? gridData.dataSource.rowCount : pageSize * pageNum;
+                        link[0].dataset.pagenum = pageNum + 1;
                         if (pageNum === totalPages) {
                             link.addClass(&#039;link-disabled&#039;);
                             $(allPagers[3]).addClass(&#039;link-disabled&#039;);
                         }
                         $(allPagers[0]).removeClass(&#039;link-disabled&#039;);
-                        $(allPagers[1]).removeClass(&#039;link-disabled&#039;);
+                        $(allPagers[1]).removeClass(&#039;link-disabled&#039;)[0].dataset.pagenum = pageNum - 1;
                         break;
                     case &#039;last&#039;:
-                        storage.grids[id].pageNum = (gridData.dataSource.rowCount - pageSize) &gt; 0 ? Math.ceil((gridData.dataSource.rowCount - pageSize)/pageSize) + 1 : 1;
-                        pageNum = storage.grids[id].pageNum;
-                        rowStart = 1 + (pageSize*(pageNum-1));
-                        rowEnd = gridData.dataSource.rowCount &lt; pageSize*pageNum ? gridData.dataSource.rowCount : pageSize*pageNum;
+                        rowEnd = gridData.dataSource.rowCount &lt; pageSize * pageNum ? gridData.dataSource.rowCount : pageSize * pageNum;
                         link.addClass(&#039;link-disabled&#039;);
-                        $(allPagers[2]).addClass(&#039;link-disabled&#039;);
+                        $(allPagers[2]).addClass(&#039;link-disabled&#039;)[0].dataset.pagenum = pageNum;
                         $(allPagers[0]).removeClass(&#039;link-disabled&#039;);
-                        $(allPagers[1]).removeClass(&#039;link-disabled&#039;);
+                        $(allPagers[1]).removeClass(&#039;link-disabled&#039;)[0].dataset.pagenum = pageNum - 1;
                         break;
                 }
                 pagerSpan.text(&#039;Page &#039; + pageNum + &#039;/&#039; + totalPages);
                 pagerInfo.text(rowStart + &#039; - &#039; + rowEnd + &#039; of &#039; + gridData.dataSource.rowCount + &#039; rows&#039;);
-                storage.grids[id].grid.find(&#039;.grid-content-div&#039;).empty();
-                storage.grids[id].pageRequest.eventType = &#039;page&#039;;
-                storage.grids[id].pageRequest.pageNum = pageNum;
+                gridData.grid.find(&#039;.grid-content-div&#039;).empty();
+                gridData.pageRequest.eventType = &#039;page&#039;;
+                gridData.pageRequest.pageNum = pageNum;
                 preparePageDataGetRequest(id);
             });
         });
