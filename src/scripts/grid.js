@@ -1666,9 +1666,9 @@ var grid = (function _grid($) {
         var filterInput, resetButton, button,
             span = $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv),
             select = $('<select class="filterSelect select"></select>').appendTo(filterDiv);
+        select.append('<option value="eq">Equal to:</option>');
         switch (type) {
             case 'number':
-                select.append('<option value="eq">Equal to:</option>');
                 select.append('<option value="neq">Not equal to:</option>');
                 select.append('<option value="gte">Greater than or equal to:</option>');
                 select.append('<option value="gt">Greater than:</option>');
@@ -1677,7 +1677,6 @@ var grid = (function _grid($) {
                 filterInput = $('<input type="text" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
                 break;
             case 'date':
-                select.append('<option value="eq">Equal to:</option>');
                 select.append('<option value="neq">Not equal to:</option>');
                 select.append('<option value="gte">Equal to or later than:</option>');
                 select.append('<option value="gt">Later than:</option>');
@@ -1686,7 +1685,6 @@ var grid = (function _grid($) {
                 filterInput = $('<input type="date" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
                 break;
             case 'time':
-                select.append('<option value="eq">Equal to:</option>');
                 select.append('<option value="neq">Not equal to:</option>');
                 select.append('<option value="gte">Equal to or later than:</option>');
                 select.append('<option value="gt">Later than:</option>');
@@ -1695,13 +1693,11 @@ var grid = (function _grid($) {
                 filterInput = $('<input type="text" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
                 break;
             case 'boolean':
-                select.append('<option value="eq">Equal to:</option>');
                 var optSelect = $('<select class="filterSelect"></select>').appendTo(span);
                 optSelect.append('<option value="true">True</option>');
                 optSelect.append('<option value="false">False</option>');
                 break;
             case 'string':
-                select.append('<option value="eq">Equal to:</option>');
                 select.append('<option value="neq">Not equal to:</option>');
                 select.append('<option value="ct">Contains:</option>');
                 select.append('<option value="nct">Does not contain:</option>');
@@ -1763,17 +1759,8 @@ var grid = (function _grid($) {
 
         if (dataTypes[type]) {
             re = new RegExp(dataTypes[filterDiv.data('type')]);
-            if (!re.test(value)) {
-                if (!errors.length)
-                    $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
-                return;
-            }
-        }
-        else if (type === 'date') {
-            re = new RegExp(dataTypes.tempDate);
-            if (!re.test(value)) {
-                if (!errors.length)
-                    $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
+            if (!re.test(value) && !errors.length) {
+                $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
                 return;
             }
         }
@@ -1818,165 +1805,131 @@ var grid = (function _grid($) {
         elem.on('dragstart', function handleDragStartCallback(e) {
             e.originalEvent.dataTransfer.setData('text', e.currentTarget.id);
         });
-        elem.on('drop', function handleDragStartCallback(e) {
-            var droppedCol = $('#' + e.originalEvent.dataTransfer.getData('text'));
-            var targetCol = $(e.currentTarget);
-            var id = targetCol.parents('.grid-wrapper').data('grid_id');
-            if (storage.grids[id].updating) return;		//can't resort columns if grid is updating
-            if (droppedCol[0].cellIndex === targetCol[0].cellIndex)
-                return;
-            if (droppedCol[0].id === 'sliderDiv')
-                return;
-
-            var parentDiv = targetCol.parents('.grid-header-div');
-            var parentDivId = parentDiv.data('grid_header_id');
-            var gridWrapper = parentDiv.parent('.grid-wrapper');
-            var colGroups = gridWrapper.find('colgroup');
-
-            var tempIndex = droppedCol[0].dataset.index;
-            var droppedIndex = droppedCol[0].dataset.index;
-            var targetIndex = targetCol[0].dataset.index;
-
-            var droppedClone = droppedCol.clone(false, true);
-            var targetClone = targetCol.clone(false, true);
-
-            var droppedEvents = $._data(elem[0], 'events');
-            var targetEvents = $._data(targetCol[0], 'events');
-            if (droppedEvents.click)
-                setSortableClickListener(droppedClone);
-            setDragAndDropListeners(droppedClone);
-            if (targetEvents.click)
-                setSortableClickListener(targetClone);
-            setDragAndDropListeners(targetClone);
-
-            if (droppedClone.find('.filterSpan').length)
-                attachFilterListener(droppedClone.find('.filterSpan'));
-            if (targetClone.find('.filterSpan').length)
-                attachFilterListener(targetClone.find('.filterSpan'));
-
-            droppedCol.replaceWith(targetClone);
-            targetCol.replaceWith(droppedClone);
-
-            droppedClone[0].dataset.index = targetIndex;
-            targetClone[0].dataset.index = droppedIndex;
-
-            swapContentCells(parentDivId, tempIndex, targetIndex);
-
-            var targetWidth = $(colGroups[0].children[droppedIndex]).width();
-            var droppedWidth = $(colGroups[0].children[targetIndex]).width();
-
-            $(colGroups[0].children[droppedIndex]).width(droppedWidth);
-            $(colGroups[0].children[targetIndex]).width(targetWidth);
-            $(colGroups[1].children[droppedIndex]).width(droppedWidth);
-            $(colGroups[1].children[targetIndex]).width(targetWidth);
-
-            var sumRow = parentDiv.find('.summary-row-header');
-            if (sumRow.length) {
-                var droppedColSum = null,
-                    targetColSum = null;
-                sumRow.children().each(function iterateSumRowCellsCallback(idx, val) {
-                    if ($(val).data('field') === droppedCol.data('field')) {
-                        droppedColSum = $(val);
-                    }
-                    else if ($(val).data('field') === targetCol.data('field')) {
-                        targetColSum = $(val);
-                    }
-                });
-                if (droppedColSum.length && targetColSum.length) {
-                    var droppedColSumClone = droppedColSum.clone(true, true);
-                    var targetColSumClone = targetColSum.clone(true, true);
-                    droppedColSum.replaceWith(targetColSumClone);
-                    targetColSum.replaceWith(droppedColSumClone);
-                }
-            }
-            e.preventDefault();
-            var evtObj = {
-                element: storage.grids[id].grid,
-                droppedColumn: droppedCol.data('field'),
-                targetColumn: targetCol.data('field'),
-                droppedIndex: droppedIndex,
-                targetIndex: targetIndex
-            };
-            if (storage.grids[id].events.columnReorder && storage.grids[id].events.columnReorder.length) {
-                for (var x = 0; x < storage.grids[id].events.columnReorder.length; x++)
-                    storage.grids[id].events.columnReorder[x].call(storage.grids[id].grid, evtObj);
-            }
-        });
+        elem.on('drop', handleDropCallback);
         elem.on('dragover', function handleHeaderDragOverCallback(e) {
             e.preventDefault();
         });
-        elem.on('mouseleave', function mouseLeaveHandlerCallback(e) {
-            var target = $(e.currentTarget);
-            var targetOffset = target.offset();
-            var targetWidth = target.innerWidth();
-            var mousePos = { x: e.originalEvent.pageX, y: e.originalEvent.pageY };
-            var sliderDiv = $('#sliderDiv');
+        elem.on('mouseleave', mouseLeaveHandlerCallback);
+    }
 
-            if (Math.abs(mousePos.x - (targetOffset.left + targetWidth)) < 10) {
-                if (!sliderDiv.length) {
-                    var parentDiv = target.parents('.grid-header-wrapper');
-                    sliderDiv = $('<div id=sliderDiv style="width:10px; height:' + target.innerHeight() + 'px; cursor: col-resize; position: absolute" draggable=true><div></div></div>').appendTo(parentDiv);
-                    sliderDiv.on('dragstart', function handleDragStartCallback(e) {
-                        e.originalEvent.dataTransfer.setData('text', e.currentTarget.id);
-                        storage.grids[parentDiv.parent().data('grid_header_id')].resizing = true;
-                    });
-                    sliderDiv.on('dragend', function handleDragStartCallback() {
-                        storage.grids[parentDiv.parent().data('grid_header_id')].resizing = false;
-                    });
-                    sliderDiv.on('dragover', function handleHeaderDragOverCallback(e) {
-                        e.preventDefault();
-                    });
-                    sliderDiv.on('drop', function handleHeaderDropCallback(e) {
-                        e.preventDefault();
-                    });
-                    sliderDiv.on('drag', function handleHeaderDropCallback(e) {
-                        e.preventDefault();
-                        var sliderDiv = $(e.currentTarget);
-                        var id = sliderDiv.parents('.grid-wrapper').data('grid_id');
-                        if (storage.grids[id].updating) return;		//can't resize columns if grid is updating
-                        var targetCell = document.getElementById(sliderDiv.data('targetindex'));
-                        var targetBox = targetCell.getBoundingClientRect();
-                        var endPos = e.originalEvent.pageX;
-                        var startPos = targetBox.left;
-                        var width = endPos - startPos;
-                        var space = endPos - targetBox.right;
+    function handleDropCallback(e) {
+        var droppedCol = $('#' + e.originalEvent.dataTransfer.getData('text'));
+        var targetCol = $(e.currentTarget);
+        var id = targetCol.parents('.grid-header-div').length ? targetCol.parents('.grid-wrapper').data('grid_id') : null;
+        var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
+        if (!id || !droppedId) return;  //atleast one of the involved dom elements is not a grid column
+        if (id !== droppedId) return;   //can't swap columns from different grids
+        if (storage.grids[id].updating) return;		//can't resort columns if grid is updating
+        if (droppedCol[0].cellIndex === targetCol[0].cellIndex)
+            return;
+        if (droppedCol[0].id === 'sliderDiv')
+            return;
 
-                        if (width > 11) {
-                            var index = targetCell.dataset.index;
-                            var gridWrapper = $(targetCell).parents('.grid-wrapper');
-                            var colGroups = gridWrapper.find('colgroup');
-                            var tables = gridWrapper.find('table');
-                            if (storage.grids[id].groupedBy && storage.grids[id].groupedBy !== 'none')
-                                index++;
+        var parentDiv = targetCol.parents('.grid-header-div');
+        var parentDivId = parentDiv.data('grid_header_id');
+        var gridWrapper = parentDiv.parent('.grid-wrapper');
+        var colGroups = gridWrapper.find('colgroup');
 
-                            var contentDiv = gridWrapper.find('.grid-content-div');
-                            var scrollLeft = contentDiv.scrollLeft();
-                            var clientWidth = contentDiv[0].clientWidth;
-                            var scrollWidth = contentDiv[0].scrollWidth;
-                            var add = scrollLeft + clientWidth;
-                            var isTrue = add === scrollWidth;
+        var droppedIndex = droppedCol[0].dataset.index;
+        var targetIndex = targetCol[0].dataset.index;
 
-                            if (space < 0 && scrollWidth > clientWidth && isTrue) {
-                                space -= -3;
-                                width -= -3;
-                            }
+        var droppedClone = droppedCol.clone(false, true);
+        var targetClone = targetCol.clone(false, true);
 
-                            for (var i = 0; i < colGroups.length; i++) {
-                                var currWidth = $(tables[i]).width();
-                                $(colGroups[i].children[index]).width(width);
-                                $(tables[i]).width(currWidth + space);
+        var droppedEvents = $._data(droppedCol[0], 'events');
+        var targetEvents = $._data(targetCol[0], 'events');
+        if (droppedEvents.click)
+            setSortableClickListener(droppedClone);
+        setDragAndDropListeners(droppedClone);
+        if (targetEvents.click)
+            setSortableClickListener(targetClone);
+        setDragAndDropListeners(targetClone);
 
-                            }
-                            sliderDiv.css('left', e.originalEvent.pageX + 'px');
-                        }
-                    });
+        if (droppedClone.find('.filterSpan').length)
+            attachFilterListener(droppedClone.find('.filterSpan'));
+        if (targetClone.find('.filterSpan').length)
+            attachFilterListener(targetClone.find('.filterSpan'));
+
+        droppedCol.replaceWith(targetClone);
+        targetCol.replaceWith(droppedClone);
+
+        droppedClone[0].dataset.index = targetIndex;
+        targetClone[0].dataset.index = droppedIndex;
+
+        swapContentCells(parentDivId, droppedIndex, targetIndex);
+
+        var targetWidth = $(colGroups[0].children[droppedIndex]).width();
+        var droppedWidth = $(colGroups[0].children[targetIndex]).width();
+
+        $(colGroups[0].children[droppedIndex]).width(droppedWidth);
+        $(colGroups[0].children[targetIndex]).width(targetWidth);
+        $(colGroups[1].children[droppedIndex]).width(droppedWidth);
+        $(colGroups[1].children[targetIndex]).width(targetWidth);
+
+        var sumRow = parentDiv.find('.summary-row-header');
+        if (sumRow.length) {
+            var droppedColSum = null,
+                targetColSum = null;
+            sumRow.children().each(function iterateSumRowCellsCallback(idx, val) {
+                if ($(val).data('field') === droppedCol.data('field')) {
+                    droppedColSum = $(val);
                 }
-                sliderDiv.data('targetindex', target[0].id);
-                sliderDiv.css('top', targetOffset.top + 'px');
-                sliderDiv.css('left', (targetOffset.left + targetWidth -4) + 'px');
-                sliderDiv.css('position', 'absolute');
+                else if ($(val).data('field') === targetCol.data('field')) {
+                    targetColSum = $(val);
+                }
+            });
+            if (droppedColSum.length && targetColSum.length) {
+                var droppedColSumClone = droppedColSum.clone(true, true);
+                var targetColSumClone = targetColSum.clone(true, true);
+                droppedColSum.replaceWith(targetColSumClone);
+                targetColSum.replaceWith(droppedColSumClone);
             }
-        });
+        }
+        e.preventDefault();
+        var evtObj = {
+            element: storage.grids[id].grid,
+            droppedColumn: droppedCol.data('field'),
+            targetColumn: targetCol.data('field'),
+            droppedIndex: droppedIndex,
+            targetIndex: targetIndex
+        };
+        if (storage.grids[id].events.columnReorder && storage.grids[id].events.columnReorder.length) {
+            for (var x = 0; x < storage.grids[id].events.columnReorder.length; x++)
+                storage.grids[id].events.columnReorder[x].call(storage.grids[id].grid, evtObj);
+        }
+    }
+
+    function mouseLeaveHandlerCallback(e) {
+        var target = $(e.currentTarget);
+        var targetOffset = target.offset();
+        var targetWidth = target.innerWidth();
+        var mousePos = { x: e.originalEvent.pageX, y: e.originalEvent.pageY };
+        var sliderDiv = $('#sliderDiv');
+
+        if (Math.abs(mousePos.x - (targetOffset.left + targetWidth)) < 10) {
+            if (!sliderDiv.length) {
+                var parentDiv = target.parents('.grid-header-wrapper');
+                sliderDiv = $('<div id=sliderDiv style="width:10px; height:' + target.innerHeight() + 'px; cursor: col-resize; position: absolute" draggable=true><div></div></div>').appendTo(parentDiv);
+                sliderDiv.on('dragstart', function handleResizeDragStartCallback(e) {
+                    e.originalEvent.dataTransfer.setData('text', e.currentTarget.id);
+                    storage.grids[parentDiv.parent().data('grid_header_id')].resizing = true;
+                });
+                sliderDiv.on('dragend', function handleResizeDragEndCallback() {
+                    storage.grids[parentDiv.parent().data('grid_header_id')].resizing = false;
+                });
+                sliderDiv.on('dragover', function handleResizeDragOverCallback(e) {
+                    e.preventDefault();
+                });
+                sliderDiv.on('drop', function handleResizeDropCallback(e) {
+                    e.preventDefault();
+                });
+                sliderDiv.on('drag', handleResizeDragCallback);
+            }
+            sliderDiv.data('targetindex', target[0].id);
+            sliderDiv.css('top', targetOffset.top + 'px');
+            sliderDiv.css('left', (targetOffset.left + targetWidth -4) + 'px');
+            sliderDiv.css('position', 'absolute');
+        }
     }
 
     function setSortableClickListener(elem) {
@@ -2066,6 +2019,48 @@ var grid = (function _grid($) {
                 }
             });
         });
+    }
+
+    function handleResizeDragCallback(e) {
+        e.preventDefault();
+        var sliderDiv = $(e.currentTarget);
+        var id = sliderDiv.parents('.grid-wrapper').data('grid_id');
+        if (storage.grids[id].updating) return;		//can't resize columns if grid is updating
+        var targetCell = document.getElementById(sliderDiv.data('targetindex'));
+        var targetBox = targetCell.getBoundingClientRect();
+        var endPos = e.originalEvent.pageX;
+        var startPos = targetBox.left;
+        var width = endPos - startPos;
+        var space = endPos - targetBox.right;
+
+        if (width > 11) {
+            var index = targetCell.dataset.index;
+            var gridWrapper = $(targetCell).parents('.grid-wrapper');
+            var colGroups = gridWrapper.find('colgroup');
+            var tables = gridWrapper.find('table');
+            if (storage.grids[id].groupedBy && storage.grids[id].groupedBy !== 'none')
+                index++;
+
+            var contentDiv = gridWrapper.find('.grid-content-div');
+            var scrollLeft = contentDiv.scrollLeft();
+            var clientWidth = contentDiv[0].clientWidth;
+            var scrollWidth = contentDiv[0].scrollWidth;
+            var add = scrollLeft + clientWidth;
+            var isTrue = add === scrollWidth;
+
+            if (space < 0 && scrollWidth > clientWidth && isTrue) {
+                space -= -3;
+                width -= -3;
+            }
+
+            for (var i = 0; i < colGroups.length; i++) {
+                var currWidth = $(tables[i]).width();
+                $(colGroups[i].children[index]).width(width);
+                $(tables[i]).width(currWidth + space);
+
+            }
+            sliderDiv.css('left', e.originalEvent.pageX + 'px');
+        }
     }
 
     function swapContentCells(gridId, droppedIndex, targetIndex) {
@@ -2244,16 +2239,6 @@ var grid = (function _grid($) {
         }
         storage.grids[id].alteredData = fullGridData;
         limitPageData(requestObj, fullGridData, callback);
-    }
-
-    function validateCharacter(code, dataType) {
-        var key = String.fromCharCode(code),
-            newVal = insertKey($(this), key),
-            re = new RegExp(dataTypes[dataType]);
-        if (!re.test(newVal)) {
-            return null;
-        }
-        return newVal;
     }
 
     //==========================================================================================================================//
@@ -2446,29 +2431,15 @@ var grid = (function _grid($) {
         return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
     }
 
-    var inputTypes = {
-        inputTypeTester: function inputTypeTester(charArray, e) {
-            var unicode = e.charCode? e.charCode : e.keyCode;
-            for (var i = 0, length = charArray.length; i < length; i++) {
-                if ($.isArray(charArray[i])) {
-                    if (unicode > charArray[i][0] && unicode < charArray[i][1]) return true;
-                }
-                else if (unicode === charArray[i]) return true;
-            }
-            return false;
-        },
-        numeric: function numeric(e) {
-            var code = e.charCode? e.charCode : e.keyCode,
-                key = String.fromCharCode(code);
-            var newVal = insertKey($(this), key);
-            var re = new RegExp('^\-?([1-9]{1}[0-9]{0,2}(\,[0-9]{3})*(\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(\.[0-9]{0,2})?|0(\.[0-9]{0,2})?|(\.[0-9]{1,2})?)$');
-            if (!re.test(newVal)) return false;
-            return newVal;
-        },
-        integer: function integer(e) {
-            return inputTypes.inputTypeTester([8, 45, [47, 58]], e);
+    function validateCharacter(code, dataType) {
+        var key = String.fromCharCode(code),
+            newVal = insertKey($(this), key),
+            re = new RegExp(dataTypes[dataType]);
+        if (!re.test(newVal)) {
+            return null;
         }
-    };
+        return newVal;
+    }
 
     dataTypes = {
         string: '\.*',
@@ -2487,7 +2458,7 @@ var grid = (function _grid($) {
         '((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)29\\16)|(?:(29)(\\/|-|\\.)(0?2))\\18)(?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00))))' +
         '|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)((?:1[6-9]|[2-9]\\d)?\\d{2})))\\ ((0?[1-9]|1[012])' +
         '(?:(?:(:|\\.)([0-5]\\d))(?:\\32([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\37([0-5]\\d))?)$)$',
-        tempDate: '^(((?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\4|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\7))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\10)|(?:(29|30)(\\/|-|\\.)' +
+        date: '^(((?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\4|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\7))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\10)|(?:(29|30)(\\/|-|\\.)' +
         '(0?[1,3-9]|1[0-2])\\13)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\17)|(?:(29)(\\/|-|\\.)(0?2))\\20)(?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])' +
         '|((?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\26|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\29)' +
         '((?:1[6-9]|[2-9]\\d)?\\d{2}))))|((?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\36)(29))))' +
@@ -2594,7 +2565,7 @@ var grid = (function _grid($) {
     }
 
     storage = {
-        gridCount: 0,
+        gridCount: 1,
         grids: []
     };
 
