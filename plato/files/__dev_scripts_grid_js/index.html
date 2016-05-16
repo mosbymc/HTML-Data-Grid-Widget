@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.10</p>
+      <p class="stat">55.49</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2513</p>
+      <p class="stat">2494</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">178.87</p>
+      <p class="stat">174.70</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">44.69</p>
+      <p class="stat">43.78</p>
     </div>
   </div>
 </div>
@@ -706,8 +706,7 @@ var grid = (function _grid($) {
      * @param {object} gridElem
      */
     function initializeGrid(id, gridData, gridElem) {
-        var x,
-        storageData = cloneGridData(gridData);
+        var storageData = cloneGridData(gridData);
         storageData.events = {
             beforeCellEdit: typeof storageData.beforeCellEdit === &#039;object&#039; &amp;&amp; storageData.beforeCellEdit.constructor === Array ? storageData.beforeCellEdit : [],
             cellEditChange: typeof storageData.cellEditChange === &#039;object&#039; &amp;&amp; storageData.cellEditChange.constructor === Array ? storageData.cellEditChange : [],
@@ -744,10 +743,8 @@ var grid = (function _grid($) {
         storageData.resizing = false;
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
-        if (storageData.events.beforeDataBind &amp;&amp; storageData.events.beforeDataBind.length) {
-            for (x = 0; x &lt; storageData.events.beforeDataBind.length; x++)
-                storageData.events.beforeDataBind[x].call(storageData.grid, { element: storageData.grid });
-        }
+        var eventObj = { element: storageData.grid };
+        callGridEventHandlers(storageData.events.beforeDataBind, storageData.grid, eventObj);
 
         storage.grids[id] = storageData;
 
@@ -756,10 +753,7 @@ var grid = (function _grid($) {
         createGridFooter(gridData, gridElem);
         createGridContent(gridData, gridElem);
 
-        if (storageData.events.afterDataBind &amp;&amp; storageData.events.afterDataBind.length) {
-            for (x = 0; x &lt; storageData.events.afterDataBind.length; x++)
-                storageData.events.afterDataBind[x].call(storageData.grid, { element: storageData.grid });
-        }
+        callGridEventHandlers(storageData.events.afterDataBind, storageData.grid, eventObj);
     }
 
     function addNewColumns(newData, gridElem) {
@@ -1192,11 +1186,7 @@ var grid = (function _grid($) {
                     saveCellEditData(input);
                 });
             }
-            if (gridData.events.beforeCellEdit &amp;&amp; gridData.events.beforeCellEdit.length) {
-                for (var x = 0; x &lt; gridData.events.beforeCellEdit.length; x++) {
-                    gridData.events.beforeCellEdit[x].call(gridData.grid, null);
-                }
-            }
+            callGridEventHandlers(gridData.events.beforeDataBind, gridData.grid, null);
         });
     }
 
@@ -1248,11 +1238,7 @@ var grid = (function _grid($) {
                     saveCellSelectData(select);
                 });
             }
-            if (gridData.events.beforeCellEdit &amp;&amp; gridData.events.beforeCellEdit.length) {
-                for (var x = 0; x &lt; gridData.events.beforeCellEdit.length; x++) {
-                    gridData.events.beforeCellEdit[x].call(gridData.grid, null);
-                }
-            }
+            callGridEventHandlers(gridData.events.beforeCellEdit, gridData.grid, null);
         });
     }
 
@@ -1462,10 +1448,7 @@ var grid = (function _grid($) {
         else {
             storage.grids[id].dataSource.data[index][field] = previousVal;
         }
-        if (storage.grids[id].events.afterCellEdit &amp;&amp; storage.grids[id].events.afterCellEdit.length) {
-            for (var x = 0; x &lt; storage.grids[id].events.afterCellEdit.length; x++)
-                storage.grids[id].events.afterCellEdit[x].call(storage.grids[id].grid, null);
-        }
+        callGridEventHandlers(storage.grids[id].events.afterCellEdit, storage.grids[id].grid, null);
     }
 
     function saveCellSelectData(select) {
@@ -1484,10 +1467,7 @@ var grid = (function _grid($) {
             parentCell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
             storage.grids[id].dataSource.data[index][field] = val;
         }
-        if (storage.grids[id].events.afterCellEdit &amp;&amp; storage.grids[id].events.afterCellEdit.length) {
-            for (var x = 0; x &lt; storage.grids[id].events.afterCellEdit.length; x++)
-                storage.grids[id].events.afterCellEdit[x].call(storage.grids[id].grid, null);
-        }
+        callGridEventHandlers(storage.grids[id].events.afterCellEdit, storage.grids[id].grid, null);
     }
 
     function createCellEditSaveDiv(gridElem) {
@@ -1976,10 +1956,7 @@ var grid = (function _grid($) {
             droppedIndex: droppedIndex,
             targetIndex: targetIndex
         };
-        if (storage.grids[id].events.columnReorder &amp;&amp; storage.grids[id].events.columnReorder.length) {
-            for (var x = 0; x &lt; storage.grids[id].events.columnReorder.length; x++)
-                storage.grids[id].events.columnReorder[x].call(storage.grids[id].grid, evtObj);
-        }
+        callGridEventHandlers(storage.grids[id].events.columnReorder, storage.grids[id].grid, evtObj);
     }
 
     function mouseLeaveHandlerCallback(e) {
@@ -2205,10 +2182,7 @@ var grid = (function _grid($) {
 
         gridData.grid.find(&#039;.grid-content-div&#039;).empty();
 
-        if (storage.grids[id].events.pageRequested &amp;&amp; storage.grids[id].events.pageRequested.length) {
-            for (var x = 0; x &lt; storage.grids[id].events.pageRequested.length; x++)
-                storage.grids[id].events.pageRequested[x].call(gridData.grid, { element: gridData.grid });
-        }
+        callGridEventHandlers(storage.grids[id].events.pageRequested, gridData.grid, { element: gridData.grid });
 
         if (gridData.dataSource.get &amp;&amp; typeof gridData.dataSource.get === &#039;function&#039;)
             gridData.dataSource.get(requestObj, getPageDataRequestCallback);
@@ -2463,6 +2437,13 @@ var grid = (function _grid($) {
             result.push(right.shift());
 
         return result;
+    }
+
+    function callGridEventHandlers(events, context, param) {
+        if (events.length) {
+            for (var x = 0; x &lt; events.pageRequested.length; x++)
+                events[x].call(context, param);
+        }
     }
 
     function getFormattedCellText(gridId, column, value) {

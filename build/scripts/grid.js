@@ -615,8 +615,7 @@ var grid = (function _grid($) {
      * @param {object} gridElem
      */
     function initializeGrid(id, gridData, gridElem) {
-        var x,
-        storageData = cloneGridData(gridData);
+        var storageData = cloneGridData(gridData);
         storageData.events = {
             beforeCellEdit: typeof storageData.beforeCellEdit === 'object' && storageData.beforeCellEdit.constructor === Array ? storageData.beforeCellEdit : [],
             cellEditChange: typeof storageData.cellEditChange === 'object' && storageData.cellEditChange.constructor === Array ? storageData.cellEditChange : [],
@@ -653,10 +652,8 @@ var grid = (function _grid($) {
         storageData.resizing = false;
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
-        if (storageData.events.beforeDataBind && storageData.events.beforeDataBind.length) {
-            for (x = 0; x < storageData.events.beforeDataBind.length; x++)
-                storageData.events.beforeDataBind[x].call(storageData.grid, { element: storageData.grid });
-        }
+        var eventObj = { element: storageData.grid };
+        callGridEventHandlers(storageData.events.beforeDataBind, storageData.grid, eventObj);
 
         storage.grids[id] = storageData;
 
@@ -665,10 +662,7 @@ var grid = (function _grid($) {
         createGridFooter(gridData, gridElem);
         createGridContent(gridData, gridElem);
 
-        if (storageData.events.afterDataBind && storageData.events.afterDataBind.length) {
-            for (x = 0; x < storageData.events.afterDataBind.length; x++)
-                storageData.events.afterDataBind[x].call(storageData.grid, { element: storageData.grid });
-        }
+        callGridEventHandlers(storageData.events.afterDataBind, storageData.grid, eventObj);
     }
 
     function addNewColumns(newData, gridElem) {
@@ -1101,11 +1095,7 @@ var grid = (function _grid($) {
                     saveCellEditData(input);
                 });
             }
-            if (gridData.events.beforeCellEdit && gridData.events.beforeCellEdit.length) {
-                for (var x = 0; x < gridData.events.beforeCellEdit.length; x++) {
-                    gridData.events.beforeCellEdit[x].call(gridData.grid, null);
-                }
-            }
+            callGridEventHandlers(gridData.events.beforeDataBind, gridData.grid, null);
         });
     }
 
@@ -1157,11 +1147,7 @@ var grid = (function _grid($) {
                     saveCellSelectData(select);
                 });
             }
-            if (gridData.events.beforeCellEdit && gridData.events.beforeCellEdit.length) {
-                for (var x = 0; x < gridData.events.beforeCellEdit.length; x++) {
-                    gridData.events.beforeCellEdit[x].call(gridData.grid, null);
-                }
-            }
+            callGridEventHandlers(gridData.events.beforeCellEdit, gridData.grid, null);
         });
     }
 
@@ -1371,10 +1357,7 @@ var grid = (function _grid($) {
         else {
             storage.grids[id].dataSource.data[index][field] = previousVal;
         }
-        if (storage.grids[id].events.afterCellEdit && storage.grids[id].events.afterCellEdit.length) {
-            for (var x = 0; x < storage.grids[id].events.afterCellEdit.length; x++)
-                storage.grids[id].events.afterCellEdit[x].call(storage.grids[id].grid, null);
-        }
+        callGridEventHandlers(storage.grids[id].events.afterCellEdit, storage.grids[id].grid, null);
     }
 
     function saveCellSelectData(select) {
@@ -1393,10 +1376,7 @@ var grid = (function _grid($) {
             parentCell.prepend('<span class="dirty"></span>');
             storage.grids[id].dataSource.data[index][field] = val;
         }
-        if (storage.grids[id].events.afterCellEdit && storage.grids[id].events.afterCellEdit.length) {
-            for (var x = 0; x < storage.grids[id].events.afterCellEdit.length; x++)
-                storage.grids[id].events.afterCellEdit[x].call(storage.grids[id].grid, null);
-        }
+        callGridEventHandlers(storage.grids[id].events.afterCellEdit, storage.grids[id].grid, null);
     }
 
     function createCellEditSaveDiv(gridElem) {
@@ -1885,10 +1865,7 @@ var grid = (function _grid($) {
             droppedIndex: droppedIndex,
             targetIndex: targetIndex
         };
-        if (storage.grids[id].events.columnReorder && storage.grids[id].events.columnReorder.length) {
-            for (var x = 0; x < storage.grids[id].events.columnReorder.length; x++)
-                storage.grids[id].events.columnReorder[x].call(storage.grids[id].grid, evtObj);
-        }
+        callGridEventHandlers(storage.grids[id].events.columnReorder, storage.grids[id].grid, evtObj);
     }
 
     function mouseLeaveHandlerCallback(e) {
@@ -2114,10 +2091,7 @@ var grid = (function _grid($) {
 
         gridData.grid.find('.grid-content-div').empty();
 
-        if (storage.grids[id].events.pageRequested && storage.grids[id].events.pageRequested.length) {
-            for (var x = 0; x < storage.grids[id].events.pageRequested.length; x++)
-                storage.grids[id].events.pageRequested[x].call(gridData.grid, { element: gridData.grid });
-        }
+        callGridEventHandlers(storage.grids[id].events.pageRequested, gridData.grid, { element: gridData.grid });
 
         if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function')
             gridData.dataSource.get(requestObj, getPageDataRequestCallback);
@@ -2372,6 +2346,13 @@ var grid = (function _grid($) {
             result.push(right.shift());
 
         return result;
+    }
+
+    function callGridEventHandlers(events, context, param) {
+        if (events.length) {
+            for (var x = 0; x < events.pageRequested.length; x++)
+                events[x].call(context, param);
+        }
     }
 
     function getFormattedCellText(gridId, column, value) {
