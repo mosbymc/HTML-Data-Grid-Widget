@@ -88,7 +88,7 @@
  */
 var grid = (function _grid($) {
     'use strict';
-    var dataTypes, events, storage, aggregates, formatCharacters;
+    var dataTypes, events, storage, aggregates;
 
     /**
      * Exposed on the grid module. Called to create a grid widget.
@@ -2452,23 +2452,25 @@ var grid = (function _grid($) {
         total: 'Total: '
     };
 
-    formatCharacters = ['0', '#', '.', ',', '%'];
-
     function formatNumericCellData(data, format) {
         var formatSections = [];
         var dataSections = [];
-        data = data.toString();
         var formatObject = verifyFormat(format);
-
         format = formatObject.value;
-        data = data.replace(new RegExp(',', 'g'), '');   //remove all commas: either the format didn't specify commas, or we will replace them later
 
         var formatDecimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length;
-        var dataDecimalIndex = ~data.indexOf('.') ? data.indexOf('.') : data.length;
         formatSections[0] = format.substring(0, formatDecimalIndex).split('').reverse().join('');
-        dataSections[0] = data.substring(0, dataDecimalIndex).split('').reverse().join('');
         if (formatDecimalIndex < format.length)
             formatSections[1] = format.substring(formatDecimalIndex + 1, format.length);
+
+        var decimals = formatSections[1] ? formatSections[1].length : 0;
+
+        data = roundNumber(+data, decimals);
+        var sign = 0 > +data ? -1 : 1;
+        data = data.toString();
+        data = data.replace(new RegExp(',', 'g'), '');   //remove all commas: either the format didn't specify commas, or we will replace them later
+        var dataDecimalIndex = ~data.indexOf('.') ? data.indexOf('.') : data.length;
+        dataSections[0] = data.substring(0, dataDecimalIndex).split('').reverse().join('');
         if (dataDecimalIndex < format.length)
             dataSections[1] = data.substring(dataDecimalIndex + 1, data.length);
 
@@ -2478,7 +2480,7 @@ var grid = (function _grid($) {
                 formattedData[i] = [];
                 for (var j = 0; j < formatSections[i].length; j++) {
                     var formatCommaLoc = formatSections[i].length - j;
-                    if (i === 0 && formatObject.shouldInsertCommas && formatSections[i].length - j !== 0 && formatSections[i].length !== formatCommaLoc && formatCommaLoc % 3 === 0 &&
+                    if (i === 0 && formatObject.shouldInsertSeparators && formatSections[i].length - j !== 0 && formatSections[i].length !== formatCommaLoc && formatCommaLoc % 3 === 0 &&
                         (formatSections[i].charAt(j + 1) === '0' || (formatSections[i].charAt(j + 1) === '#' && dataSections[i].charAt(j + 1)))) {
                         formattedData[i].push(',');
                     }
@@ -2491,52 +2493,28 @@ var grid = (function _grid($) {
                 }
             }
 
-            return formattedData.length === 1 ? formattedData[0].reverse().join('') : formattedData[0].reverse().join('') + '.' + formattedData[1].join('');
+            var value = formattedData.length === 1 ? formattedData[0].reverse().join('')  : formattedData[0].reverse().join('') + '.' + formattedData[1].join('');
+            return sign === -1 ? '-' + value : value;
         }
         return data;
     }
 
     function verifyFormat(format) {
-        var charsToStrip = [],
-            formatArray = [],
-            formatSections = [],
-            i, j;
-        formatLoop:
-            for (i = 0; i < format.length; i++) {
-                for (j = 0; j < formatCharacters.length; j++) {
-                    if (format.charAt(i) === formatCharacters[j]) {
-                        continue formatLoop;
-                    }
-                }
-                charsToStrip.push(i);
-            }
-
-        if (charsToStrip.length ) {
-            formatArray = format.split('');
-
-            for (i = 0; i < charsToStrip.length; i++) {
-                formatArray[charsToStrip[i]] = null;
-            }
-
-            format = '';
-            for (i = 0; i < formatArray.length; i++) {
-                if (formatArray[i] != null)
-                    format += formatArray[i];
-            }
-        }
+        var formatSections = [];
+        format = format.replace(/[^0#,.]/g , '');
 
         var decimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length;
         var leadingChars = format.substring(0, decimalIndex);
-        var shouldInsertCommas = leadingChars.indexOf(',') > -1;
+        var shouldInsertSeparators = leadingChars.indexOf(',') > -1;
         leadingChars = leadingChars.replace(new RegExp(',', 'g'), '');
 
         formatSections[0] = leadingChars;
         if (decimalIndex < format.length)
             formatSections[1] = format.substring(decimalIndex + 1, format.length).split('').reverse().join('');
 
-        for (i = 0; i < formatSections.length; i++) {
+        for (var i = 0; i < formatSections.length; i++) {
             var zeroFound = false;
-            for (j = 0; j < formatSections[i].length; j++) {
+            for (var j = 0; j < formatSections[i].length; j++) {
                 if (zeroFound && formatSections[i].charAt(j) !== '0')
                     formatSections[i] = formatSections[i].substring(0, j) + '0' + formatSections[i].substring(j + 1, formatSections[i].length);
                 else if (!zeroFound && formatSections[i].charAt(j) === '0')
@@ -2546,8 +2524,13 @@ var grid = (function _grid($) {
 
         return {
             value: formatSections.length < 2 ? formatSections[0] : formatSections[0] + '.' + formatSections[1].split('').reverse().join(''),
-            shouldInsertCommas: shouldInsertCommas
+            shouldInsertSeparators: shouldInsertSeparators
         };
+    }
+
+    function roundNumber(val, dec) {
+        var pow = Math.pow(10, dec || 0);
+        return Math.round((val*pow))/pow;
     }
 
     function insertKey(input, key) {		//Inserts the new character to it's position in the string based on cursor position
