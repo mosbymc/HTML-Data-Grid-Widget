@@ -88,7 +88,7 @@
  */
 var grid = (function _grid($) {
     'use strict';
-    var dataTypes, events, storage, aggregates;
+    var dataTypes, events, storage, aggregates, formatCharacters;
 
     /**
      * Exposed on the grid module. Called to create a grid widget.
@@ -936,7 +936,12 @@ var grid = (function _grid($) {
                     var decimalPlaces = typeof gridData.columns[columns[j]].decimals === 'number' ?  gridData.columns[columns[j]].decimals : 2;
                     gridData.dataSource.data[i][columns[j]] = gridData.dataSource.data[i][columns[j]].toFixed(decimalPlaces);
                 }
-                var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]);
+                //var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]);
+                //TODO: get data format working correctly
+                var text = gridData.dataSource.data[i][columns[j]];
+                 if (gridData.columns[columns[j]].format && gridData.columns[columns[j]].type === 'number')
+                 text = formatNumericCellData(text, gridData.columns[columns[j]].format);
+                 text = getFormattedCellText(id, columns[j], text);
 
                 if (gridData.dataSource.data[i][columns[j]] !== undefined) {
                     td.text(text);
@@ -1730,7 +1735,7 @@ var grid = (function _grid($) {
             re;
 
         if (dataTypes[type]) {
-            re = new RegExp(dataTypes[filterDiv.data('type')]);
+            re = new RegExp(dataTypes[type]);
             if (!re.test(value) && !errors.length) {
                 $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
                 return;
@@ -2421,7 +2426,6 @@ var grid = (function _grid($) {
         numeric: '^\\-?([1-9]{1}[0-9]{0,2}(\\,[0-9]{3})*(\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(\\.[0-9]{0,2})?|0(\\.[0-9]{0,2})?|(\\.[0-9]{1,2})?)$',
         numericTemp: '^-?(?:[1-9]{1}[0-9]{0,2}(?:,[0-9]{3})*(?:\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(?:\\.[0-9]{0,2})?|0(?:\\.[0-9]{0,2})?|(?:\\.[0-9]{1,2})?)$',
         integer: '^\\-?\\d+$',
-        integerTemp: '^\\-?\\d+$',
         time: '^(0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\2([0-5]\\d))?)?(?:(\\ [AP]M))$|^([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\7([0-5]\\d))?)$',
         USDate: '^(?=\\d)(?:(?:(?:(?:(?:0?[13578]|1[02])(\\/|-|\\.)31)\\1|(?:(?:0?[1,3-9]|1[0-2])(\\/|-|\\.)(?:29|30)\\2))(?:(?:1[6-9]|[2-9]\\d)?\\d{2})|(?:0?2(\\/|-|\\.)29\\3(?:(?:(?:1[6-9]|[2-9]\\d)' +
         '?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(?:0?[1-9]|1\\d|2[0-8])\\4(?:(?:1[6-9]|[2-9]\\d)?\\d{2}))($|\\ (?=\\d)))?$',
@@ -2447,6 +2451,104 @@ var grid = (function _grid($) {
         min: 'Min: ',
         total: 'Total: '
     };
+
+    formatCharacters = ['0', '#', '.', ',', '%'];
+
+    function formatNumericCellData(data, format) {
+        var formatSections = [];
+        var dataSections = [];
+        data = data.toString();
+        var formatObject = verifyFormat(format);
+
+        format = formatObject.value;
+        data = data.replace(new RegExp(',', 'g'), '');   //remove all commas: either the format didn't specify commas, or we will replace them later
+
+        var formatDecimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length;
+        var dataDecimalIndex = ~data.indexOf('.') ? data.indexOf('.') : data.length;
+        formatSections[0] = format.substring(0, formatDecimalIndex).split('').reverse().join('');
+        dataSections[0] = data.substring(0, dataDecimalIndex).split('').reverse().join('');
+        if (formatDecimalIndex < format.length)
+            formatSections[1] = format.substring(formatDecimalIndex + 1, format.length);
+        if (dataDecimalIndex < format.length)
+            dataSections[1] = data.substring(dataDecimalIndex + 1, data.length);
+
+        var formattedData = [];
+        if (format.length) {
+            for (var i = 0; i < formatSections.length; i++) {
+                formattedData[i] = [];
+                for (var j = 0; j < formatSections[i].length; j++) {
+                    var formatCommaLoc = formatSections[i].length - j;
+                    if (i === 0 && formatObject.shouldInsertCommas && formatSections[i].length - j !== 0 && formatSections[i].length !== formatCommaLoc && formatCommaLoc % 3 === 0 &&
+                        (formatSections[i].charAt(j + 1) === '0' || (formatSections[i].charAt(j + 1) === '#' && dataSections[i].charAt(j + 1)))) {
+                        formattedData[i].push(',');
+                    }
+                    if (dataSections[i].charAt(j)) {
+                        formattedData[i].push(dataSections[i].charAt(j));
+                    }
+                    else if (formatSections[i].charAt(j) === '0' && !dataSections[i].charAt(j)) {
+                        formattedData[i].push('0');
+                    }
+                }
+            }
+
+            return formattedData.length === 1 ? formattedData[0].reverse().join('') : formattedData[0].reverse().join('') + '.' + formattedData[1].join('');
+        }
+        return data;
+    }
+
+    function verifyFormat(format) {
+        var charsToStrip = [],
+            formatArray = [],
+            formatSections = [],
+            i, j;
+        formatLoop:
+            for (i = 0; i < format.length; i++) {
+                for (j = 0; j < formatCharacters.length; j++) {
+                    if (format.charAt(i) === formatCharacters[j]) {
+                        continue formatLoop;
+                    }
+                }
+                charsToStrip.push(i);
+            }
+
+        if (charsToStrip.length ) {
+            formatArray = format.split('');
+
+            for (i = 0; i < charsToStrip.length; i++) {
+                formatArray[charsToStrip[i]] = null;
+            }
+
+            format = '';
+            for (i = 0; i < formatArray.length; i++) {
+                if (formatArray[i] != null)
+                    format += formatArray[i];
+            }
+        }
+
+        var decimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length;
+        var leadingChars = format.substring(0, decimalIndex);
+        var shouldInsertCommas = leadingChars.indexOf(',') > -1;
+        leadingChars = leadingChars.replace(new RegExp(',', 'g'), '');
+
+        formatSections[0] = leadingChars;
+        if (decimalIndex < format.length)
+            formatSections[1] = format.substring(decimalIndex + 1, format.length).split('').reverse().join('');
+
+        for (i = 0; i < formatSections.length; i++) {
+            var zeroFound = false;
+            for (j = 0; j < formatSections[i].length; j++) {
+                if (zeroFound && formatSections[i].charAt(j) !== '0')
+                    formatSections[i] = formatSections[i].substring(0, j) + '0' + formatSections[i].substring(j + 1, formatSections[i].length);
+                else if (!zeroFound && formatSections[i].charAt(j) === '0')
+                    zeroFound = true;
+            }
+        }
+
+        return {
+            value: formatSections.length < 2 ? formatSections[0] : formatSections[0] + '.' + formatSections[1].split('').reverse().join(''),
+            shouldInsertCommas: shouldInsertCommas
+        };
+    }
 
     function insertKey(input, key) {		//Inserts the new character to it's position in the string based on cursor position
         var loc = getInputSelection(input[0]);

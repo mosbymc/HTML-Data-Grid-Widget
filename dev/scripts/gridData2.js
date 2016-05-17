@@ -139,6 +139,7 @@ var gridData = {
             editable: true,
             title: "Parts Markup",
             template: "{{data}}%",
+            format: '##.00',
             decimals: 0
         },
         Date: {
