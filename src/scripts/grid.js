@@ -1041,9 +1041,7 @@ var grid = (function _grid($) {
                     dataType = 'bool';
                     break;
                 case 'number':
-                case 'currency':
-                    var decimalPlaces = typeof gridData.columns[field].decimals === 'number' ?  gridData.columns[field].decimals : 2;
-                    inputVal = parseFloat(val).toFixed(decimalPlaces);
+                    inputVal = val;
                     input = $('<input type="text" value="' + inputVal + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
                     dataType = 'numeric';
                     break;
@@ -1272,12 +1270,8 @@ var grid = (function _grid($) {
      * @param {object} input
      */
     function saveCellEditData(input) {
-        //TODO: need to distinguish between the saveVal that goes into storage, and the displayVal that goes into the grid.
-        //TODO: saveVal should not be formatted, but the displayVal should.
         var val;
-        if (input[0].type == 'checkbox') {
-            val = input.is(':checked');
-        }
+        if (input[0].type == 'checkbox') val = input.is(':checked');
         else val = input.val();
         var gridContent = input.parents('.grid-wrapper').find('.grid-content-div'),
             cell = input.parents('td'),
@@ -1285,7 +1279,6 @@ var grid = (function _grid($) {
             index = cell.parents('tr').index(),
             field = cell.data('field'),
             type = storage.grids[id].columns[field].type || '',
-            decimalPlaces = 2,
             saveVal, re, displayVal;
 
         input.remove();
@@ -1294,40 +1287,21 @@ var grid = (function _grid($) {
             case 'number':
                 re = new RegExp(dataTypes.numeric);
                 if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
-                decimalPlaces = typeof storage.grids[id].columns[field].decimals === 'number' ?  storage.grids[id].columns[field].decimals : 2;
-                var cellVal = parseFloat(val).toFixed(decimalPlaces);
-                saveVal = typeof storage.grids[id].dataSource.data[index][field] === 'string' ? parseFloat(val.replace(',', '')).toFixed(decimalPlaces) : parseFloat(parseFloat(val.replace(',', '')).toFixed(decimalPlaces));
-                displayVal = getFormattedCellText(id, field, cellVal /*numberWithCommas(cellVal)*/);
+                saveVal = typeof storage.grids[id].dataSource.data[index][field] === 'string' ? parseFloat(val.replace(',', '')) : val;
+                displayVal = getFormattedCellText(id, field, val);
                 cell.text(displayVal);
                 break;
             case 'date':
                 displayVal = getFormattedCellText(id, field, val);
-                saveVal = val;
-                //saveVal = formatDateCellData(val, storage.grids[id].columns[field].format);
+                saveVal = displayVal;   //this and time are the only types that have the same displayVal and saveVel
                 cell.text(displayVal);
                 break;
             case 'time':
-                //TODO: consume getFormattedCellText here - needs to check for 24/12 hour time formats
-                var tod = 'AM',
-                    delimiter = storage.grids[id].columns[field].delimiter || ':',
-                    timeFormat = storage.grids[id].columns[field].timeFormat;
                 re = new RegExp(dataTypes.time);
                 if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
-                var timeArray = getNumbersFromTime(val, storage.grids[id].columns[field].timeFormat);
-                if (timeFormat === '24' && val.indexOf('PM') > -1) {
-                    timeArray[0] = timeArray[0] === 12 ? 0 : (timeArray[0] + 12);
-                }
-                else if (timeFormat === '12' && timeArray[0] > 12) {
-                    timeArray[0] = (timeArray[0] - 12);
-                    tod = 'PM';
-                }
-                saveVal = timeArray[0] + delimiter + timeArray[1] + delimiter;
-                saveVal += timeArray[2] ? timeArray[2] : '00';
-                if (storage.grids[id].columns[field].timeFormat === '12') {
-                    tod = val.indexOf('PM') > -1 ? 'PM' : tod;
-                    saveVal += ' ' + tod;
-                }
-                cell.text(saveVal);
+                displayVal = getFormattedCellText(id, field, val);
+                saveVal = displayVal;   //this and date are the only types that have the same displayVal and saveVal
+                cell.text(displayVal);
                 break;
             default: 		//string, boolean
                 saveVal = val;
@@ -1341,9 +1315,8 @@ var grid = (function _grid($) {
             storage.grids[id].dataSource.data[index][field] = saveVal;
             cell.prepend('<span class="dirty"></span>');
         }
-        else {
+        else
             storage.grids[id].dataSource.data[index][field] = previousVal;
-        }
         callGridEventHandlers(storage.grids[id].events.afterCellEdit, storage.grids[id].grid, null);
     }
 
@@ -2352,7 +2325,7 @@ var grid = (function _grid($) {
                 text = formatDateCellData(value, storage.grids[gridId].columns[column].format);
                 break;
             case 'time':
-                text = formatTimeCellData(value, storage.grids[gridId].columns[column].format);
+                text = formatTimeCellData(value, column, gridId);
                 break;
             case 'string':
             case 'boolean':
@@ -2476,17 +2449,35 @@ var grid = (function _grid($) {
         total: 'Total: '
     };
 
-    function formatTimeCellData(time, format) {
+    function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
-            formattedTime;
+            formattedTime,
+            format = storage.grids[gridId].columns[column].format,
+            timeFormat = storage.grids[gridId].columns[column].timeFormat;
+
+        if (timeFormat && timeFormat == '24' && timeArray.length === 4 && timeArray[3] === 'PM')
+            timeArray[0] = timeArray[0] === 12 ? 0 : (timeArray[0] + 12);
+        else if (timeFormat && timeFormat === '12' && timeArray[0] > 12) {
+            timeArray[0] = (timeArray[0] - 12);
+            timeArray[3] = 'PM';
+        }
+        else if (timeFormat && timeFormat === '12' && timeArray.length < 4)
+            timeArray[3] = 'AM';
+
+        timeArray[0] = timeArray[0] ? timeArray[0] : '00';
+        timeArray[1] = timeArray[1] ? timeArray[1] : '00';
+        timeArray[2] = timeArray[2] ? timeArray[2] : '00';
+        var meridiem = timeArray[3] || 'AM';
+
         if (timeArray.length && format) {
-            formattedTime = format.replace('hh', timeArray[0]).replace('mm', timeArray[1]).replace('ss', timeArray[2]);
+            formattedTime = format.replace('hh', timeArray[0]).replace('mm', timeArray[1]).replace('ss', timeArray[2]).replace('A/PM', meridiem);
             return timeArray.length === 4 ? formattedTime + ' ' + timeArray[3] : formattedTime;
         }
         else if (timeArray.length) {
             formattedTime = timeArray[0] + ':' + timeArray[1] + ':' + timeArray[2] + ' ' + timeArray[3];
             return timeArray.length === 3 ? formattedTime + ' ' + timeArray[3] : formattedTime;
         }
+
         return '';
     }
 

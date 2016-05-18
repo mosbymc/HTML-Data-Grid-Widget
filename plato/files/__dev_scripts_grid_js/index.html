@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">54.90</p>
+      <p class="stat">54.99</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2700</p>
+      <p class="stat">2691</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">177.10</p>
+      <p class="stat">176.46</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">48.08</p>
+      <p class="stat">47.77</p>
     </div>
   </div>
 </div>
@@ -1132,9 +1132,7 @@ var grid = (function _grid($) {
                     dataType = &#039;bool&#039;;
                     break;
                 case &#039;number&#039;:
-                case &#039;currency&#039;:
-                    var decimalPlaces = typeof gridData.columns[field].decimals === &#039;number&#039; ?  gridData.columns[field].decimals : 2;
-                    inputVal = parseFloat(val).toFixed(decimalPlaces);
+                    inputVal = val;
                     input = $(&#039;&lt;input type=&quot;text&quot; value=&quot;&#039; + inputVal + &#039;&quot; class=&quot;input textbox cell-edit-input active-cell&quot;&#039; + dataAttributes + &#039;/&gt;&#039;).appendTo(cell);
                     dataType = &#039;numeric&#039;;
                     break;
@@ -1363,12 +1361,8 @@ var grid = (function _grid($) {
      * @param {object} input
      */
     function saveCellEditData(input) {
-        //TODO: need to distinguish between the saveVal that goes into storage, and the displayVal that goes into the grid.
-        //TODO: saveVal should not be formatted, but the displayVal should.
         var val;
-        if (input[0].type == &#039;checkbox&#039;) {
-            val = input.is(&#039;:checked&#039;);
-        }
+        if (input[0].type == &#039;checkbox&#039;) val = input.is(&#039;:checked&#039;);
         else val = input.val();
         var gridContent = input.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-content-div&#039;),
             cell = input.parents(&#039;td&#039;),
@@ -1376,7 +1370,6 @@ var grid = (function _grid($) {
             index = cell.parents(&#039;tr&#039;).index(),
             field = cell.data(&#039;field&#039;),
             type = storage.grids[id].columns[field].type || &#039;&#039;,
-            decimalPlaces = 2,
             saveVal, re, displayVal;
 
         input.remove();
@@ -1385,40 +1378,21 @@ var grid = (function _grid($) {
             case &#039;number&#039;:
                 re = new RegExp(dataTypes.numeric);
                 if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
-                decimalPlaces = typeof storage.grids[id].columns[field].decimals === &#039;number&#039; ?  storage.grids[id].columns[field].decimals : 2;
-                var cellVal = parseFloat(val).toFixed(decimalPlaces);
-                saveVal = typeof storage.grids[id].dataSource.data[index][field] === &#039;string&#039; ? parseFloat(val.replace(&#039;,&#039;, &#039;&#039;)).toFixed(decimalPlaces) : parseFloat(parseFloat(val.replace(&#039;,&#039;, &#039;&#039;)).toFixed(decimalPlaces));
-                displayVal = getFormattedCellText(id, field, cellVal /*numberWithCommas(cellVal)*/);
+                saveVal = typeof storage.grids[id].dataSource.data[index][field] === &#039;string&#039; ? parseFloat(val.replace(&#039;,&#039;, &#039;&#039;)) : val;
+                displayVal = getFormattedCellText(id, field, val);
                 cell.text(displayVal);
                 break;
             case &#039;date&#039;:
                 displayVal = getFormattedCellText(id, field, val);
-                saveVal = val;
-                //saveVal = formatDateCellData(val, storage.grids[id].columns[field].format);
+                saveVal = displayVal;   //this and time are the only types that have the same displayVal and saveVel
                 cell.text(displayVal);
                 break;
             case &#039;time&#039;:
-                //TODO: consume getFormattedCellText here - needs to check for 24/12 hour time formats
-                var tod = &#039;AM&#039;,
-                    delimiter = storage.grids[id].columns[field].delimiter || &#039;:&#039;,
-                    timeFormat = storage.grids[id].columns[field].timeFormat;
                 re = new RegExp(dataTypes.time);
                 if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
-                var timeArray = getNumbersFromTime(val, storage.grids[id].columns[field].timeFormat);
-                if (timeFormat === &#039;24&#039; &amp;&amp; val.indexOf(&#039;PM&#039;) &gt; -1) {
-                    timeArray[0] = timeArray[0] === 12 ? 0 : (timeArray[0] + 12);
-                }
-                else if (timeFormat === &#039;12&#039; &amp;&amp; timeArray[0] &gt; 12) {
-                    timeArray[0] = (timeArray[0] - 12);
-                    tod = &#039;PM&#039;;
-                }
-                saveVal = timeArray[0] + delimiter + timeArray[1] + delimiter;
-                saveVal += timeArray[2] ? timeArray[2] : &#039;00&#039;;
-                if (storage.grids[id].columns[field].timeFormat === &#039;12&#039;) {
-                    tod = val.indexOf(&#039;PM&#039;) &gt; -1 ? &#039;PM&#039; : tod;
-                    saveVal += &#039; &#039; + tod;
-                }
-                cell.text(saveVal);
+                displayVal = getFormattedCellText(id, field, val);
+                saveVal = displayVal;   //this and date are the only types that have the same displayVal and saveVal
+                cell.text(displayVal);
                 break;
             default: 		//string, boolean
                 saveVal = val;
@@ -1432,9 +1406,8 @@ var grid = (function _grid($) {
             storage.grids[id].dataSource.data[index][field] = saveVal;
             cell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
         }
-        else {
+        else
             storage.grids[id].dataSource.data[index][field] = previousVal;
-        }
         callGridEventHandlers(storage.grids[id].events.afterCellEdit, storage.grids[id].grid, null);
     }
 
@@ -2443,7 +2416,7 @@ var grid = (function _grid($) {
                 text = formatDateCellData(value, storage.grids[gridId].columns[column].format);
                 break;
             case &#039;time&#039;:
-                text = formatTimeCellData(value, storage.grids[gridId].columns[column].format);
+                text = formatTimeCellData(value, column, gridId);
                 break;
             case &#039;string&#039;:
             case &#039;boolean&#039;:
@@ -2567,17 +2540,35 @@ var grid = (function _grid($) {
         total: &#039;Total: &#039;
     };
 
-    function formatTimeCellData(time, format) {
+    function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
-            formattedTime;
+            formattedTime,
+            format = storage.grids[gridId].columns[column].format,
+            timeFormat = storage.grids[gridId].columns[column].timeFormat;
+
+        if (timeFormat &amp;&amp; timeFormat == &#039;24&#039; &amp;&amp; timeArray.length === 4 &amp;&amp; timeArray[3] === &#039;PM&#039;)
+            timeArray[0] = timeArray[0] === 12 ? 0 : (timeArray[0] + 12);
+        else if (timeFormat &amp;&amp; timeFormat === &#039;12&#039; &amp;&amp; timeArray[0] &gt; 12) {
+            timeArray[0] = (timeArray[0] - 12);
+            timeArray[3] = &#039;PM&#039;;
+        }
+        else if (timeFormat &amp;&amp; timeFormat === &#039;12&#039; &amp;&amp; timeArray.length &lt; 4)
+            timeArray[3] = &#039;AM&#039;;
+
+        timeArray[0] = timeArray[0] ? timeArray[0] : &#039;00&#039;;
+        timeArray[1] = timeArray[1] ? timeArray[1] : &#039;00&#039;;
+        timeArray[2] = timeArray[2] ? timeArray[2] : &#039;00&#039;;
+        var meridiem = timeArray[3] || &#039;AM&#039;;
+
         if (timeArray.length &amp;&amp; format) {
-            formattedTime = format.replace(&#039;hh&#039;, timeArray[0]).replace(&#039;mm&#039;, timeArray[1]).replace(&#039;ss&#039;, timeArray[2]);
+            formattedTime = format.replace(&#039;hh&#039;, timeArray[0]).replace(&#039;mm&#039;, timeArray[1]).replace(&#039;ss&#039;, timeArray[2]).replace(&#039;A/PM&#039;, meridiem);
             return timeArray.length === 4 ? formattedTime + &#039; &#039; + timeArray[3] : formattedTime;
         }
         else if (timeArray.length) {
             formattedTime = timeArray[0] + &#039;:&#039; + timeArray[1] + &#039;:&#039; + timeArray[2] + &#039; &#039; + timeArray[3];
             return timeArray.length === 3 ? formattedTime + &#039; &#039; + timeArray[3] : formattedTime;
         }
+
         return &#039;&#039;;
     }
 
