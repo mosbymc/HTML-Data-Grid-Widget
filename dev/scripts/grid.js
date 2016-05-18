@@ -936,12 +936,7 @@ var grid = (function _grid($) {
                     var decimalPlaces = typeof gridData.columns[columns[j]].decimals === 'number' ?  gridData.columns[columns[j]].decimals : 2;
                     gridData.dataSource.data[i][columns[j]] = gridData.dataSource.data[i][columns[j]].toFixed(decimalPlaces);
                 }
-                //var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]);
-                //TODO: get data format working correctly
-                var text = gridData.dataSource.data[i][columns[j]];
-                 if (gridData.columns[columns[j]].format && gridData.columns[columns[j]].type === 'number')
-                 text = formatNumericCellData(text, gridData.columns[columns[j]].format);
-                 text = getFormattedCellText(id, columns[j], text);
+                var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]);
 
                 if (gridData.dataSource.data[i][columns[j]] !== undefined) {
                     td.text(text);
@@ -1310,19 +1305,7 @@ var grid = (function _grid($) {
                 cell.text(text);
                 break;
             case 'date':
-                var parseDate = Date.parse(val);
-                if (!isNaN(parseDate) && storage.grids[id].columns[field].format) {
-                    var tempDate = new Date(parseDate);
-                    var dd = tempDate.getUTCDate();
-                    var mm = tempDate.getUTCMonth() + 1;
-                    var yy = tempDate.getUTCFullYear();
-                    saveVal = storage.grids[id].columns[field].format.replace('mm', mm).replace('dd', dd).replace('yyyy', yy);
-                }
-                else if (!isNaN(parseDate)) {
-                    saveVal = new Date(Date.parse(val));
-                }
-                else
-                    saveVal = '';
+                saveVal = formatDateCellData(val, storage.grids[id].columns[field].format);
                 cell.text(saveVal);
                 break;
             case 'time':
@@ -2361,15 +2344,34 @@ var grid = (function _grid($) {
     }
 
     function getFormattedCellText(gridId, column, value) {
+        var text;
+        switch(storage.grids[gridId].columns[column].type) {
+            case 'number':
+                text = formatNumericCellData(value, storage.grids[gridId].columns[column].format);
+                break;
+            case 'date':
+                text = formatDateCellData(value, storage.grids[gridId].columns[column].format);
+                break;
+            case 'time':
+                text = formatTimeCellData(value, storage.grids[gridId].columns[column].format);
+                break;
+            case 'string':
+            case 'boolean':
+                text = value;
+                break;
+            default:
+                text = value;
+        }
+
         var template = storage.grids[gridId].columns[column].template;
         if (template) {
             if (typeof template === 'function')
-                return template(value);
+                return template(text);
             else if (typeof template === 'string')
-                return template.replace('{{data}}', value);
-            return value;
+                return template.replace('{{data}}', text);
+            return text;
         }
-        return value;
+        return text;
     }
 
     function numberWithCommas(x) {
@@ -2435,11 +2437,38 @@ var grid = (function _grid($) {
         '((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)29\\16)|(?:(29)(\\/|-|\\.)(0?2))\\18)(?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00))))' +
         '|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)((?:1[6-9]|[2-9]\\d)?\\d{2})))\\ ((0?[1-9]|1[012])' +
         '(?:(?:(:|\\.)([0-5]\\d))(?:\\32([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\37([0-5]\\d))?)$)$',
-        date: '^(((?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\4|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\7))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\10)|(?:(29|30)(\\/|-|\\.)' +
-        '(0?[1,3-9]|1[0-2])\\13)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\17)|(?:(29)(\\/|-|\\.)(0?2))\\20)(?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])' +
-        '|((?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\26|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\29)' +
-        '((?:1[6-9]|[2-9]\\d)?\\d{2}))))|((?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\36)(29))))' +
-        '|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)(?:(?:(?:(0?[13578]|1[02])\\40(31))|(?:(0?[1,3-9]|1[0-2])\\40(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\40(0?[1-9]|1\\d|2[0-8]))))$'
+        date: '^(?:(?:(?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\2|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\5))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\8)|(?:(29|30)(\\/|-|\\.)' +
+        '(0?[1,3-9]|1[0-2])\\11)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\15)|(?:(29)(\\/|-|\\.)(0?2))\\18)((?:(?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])' +
+        '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\22|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\25)((?:1[6-9]|[2-9]\\d)?\\d{2}))))' +
+        '|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\29)(29))))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)' +
+        '(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$',
+        dateCaptureGroups: {
+            year: [13, 20, 27, 28, 32],
+            month: [1, 4, 9, 12, 14, 19, 21, 26, 30, 34, 36, 38],
+            day: [3, 6, 7, 10, 16, 17, 23, 24, 31, 35, 37, 39],
+            yearMap: {
+                13: {
+                    month: [1, 4, 9, 12],
+                    day: [3, 6, 7, 10]
+                },
+                20: {
+                    month: [14, 19],
+                    day: [16, 17]
+                },
+                27: {
+                    month: [21, 26],
+                    day: [23, 24]
+                },
+                28: {
+                    month: [30],
+                    day: [31]
+                },
+                32: {
+                    month: [34, 36, 38],
+                    day: [35, 37, 39]
+                }
+            }
+        }
     };
 
     events = ['cellEditChange', 'beforeCellEdit', 'afterCellEdit', 'pageRequested', 'beforeDataBind', 'afterDataBind', 'columnReorder'];
@@ -2452,10 +2481,39 @@ var grid = (function _grid($) {
         total: 'Total: '
     };
 
-    function formatNumericCellData(data, format) {
+    function formatTimeCellData(time, format) {
+        var timeArray = getNumbersFromTime(time),
+            formattedTime;
+        if (timeArray.length && format) {
+            formattedTime = format.replace('hh', timeArray[0]).replace('mm', timeArray[1]).replace('ss', timeArray[2]);
+            return timeArray.length === 4 ? formattedTime + ' ' + timeArray[3] : formattedTime;
+        }
+        else if (timeArray.length) {
+            formattedTime = timeArray[0] + ':' + timeArray[1] + ':' + timeArray[2] + ' ' + timeArray[3];
+            return timeArray.length === 3 ? formattedTime + ' ' + timeArray[3] : formattedTime;
+        }
+        return '';
+    }
+
+    function formatDateCellData(date, format) {
+        var parseDate = Date.parse(date);
+        if (!isNaN(parseDate) && format) {
+            var tempDate = new Date(parseDate);
+            var dd = tempDate.getUTCDate();
+            var mm = tempDate.getUTCMonth() + 1;
+            var yy = tempDate.getUTCFullYear();
+            return format.replace('mm', mm).replace('dd', dd).replace('yyyy', yy);
+        }
+        else if (!isNaN(parseDate))
+            return new Date(parseDate);
+        return '';
+    }
+
+    function formatNumericCellData(num, format) {
+        if (!format) return num;
         var formatSections = [];
         var dataSections = [];
-        var formatObject = verifyFormat(format);
+        var formatObject = (~format.indexOf('P') || ~format.indexOf('C')) ? createPercentageFormat(format) : verifyFormat(format);
         format = formatObject.value;
 
         var formatDecimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length;
@@ -2465,38 +2523,62 @@ var grid = (function _grid($) {
 
         var decimals = formatSections[1] ? formatSections[1].length : 0;
 
-        data = roundNumber(+data, decimals);
-        var sign = 0 > +data ? -1 : 1;
-        data = data.toString();
-        data = data.replace(new RegExp(',', 'g'), '');   //remove all commas: either the format didn't specify commas, or we will replace them later
-        var dataDecimalIndex = ~data.indexOf('.') ? data.indexOf('.') : data.length;
-        dataSections[0] = data.substring(0, dataDecimalIndex).split('').reverse().join('');
+        if (formatObject.alterer)
+            num = formatObject.alterer(+num);
+        num = roundNumber(+num, decimals);
+        var sign = 0 > +num ? -1 : 1;
+        num = num.toString();
+        num = num.replace(new RegExp(',', 'g'), '').replace('-', '');   //remove all commas: either the format didn't specify commas, or we will replace them later
+        var dataDecimalIndex = ~num.indexOf('.') ? num.indexOf('.') : num.length;
+        dataSections[0] = num.substring(0, dataDecimalIndex).split('').reverse().join('');
         if (dataDecimalIndex < format.length)
-            dataSections[1] = data.substring(dataDecimalIndex + 1, data.length);
+            dataSections[1] = num.substring(dataDecimalIndex + 1, num.length);
+        else if (formatDecimalIndex < format.length)
+            dataSections[1] = '';
 
-        var formattedData = [];
-        if (format.length) {
-            for (var i = 0; i < formatSections.length; i++) {
-                formattedData[i] = [];
-                for (var j = 0; j < formatSections[i].length; j++) {
-                    var formatCommaLoc = formatSections[i].length - j;
-                    if (i === 0 && formatObject.shouldInsertSeparators && formatSections[i].length - j !== 0 && formatSections[i].length !== formatCommaLoc && formatCommaLoc % 3 === 0 &&
-                        (formatSections[i].charAt(j + 1) === '0' || (formatSections[i].charAt(j + 1) === '#' && dataSections[i].charAt(j + 1)))) {
-                        formattedData[i].push(',');
+        var wholeNums = [];
+        var charsSinceComma = 0;
+        if (formatSections[0].length) {
+            var finalCharIndex, i;
+            if (formatSections[0].length) {
+                finalCharIndex = formatSections[0].length > dataSections[0].length ? formatSections[0].length : dataSections[0].length;
+                for (i = 0; i < finalCharIndex; i++) {
+                    if (formatObject.shouldInsertSeparators && charsSinceComma === 3 && (dataSections[0].charAt(i) || formatSections[0].charAt(i) === '0')) {
+                        wholeNums.push(',');
+                        charsSinceComma = 0;
                     }
-                    if (dataSections[i].charAt(j)) {
-                        formattedData[i].push(dataSections[i].charAt(j));
+                    if (dataSections[0].charAt(i)) {
+                        wholeNums.push(dataSections[0].charAt(i));
+                        charsSinceComma++;
                     }
-                    else if (formatSections[i].charAt(j) === '0' && !dataSections[i].charAt(j)) {
-                        formattedData[i].push('0');
+                    else if (formatSections[0].charAt(i) === '0') {
+                        wholeNums.push('0');
+                        charsSinceComma++;
                     }
+                    else
+                        break;
                 }
             }
+            wholeNums = wholeNums.reverse().join('');
 
-            var value = formattedData.length === 1 ? formattedData[0].reverse().join('')  : formattedData[0].reverse().join('') + '.' + formattedData[1].join('');
-            return sign === -1 ? '-' + value : value;
+            var fractionNums = [];
+            if (formatSections.length > 1) {
+                finalCharIndex = formatSections[1].length > dataSections[1].length ? formatSections[1].length : dataSections[1].length;
+                for (i = 0; i < finalCharIndex; i++) {
+                    if (formatSections[1].charAt(i) && dataSections[1].charAt(i))
+                        fractionNums.push(dataSections[1].charAt(i));
+                    else if (formatSections[1].charAt(i) === '0')
+                        fractionNums.push('0');
+                    else
+                        break;
+                }
+            }
+            fractionNums = fractionNums.join('');
+
+            var value = fractionNums.length ? wholeNums + '.' + fractionNums : wholeNums;
+            return sign === -1 ? formatObject.prependedSymbol + '-' + value + formatObject.appendedSymbol : formatObject.prependedSymbol + value + formatObject.appendedSymbol;
         }
-        return data;
+        return num;
     }
 
     function verifyFormat(format) {
@@ -2524,8 +2606,52 @@ var grid = (function _grid($) {
 
         return {
             value: formatSections.length < 2 ? formatSections[0] : formatSections[0] + '.' + formatSections[1].split('').reverse().join(''),
-            shouldInsertSeparators: shouldInsertSeparators
+            shouldInsertSeparators: shouldInsertSeparators,
+            alterer: null,
+            prependedSymbol: '',
+            appendedSymbol: ''
         };
+    }
+
+    function createPercentageFormat(format) {
+        var charStripper = '\\d{0,2}]';
+        var cOrP = ~format.indexOf('P') ? 'P' : 'C';
+        format = format.split(cOrP);
+        var wholeNums = verifyFormat(format[0]);
+        var re = new RegExp('[^' + cOrP + charStripper, 'g');
+        //var l = format[1].replace(re, '');
+        //format = format[1].replace(/[^P\d{0,2}]/g, '');
+        format = format[1].replace(re, '');
+        var numDecimals = 2,
+            newFormat;
+        if (format.length)
+            numDecimals = parseInt(format.substring(0,2));
+
+        if (wholeNums.value && numDecimals)
+            newFormat = wholeNums.value + '.';
+        else if (wholeNums.value)
+            newFormat = wholeNums.value;
+        else if (numDecimals && cOrP === 'C')
+            newFormat = '0.';
+        else if (numDecimals && cOrP === 'P')
+            newFormat = '00.';
+        else
+            newFormat = cOrP === 'C' ? '0' : '00';
+
+        for (var i = 0; i < numDecimals; i++) {
+            newFormat += '0';
+        }
+        return {
+            value: newFormat,
+            shouldInsertSeparators: wholeNums.shouldInsertSeparators,
+            alterer: cOrP == 'C' ? null : x100,
+            prependedSymbol: cOrP === 'C' ? '$' : '',
+            appendedSymbol: cOrP === 'P' ? '%' : ''
+        };
+    }
+
+    function x100(val) {
+        return val * 100;
     }
 
     function roundNumber(val, dec) {

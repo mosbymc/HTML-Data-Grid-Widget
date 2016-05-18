@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.18</p>
+      <p class="stat">54.92</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2579</p>
+      <p class="stat">2705</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">179.27</p>
+      <p class="stat">178.08</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">46.26</p>
+      <p class="stat">48.48</p>
     </div>
   </div>
 </div>
@@ -1027,12 +1027,7 @@ var grid = (function _grid($) {
                     var decimalPlaces = typeof gridData.columns[columns[j]].decimals === &#039;number&#039; ?  gridData.columns[columns[j]].decimals : 2;
                     gridData.dataSource.data[i][columns[j]] = gridData.dataSource.data[i][columns[j]].toFixed(decimalPlaces);
                 }
-                //var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]);
-                //TODO: get data format working correctly
-                var text = gridData.dataSource.data[i][columns[j]];
-                 if (gridData.columns[columns[j]].format &amp;&amp; gridData.columns[columns[j]].type === &#039;number&#039;)
-                 text = formatNumericCellData(text, gridData.columns[columns[j]].format);
-                 text = getFormattedCellText(id, columns[j], text);
+                var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]);
 
                 if (gridData.dataSource.data[i][columns[j]] !== undefined) {
                     td.text(text);
@@ -1401,19 +1396,7 @@ var grid = (function _grid($) {
                 cell.text(text);
                 break;
             case &#039;date&#039;:
-                var parseDate = Date.parse(val);
-                if (!isNaN(parseDate) &amp;&amp; storage.grids[id].columns[field].format) {
-                    var tempDate = new Date(parseDate);
-                    var dd = tempDate.getUTCDate();
-                    var mm = tempDate.getUTCMonth() + 1;
-                    var yy = tempDate.getUTCFullYear();
-                    saveVal = storage.grids[id].columns[field].format.replace(&#039;mm&#039;, mm).replace(&#039;dd&#039;, dd).replace(&#039;yyyy&#039;, yy);
-                }
-                else if (!isNaN(parseDate)) {
-                    saveVal = new Date(Date.parse(val));
-                }
-                else
-                    saveVal = &#039;&#039;;
+                saveVal = formatDateCellData(val, storage.grids[id].columns[field].format);
                 cell.text(saveVal);
                 break;
             case &#039;time&#039;:
@@ -2452,15 +2435,34 @@ var grid = (function _grid($) {
     }
 
     function getFormattedCellText(gridId, column, value) {
+        var text;
+        switch(storage.grids[gridId].columns[column].type) {
+            case &#039;number&#039;:
+                text = formatNumericCellData(value, storage.grids[gridId].columns[column].format);
+                break;
+            case &#039;date&#039;:
+                text = formatDateCellData(value, storage.grids[gridId].columns[column].format);
+                break;
+            case &#039;time&#039;:
+                text = formatTimeCellData(value, storage.grids[gridId].columns[column].format);
+                break;
+            case &#039;string&#039;:
+            case &#039;boolean&#039;:
+                text = value;
+                break;
+            default:
+                text = value;
+        }
+
         var template = storage.grids[gridId].columns[column].template;
         if (template) {
             if (typeof template === &#039;function&#039;)
-                return template(value);
+                return template(text);
             else if (typeof template === &#039;string&#039;)
-                return template.replace(&#039;{{data}}&#039;, value);
-            return value;
+                return template.replace(&#039;{{data}}&#039;, text);
+            return text;
         }
-        return value;
+        return text;
     }
 
     function numberWithCommas(x) {
@@ -2526,11 +2528,38 @@ var grid = (function _grid($) {
         &#039;((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)29\\16)|(?:(29)(\\/|-|\\.)(0?2))\\18)(?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00))))&#039; +
         &#039;|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)((?:1[6-9]|[2-9]\\d)?\\d{2})))\\ ((0?[1-9]|1[012])&#039; +
         &#039;(?:(?:(:|\\.)([0-5]\\d))(?:\\32([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\37([0-5]\\d))?)$)$&#039;,
-        date: &#039;^(((?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\4|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\7))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\10)|(?:(29|30)(\\/|-|\\.)&#039; +
-        &#039;(0?[1,3-9]|1[0-2])\\13)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\17)|(?:(29)(\\/|-|\\.)(0?2))\\20)(?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])&#039; +
-        &#039;|((?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\26|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\29)&#039; +
-        &#039;((?:1[6-9]|[2-9]\\d)?\\d{2}))))|((?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\36)(29))))&#039; +
-        &#039;|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)(?:(?:(?:(0?[13578]|1[02])\\40(31))|(?:(0?[1,3-9]|1[0-2])\\40(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\40(0?[1-9]|1\\d|2[0-8]))))$&#039;
+        date: &#039;^(?:(?:(?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\2|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\5))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\8)|(?:(29|30)(\\/|-|\\.)&#039; +
+        &#039;(0?[1,3-9]|1[0-2])\\11)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\15)|(?:(29)(\\/|-|\\.)(0?2))\\18)((?:(?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])&#039; +
+        &#039;|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\22|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\25)((?:1[6-9]|[2-9]\\d)?\\d{2}))))&#039; +
+        &#039;|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\29)(29))))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)&#039; +
+        &#039;(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$&#039;,
+        dateCaptureGroups: {
+            year: [13, 20, 27, 28, 32],
+            month: [1, 4, 9, 12, 14, 19, 21, 26, 30, 34, 36, 38],
+            day: [3, 6, 7, 10, 16, 17, 23, 24, 31, 35, 37, 39],
+            yearMap: {
+                13: {
+                    month: [1, 4, 9, 12],
+                    day: [3, 6, 7, 10]
+                },
+                20: {
+                    month: [14, 19],
+                    day: [16, 17]
+                },
+                27: {
+                    month: [21, 26],
+                    day: [23, 24]
+                },
+                28: {
+                    month: [30],
+                    day: [31]
+                },
+                32: {
+                    month: [34, 36, 38],
+                    day: [35, 37, 39]
+                }
+            }
+        }
     };
 
     events = [&#039;cellEditChange&#039;, &#039;beforeCellEdit&#039;, &#039;afterCellEdit&#039;, &#039;pageRequested&#039;, &#039;beforeDataBind&#039;, &#039;afterDataBind&#039;, &#039;columnReorder&#039;];
@@ -2543,10 +2572,39 @@ var grid = (function _grid($) {
         total: &#039;Total: &#039;
     };
 
-    function formatNumericCellData(data, format) {
+    function formatTimeCellData(time, format) {
+        var timeArray = getNumbersFromTime(time),
+            formattedTime;
+        if (timeArray.length &amp;&amp; format) {
+            formattedTime = format.replace(&#039;hh&#039;, timeArray[0]).replace(&#039;mm&#039;, timeArray[1]).replace(&#039;ss&#039;, timeArray[2]);
+            return timeArray.length === 4 ? formattedTime + &#039; &#039; + timeArray[3] : formattedTime;
+        }
+        else if (timeArray.length) {
+            formattedTime = timeArray[0] + &#039;:&#039; + timeArray[1] + &#039;:&#039; + timeArray[2] + &#039; &#039; + timeArray[3];
+            return timeArray.length === 3 ? formattedTime + &#039; &#039; + timeArray[3] : formattedTime;
+        }
+        return &#039;&#039;;
+    }
+
+    function formatDateCellData(date, format) {
+        var parseDate = Date.parse(date);
+        if (!isNaN(parseDate) &amp;&amp; format) {
+            var tempDate = new Date(parseDate);
+            var dd = tempDate.getUTCDate();
+            var mm = tempDate.getUTCMonth() + 1;
+            var yy = tempDate.getUTCFullYear();
+            return format.replace(&#039;mm&#039;, mm).replace(&#039;dd&#039;, dd).replace(&#039;yyyy&#039;, yy);
+        }
+        else if (!isNaN(parseDate))
+            return new Date(parseDate);
+        return &#039;&#039;;
+    }
+
+    function formatNumericCellData(num, format) {
+        if (!format) return num;
         var formatSections = [];
         var dataSections = [];
-        var formatObject = verifyFormat(format);
+        var formatObject = (~format.indexOf(&#039;P&#039;) || ~format.indexOf(&#039;C&#039;)) ? createPercentageFormat(format) : verifyFormat(format);
         format = formatObject.value;
 
         var formatDecimalIndex = ~format.indexOf(&#039;.&#039;) ? format.indexOf(&#039;.&#039;) : format.length;
@@ -2556,38 +2614,62 @@ var grid = (function _grid($) {
 
         var decimals = formatSections[1] ? formatSections[1].length : 0;
 
-        data = roundNumber(+data, decimals);
-        var sign = 0 &gt; +data ? -1 : 1;
-        data = data.toString();
-        data = data.replace(new RegExp(&#039;,&#039;, &#039;g&#039;), &#039;&#039;);   //remove all commas: either the format didn&#039;t specify commas, or we will replace them later
-        var dataDecimalIndex = ~data.indexOf(&#039;.&#039;) ? data.indexOf(&#039;.&#039;) : data.length;
-        dataSections[0] = data.substring(0, dataDecimalIndex).split(&#039;&#039;).reverse().join(&#039;&#039;);
+        if (formatObject.alterer)
+            num = formatObject.alterer(+num);
+        num = roundNumber(+num, decimals);
+        var sign = 0 &gt; +num ? -1 : 1;
+        num = num.toString();
+        num = num.replace(new RegExp(&#039;,&#039;, &#039;g&#039;), &#039;&#039;).replace(&#039;-&#039;, &#039;&#039;);   //remove all commas: either the format didn&#039;t specify commas, or we will replace them later
+        var dataDecimalIndex = ~num.indexOf(&#039;.&#039;) ? num.indexOf(&#039;.&#039;) : num.length;
+        dataSections[0] = num.substring(0, dataDecimalIndex).split(&#039;&#039;).reverse().join(&#039;&#039;);
         if (dataDecimalIndex &lt; format.length)
-            dataSections[1] = data.substring(dataDecimalIndex + 1, data.length);
+            dataSections[1] = num.substring(dataDecimalIndex + 1, num.length);
+        else if (formatDecimalIndex &lt; format.length)
+            dataSections[1] = &#039;&#039;;
 
-        var formattedData = [];
-        if (format.length) {
-            for (var i = 0; i &lt; formatSections.length; i++) {
-                formattedData[i] = [];
-                for (var j = 0; j &lt; formatSections[i].length; j++) {
-                    var formatCommaLoc = formatSections[i].length - j;
-                    if (i === 0 &amp;&amp; formatObject.shouldInsertSeparators &amp;&amp; formatSections[i].length - j !== 0 &amp;&amp; formatSections[i].length !== formatCommaLoc &amp;&amp; formatCommaLoc % 3 === 0 &amp;&amp;
-                        (formatSections[i].charAt(j + 1) === &#039;0&#039; || (formatSections[i].charAt(j + 1) === &#039;#&#039; &amp;&amp; dataSections[i].charAt(j + 1)))) {
-                        formattedData[i].push(&#039;,&#039;);
+        var wholeNums = [];
+        var charsSinceComma = 0;
+        if (formatSections[0].length) {
+            var finalCharIndex, i;
+            if (formatSections[0].length) {
+                finalCharIndex = formatSections[0].length &gt; dataSections[0].length ? formatSections[0].length : dataSections[0].length;
+                for (i = 0; i &lt; finalCharIndex; i++) {
+                    if (formatObject.shouldInsertSeparators &amp;&amp; charsSinceComma === 3 &amp;&amp; (dataSections[0].charAt(i) || formatSections[0].charAt(i) === &#039;0&#039;)) {
+                        wholeNums.push(&#039;,&#039;);
+                        charsSinceComma = 0;
                     }
-                    if (dataSections[i].charAt(j)) {
-                        formattedData[i].push(dataSections[i].charAt(j));
+                    if (dataSections[0].charAt(i)) {
+                        wholeNums.push(dataSections[0].charAt(i));
+                        charsSinceComma++;
                     }
-                    else if (formatSections[i].charAt(j) === &#039;0&#039; &amp;&amp; !dataSections[i].charAt(j)) {
-                        formattedData[i].push(&#039;0&#039;);
+                    else if (formatSections[0].charAt(i) === &#039;0&#039;) {
+                        wholeNums.push(&#039;0&#039;);
+                        charsSinceComma++;
                     }
+                    else
+                        break;
                 }
             }
+            wholeNums = wholeNums.reverse().join(&#039;&#039;);
 
-            var value = formattedData.length === 1 ? formattedData[0].reverse().join(&#039;&#039;)  : formattedData[0].reverse().join(&#039;&#039;) + &#039;.&#039; + formattedData[1].join(&#039;&#039;);
-            return sign === -1 ? &#039;-&#039; + value : value;
+            var fractionNums = [];
+            if (formatSections.length &gt; 1) {
+                finalCharIndex = formatSections[1].length &gt; dataSections[1].length ? formatSections[1].length : dataSections[1].length;
+                for (i = 0; i &lt; finalCharIndex; i++) {
+                    if (formatSections[1].charAt(i) &amp;&amp; dataSections[1].charAt(i))
+                        fractionNums.push(dataSections[1].charAt(i));
+                    else if (formatSections[1].charAt(i) === &#039;0&#039;)
+                        fractionNums.push(&#039;0&#039;);
+                    else
+                        break;
+                }
+            }
+            fractionNums = fractionNums.join(&#039;&#039;);
+
+            var value = fractionNums.length ? wholeNums + &#039;.&#039; + fractionNums : wholeNums;
+            return sign === -1 ? formatObject.prependedSymbol + &#039;-&#039; + value + formatObject.appendedSymbol : formatObject.prependedSymbol + value + formatObject.appendedSymbol;
         }
-        return data;
+        return num;
     }
 
     function verifyFormat(format) {
@@ -2615,8 +2697,52 @@ var grid = (function _grid($) {
 
         return {
             value: formatSections.length &lt; 2 ? formatSections[0] : formatSections[0] + &#039;.&#039; + formatSections[1].split(&#039;&#039;).reverse().join(&#039;&#039;),
-            shouldInsertSeparators: shouldInsertSeparators
+            shouldInsertSeparators: shouldInsertSeparators,
+            alterer: null,
+            prependedSymbol: &#039;&#039;,
+            appendedSymbol: &#039;&#039;
         };
+    }
+
+    function createPercentageFormat(format) {
+        var charStripper = &#039;\\d{0,2}]&#039;;
+        var cOrP = ~format.indexOf(&#039;P&#039;) ? &#039;P&#039; : &#039;C&#039;;
+        format = format.split(cOrP);
+        var wholeNums = verifyFormat(format[0]);
+        var re = new RegExp(&#039;[^&#039; + cOrP + charStripper, &#039;g&#039;);
+        //var l = format[1].replace(re, &#039;&#039;);
+        //format = format[1].replace(/[^P\d{0,2}]/g, &#039;&#039;);
+        format = format[1].replace(re, &#039;&#039;);
+        var numDecimals = 2,
+            newFormat;
+        if (format.length)
+            numDecimals = parseInt(format.substring(0,2));
+
+        if (wholeNums.value &amp;&amp; numDecimals)
+            newFormat = wholeNums.value + &#039;.&#039;;
+        else if (wholeNums.value)
+            newFormat = wholeNums.value;
+        else if (numDecimals &amp;&amp; cOrP === &#039;C&#039;)
+            newFormat = &#039;0.&#039;;
+        else if (numDecimals &amp;&amp; cOrP === &#039;P&#039;)
+            newFormat = &#039;00.&#039;;
+        else
+            newFormat = cOrP === &#039;C&#039; ? &#039;0&#039; : &#039;00&#039;;
+
+        for (var i = 0; i &lt; numDecimals; i++) {
+            newFormat += &#039;0&#039;;
+        }
+        return {
+            value: newFormat,
+            shouldInsertSeparators: wholeNums.shouldInsertSeparators,
+            alterer: cOrP == &#039;C&#039; ? null : x100,
+            prependedSymbol: cOrP === &#039;C&#039; ? &#039;$&#039; : &#039;&#039;,
+            appendedSymbol: cOrP === &#039;P&#039; ? &#039;%&#039; : &#039;&#039;
+        };
+    }
+
+    function x100(val) {
+        return val * 100;
     }
 
     function roundNumber(val, dec) {
