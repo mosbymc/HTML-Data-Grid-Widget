@@ -931,23 +931,18 @@ var grid = (function _grid($) {
                         td.addClass(gridData.columns[columns[j]].attributes.cellClasses[z]);
                     }
                 }
-                var type = gridData.columns[columns[j]].type || '';
-                if ((type === 'number' || type === 'currency' || type === 'percent') && typeof gridData.dataSource.data[i][columns[j]] === 'number') {
+                //var type = gridData.columns[columns[j]].type || '';
+                /*if ((type === 'number' || type === 'currency' || type === 'percent') && typeof gridData.dataSource.data[i][columns[j]] === 'number') {
                     var decimalPlaces = typeof gridData.columns[columns[j]].decimals === 'number' ?  gridData.columns[columns[j]].decimals : 2;
                     gridData.dataSource.data[i][columns[j]] = gridData.dataSource.data[i][columns[j]].toFixed(decimalPlaces);
-                }
+                }*/
                 var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]);
 
-                if (gridData.dataSource.data[i][columns[j]] !== undefined) {
-                    td.text(text);
-                }
+                if (gridData.dataSource.data[i][columns[j]] !== undefined) td.text(text);
 
-                if (gridData.columns[columns[j]].editable) {
-                    makeCellEditable(id, td);
-                }
-                else if (gridData.columns[columns[j]].selectable) {	//attach event handlers to save data
-                    makeCellSelectable(id, td);
-                }
+                //attach event handlers to save data
+                if (gridData.columns[columns[j]].editable) makeCellEditable(id, td);
+                else if (gridData.columns[columns[j]].selectable) makeCellSelectable(id, td);
             }
         }
 
@@ -1291,7 +1286,7 @@ var grid = (function _grid($) {
             field = cell.data('field'),
             type = storage.grids[id].columns[field].type || '',
             decimalPlaces = 2,
-            saveVal, re;
+            saveVal, re, displayVal;
 
         input.remove();
         //Types: date, number, string, boolean, time
@@ -1302,13 +1297,14 @@ var grid = (function _grid($) {
                 decimalPlaces = typeof storage.grids[id].columns[field].decimals === 'number' ?  storage.grids[id].columns[field].decimals : 2;
                 var cellVal = parseFloat(val).toFixed(decimalPlaces);
                 saveVal = typeof storage.grids[id].dataSource.data[index][field] === 'string' ? parseFloat(val.replace(',', '')).toFixed(decimalPlaces) : parseFloat(parseFloat(val.replace(',', '')).toFixed(decimalPlaces));
-                var text = getFormattedCellText(id, field, cellVal /*numberWithCommas(cellVal)*/);
-                cell.text(text);
+                displayVal = getFormattedCellText(id, field, cellVal /*numberWithCommas(cellVal)*/);
+                cell.text(displayVal);
                 break;
             case 'date':
-                saveVal = getFormattedCellText(id, field, val);
+                displayVal = getFormattedCellText(id, field, val);
+                saveVal = val;
                 //saveVal = formatDateCellData(val, storage.grids[id].columns[field].format);
-                cell.text(saveVal);
+                cell.text(displayVal);
                 break;
             case 'time':
                 //TODO: consume getFormattedCellText here - needs to check for 24/12 hour time formats

@@ -72,7 +72,8 @@ var gridData = {
         Labor: {
             type: "number",
             template: "{{data}} hour(s)",
-            decimals: 0,
+            format: '#',
+            //decimals: 0,
             selectable: true,
             options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
             width: 160,
@@ -90,13 +91,14 @@ var gridData = {
         },
         Cost: {
             type: "number",
+            format: '0C2',
             symbol: "$",
-            template: "${{data}}",
+            //template: "${{data}}",
             filterable: true,
             editable: true,
             min: 1,
             max: 10000,
-            width: 180,
+            width: 150,
             validation: {
                 required: true,
                 customRules: {
@@ -117,9 +119,10 @@ var gridData = {
         },
         Billed: {
             type: "number",
+            format: '0C2',
             symbol: "$",
-            template: "${{data}}",
-            width: 125,
+            //template: "${{data}}",
+            width: 155,
             validation: {
                 required: true,
                 customRules: {
@@ -138,8 +141,8 @@ var gridData = {
             width: 140,
             editable: true,
             title: "Parts Markup",
-            template: "{{data}}%",
-            format: '##.00',
+            //template: "{{data}}%",
+            format: '0P2',
             decimals: 0
         },
         Date: {
@@ -170,6 +173,7 @@ var gridData = {
             width: 150,
             editable: true,
             timeFormat: "12",
+            format: 'hh:mm:ss',
             delimiter: ":"
         },
         Paid: {
