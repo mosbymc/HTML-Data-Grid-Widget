@@ -1277,6 +1277,8 @@ var grid = (function _grid($) {
      * @param {object} input
      */
     function saveCellEditData(input) {
+        //TODO: need to distinguish between the saveVal that goes into storage, and the displayVal that goes into the grid.
+        //TODO: saveVal should not be formatted, but the displayVal should.
         var val;
         if (input[0].type == 'checkbox') {
             val = input.is(':checked');
@@ -1292,23 +1294,24 @@ var grid = (function _grid($) {
             saveVal, re;
 
         input.remove();
-        //Types: date, number, string, boolean, currency, time, datetime
+        //Types: date, number, string, boolean, time
         switch (type) {
             case 'number':
-            case 'currency':
                 re = new RegExp(dataTypes.numeric);
                 if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
                 decimalPlaces = typeof storage.grids[id].columns[field].decimals === 'number' ?  storage.grids[id].columns[field].decimals : 2;
                 var cellVal = parseFloat(val).toFixed(decimalPlaces);
                 saveVal = typeof storage.grids[id].dataSource.data[index][field] === 'string' ? parseFloat(val.replace(',', '')).toFixed(decimalPlaces) : parseFloat(parseFloat(val.replace(',', '')).toFixed(decimalPlaces));
-                var text = getFormattedCellText(id, field, numberWithCommas(cellVal));
+                var text = getFormattedCellText(id, field, cellVal /*numberWithCommas(cellVal)*/);
                 cell.text(text);
                 break;
             case 'date':
-                saveVal = formatDateCellData(val, storage.grids[id].columns[field].format);
+                saveVal = getFormattedCellText(id, field, val);
+                //saveVal = formatDateCellData(val, storage.grids[id].columns[field].format);
                 cell.text(saveVal);
                 break;
             case 'time':
+                //TODO: consume getFormattedCellText here - needs to check for 24/12 hour time formats
                 var tod = 'AM',
                     delimiter = storage.grids[id].columns[field].delimiter || ':',
                     timeFormat = storage.grids[id].columns[field].timeFormat;
@@ -2372,10 +2375,6 @@ var grid = (function _grid($) {
             return text;
         }
         return text;
-    }
-
-    function numberWithCommas(x) {
-        return x.toString().replace(/\B(?=(?:\d{3})+(?!\d))/g, ',');
     }
 
     function getNumbersFromTime(val) {

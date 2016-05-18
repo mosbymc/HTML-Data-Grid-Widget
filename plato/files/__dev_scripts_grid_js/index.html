@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">54.92</p>
+      <p class="stat">54.85</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2705</p>
+      <p class="stat">2704</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">178.08</p>
+      <p class="stat">178.12</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">48.48</p>
+      <p class="stat">48.38</p>
     </div>
   </div>
 </div>
@@ -1368,6 +1368,8 @@ var grid = (function _grid($) {
      * @param {object} input
      */
     function saveCellEditData(input) {
+        //TODO: need to distinguish between the saveVal that goes into storage, and the displayVal that goes into the grid.
+        //TODO: saveVal should not be formatted, but the displayVal should.
         var val;
         if (input[0].type == &#039;checkbox&#039;) {
             val = input.is(&#039;:checked&#039;);
@@ -1383,23 +1385,24 @@ var grid = (function _grid($) {
             saveVal, re;
 
         input.remove();
-        //Types: date, number, string, boolean, currency, time, datetime
+        //Types: date, number, string, boolean, time
         switch (type) {
             case &#039;number&#039;:
-            case &#039;currency&#039;:
                 re = new RegExp(dataTypes.numeric);
                 if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
                 decimalPlaces = typeof storage.grids[id].columns[field].decimals === &#039;number&#039; ?  storage.grids[id].columns[field].decimals : 2;
                 var cellVal = parseFloat(val).toFixed(decimalPlaces);
                 saveVal = typeof storage.grids[id].dataSource.data[index][field] === &#039;string&#039; ? parseFloat(val.replace(&#039;,&#039;, &#039;&#039;)).toFixed(decimalPlaces) : parseFloat(parseFloat(val.replace(&#039;,&#039;, &#039;&#039;)).toFixed(decimalPlaces));
-                var text = getFormattedCellText(id, field, numberWithCommas(cellVal));
+                var text = getFormattedCellText(id, field, cellVal /*numberWithCommas(cellVal)*/);
                 cell.text(text);
                 break;
             case &#039;date&#039;:
-                saveVal = formatDateCellData(val, storage.grids[id].columns[field].format);
+                saveVal = getFormattedCellText(id, field, val);
+                //saveVal = formatDateCellData(val, storage.grids[id].columns[field].format);
                 cell.text(saveVal);
                 break;
             case &#039;time&#039;:
+                //TODO: consume getFormattedCellText here - needs to check for 24/12 hour time formats
                 var tod = &#039;AM&#039;,
                     delimiter = storage.grids[id].columns[field].delimiter || &#039;:&#039;,
                     timeFormat = storage.grids[id].columns[field].timeFormat;
@@ -2463,10 +2466,6 @@ var grid = (function _grid($) {
             return text;
         }
         return text;
-    }
-
-    function numberWithCommas(x) {
-        return x.toString().replace(/\B(?=(?:\d{3})+(?!\d))/g, &#039;,&#039;);
     }
 
     function getNumbersFromTime(val) {
