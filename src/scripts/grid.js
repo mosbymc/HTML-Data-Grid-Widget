@@ -2397,10 +2397,6 @@ var grid = (function _grid($) {
         numericTemp: '^-?(?:[1-9]{1}[0-9]{0,2}(?:,[0-9]{3})*(?:\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(?:\\.[0-9]{0,2})?|0(?:\\.[0-9]{0,2})?|(?:\\.[0-9]{1,2})?)$',
         integer: '^\\-?\\d+$',
         time: '^(0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\2([0-5]\\d))?)?(?:(\\ [AP]M))$|^([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\7([0-5]\\d))?)$',
-        USDate: '^(?=\\d)(?:(?:(?:(?:(?:0?[13578]|1[02])(\\/|-|\\.)31)\\1|(?:(?:0?[1,3-9]|1[0-2])(\\/|-|\\.)(?:29|30)\\2))(?:(?:1[6-9]|[2-9]\\d)?\\d{2})|(?:0?2(\\/|-|\\.)29\\3(?:(?:(?:1[6-9]|[2-9]\\d)' +
-        '?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(?:0?[1-9]|1\\d|2[0-8])\\4(?:(?:1[6-9]|[2-9]\\d)?\\d{2}))($|\\ (?=\\d)))?$',
-        EUDate: '^((((31\\/(0?[13578]|1[02]))|((29|30)\\/(0?[1,3-9]|1[0-2])))\\/(1[6-9]|[2-9]\\d)?\\d{2})|(29\\/0?2\\/(((1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((16|[2468][048]|[3579][26])00))))' +
-        '|(0?[1-9]|1\\d|2[0-8])\\/((0?[1-9])|(1[0-2]))\\/((1[6-9]|[2-9]\\d)?\\d{2}))$',
         dateTime: '^((?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\3|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\6))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\9)|(?:(29|30)(\\/|-|\\.)(0?[1,3-9]|1[0-2])\\12)))))' +
         '((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)29\\16)|(?:(29)(\\/|-|\\.)(0?2))\\18)(?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00))))' +
         '|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)((?:1[6-9]|[2-9]\\d)?\\d{2})))\\ ((0?[1-9]|1[012])' +
@@ -2415,26 +2411,11 @@ var grid = (function _grid($) {
             month: [1, 4, 9, 12, 14, 19, 21, 26, 30, 34, 36, 38],
             day: [3, 6, 7, 10, 16, 17, 23, 24, 31, 35, 37, 39],
             yearMap: {
-                13: {
-                    month: [1, 4, 9, 12],
-                    day: [3, 6, 7, 10]
-                },
-                20: {
-                    month: [14, 19],
-                    day: [16, 17]
-                },
-                27: {
-                    month: [21, 26],
-                    day: [23, 24]
-                },
-                28: {
-                    month: [30],
-                    day: [31]
-                },
-                32: {
-                    month: [34, 36, 38],
-                    day: [35, 37, 39]
-                }
+                13: { month: [1, 4, 9, 12], day: [3, 6, 7, 10] },
+                20: { month: [14, 19], day: [16, 17] },
+                27: { month: [21, 26], day: [23, 24] },
+                28: { month: [30], day: [31] },
+                32: { month: [34, 36, 38], day: [35, 37, 39] }
             }
         }
     };
@@ -2454,6 +2435,8 @@ var grid = (function _grid($) {
             formattedTime,
             format = storage.grids[gridId].columns[column].format,
             timeFormat = storage.grids[gridId].columns[column].timeFormat;
+
+        if (timeArray.length < 2) return '';    //TODO: should an empty string be returned here, or the value that was entered?
 
         if (timeFormat && timeFormat == '24' && timeArray.length === 4 && timeArray[3] === 'PM')
             timeArray[0] = timeArray[0] === 12 ? 0 : (timeArray[0] + 12);
@@ -2499,7 +2482,7 @@ var grid = (function _grid($) {
         if (!format) return num;
         var formatSections = [];
         var dataSections = [];
-        var formatObject = (~format.indexOf('P') || ~format.indexOf('C')) ? createPercentageFormat(format) : verifyFormat(format);
+        var formatObject = (~format.indexOf('P') || ~format.indexOf('C')) ? createCurrencyOrPercentFormat(format) : verifyFormat(format);
         format = formatObject.value;
 
         var formatDecimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length;
@@ -2599,14 +2582,12 @@ var grid = (function _grid($) {
         };
     }
 
-    function createPercentageFormat(format) {
+    function createCurrencyOrPercentFormat(format) {
         var charStripper = '\\d{0,2}]';
         var cOrP = ~format.indexOf('P') ? 'P' : 'C';
         format = format.split(cOrP);
         var wholeNums = verifyFormat(format[0]);
         var re = new RegExp('[^' + cOrP + charStripper, 'g');
-        //var l = format[1].replace(re, '');
-        //format = format[1].replace(/[^P\d{0,2}]/g, '');
         format = format[1].replace(re, '');
         var numDecimals = 2,
             newFormat;

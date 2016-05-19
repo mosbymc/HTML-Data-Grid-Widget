@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2691</p>
+      <p class="stat">2672</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">176.46</p>
+      <p class="stat">177.45</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">47.77</p>
+      <p class="stat">47.72</p>
     </div>
   </div>
 </div>
@@ -2488,10 +2488,6 @@ var grid = (function _grid($) {
         numericTemp: &#039;^-?(?:[1-9]{1}[0-9]{0,2}(?:,[0-9]{3})*(?:\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(?:\\.[0-9]{0,2})?|0(?:\\.[0-9]{0,2})?|(?:\\.[0-9]{1,2})?)$&#039;,
         integer: &#039;^\\-?\\d+$&#039;,
         time: &#039;^(0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\2([0-5]\\d))?)?(?:(\\ [AP]M))$|^([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\7([0-5]\\d))?)$&#039;,
-        USDate: &#039;^(?=\\d)(?:(?:(?:(?:(?:0?[13578]|1[02])(\\/|-|\\.)31)\\1|(?:(?:0?[1,3-9]|1[0-2])(\\/|-|\\.)(?:29|30)\\2))(?:(?:1[6-9]|[2-9]\\d)?\\d{2})|(?:0?2(\\/|-|\\.)29\\3(?:(?:(?:1[6-9]|[2-9]\\d)&#039; +
-        &#039;?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(?:0?[1-9]|1\\d|2[0-8])\\4(?:(?:1[6-9]|[2-9]\\d)?\\d{2}))($|\\ (?=\\d)))?$&#039;,
-        EUDate: &#039;^((((31\\/(0?[13578]|1[02]))|((29|30)\\/(0?[1,3-9]|1[0-2])))\\/(1[6-9]|[2-9]\\d)?\\d{2})|(29\\/0?2\\/(((1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((16|[2468][048]|[3579][26])00))))&#039; +
-        &#039;|(0?[1-9]|1\\d|2[0-8])\\/((0?[1-9])|(1[0-2]))\\/((1[6-9]|[2-9]\\d)?\\d{2}))$&#039;,
         dateTime: &#039;^((?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\3|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\6))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\9)|(?:(29|30)(\\/|-|\\.)(0?[1,3-9]|1[0-2])\\12)))))&#039; +
         &#039;((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)29\\16)|(?:(29)(\\/|-|\\.)(0?2))\\18)(?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00))))&#039; +
         &#039;|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)((?:1[6-9]|[2-9]\\d)?\\d{2})))\\ ((0?[1-9]|1[012])&#039; +
@@ -2506,26 +2502,11 @@ var grid = (function _grid($) {
             month: [1, 4, 9, 12, 14, 19, 21, 26, 30, 34, 36, 38],
             day: [3, 6, 7, 10, 16, 17, 23, 24, 31, 35, 37, 39],
             yearMap: {
-                13: {
-                    month: [1, 4, 9, 12],
-                    day: [3, 6, 7, 10]
-                },
-                20: {
-                    month: [14, 19],
-                    day: [16, 17]
-                },
-                27: {
-                    month: [21, 26],
-                    day: [23, 24]
-                },
-                28: {
-                    month: [30],
-                    day: [31]
-                },
-                32: {
-                    month: [34, 36, 38],
-                    day: [35, 37, 39]
-                }
+                13: { month: [1, 4, 9, 12], day: [3, 6, 7, 10] },
+                20: { month: [14, 19], day: [16, 17] },
+                27: { month: [21, 26], day: [23, 24] },
+                28: { month: [30], day: [31] },
+                32: { month: [34, 36, 38], day: [35, 37, 39] }
             }
         }
     };
@@ -2545,6 +2526,8 @@ var grid = (function _grid($) {
             formattedTime,
             format = storage.grids[gridId].columns[column].format,
             timeFormat = storage.grids[gridId].columns[column].timeFormat;
+
+        if (timeArray.length &lt; 2) return &#039;&#039;;    //TODO: should an empty string be returned here, or the value that was entered?
 
         if (timeFormat &amp;&amp; timeFormat == &#039;24&#039; &amp;&amp; timeArray.length === 4 &amp;&amp; timeArray[3] === &#039;PM&#039;)
             timeArray[0] = timeArray[0] === 12 ? 0 : (timeArray[0] + 12);
@@ -2590,7 +2573,7 @@ var grid = (function _grid($) {
         if (!format) return num;
         var formatSections = [];
         var dataSections = [];
-        var formatObject = (~format.indexOf(&#039;P&#039;) || ~format.indexOf(&#039;C&#039;)) ? createPercentageFormat(format) : verifyFormat(format);
+        var formatObject = (~format.indexOf(&#039;P&#039;) || ~format.indexOf(&#039;C&#039;)) ? createCurrencyOrPercentFormat(format) : verifyFormat(format);
         format = formatObject.value;
 
         var formatDecimalIndex = ~format.indexOf(&#039;.&#039;) ? format.indexOf(&#039;.&#039;) : format.length;
@@ -2690,14 +2673,12 @@ var grid = (function _grid($) {
         };
     }
 
-    function createPercentageFormat(format) {
+    function createCurrencyOrPercentFormat(format) {
         var charStripper = &#039;\\d{0,2}]&#039;;
         var cOrP = ~format.indexOf(&#039;P&#039;) ? &#039;P&#039; : &#039;C&#039;;
         format = format.split(cOrP);
         var wholeNums = verifyFormat(format[0]);
         var re = new RegExp(&#039;[^&#039; + cOrP + charStripper, &#039;g&#039;);
-        //var l = format[1].replace(re, &#039;&#039;);
-        //format = format[1].replace(/[^P\d{0,2}]/g, &#039;&#039;);
         format = format[1].replace(re, &#039;&#039;);
         var numDecimals = 2,
             newFormat;
