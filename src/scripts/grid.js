@@ -2260,6 +2260,13 @@ var grid = (function _grid($) {
         return { groupings: groupings, groupedData: groupedData };
     }
 
+    /**
+     * @method Merge-Sort algorithm for grid data client-side sorting
+     * @param {object} data - the grid's data
+     * @param {string} field - the field that the grid data is being sorted on
+     * @param {string} type - the type of the data (string, number, time, date, boolean)
+     * @returns {*}
+     */
     function mergeSort(data, field, type) {
         if (data.length < 2) return data;
         var middle = parseInt(data.length / 2);

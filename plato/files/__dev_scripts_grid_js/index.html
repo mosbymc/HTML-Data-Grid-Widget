@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2672</p>
+      <p class="stat">2679</p>
     </div>
   </div>
   <div class="row historical">
@@ -2351,6 +2351,13 @@ var grid = (function _grid($) {
         return { groupings: groupings, groupedData: groupedData };
     }
 
+    /**
+     * @method Merge-Sort algorithm for grid data client-side sorting
+     * @param {object} data - the grid&#039;s data
+     * @param {string} field - the field that the grid data is being sorted on
+     * @param {string} type - the type of the data (string, number, time, date, boolean)
+     * @returns {*}
+     */
     function mergeSort(data, field, type) {
         if (data.length &lt; 2) return data;
         var middle = parseInt(data.length / 2);
