@@ -92,7 +92,7 @@ var gridData = {
         Cost: {
             type: "number",
             format: '0C2',
-            symbol: "$",
+            //symbol: "$",
             //template: "${{data}}",
             filterable: true,
             editable: true,
@@ -120,7 +120,7 @@ var gridData = {
         Billed: {
             type: "number",
             format: '0C2',
-            symbol: "$",
+            //symbol: "$",
             //template: "${{data}}",
             width: 155,
             validation: {

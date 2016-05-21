@@ -931,15 +931,8 @@ var grid = (function _grid($) {
                         td.addClass(gridData.columns[columns[j]].attributes.cellClasses[z]);
                     }
                 }
-                //var type = gridData.columns[columns[j]].type || '';
-                /*if ((type === 'number' || type === 'currency' || type === 'percent') && typeof gridData.dataSource.data[i][columns[j]] === 'number') {
-                    var decimalPlaces = typeof gridData.columns[columns[j]].decimals === 'number' ?  gridData.columns[columns[j]].decimals : 2;
-                    gridData.dataSource.data[i][columns[j]] = gridData.dataSource.data[i][columns[j]].toFixed(decimalPlaces);
-                }*/
-                var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]);
 
-                if (gridData.dataSource.data[i][columns[j]] !== undefined) td.text(text);
-
+                td.text(getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]));
                 //attach event handlers to save data
                 if (gridData.columns[columns[j]].editable) makeCellEditable(id, td);
                 else if (gridData.columns[columns[j]].selectable) makeCellSelectable(id, td);
@@ -980,7 +973,7 @@ var grid = (function _grid($) {
         var sizeDiff = headDiv[0].clientWidth - gridContent[0].clientWidth;
         headDiv.css('paddingRight', sizeDiff);
 
-        //Once the column widths have been set (i.e. the first time creating the grid), they should change size again....
+        //Once the column widths have been set (i.e. the first time creating the grid), they shouldn't change size again....
         //any time the grid is paged, sorted, filtered, etc., the cell widths shouldn't change, the new data should just be dumped into
         //the grid.
         copyGridWidth(gridElem);
@@ -1279,7 +1272,8 @@ var grid = (function _grid($) {
             index = cell.parents('tr').index(),
             field = cell.data('field'),
             type = storage.grids[id].columns[field].type || '',
-            saveVal, re, displayVal;
+            saveVal, re,
+            displayVal = getFormattedCellText(id, field, val);
 
         input.remove();
         //Types: date, number, string, boolean, time
@@ -1288,27 +1282,21 @@ var grid = (function _grid($) {
                 re = new RegExp(dataTypes.numeric);
                 if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
                 saveVal = typeof storage.grids[id].dataSource.data[index][field] === 'string' ? parseFloat(val.replace(',', '')) : val;
-                displayVal = getFormattedCellText(id, field, val);
-                cell.text(displayVal);
                 break;
             case 'date':
-                displayVal = getFormattedCellText(id, field, val);
                 saveVal = displayVal;   //this and time are the only types that have the same displayVal and saveVel
-                cell.text(displayVal);
                 break;
             case 'time':
                 re = new RegExp(dataTypes.time);
                 if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
-                displayVal = getFormattedCellText(id, field, val);
                 saveVal = displayVal;   //this and date are the only types that have the same displayVal and saveVal
-                cell.text(displayVal);
                 break;
             default: 		//string, boolean
                 saveVal = val;
-                cell.text(val);
                 break;
         }
 
+        cell.text(displayVal);
         storage.grids[id].currentEdit[field] = null;
         var previousVal = storage.grids[id].dataSource.data[index][field];
         if (previousVal !== saveVal && !('' === saveVal && undefined === previousVal)) {	//if the value didn't change, don't "save" the new val, and don't apply the "dirty" span
@@ -2404,38 +2392,16 @@ var grid = (function _grid($) {
         numericTemp: '^-?(?:[1-9]{1}[0-9]{0,2}(?:,[0-9]{3})*(?:\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(?:\\.[0-9]{0,2})?|0(?:\\.[0-9]{0,2})?|(?:\\.[0-9]{1,2})?)$',
         integer: '^\\-?\\d+$',
         time: '^(0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\2([0-5]\\d))?)?(?:(\\ [AP]M))$|^([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\7([0-5]\\d))?)$',
-        dateTime: '^((?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\3|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\6))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\9)|(?:(29|30)(\\/|-|\\.)(0?[1,3-9]|1[0-2])\\12)))))' +
-        '((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)29\\16)|(?:(29)(\\/|-|\\.)(0?2))\\18)(?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00))))' +
-        '|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)((?:1[6-9]|[2-9]\\d)?\\d{2})))\\ ((0?[1-9]|1[012])' +
-        '(?:(?:(:|\\.)([0-5]\\d))(?:\\32([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\37([0-5]\\d))?)$)$',
         date: '^(?:(?:(?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\2|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\5))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\8)|(?:(29|30)(\\/|-|\\.)' +
         '(0?[1,3-9]|1[0-2])\\11)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\15)|(?:(29)(\\/|-|\\.)(0?2))\\18)((?:(?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])' +
         '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\22|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\25)((?:1[6-9]|[2-9]\\d)?\\d{2}))))' +
         '|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\29)(29))))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)' +
         '(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$',
-        dateCaptureGroups: {
-            year: [13, 20, 27, 28, 32],
-            month: [1, 4, 9, 12, 14, 19, 21, 26, 30, 34, 36, 38],
-            day: [3, 6, 7, 10, 16, 17, 23, 24, 31, 35, 37, 39],
-            yearMap: {
-                13: { month: [1, 4, 9, 12], day: [3, 6, 7, 10] },
-                20: { month: [14, 19], day: [16, 17] },
-                27: { month: [21, 26], day: [23, 24] },
-                28: { month: [30], day: [31] },
-                32: { month: [34, 36, 38], day: [35, 37, 39] }
-            }
-        }
     };
 
     events = ['cellEditChange', 'beforeCellEdit', 'afterCellEdit', 'pageRequested', 'beforeDataBind', 'afterDataBind', 'columnReorder'];
 
-    aggregates = {
-        count: 'Count: ',
-        average: 'Avg: ',
-        max: 'Max: ',
-        min: 'Min: ',
-        total: 'Total: '
-    };
+    aggregates = { count: 'Count: ', average: 'Avg: ', max: 'Max: ', min: 'Min: ', total: 'Total: ' };
 
     function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
