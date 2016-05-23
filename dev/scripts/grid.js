@@ -120,14 +120,14 @@ var grid = (function _grid($) {
 
             createGridInstanceMethods(gridElem, id);
 
-            if (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') validator.setAdditionalEvents(['blur', 'change']);
-            else gridData.useValidator = false;
+            (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
+
+            //if (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') validator.setAdditionalEvents(['blur', 'change']);
+            //else gridData.useValidator = false;
 
             gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function';
 
-            if (gridData.constructor === Array) {
-                createGridColumnsFromArray(gridData, gridElem);
-            }
+            if (gridData.constructor === Array) createGridColumnsFromArray(gridData, gridElem);
             else {
                 createGridHeaders(gridData, gridElem);
                 getInitialGridData(gridData.dataSource, function initialGridDataCallback(err, res) {
@@ -572,7 +572,7 @@ var grid = (function _grid($) {
             });
 
         var keys = Object.getOwnPropertyNames(gridElem[0].grid);
-        for (var i = 0 ; i < keys.length; i++) {
+        for (var i = 0; i < keys.length; i++) {
             Object.preventExtensions(gridElem[0].grid[keys[i]]);
         }
     }
