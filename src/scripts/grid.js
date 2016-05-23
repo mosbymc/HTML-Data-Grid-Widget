@@ -68,6 +68,7 @@
  - Rework setting column widths - DONE
  - Fix sorting chevron to not display on top of filter icon when column name is same size as column - DONE
  - Examine headers and fix DOM structure - DONE
+ - Remove unused regex values & update 'inputTypes' to use validateCharacter function - DONE
  - Ensure all types are implemented across the board (number, time, date, boolean, string)
  - Add server paging + data saving/filtering/sorting
  - Add "transform" function to be called for the cell data in a column
@@ -76,7 +77,6 @@
  - Update API event methods to work with array and namespace
  - Add integration tests if possible
  - Add type checking - passed in grid data
- - Remove unused regex values & update 'inputTypes' to use validateCharacter function
  - Thoroughly test date & time regex usages
  */
 /*exported grid*/
@@ -120,14 +120,14 @@ var grid = (function _grid($) {
 
             createGridInstanceMethods(gridElem, id);
 
-            if (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') validator.setAdditionalEvents(['blur', 'change']);
-            else gridData.useValidator = false;
+            (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
+
+            //if (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') validator.setAdditionalEvents(['blur', 'change']);
+            //else gridData.useValidator = false;
 
             gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function';
 
-            if (gridData.constructor === Array) {
-                createGridColumnsFromArray(gridData, gridElem);
-            }
+            if (gridData.constructor === Array) createGridColumnsFromArray(gridData, gridElem);
             else {
                 createGridHeaders(gridData, gridElem);
                 getInitialGridData(gridData.dataSource, function initialGridDataCallback(err, res) {
@@ -233,41 +233,52 @@ var grid = (function _grid($) {
 
         Object.defineProperties(
             gridElem[0].grid, {
-                'bindEvent': {
+                'bindEvents': {
                     /**
                      * Binds event handlers to events
-                     * @method _bindGridEvents
+                     * @method _bindGridEventss
                      * @for Grid DOM element
                      * @protected
                      * @param {string} evt - a string representing an event that the grid can cause
-                     * @param {function} fn - the event handler
+                     * @param {*} funcs - the event handler
+                     * @returns {boolean} - indicates that the provided function(s) were or were not added as event listeners.
                      */
-                    value: function _bindGridEvents(evt, fn) {
-                        if (typeof fn !== 'function')
-                            return;
-                        if (~events.indexOf(evt)) storage.grids[gridId].events[evt].push(fn);
+                    value: function _bindGridEvents(evt, funcs) {
+                        if (typeof funcs !== 'function' && funcs.constructor !== Array) return false;
+                        if (typeof funcs === 'function') funcs = [funcs];
+                        if (~events.indexOf(evt)) {
+                            storage.grids[gridId].events[evt].concat(funcs);
+                            return true;
+                        }
+                        return false;
                     },
                     writable: false,
                     configurable: false
                 },
-                'unbindEvent': {
+                'unbindEvents': {
                     /**
                      * Unbinds an event handler from the specified event
-                     * @method _unbindEvent
+                     * @method _unbindEvents
                      * @for Grid DOM element
                      * @protected
                      * @param {string} evt - a string representing an event that the grid can cause
-                     * @param {Function} fn - the function object to unbind
+                     * @param {*} funcs - the function object, or array of function objects to unbind
+                     * @returns {boolean} - indicates that the provided function(s) were or were not unbound
                      */
-                    value: function _unbindEvent(evt, fn) {
-                        if (~events.indexOf(evt) && typeof fn === 'function') {
+                    value: function _unbindEvents(evt, funcs) {
+                        if (~events.indexOf(evt) && (typeof funcs === 'function' || funcs.constructor === Array)) {
+                            if (typeof funcs === 'function') funcs = [funcs];
                             var tmpEvts = [];
                             for (var i = 0; i < storage.grids[gridId].events[evt].length; i++) {
-                                if (storage.grids[gridId].events[evt][i] !== fn)
-                                    tmpEvts.push(storage.grids[gridId].events[evt][i]);
+                                for (var j = 0; j < funcs.length; j++) {
+                                    if (storage.grids[gridId].events[evt][i] !== funcs[j])
+                                        tmpEvts.push(storage.grids[gridId].events[evt][i]);
+                                }
                             }
                             storage.grids[gridId].events[evt] = tmpEvts;
+                            return true;
                         }
+                        return false;
                     },
                     writable: false,
                     configurable: false
@@ -572,7 +583,7 @@ var grid = (function _grid($) {
             });
 
         var keys = Object.getOwnPropertyNames(gridElem[0].grid);
-        for (var i = 0 ; i < keys.length; i++) {
+        for (var i = 0; i < keys.length; i++) {
             Object.preventExtensions(gridElem[0].grid[keys[i]]);
         }
     }
@@ -2396,7 +2407,7 @@ var grid = (function _grid($) {
         '(0?[1,3-9]|1[0-2])\\11)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\15)|(?:(29)(\\/|-|\\.)(0?2))\\18)((?:(?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])' +
         '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\22|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\25)((?:1[6-9]|[2-9]\\d)?\\d{2}))))' +
         '|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\29)(29))))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)' +
-        '(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$',
+        '(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$'
     };
 
     events = ['cellEditChange', 'beforeCellEdit', 'afterCellEdit', 'pageRequested', 'beforeDataBind', 'afterDataBind', 'columnReorder'];

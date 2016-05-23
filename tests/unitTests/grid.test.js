@@ -35,7 +35,8 @@ QUnit.test('Grid creation should succeed', function gridCreationTests(assert) {
 
     assert.ok(typeof grid.createGrid === 'function', "grid.create is a function");
 
-    assert.ok(typeof gridApi.bindEvent == 'function', "gridApi.bindEvent is a function");
+    assert.ok(typeof gridApi.bindEvents == 'function', "gridApi.bindEvents is a function");
+    assert.ok(typeof gridApi.unbindEvents == 'function', 'gridApi.unbindEvents is a function');
     assert.ok(typeof gridApi.destroy === 'function', "gridApi.destroy is a function");
     assert.ok(gridApi.selectedColumn === null, "gridApi.selectedColumn exists and is null when nothing is selected");
     assert.ok(gridApi.selectedRow === null, "gridApi.selectedRow exists and is null when nothing is selected");
@@ -82,64 +83,64 @@ QUnit.test('General grid API tests', function gridEventTests(assert) {
     var evt = "cellEditChange";
     var noop = function(){};
     var gridApi = $(qunitFixture)[0].grid;
-    gridApi.bindEvent(evt, noop);
+    gridApi.bindEvents(evt, noop);
     var eventListeners = gridApi.getHandledEvents();
     assert.ok(~eventListeners[0].indexOf(evt), "An event handler for 'cellEditChange' was attached to the grid");
 
-    gridApi.unbindEvent(evt, noop);
+    gridApi.unbindEvents(evt, noop);
     evt = "asdasda";
-    gridApi.bindEvent(evt, noop);
+    gridApi.bindEvents(evt, noop);
     eventListeners = gridApi.getHandledEvents();
     assert.notOk(eventListeners.length && ~eventListeners[0].indexOf(evt), "No event handler for 'asdasda' was attached to the grid");
 
-    gridApi.bindEvent('cellEditChange', noop);
+    gridApi.bindEvents('cellEditChange', noop);
     var gridEvents = gridApi.getHandledEvents();
     assert.ok(~gridEvents.indexOf('cellEditChange'), 'cellEditChange is handled');
 
-    gridApi.unbindEvent('cellEditChange', noop);
-    gridApi.bindEvent('cellEditChange', noop);
-    gridApi.unbindEvent('cellEditChange', noop);
+    gridApi.unbindEvents('cellEditChange', noop);
+    gridApi.bindEvents('cellEditChange', noop);
+    gridApi.unbindEvents('cellEditChange', noop);
     gridEvents = gridApi.getHandledEvents();
     assert.ok(!~gridEvents.indexOf('cellEditChange'), 'cellEditChange event handler was removed');
 
-    gridApi.bindEvent('cellEditChange', noop);
-    gridApi.unbindEvent('sdsdfg', noop);
+    gridApi.bindEvents('cellEditChange', noop);
+    gridApi.unbindEvents('sdsdfg', noop);
     gridEvents = gridApi.getHandledEvents();
     assert.ok(~gridEvents.indexOf('cellEditChange'), 'cellEditChange event handler is still attached');
 
-    gridApi.unbindEvent('cellEditChange', noop);
-    gridApi.bindEvent(evt);
+    gridApi.unbindEvents('cellEditChange', noop);
+    gridApi.bindEvents(evt);
     assert.notOk(gridApi.getHandledEvents()[0] === evt, "Cannot pass 'undefined' for function parameter");
 
-    gridApi.bindEvent(evt, null);
+    gridApi.bindEvents(evt, null);
     assert.notOk(gridApi.getHandledEvents()[0] === evt, "Cannot pass 'null' for function parameter");
 
-    gridApi.bindEvent(evt, {});
+    gridApi.bindEvents(evt, {});
     assert.notOk(gridApi.getHandledEvents()[0] === evt, "Cannot pass an object for function parameter");
 
-    gridApi.bindEvent(evt, " ");
+    gridApi.bindEvents(evt, " ");
     assert.notOk(gridApi.getHandledEvents()[0] === evt, "Cannot pass a string for function parameter");
 
-    gridApi.bindEvent(evt, 1);
+    gridApi.bindEvents(evt, 1);
     assert.notOk(gridApi.getHandledEvents()[0] === evt, "Cannot pass a number for function parameter");
 
-    gridApi.bindEvent(evt, true);
+    gridApi.bindEvents(evt, true);
     assert.notOk(gridApi.getHandledEvents()[0] === evt, "Cannot pass a boolean for function parameter");
 
-    gridApi.bindEvent(evt, NaN);
+    gridApi.bindEvents(evt, NaN);
     assert.notOk(gridApi.getHandledEvents()[0] === evt, "Cannot pass 'NaN' for function parameter");
 
-    gridApi.bindEvent(evt, Infinity);
+    gridApi.bindEvents(evt, Infinity);
     assert.notOk(gridApi.getHandledEvents()[0] === evt, "Cannot pass 'Infinity' for function parameter");
 
-    gridApi.bindEvent(evt, []);
+    gridApi.bindEvents(evt, []);
     assert.notOk(gridApi.getHandledEvents()[0] === evt, "Cannot pass an array for function parameter");
 
     var evts = gridApi.getAvailableEvents();
     assert.deepEqual(evts, events, "Available events are returned correctly");
 
     for (var i = 0; i < events.length; i++) {
-        gridApi.bindEvent(events[i], function(){});
+        gridApi.bindEvents(events[i], function(){});
     }
 
     var handledEvents = gridApi.getHandledEvents();

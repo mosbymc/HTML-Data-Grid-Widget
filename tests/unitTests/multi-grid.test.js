@@ -26,22 +26,22 @@ QUnit.test('Closure should prevent cross-contamination', function gridApiTestsCa
         gridApi2 = $('#grid2')[0].grid;
 
     var eventHandler = function(){};
-    gridApi1.bindEvent(evt, eventHandler);
+    gridApi1.bindEvents(evt, eventHandler);
 
     var eventListeners1 = gridApi1.getHandledEvents(),
         eventListeners2 = gridApi2.getHandledEvents();
     assert.ok(~eventListeners1.indexOf(evt), "An event handler for 'cellEditChange' was attached to grid1");
     assert.ok(!eventListeners2.length, "An event handler for 'cellEditChange' was  not attached to grid2");
 
-    gridApi2.bindEvent(evt, eventHandler);
-    gridApi1.unbindEvent(evt, eventHandler);
+    gridApi2.bindEvents(evt, eventHandler);
+    gridApi1.unbindEvents(evt, eventHandler);
 
     eventListeners1 = gridApi1.getHandledEvents();
     eventListeners2 = gridApi2.getHandledEvents();
     assert.ok(!eventListeners1.length, "The 'cellEditChange' was successfully removed from grid1");
     assert.ok(~eventListeners2.indexOf(evt), "An event handler for 'cellEditChange' was attached to grid2 and not removed by grid1's API");
 
-    gridApi1.bindEvent(evt, function(){});
+    gridApi1.bindEvents(evt, function(){});
     gridApi2.removeAllEventHandlers();
 
     eventListeners1 = gridApi1.getHandledEvents();
