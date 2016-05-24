@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.12</p>
+      <p class="stat">55.09</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2656</p>
+      <p class="stat">2662</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">180.24</p>
+      <p class="stat">180.37</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">47.08</p>
+      <p class="stat">47.17</p>
     </div>
   </div>
 </div>
@@ -169,6 +169,7 @@
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date &amp; time regex usages
+ - Find out what the hell &#039;groupingStatusChanged&#039; is used for.
  */
 /*exported grid*/
 /**
@@ -1449,27 +1450,29 @@ var grid = (function _grid($) {
                 dirtyCells.push($(val).parents(&#039;td&#039;));
             });
 
-            if (typeof storage.grids[id].dataSource.put !== &#039;function&#039;) {
-                for (i = 0; i &lt; dirtyCells.length; i++) {
-                    var index = dirtyCells[i].parents(&#039;tr&#039;).index();
-                    var field = dirtyCells[i].data(&#039;field&#039;);
-                    var origIndex = storage.grids[id].dataSource.data[index][field]._initialRowIndex;
-                    storage.grids[id].originalData[origIndex][field] = storage.grids[id].dataSource.data[index][field];
-                    dirtyCells[i].find(&#039;.dirty&#039;).remove();
+            if (dirtyCells.length) {
+                if (typeof storage.grids[id].dataSource.put !== &#039;function&#039;) {
+                    for (i = 0; i &lt; dirtyCells.length; i++) {
+                        var index = dirtyCells[i].parents(&#039;tr&#039;).index();
+                        var field = dirtyCells[i].data(&#039;field&#039;);
+                        var origIndex = storage.grids[id].dataSource.data[index][field]._initialRowIndex;
+                        storage.grids[id].originalData[origIndex][field] = storage.grids[id].dataSource.data[index][field];
+                        dirtyCells[i].find(&#039;.dirty&#039;).remove();
+                    }
                 }
-            }
-            else {
-                //TODO: Figure out how to access model at index
-                storage.grids[id].putRequest.eventType = &#039;save&#039;;
-                storage.grids[id].putRequest.pageNum = pageNum;
-                storage.grids[id].putRequest.models = [];
-                for (i = 0; i &lt; dirtyCells.length; i++) {
-                    var tmpModel = cloneGridData(storage.grids[id].dataSource.data[dirtyCells[i].parents(&#039;tr&#039;).index()]);
-                    var tmpMap = tmpModel._initialRowIndex;
-                    delete tmpModel._initialRowIndex;
-                    storage.grids[id].putRequest.models.push([tmpModel, storage.grids[id].originalData[tmpMap]]);
+                else {
+                    //TODO: Figure out how to access model at index
+                    storage.grids[id].putRequest.eventType = &#039;save&#039;;
+                    storage.grids[id].putRequest.pageNum = pageNum;
+                    storage.grids[id].putRequest.models = [];
+                    for (i = 0; i &lt; dirtyCells.length; i++) {
+                        var tmpModel = cloneGridData(storage.grids[id].dataSource.data[dirtyCells[i].parents(&#039;tr&#039;).index()]);
+                        var tmpMap = tmpModel._initialRowIndex;
+                        delete tmpModel._initialRowIndex;
+                        storage.grids[id].putRequest.models.push([tmpModel, storage.grids[id].originalData[tmpMap]]);
+                    }
+                    prepareGridDataUpdateRequest(id);
                 }
-                prepareGridDataUpdateRequest(id);
             }
         });
 
@@ -1539,15 +1542,16 @@ var grid = (function _grid($) {
         var remainingPages = (count - displayedRows) &gt; 0 ? Math.ceil((count - displayedRows)/displayedRows) : 0;
         var pageNum = storage.grids[parseInt(gridFooter.data(&#039;grid_footer_id&#039;))].pageNum;
 
-        gridFooter.append(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link link-disabled&quot; data-link=&quot;first&quot; data-pagenum=&quot;1&quot; title=&quot;First Page&quot;&gt;&lt;span class=&quot;grid-page-span span-first&quot;&gt;First Page&lt;/span&gt;&lt;/a&gt;&#039;);
-        gridFooter.append(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link link-disabled&quot; data-link=&quot;prev&quot; data-pagenum=&quot;1&quot; title=&quot;Previous Page&quot;&gt;&lt;span class=&quot;grid-page-span span-prev&quot;&gt;Prev Page&lt;/span&gt;&lt;/a&gt;&#039;);
+        var first = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link link-disabled&quot; data-link=&quot;first&quot; data-pagenum=&quot;1&quot; title=&quot;First Page&quot;&gt;&lt;span class=&quot;grid-page-span span-first&quot;&gt;First Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
+        var prev = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link link-disabled&quot; data-link=&quot;prev&quot; data-pagenum=&quot;1&quot; title=&quot;Previous Page&quot;&gt;&lt;span class=&quot;grid-page-span span-prev&quot;&gt;Prev Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
         var text = &#039;Page &#039; + storage.grids[parseInt(gridFooter.data(&#039;grid_footer_id&#039;))].pageNum + &#039;/&#039; + (remainingPages + 1);
         gridFooter.append(&#039;&lt;span class=&quot;grid-pagenum-span page-counter&quot;&gt;&#039; + text + &#039;&lt;/span&gt;&#039;);
         var next = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;next&quot; data-pagenum=&quot;2&quot; title=&quot;Next Page&quot;&gt;&lt;span class=&quot;grid-page-span span-next&quot;&gt;Next Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
         var last = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;last&quot; data-pagenum=&quot;&#039; + (remainingPages + 1) + &#039;&quot; title=&quot;Last Page&quot;&gt;&lt;span class=&quot;grid-page-span span-last&quot;&gt;Last Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
 
-        //TODO: investigate if the prev and first links should be disabled here as well
         if (!remainingPages) {
+            first.addClass(&#039;link-disabled&#039;);
+            prev.addClass(&#039;link-disabled&#039;);
             next.addClass(&#039;link-disabled&#039;);
             last.addClass(&#039;link-disabled&#039;);
         }
@@ -2153,30 +2157,33 @@ var grid = (function _grid($) {
 
         function getPageDataRequestCallback(response) {
             var groupingStatus = gridData.groupingStatusChanged;
-            gridData.dataSource.data = response.data;
-            gridData.pageSize = requestObj.pageSize;
-            gridData.pageNum = requestObj.pageNum;
-            gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.length;
-            gridData.groupedBy = requestObj.groupedBy;
-            gridData.sortedOn = requestObj.sortedOn;
-            gridData.sortedBy = requestObj.sortedBy;
-            gridData.filteredOn = requestObj.filteredOn;
-            gridData.filterVal = requestObj.filterVal;
-            gridData.filterType = requestObj.filterType;
-            gridData.groupingStatusChanged = false;
+            if (response)   //TODO: create a generic function to validate grid-data data types
+            {
+                gridData.dataSource.data = response.data;
+                gridData.pageSize = requestObj.pageSize;
+                gridData.pageNum = requestObj.pageNum;
+                gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.length;
+                gridData.groupedBy = requestObj.groupedBy;
+                gridData.sortedOn = requestObj.sortedOn;
+                gridData.sortedBy = requestObj.sortedBy;
+                gridData.filteredOn = requestObj.filteredOn;
+                gridData.filterVal = requestObj.filterVal;
+                gridData.filterType = requestObj.filterType;
+                gridData.groupingStatusChanged = false;
 
-            if (gridData.pageRequest.eventType === &#039;newGrid&#039; || groupingStatus)
-                setColWidth(gridData, storage.grids[id].grid);
+                if (gridData.pageRequest.eventType === &#039;newGrid&#039; || groupingStatus)
+                    setColWidth(gridData, storage.grids[id].grid);
 
-            createGridContent(gridData, storage.grids[id].grid);
-            if (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === &#039;pageSize&#039;) {
-                gridData.grid.find(&#039;.grid-footer-div&#039;).empty();
-                createGridFooter(gridData, gridData.grid);
+                createGridContent(gridData, storage.grids[id].grid);
+                if (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === &#039;pageSize&#039;) {
+                    gridData.grid.find(&#039;.grid-footer-div&#039;).empty();
+                    createGridFooter(gridData, gridData.grid);
+                }
+                if (gridData.pageRequest.eventType === &#039;filter&#039; &amp;&amp; gridData.summaryRow &amp;&amp; gridData.summaryRow.positionAt === &#039;top&#039;) {
+                    buildHeaderAggregations(gridData, id);
+                }
+                gridData.pageRequest = {};
             }
-            if (gridData.pageRequest.eventType === &#039;filter&#039; &amp;&amp; gridData.summaryRow &amp;&amp; gridData.summaryRow.positionAt === &#039;top&#039;) {
-                buildHeaderAggregations(gridData, id);
-            }
-            gridData.pageRequest = {};
         }
     }
 

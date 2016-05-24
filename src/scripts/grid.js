@@ -78,6 +78,7 @@
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
+ - Find out what the hell 'groupingStatusChanged' is used for.
  */
 /*exported grid*/
 /**
@@ -1358,27 +1359,29 @@ var grid = (function _grid($) {
                 dirtyCells.push($(val).parents('td'));
             });
 
-            if (typeof storage.grids[id].dataSource.put !== 'function') {
-                for (i = 0; i < dirtyCells.length; i++) {
-                    var index = dirtyCells[i].parents('tr').index();
-                    var field = dirtyCells[i].data('field');
-                    var origIndex = storage.grids[id].dataSource.data[index][field]._initialRowIndex;
-                    storage.grids[id].originalData[origIndex][field] = storage.grids[id].dataSource.data[index][field];
-                    dirtyCells[i].find('.dirty').remove();
+            if (dirtyCells.length) {
+                if (typeof storage.grids[id].dataSource.put !== 'function') {
+                    for (i = 0; i < dirtyCells.length; i++) {
+                        var index = dirtyCells[i].parents('tr').index();
+                        var field = dirtyCells[i].data('field');
+                        var origIndex = storage.grids[id].dataSource.data[index][field]._initialRowIndex;
+                        storage.grids[id].originalData[origIndex][field] = storage.grids[id].dataSource.data[index][field];
+                        dirtyCells[i].find('.dirty').remove();
+                    }
                 }
-            }
-            else {
-                //TODO: Figure out how to access model at index
-                storage.grids[id].putRequest.eventType = 'save';
-                storage.grids[id].putRequest.pageNum = pageNum;
-                storage.grids[id].putRequest.models = [];
-                for (i = 0; i < dirtyCells.length; i++) {
-                    var tmpModel = cloneGridData(storage.grids[id].dataSource.data[dirtyCells[i].parents('tr').index()]);
-                    var tmpMap = tmpModel._initialRowIndex;
-                    delete tmpModel._initialRowIndex;
-                    storage.grids[id].putRequest.models.push([tmpModel, storage.grids[id].originalData[tmpMap]]);
+                else {
+                    //TODO: Figure out how to access model at index
+                    storage.grids[id].putRequest.eventType = 'save';
+                    storage.grids[id].putRequest.pageNum = pageNum;
+                    storage.grids[id].putRequest.models = [];
+                    for (i = 0; i < dirtyCells.length; i++) {
+                        var tmpModel = cloneGridData(storage.grids[id].dataSource.data[dirtyCells[i].parents('tr').index()]);
+                        var tmpMap = tmpModel._initialRowIndex;
+                        delete tmpModel._initialRowIndex;
+                        storage.grids[id].putRequest.models.push([tmpModel, storage.grids[id].originalData[tmpMap]]);
+                    }
+                    prepareGridDataUpdateRequest(id);
                 }
-                prepareGridDataUpdateRequest(id);
             }
         });
 
@@ -1448,15 +1451,16 @@ var grid = (function _grid($) {
         var remainingPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) : 0;
         var pageNum = storage.grids[parseInt(gridFooter.data('grid_footer_id'))].pageNum;
 
-        gridFooter.append('<a href="#" class="grid-page-link link-disabled" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>');
-        gridFooter.append('<a href="#" class="grid-page-link link-disabled" data-link="prev" data-pagenum="1" title="Previous Page"><span class="grid-page-span span-prev">Prev Page</span></a>');
+        var first = $('<a href="#" class="grid-page-link link-disabled" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridFooter);
+        var prev = $('<a href="#" class="grid-page-link link-disabled" data-link="prev" data-pagenum="1" title="Previous Page"><span class="grid-page-span span-prev">Prev Page</span></a>').appendTo(gridFooter);
         var text = 'Page ' + storage.grids[parseInt(gridFooter.data('grid_footer_id'))].pageNum + '/' + (remainingPages + 1);
         gridFooter.append('<span class="grid-pagenum-span page-counter">' + text + '</span>');
         var next = $('<a href="#" class="grid-page-link" data-link="next" data-pagenum="2" title="Next Page"><span class="grid-page-span span-next">Next Page</span></a>').appendTo(gridFooter);
         var last = $('<a href="#" class="grid-page-link" data-link="last" data-pagenum="' + (remainingPages + 1) + '" title="Last Page"><span class="grid-page-span span-last">Last Page</span></a>').appendTo(gridFooter);
 
-        //TODO: investigate if the prev and first links should be disabled here as well
         if (!remainingPages) {
+            first.addClass('link-disabled');
+            prev.addClass('link-disabled');
             next.addClass('link-disabled');
             last.addClass('link-disabled');
         }
@@ -2062,30 +2066,33 @@ var grid = (function _grid($) {
 
         function getPageDataRequestCallback(response) {
             var groupingStatus = gridData.groupingStatusChanged;
-            gridData.dataSource.data = response.data;
-            gridData.pageSize = requestObj.pageSize;
-            gridData.pageNum = requestObj.pageNum;
-            gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.length;
-            gridData.groupedBy = requestObj.groupedBy;
-            gridData.sortedOn = requestObj.sortedOn;
-            gridData.sortedBy = requestObj.sortedBy;
-            gridData.filteredOn = requestObj.filteredOn;
-            gridData.filterVal = requestObj.filterVal;
-            gridData.filterType = requestObj.filterType;
-            gridData.groupingStatusChanged = false;
+            if (response)   //TODO: create a generic function to validate grid-data data types
+            {
+                gridData.dataSource.data = response.data;
+                gridData.pageSize = requestObj.pageSize;
+                gridData.pageNum = requestObj.pageNum;
+                gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.length;
+                gridData.groupedBy = requestObj.groupedBy;
+                gridData.sortedOn = requestObj.sortedOn;
+                gridData.sortedBy = requestObj.sortedBy;
+                gridData.filteredOn = requestObj.filteredOn;
+                gridData.filterVal = requestObj.filterVal;
+                gridData.filterType = requestObj.filterType;
+                gridData.groupingStatusChanged = false;
 
-            if (gridData.pageRequest.eventType === 'newGrid' || groupingStatus)
-                setColWidth(gridData, storage.grids[id].grid);
+                if (gridData.pageRequest.eventType === 'newGrid' || groupingStatus)
+                    setColWidth(gridData, storage.grids[id].grid);
 
-            createGridContent(gridData, storage.grids[id].grid);
-            if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === 'pageSize') {
-                gridData.grid.find('.grid-footer-div').empty();
-                createGridFooter(gridData, gridData.grid);
+                createGridContent(gridData, storage.grids[id].grid);
+                if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === 'pageSize') {
+                    gridData.grid.find('.grid-footer-div').empty();
+                    createGridFooter(gridData, gridData.grid);
+                }
+                if (gridData.pageRequest.eventType === 'filter' && gridData.summaryRow && gridData.summaryRow.positionAt === 'top') {
+                    buildHeaderAggregations(gridData, id);
+                }
+                gridData.pageRequest = {};
             }
-            if (gridData.pageRequest.eventType === 'filter' && gridData.summaryRow && gridData.summaryRow.positionAt === 'top') {
-                buildHeaderAggregations(gridData, id);
-            }
-            gridData.pageRequest = {};
         }
     }
 
