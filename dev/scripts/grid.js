@@ -79,6 +79,7 @@
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
  - Find out what the hell 'groupingStatusChanged' is used for.
+ - Update sorting to handle multi-sort
  */
 /*exported grid*/
 /**
@@ -2106,7 +2107,6 @@ var grid = (function _grid($) {
         }
     }
 
-    //Default update function - used for client-side updates to grid data
     function prepareGridDataUpdateRequest(id) {
         storage.grids[id].updating = true;
         var requestObj = {
