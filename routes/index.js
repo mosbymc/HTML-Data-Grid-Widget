@@ -41,6 +41,7 @@ var getGridPageData = function _getGridPageData(req, response) {
 
 var updateGridData = function _updateGridData(req, res) {
     res.send(req.body);
+    //res.send(false);
     res.end();
 };
 

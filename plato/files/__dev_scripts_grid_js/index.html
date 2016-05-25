@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.09</p>
+      <p class="stat">55.12</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2662</p>
+      <p class="stat">2690</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">180.37</p>
+      <p class="stat">182.04</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">47.17</p>
+      <p class="stat">48.01</p>
     </div>
   </div>
 </div>
@@ -1461,16 +1461,26 @@ var grid = (function _grid($) {
                     }
                 }
                 else {
-                    //TODO: Figure out how to access model at index
                     storage.grids[id].putRequest.eventType = &#039;save&#039;;
                     storage.grids[id].putRequest.pageNum = pageNum;
                     storage.grids[id].putRequest.models = [];
+                    var putRequestModels = storage.grids[id].putRequest.models;
                     for (i = 0; i &lt; dirtyCells.length; i++) {
                         var tmpModel = cloneGridData(storage.grids[id].dataSource.data[dirtyCells[i].parents(&#039;tr&#039;).index()]);
                         var tmpMap = tmpModel._initialRowIndex;
-                        delete tmpModel._initialRowIndex;
-                        storage.grids[id].putRequest.models.push([tmpModel, storage.grids[id].originalData[tmpMap]]);
+                        var idx = existsInPutRequest(putRequestModels, tmpModel);
+                        if (~idx) {
+                            putRequestModels[idx].dirtyFields.push(dirtyCells[i].data(&#039;field&#039;));
+                        }
+                        else {
+                            putRequestModels.push({ cleanData: storage.grids[id].originalData[tmpMap], dirtyData: tmpModel, dirtyFields: [dirtyCells[i].data(&#039;field&#039;)] });
+                        }
                     }
+
+                    for (i = 0; i &lt; putRequestModels.length; i++) {
+                        delete putRequestModels[i].dirtyData._initialRowIndex;
+                    }
+
                     prepareGridDataUpdateRequest(id);
                 }
             }
@@ -2201,11 +2211,21 @@ var grid = (function _grid($) {
             storage.grids[id].updating = false;
             if (response) {
                 storage.grids[id].grid.find(&#039;.dirty&#039;).each(function iterateDirtySpansCallback(idx, val) {
+                    var index = $(val).parents(&#039;tr&#039;).index();
+                    var field = $(val).parents(&#039;td&#039;).data(&#039;field&#039;);
+                    var origIdx = storage.grids[id].dataSource.data[index]._initialRowIndex;
+                    storage.grids[id].originalData[origIdx][field] = storage.grids[id].dataSource.data[index][field];
                     $(val).remove();
                 });
             }
             else {
-                //TODO: Figure out what to do on an unsuccessful PUT request
+                storage.grids[id].grid.find(&#039;.dirty&#039;).each(function iterateDirtySpansCallback(idx, val) {
+                    var cell = $(val).parents(&#039;td&#039;);
+                    var index = cell.parents(&#039;tr&#039;).index();
+                    var field = cell.data(&#039;field&#039;);
+                    cell.text(getFormattedCellText(id, cell.data(&#039;field&#039;), storage.grids[id].originalData[index][field]));
+                    $(val).remove();
+                });
             }
         }
     }
@@ -2417,6 +2437,14 @@ var grid = (function _grid($) {
             for (var x = 0; x &lt; events.pageRequested.length; x++)
                 events[x].call(context, param);
         }
+    }
+
+    function existsInPutRequest(putRequest, model) {
+        for (var i = 0; i &lt; putRequest.length; i++) {
+            if (model._initialRowIndex == putRequest[i].dirtyData._initialRowIndex)
+                return i;
+        }
+        return -1;
     }
 
     function getFormattedCellText(gridId, column, value) {

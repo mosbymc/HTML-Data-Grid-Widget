@@ -1370,16 +1370,26 @@ var grid = (function _grid($) {
                     }
                 }
                 else {
-                    //TODO: Figure out how to access model at index
                     storage.grids[id].putRequest.eventType = 'save';
                     storage.grids[id].putRequest.pageNum = pageNum;
                     storage.grids[id].putRequest.models = [];
+                    var putRequestModels = storage.grids[id].putRequest.models;
                     for (i = 0; i < dirtyCells.length; i++) {
                         var tmpModel = cloneGridData(storage.grids[id].dataSource.data[dirtyCells[i].parents('tr').index()]);
                         var tmpMap = tmpModel._initialRowIndex;
-                        delete tmpModel._initialRowIndex;
-                        storage.grids[id].putRequest.models.push([tmpModel, storage.grids[id].originalData[tmpMap]]);
+                        var idx = existsInPutRequest(putRequestModels, tmpModel);
+                        if (~idx) {
+                            putRequestModels[idx].dirtyFields.push(dirtyCells[i].data('field'));
+                        }
+                        else {
+                            putRequestModels.push({ cleanData: storage.grids[id].originalData[tmpMap], dirtyData: tmpModel, dirtyFields: [dirtyCells[i].data('field')] });
+                        }
                     }
+
+                    for (i = 0; i < putRequestModels.length; i++) {
+                        delete putRequestModels[i].dirtyData._initialRowIndex;
+                    }
+
                     prepareGridDataUpdateRequest(id);
                 }
             }
@@ -2110,11 +2120,21 @@ var grid = (function _grid($) {
             storage.grids[id].updating = false;
             if (response) {
                 storage.grids[id].grid.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
+                    var index = $(val).parents('tr').index();
+                    var field = $(val).parents('td').data('field');
+                    var origIdx = storage.grids[id].dataSource.data[index]._initialRowIndex;
+                    storage.grids[id].originalData[origIdx][field] = storage.grids[id].dataSource.data[index][field];
                     $(val).remove();
                 });
             }
             else {
-                //TODO: Figure out what to do on an unsuccessful PUT request
+                storage.grids[id].grid.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
+                    var cell = $(val).parents('td');
+                    var index = cell.parents('tr').index();
+                    var field = cell.data('field');
+                    cell.text(getFormattedCellText(id, cell.data('field'), storage.grids[id].originalData[index][field]));
+                    $(val).remove();
+                });
             }
         }
     }
@@ -2326,6 +2346,14 @@ var grid = (function _grid($) {
             for (var x = 0; x < events.pageRequested.length; x++)
                 events[x].call(context, param);
         }
+    }
+
+    function existsInPutRequest(putRequest, model) {
+        for (var i = 0; i < putRequest.length; i++) {
+            if (model._initialRowIndex == putRequest[i].dirtyData._initialRowIndex)
+                return i;
+        }
+        return -1;
     }
 
     function getFormattedCellText(gridId, column, value) {
