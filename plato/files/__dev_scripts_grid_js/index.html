@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.29</p>
+      <p class="stat">55.14</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2720</p>
+      <p class="stat">2755</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">182.54</p>
+      <p class="stat">183.97</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">47.81</p>
+      <p class="stat">48.42</p>
     </div>
   </div>
 </div>
@@ -2206,7 +2206,7 @@ var grid = (function _grid($) {
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.length;
                 gridData.groupedBy = requestObj.groupedBy;
                 gridData.sortedOn = requestObj.sortedOn;
-                gridData.sortedBy = requestObj.sortedBy;
+                //gridData.sortedBy = requestObj.sortedBy;
                 gridData.filteredOn = requestObj.filteredOn;
                 gridData.filterVal = requestObj.filterVal;
                 gridData.filterType = requestObj.filterType;
@@ -2269,6 +2269,7 @@ var grid = (function _grid($) {
     function getPageData(requestObj, id, callback) {
         var eventType = storage.grids[id].pageRequest.eventType;
         var fullGridData = cloneGridData(storage.grids[id].alteredData);
+        var i;
 
         if (eventType === &#039;page&#039; || eventType === &#039;pageSize&#039; || eventType === &#039;newGrid&#039;) {
             limitPageData(requestObj, fullGridData, callback);
@@ -2287,7 +2288,7 @@ var grid = (function _grid($) {
 
         if (requestObj.groupedBy) {	//Need to group the columns first, before sorting. Sorting grouped columns is going to be a bitch!
             var groupedData = groupColumns(fullGridData, requestObj.groupedBy);
-            if (requestObj.sortedOn &amp;&amp; requestObj.sortedBy !== &#039;default&#039;) {
+            if (requestObj.sortedOn.length) {
                 var sortedGroup = [];
                 for (var group in groupedData.groupings) {
                     sortedGroup = sortedGroup.concat(mergeSort(groupedData.groupings[group], requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || &#039;string&#039;));
@@ -2302,7 +2303,38 @@ var grid = (function _grid($) {
             return;
         }
 
-        if (requestObj.sortedOn &amp;&amp; !requestObj.groupedBy) {
+        if (requestObj.sortedOn.length &amp;&amp; !requestObj.groupedBy) {
+            for (i = 0; i &lt; requestObj.sortedOn.length; i++) {
+                if (i === 0)
+                    fullGridData = mergeSort(fullGridData, requestObj.sortedOn[i], storage.grids[id].columns[requestObj.sortedOn[i].field].type || &#039;string&#039;);
+                else {
+                    var sortedGridData = [];
+                    for (var j = 0; j &lt; fullGridData.length; j++) {
+                        var itemsToSort = [];
+                        if (!itemsToSort.length || itemsToSort[0][requestObj.sortedOn[i].field] === fullGridData[j][requestObj.sortedOn[i].field])
+                            itemsToSort.push(fullGridData[j]);
+                        else if (itemsToSort.length === 1) {
+                            sortedGridData.concat(itemsToSort);
+                        }
+                        else {
+                            sortedGridData.concat(mergeSort(itemsToSort, requestObj.sortedOn[i], storage.grids[id].columns[requestObj.sortedOn[i].field].type || &#039;string&#039;));
+                        }
+                        /*for (var k = 0; k &lt; i; k++) {
+                            if (!itemsToSort.length || itemsToSort[0][requestObj.sortedOn[k].field] === fullGridData[j][requestObj.sortedOn[k].field])
+                                itemsToSort.push(fullGridData[j]);
+                            else if (itemsToSort.length === 1) {
+                                sortedGridData.concat(itemsToSort);
+                                continue gridDataIterator;
+                            }
+                            else {
+                                sortedGridData.concat(mergeSort(itemsToSort, requestObj.sortedOn[i], storage.grids[id].columns[requestObj.sortedOn[k].field].type || &#039;string&#039;));
+                                continue gridDataIterator;
+                            }
+                        }*/
+                    }
+                    fullGridData = sortedGridData;
+                }
+            }
             if (requestObj.sortedBy !== &#039;default&#039;) {
                 fullGridData = mergeSort(fullGridData, requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || &#039;string&#039;);
                 if (requestObj.sortedBy === &#039;asc&#039;) fullGridData.reverse();
@@ -2411,47 +2443,50 @@ var grid = (function _grid($) {
     /**
      * @method Merge-Sort algorithm for grid data client-side sorting
      * @param {object} data - the grid&#039;s data
-     * @param {string} field - the field that the grid data is being sorted on
+     * @param {object} sortObj - object that contains the field that the grid data is being sorted on and the direction of the sort
      * @param {string} type - the type of the data (string, number, time, date, boolean)
      * @returns {*}
      */
-    function mergeSort(data, field, type) {
+    function mergeSort(data, sortObj, type) {
         if (data.length &lt; 2) return data;
         var middle = parseInt(data.length / 2);
         var left   = data.slice(0, middle);
         var right  = data.slice(middle, data.length);
-        return merge(mergeSort(left, field, type), mergeSort(right, field, type), field, type);
+        return merge(mergeSort(left, sortObj, type), mergeSort(right, sortObj, type), sortObj, type);
     }
 
-    function merge(left, right, field, type) {
+    function merge(left, right, sortObj, type) {
         var result = [], leftVal, rightVal;
         while (left.length &amp;&amp; right.length) {
             if (type === &#039;time&#039;) {
-                leftVal = getNumbersFromTime(left[0][field]);
-                rightVal = getNumbersFromTime(right[0][field]);
+                leftVal = getNumbersFromTime(left[0][sortObj.field]);
+                rightVal = getNumbersFromTime(right[0][sortObj.field]);
 
-                if (~left[0][field].indexOf(&#039;PM&#039;))
+                if (~left[0][sortObj.field].indexOf(&#039;PM&#039;))
                     leftVal[0] += 12;
-                if (~right[0][field].indexOf(&#039;PM&#039;))
+                if (~right[0][sortObj.field].indexOf(&#039;PM&#039;))
                     rightVal[0] += 12;
 
                 leftVal = convertTimeArrayToSeconds(leftVal);
                 rightVal = convertTimeArrayToSeconds(rightVal);
             }
             else if (type === &#039;number&#039;) {
-                leftVal = parseFloat(left[0][field]);
-                rightVal = parseFloat(right[0][field]);
+                leftVal = parseFloat(left[0][sortObj.field]);
+                rightVal = parseFloat(right[0][sortObj.field]);
             }
             else if (type === &#039;date&#039;) {
-                leftVal = new Date(left[0][field]);
-                rightVal = new Date(right[0][field]);
+                leftVal = new Date(left[0][sortObj.field]);
+                rightVal = new Date(right[0][sortObj.field]);
             }
             else {
-                leftVal = left[0][field];
-                rightVal = right[0][field];
+                leftVal = left[0][sortObj.field];
+                rightVal = right[0][sortObj.field];
             }
 
-            comparator(leftVal, rightVal, &#039;lte&#039;) ? result.push(left.shift()) : result.push(right.shift());
+            //comparator(leftVal, rightVal, &#039;lte&#039;) ? result.push(left.shift()) : result.push(right.shift());
+
+            var operator = sortObj.sortDirection === &#039;asc&#039; ? &#039;lte&#039; : &#039;gte&#039;;
+            comparator(leftVal, rightVal, operator) ? result.push(left.shift()) : result.push(right.shift());
         }
 
         while (left.length)

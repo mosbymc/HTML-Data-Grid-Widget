@@ -2115,7 +2115,7 @@ var grid = (function _grid($) {
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.length;
                 gridData.groupedBy = requestObj.groupedBy;
                 gridData.sortedOn = requestObj.sortedOn;
-                gridData.sortedBy = requestObj.sortedBy;
+                //gridData.sortedBy = requestObj.sortedBy;
                 gridData.filteredOn = requestObj.filteredOn;
                 gridData.filterVal = requestObj.filterVal;
                 gridData.filterType = requestObj.filterType;
@@ -2178,6 +2178,7 @@ var grid = (function _grid($) {
     function getPageData(requestObj, id, callback) {
         var eventType = storage.grids[id].pageRequest.eventType;
         var fullGridData = cloneGridData(storage.grids[id].alteredData);
+        var i;
 
         if (eventType === 'page' || eventType === 'pageSize' || eventType === 'newGrid') {
             limitPageData(requestObj, fullGridData, callback);
@@ -2196,7 +2197,7 @@ var grid = (function _grid($) {
 
         if (requestObj.groupedBy) {	//Need to group the columns first, before sorting. Sorting grouped columns is going to be a bitch!
             var groupedData = groupColumns(fullGridData, requestObj.groupedBy);
-            if (requestObj.sortedOn && requestObj.sortedBy !== 'default') {
+            if (requestObj.sortedOn.length) {
                 var sortedGroup = [];
                 for (var group in groupedData.groupings) {
                     sortedGroup = sortedGroup.concat(mergeSort(groupedData.groupings[group], requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || 'string'));
@@ -2211,7 +2212,38 @@ var grid = (function _grid($) {
             return;
         }
 
-        if (requestObj.sortedOn && !requestObj.groupedBy) {
+        if (requestObj.sortedOn.length && !requestObj.groupedBy) {
+            for (i = 0; i < requestObj.sortedOn.length; i++) {
+                if (i === 0)
+                    fullGridData = mergeSort(fullGridData, requestObj.sortedOn[i], storage.grids[id].columns[requestObj.sortedOn[i].field].type || 'string');
+                else {
+                    var sortedGridData = [];
+                    for (var j = 0; j < fullGridData.length; j++) {
+                        var itemsToSort = [];
+                        if (!itemsToSort.length || itemsToSort[0][requestObj.sortedOn[i].field] === fullGridData[j][requestObj.sortedOn[i].field])
+                            itemsToSort.push(fullGridData[j]);
+                        else if (itemsToSort.length === 1) {
+                            sortedGridData.concat(itemsToSort);
+                        }
+                        else {
+                            sortedGridData.concat(mergeSort(itemsToSort, requestObj.sortedOn[i], storage.grids[id].columns[requestObj.sortedOn[i].field].type || 'string'));
+                        }
+                        /*for (var k = 0; k < i; k++) {
+                            if (!itemsToSort.length || itemsToSort[0][requestObj.sortedOn[k].field] === fullGridData[j][requestObj.sortedOn[k].field])
+                                itemsToSort.push(fullGridData[j]);
+                            else if (itemsToSort.length === 1) {
+                                sortedGridData.concat(itemsToSort);
+                                continue gridDataIterator;
+                            }
+                            else {
+                                sortedGridData.concat(mergeSort(itemsToSort, requestObj.sortedOn[i], storage.grids[id].columns[requestObj.sortedOn[k].field].type || 'string'));
+                                continue gridDataIterator;
+                            }
+                        }*/
+                    }
+                    fullGridData = sortedGridData;
+                }
+            }
             if (requestObj.sortedBy !== 'default') {
                 fullGridData = mergeSort(fullGridData, requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || 'string');
                 if (requestObj.sortedBy === 'asc') fullGridData.reverse();
@@ -2320,47 +2352,50 @@ var grid = (function _grid($) {
     /**
      * @method Merge-Sort algorithm for grid data client-side sorting
      * @param {object} data - the grid's data
-     * @param {string} field - the field that the grid data is being sorted on
+     * @param {object} sortObj - object that contains the field that the grid data is being sorted on and the direction of the sort
      * @param {string} type - the type of the data (string, number, time, date, boolean)
      * @returns {*}
      */
-    function mergeSort(data, field, type) {
+    function mergeSort(data, sortObj, type) {
         if (data.length < 2) return data;
         var middle = parseInt(data.length / 2);
         var left   = data.slice(0, middle);
         var right  = data.slice(middle, data.length);
-        return merge(mergeSort(left, field, type), mergeSort(right, field, type), field, type);
+        return merge(mergeSort(left, sortObj, type), mergeSort(right, sortObj, type), sortObj, type);
     }
 
-    function merge(left, right, field, type) {
+    function merge(left, right, sortObj, type) {
         var result = [], leftVal, rightVal;
         while (left.length && right.length) {
             if (type === 'time') {
-                leftVal = getNumbersFromTime(left[0][field]);
-                rightVal = getNumbersFromTime(right[0][field]);
+                leftVal = getNumbersFromTime(left[0][sortObj.field]);
+                rightVal = getNumbersFromTime(right[0][sortObj.field]);
 
-                if (~left[0][field].indexOf('PM'))
+                if (~left[0][sortObj.field].indexOf('PM'))
                     leftVal[0] += 12;
-                if (~right[0][field].indexOf('PM'))
+                if (~right[0][sortObj.field].indexOf('PM'))
                     rightVal[0] += 12;
 
                 leftVal = convertTimeArrayToSeconds(leftVal);
                 rightVal = convertTimeArrayToSeconds(rightVal);
             }
             else if (type === 'number') {
-                leftVal = parseFloat(left[0][field]);
-                rightVal = parseFloat(right[0][field]);
+                leftVal = parseFloat(left[0][sortObj.field]);
+                rightVal = parseFloat(right[0][sortObj.field]);
             }
             else if (type === 'date') {
-                leftVal = new Date(left[0][field]);
-                rightVal = new Date(right[0][field]);
+                leftVal = new Date(left[0][sortObj.field]);
+                rightVal = new Date(right[0][sortObj.field]);
             }
             else {
-                leftVal = left[0][field];
-                rightVal = right[0][field];
+                leftVal = left[0][sortObj.field];
+                rightVal = right[0][sortObj.field];
             }
 
-            comparator(leftVal, rightVal, 'lte') ? result.push(left.shift()) : result.push(right.shift());
+            //comparator(leftVal, rightVal, 'lte') ? result.push(left.shift()) : result.push(right.shift());
+
+            var operator = sortObj.sortDirection === 'asc' ? 'lte' : 'gte';
+            comparator(leftVal, rightVal, operator) ? result.push(left.shift()) : result.push(right.shift());
         }
 
         while (left.length)
