@@ -663,6 +663,7 @@ var grid = (function _grid($) {
         storageData.pageRequest = {};
         storageData.putRequest = {};
         storageData.resizing = false;
+        storageData.sortedOn = [];
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -1880,8 +1881,35 @@ var grid = (function _grid($) {
             var headerDiv = elem.parents('.grid-header-div');
             var id = parseInt(headerDiv.data('grid_header_id'));
             if (storage.grids[id].updating) return;		//can't sort if grid is updating
-            var previousSorted = headerDiv.find('[data-order]');
-            var order, className;
+            var field = elem.data('field'),
+                foundColumn = false;
+            for (var i = 0; i < storage.grids[id].sortedOn.length; i++) {
+                //if we find the field in the list of sorted columns....
+                if (storage.grids[id].sortedOn[i].field === field) {
+                    foundColumn = true;
+                    //...if it had been sorted ascending, change it to descending...
+                    if (storage.grids[id].sortedOn[i].sortDirection === 'asc') {
+                        storage.grids[id].sortedOn[i].sortDirection = 'desc';
+                        elem.find('.sortSpan').addClass('sort-desc').removeClass('sort-asc');
+                    }
+                    else {
+                        //...otherwise, remove it from the collection of sorted columns
+                        elem[0].dataset.order = 'default';
+                        storage.grids[id].sortedOn =  storage.grids[id].sortedOn.filter(function filterSortedColumns(item) {
+                            return item.field !== 'field';
+                        });
+                        elem.find('.sortSpan').removeClass('sort-desc').removeClass('sort-asc');
+                        storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
+                    }
+                }
+            }
+
+            if (!foundColumn) {
+                storage.grids[id].sortedOn.push({ field: field, sortDirection: 'asc' });
+            }
+
+            //var previousSorted = headerDiv.find('[data-order]');
+            var order;//, className;
             if (elem[0].dataset.order === undefined || elem[0].dataset.order == 'default')
                 order = 'desc';
             else if (elem[0].dataset.order === 'desc')
@@ -1889,7 +1917,7 @@ var grid = (function _grid($) {
             else
                 order = 'default';
 
-            elem[0].dataset.order = order;
+            /*elem[0].dataset.order = order;
             if (previousSorted.length) {
                 if (previousSorted.data('field') !== elem.data('field')) {
                     $('.sortSpan').remove();	//may need to target the "previousSorted" element before removing the sortSpan, but something isn't working correctly with that, so for now this'll do.
@@ -1926,7 +1954,7 @@ var grid = (function _grid($) {
                     storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
                 }
                 elem.find('.header-anchor').append('<span class="' + className + '">Sort</span>');
-            }
+            }*/
             storage.grids[id].pageRequest.sortedOn = elem.data('field');
             storage.grids[id].pageRequest.sortedBy = order;
             storage.grids[id].pageRequest.eventType = 'sort';
@@ -2037,8 +2065,9 @@ var grid = (function _grid($) {
         var gridData = storage.grids[id];
         var pageNum = gridData.pageRequest.pageNum || gridData.pageNum;
         var pageSize = gridData.pageRequest.pageSize || gridData.pageSize;
-        var sortedOn = gridData.pageRequest.sortedOn || gridData.sortedOn || null;
-        var sortedBy = gridData.pageRequest.sortedBy || gridData.sortedBy || null;
+        //var sortedOn = gridData.pageRequest.sortedOn || gridData.sortedOn || null;
+        //var sortedBy = gridData.pageRequest.sortedBy || gridData.sortedBy || null;
+        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : null;
         var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
         var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
         var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
@@ -2047,7 +2076,7 @@ var grid = (function _grid($) {
         var requestObj = {};
         if (gridData.sortable) {
             requestObj.sortedOn = sortedOn;
-            requestObj.sortedBy = sortedBy;
+            //requestObj.sortedBy = sortedBy;
         }
 
         if (gridData.filterable) {
@@ -2077,8 +2106,9 @@ var grid = (function _grid($) {
 
         function getPageDataRequestCallback(response) {
             var groupingStatus = gridData.groupingStatusChanged;
-            if (response)   //TODO: create a generic function to validate grid-data data types
-            {
+            if (response) {
+                //TODO: create a generic function to validate grid-data data types
+                //TODO: see if the closure will preserve the known values above - migt have tried this before because I can't imagine why I wouldn't already be making use of the closure.b
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
                 gridData.pageNum = requestObj.pageNum;
@@ -2144,6 +2174,7 @@ var grid = (function _grid($) {
     //then I only need to do one of the data manipulations below. Adding or removing a filter complicates things,
     //as does removing sorting. For now, I am going to do things the "dumb" way, but I may revisit this later to
     //see if there is a faster way to manipulate the data.
+    //TODO: update this function based both on the multi-sort addition and the comment above
     function getPageData(requestObj, id, callback) {
         var eventType = storage.grids[id].pageRequest.eventType;
         var fullGridData = cloneGridData(storage.grids[id].alteredData);

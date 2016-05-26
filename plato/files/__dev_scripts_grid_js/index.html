@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.12</p>
+      <p class="stat">55.29</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2690</p>
+      <p class="stat">2720</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">182.04</p>
+      <p class="stat">182.54</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">48.01</p>
+      <p class="stat">47.81</p>
     </div>
   </div>
 </div>
@@ -170,6 +170,7 @@
  - Add type checking - passed in grid data
  - Thoroughly test date &amp; time regex usages
  - Find out what the hell &#039;groupingStatusChanged&#039; is used for.
+ - Update sorting to handle multi-sort
  */
 /*exported grid*/
 /**
@@ -753,6 +754,7 @@ var grid = (function _grid($) {
         storageData.pageRequest = {};
         storageData.putRequest = {};
         storageData.resizing = false;
+        storageData.sortedOn = [];
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -1970,8 +1972,35 @@ var grid = (function _grid($) {
             var headerDiv = elem.parents(&#039;.grid-header-div&#039;);
             var id = parseInt(headerDiv.data(&#039;grid_header_id&#039;));
             if (storage.grids[id].updating) return;		//can&#039;t sort if grid is updating
-            var previousSorted = headerDiv.find(&#039;[data-order]&#039;);
-            var order, className;
+            var field = elem.data(&#039;field&#039;),
+                foundColumn = false;
+            for (var i = 0; i &lt; storage.grids[id].sortedOn.length; i++) {
+                //if we find the field in the list of sorted columns....
+                if (storage.grids[id].sortedOn[i].field === field) {
+                    foundColumn = true;
+                    //...if it had been sorted ascending, change it to descending...
+                    if (storage.grids[id].sortedOn[i].sortDirection === &#039;asc&#039;) {
+                        storage.grids[id].sortedOn[i].sortDirection = &#039;desc&#039;;
+                        elem.find(&#039;.sortSpan&#039;).addClass(&#039;sort-desc&#039;).removeClass(&#039;sort-asc&#039;);
+                    }
+                    else {
+                        //...otherwise, remove it from the collection of sorted columns
+                        elem[0].dataset.order = &#039;default&#039;;
+                        storage.grids[id].sortedOn =  storage.grids[id].sortedOn.filter(function filterSortedColumns(item) {
+                            return item.field !== &#039;field&#039;;
+                        });
+                        elem.find(&#039;.sortSpan&#039;).removeClass(&#039;sort-desc&#039;).removeClass(&#039;sort-asc&#039;);
+                        storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
+                    }
+                }
+            }
+
+            if (!foundColumn) {
+                storage.grids[id].sortedOn.push({ field: field, sortDirection: &#039;asc&#039; });
+            }
+
+            //var previousSorted = headerDiv.find(&#039;[data-order]&#039;);
+            var order;//, className;
             if (elem[0].dataset.order === undefined || elem[0].dataset.order == &#039;default&#039;)
                 order = &#039;desc&#039;;
             else if (elem[0].dataset.order === &#039;desc&#039;)
@@ -1979,7 +2008,7 @@ var grid = (function _grid($) {
             else
                 order = &#039;default&#039;;
 
-            elem[0].dataset.order = order;
+            /*elem[0].dataset.order = order;
             if (previousSorted.length) {
                 if (previousSorted.data(&#039;field&#039;) !== elem.data(&#039;field&#039;)) {
                     $(&#039;.sortSpan&#039;).remove();	//may need to target the &quot;previousSorted&quot; element before removing the sortSpan, but something isn&#039;t working correctly with that, so for now this&#039;ll do.
@@ -2016,7 +2045,7 @@ var grid = (function _grid($) {
                     storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
                 }
                 elem.find(&#039;.header-anchor&#039;).append(&#039;&lt;span class=&quot;&#039; + className + &#039;&quot;&gt;Sort&lt;/span&gt;&#039;);
-            }
+            }*/
             storage.grids[id].pageRequest.sortedOn = elem.data(&#039;field&#039;);
             storage.grids[id].pageRequest.sortedBy = order;
             storage.grids[id].pageRequest.eventType = &#039;sort&#039;;
@@ -2127,8 +2156,9 @@ var grid = (function _grid($) {
         var gridData = storage.grids[id];
         var pageNum = gridData.pageRequest.pageNum || gridData.pageNum;
         var pageSize = gridData.pageRequest.pageSize || gridData.pageSize;
-        var sortedOn = gridData.pageRequest.sortedOn || gridData.sortedOn || null;
-        var sortedBy = gridData.pageRequest.sortedBy || gridData.sortedBy || null;
+        //var sortedOn = gridData.pageRequest.sortedOn || gridData.sortedOn || null;
+        //var sortedBy = gridData.pageRequest.sortedBy || gridData.sortedBy || null;
+        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : null;
         var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
         var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
         var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
@@ -2137,7 +2167,7 @@ var grid = (function _grid($) {
         var requestObj = {};
         if (gridData.sortable) {
             requestObj.sortedOn = sortedOn;
-            requestObj.sortedBy = sortedBy;
+            //requestObj.sortedBy = sortedBy;
         }
 
         if (gridData.filterable) {
@@ -2167,8 +2197,9 @@ var grid = (function _grid($) {
 
         function getPageDataRequestCallback(response) {
             var groupingStatus = gridData.groupingStatusChanged;
-            if (response)   //TODO: create a generic function to validate grid-data data types
-            {
+            if (response) {
+                //TODO: create a generic function to validate grid-data data types
+                //TODO: see if the closure will preserve the known values above - migt have tried this before because I can&#039;t imagine why I wouldn&#039;t already be making use of the closure.b
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
                 gridData.pageNum = requestObj.pageNum;
@@ -2197,7 +2228,6 @@ var grid = (function _grid($) {
         }
     }
 
-    //Default update function - used for client-side updates to grid data
     function prepareGridDataUpdateRequest(id) {
         storage.grids[id].updating = true;
         var requestObj = {
@@ -2235,6 +2265,7 @@ var grid = (function _grid($) {
     //then I only need to do one of the data manipulations below. Adding or removing a filter complicates things,
     //as does removing sorting. For now, I am going to do things the &quot;dumb&quot; way, but I may revisit this later to
     //see if there is a faster way to manipulate the data.
+    //TODO: update this function based both on the multi-sort addition and the comment above
     function getPageData(requestObj, id, callback) {
         var eventType = storage.grids[id].pageRequest.eventType;
         var fullGridData = cloneGridData(storage.grids[id].alteredData);
