@@ -2391,9 +2391,6 @@ var grid = (function _grid($) {
                 leftVal = left[0][sortObj.field];
                 rightVal = right[0][sortObj.field];
             }
-
-            //comparator(leftVal, rightVal, 'lte') ? result.push(left.shift()) : result.push(right.shift());
-
             var operator = sortObj.sortDirection === 'asc' ? 'lte' : 'gte';
             comparator(leftVal, rightVal, operator) ? result.push(left.shift()) : result.push(right.shift());
         }
