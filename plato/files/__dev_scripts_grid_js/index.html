@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.14</p>
+      <p class="stat">55.30</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2752</p>
+      <p class="stat">2738</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">183.97</p>
+      <p class="stat">183.05</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">48.42</p>
+      <p class="stat">48.27</p>
     </div>
   </div>
 </div>
@@ -2269,7 +2269,6 @@ var grid = (function _grid($) {
     function getPageData(requestObj, id, callback) {
         var eventType = storage.grids[id].pageRequest.eventType;
         var fullGridData = cloneGridData(storage.grids[id].alteredData);
-        var i;
 
         if (eventType === &#039;page&#039; || eventType === &#039;pageSize&#039; || eventType === &#039;newGrid&#039;) {
             limitPageData(requestObj, fullGridData, callback);
@@ -2291,7 +2290,8 @@ var grid = (function _grid($) {
             if (requestObj.sortedOn.length) {
                 var sortedGroup = [];
                 for (var group in groupedData.groupings) {
-                    sortedGroup = sortedGroup.concat(mergeSort(groupedData.groupings[group], requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || &#039;string&#039;));
+                    //sortedGroup = sortedGroup.concat(mergeSort(groupedData.groupings[group], requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || &#039;string&#039;));
+                    sortedGroup = sortedGroup.concat(sortGridData(requestObj.sortedOn, groupedData.groupings[group] || cloneGridData(storage.grids[id].originalData), id));
                 }
                 if (requestObj.sortedBy === &#039;asc&#039;) sortedGroup.reverse();
                 storage.grids[id].alteredData = fullGridData;
@@ -2304,44 +2304,7 @@ var grid = (function _grid($) {
         }
 
         if (requestObj.sortedOn.length &amp;&amp; !requestObj.groupedBy) {
-            for (i = 0; i &lt; requestObj.sortedOn.length; i++) {
-                if (i === 0)
-                    fullGridData = mergeSort(fullGridData, requestObj.sortedOn[i], storage.grids[id].columns[requestObj.sortedOn[i].field].type || &#039;string&#039;);
-                else {
-                    var sortedGridData = [];
-                    for (var j = 0; j &lt; fullGridData.length; j++) {
-                        var itemsToSort = [];
-                        if (!itemsToSort.length || itemsToSort[0][requestObj.sortedOn[i].field] === fullGridData[j][requestObj.sortedOn[i].field])
-                            itemsToSort.push(fullGridData[j]);
-                        else if (itemsToSort.length === 1) {
-                            sortedGridData.concat(itemsToSort);
-                        }
-                        else {
-                            sortedGridData.concat(mergeSort(itemsToSort, requestObj.sortedOn[i], storage.grids[id].columns[requestObj.sortedOn[i].field].type || &#039;string&#039;));
-                        }
-                        /*for (var k = 0; k &lt; i; k++) {
-                            if (!itemsToSort.length || itemsToSort[0][requestObj.sortedOn[k].field] === fullGridData[j][requestObj.sortedOn[k].field])
-                                itemsToSort.push(fullGridData[j]);
-                            else if (itemsToSort.length === 1) {
-                                sortedGridData.concat(itemsToSort);
-                                continue gridDataIterator;
-                            }
-                            else {
-                                sortedGridData.concat(mergeSort(itemsToSort, requestObj.sortedOn[i], storage.grids[id].columns[requestObj.sortedOn[k].field].type || &#039;string&#039;));
-                                continue gridDataIterator;
-                            }
-                        }*/
-                    }
-                    fullGridData = sortedGridData;
-                }
-            }
-            if (requestObj.sortedBy !== &#039;default&#039;) {
-                fullGridData = mergeSort(fullGridData, requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || &#039;string&#039;);
-                if (requestObj.sortedBy === &#039;asc&#039;) fullGridData.reverse();
-            }
-            else if (!fullGridData.length) {
-                fullGridData = storage.grids[id].originalData;
-            }
+            sortGridData(requestObj.sortedOn, fullGridData || cloneGridData(storage.grids[id].originalData), id);
         }
         storage.grids[id].alteredData = fullGridData;
         limitPageData(requestObj, fullGridData, callback);
@@ -2438,6 +2401,29 @@ var grid = (function _grid($) {
         }
 
         return { groupings: groupings, groupedData: groupedData };
+    }
+
+    function sortGridData (sortedItems, gridData, gridId) {
+        for (var i = 0; i &lt; sortedItems.length; i++) {
+            if (i === 0)
+                gridData = mergeSort(gridData, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || &#039;string&#039;);
+            else {
+                var sortedGridData = [];
+                for (var j = 0; j &lt; gridData.length; j++) {
+                    var itemsToSort = [];
+                    if (!itemsToSort.length || itemsToSort[0][sortedItems[i].field] === gridData[j][sortedItems[i].field])
+                        itemsToSort.push(gridData[j]);
+                    else if (itemsToSort.length === 1) {
+                        sortedGridData.concat(itemsToSort);
+                    }
+                    else {
+                        sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || &#039;string&#039;));
+                    }
+                }
+                gridData = sortedGridData;
+            }
+        }
+        return gridData;
     }
 
     /**

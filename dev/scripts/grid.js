@@ -2178,7 +2178,6 @@ var grid = (function _grid($) {
     function getPageData(requestObj, id, callback) {
         var eventType = storage.grids[id].pageRequest.eventType;
         var fullGridData = cloneGridData(storage.grids[id].alteredData);
-        var i;
 
         if (eventType === 'page' || eventType === 'pageSize' || eventType === 'newGrid') {
             limitPageData(requestObj, fullGridData, callback);
@@ -2200,7 +2199,8 @@ var grid = (function _grid($) {
             if (requestObj.sortedOn.length) {
                 var sortedGroup = [];
                 for (var group in groupedData.groupings) {
-                    sortedGroup = sortedGroup.concat(mergeSort(groupedData.groupings[group], requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || 'string'));
+                    //sortedGroup = sortedGroup.concat(mergeSort(groupedData.groupings[group], requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || 'string'));
+                    sortedGroup = sortedGroup.concat(sortGridData(requestObj.sortedOn, groupedData.groupings[group] || cloneGridData(storage.grids[id].originalData), id));
                 }
                 if (requestObj.sortedBy === 'asc') sortedGroup.reverse();
                 storage.grids[id].alteredData = fullGridData;
@@ -2213,44 +2213,7 @@ var grid = (function _grid($) {
         }
 
         if (requestObj.sortedOn.length && !requestObj.groupedBy) {
-            for (i = 0; i < requestObj.sortedOn.length; i++) {
-                if (i === 0)
-                    fullGridData = mergeSort(fullGridData, requestObj.sortedOn[i], storage.grids[id].columns[requestObj.sortedOn[i].field].type || 'string');
-                else {
-                    var sortedGridData = [];
-                    for (var j = 0; j < fullGridData.length; j++) {
-                        var itemsToSort = [];
-                        if (!itemsToSort.length || itemsToSort[0][requestObj.sortedOn[i].field] === fullGridData[j][requestObj.sortedOn[i].field])
-                            itemsToSort.push(fullGridData[j]);
-                        else if (itemsToSort.length === 1) {
-                            sortedGridData.concat(itemsToSort);
-                        }
-                        else {
-                            sortedGridData.concat(mergeSort(itemsToSort, requestObj.sortedOn[i], storage.grids[id].columns[requestObj.sortedOn[i].field].type || 'string'));
-                        }
-                        /*for (var k = 0; k < i; k++) {
-                            if (!itemsToSort.length || itemsToSort[0][requestObj.sortedOn[k].field] === fullGridData[j][requestObj.sortedOn[k].field])
-                                itemsToSort.push(fullGridData[j]);
-                            else if (itemsToSort.length === 1) {
-                                sortedGridData.concat(itemsToSort);
-                                continue gridDataIterator;
-                            }
-                            else {
-                                sortedGridData.concat(mergeSort(itemsToSort, requestObj.sortedOn[i], storage.grids[id].columns[requestObj.sortedOn[k].field].type || 'string'));
-                                continue gridDataIterator;
-                            }
-                        }*/
-                    }
-                    fullGridData = sortedGridData;
-                }
-            }
-            if (requestObj.sortedBy !== 'default') {
-                fullGridData = mergeSort(fullGridData, requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || 'string');
-                if (requestObj.sortedBy === 'asc') fullGridData.reverse();
-            }
-            else if (!fullGridData.length) {
-                fullGridData = storage.grids[id].originalData;
-            }
+            sortGridData(requestObj.sortedOn, fullGridData || cloneGridData(storage.grids[id].originalData), id);
         }
         storage.grids[id].alteredData = fullGridData;
         limitPageData(requestObj, fullGridData, callback);
@@ -2347,6 +2310,29 @@ var grid = (function _grid($) {
         }
 
         return { groupings: groupings, groupedData: groupedData };
+    }
+
+    function sortGridData (sortedItems, gridData, gridId) {
+        for (var i = 0; i < sortedItems.length; i++) {
+            if (i === 0)
+                gridData = mergeSort(gridData, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string');
+            else {
+                var sortedGridData = [];
+                for (var j = 0; j < gridData.length; j++) {
+                    var itemsToSort = [];
+                    if (!itemsToSort.length || itemsToSort[0][sortedItems[i].field] === gridData[j][sortedItems[i].field])
+                        itemsToSort.push(gridData[j]);
+                    else if (itemsToSort.length === 1) {
+                        sortedGridData.concat(itemsToSort);
+                    }
+                    else {
+                        sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string'));
+                    }
+                }
+                gridData = sortedGridData;
+            }
+        }
+        return gridData;
     }
 
     /**
