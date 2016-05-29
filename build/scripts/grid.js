@@ -2213,7 +2213,7 @@ var grid = (function _grid($) {
         }
 
         if (requestObj.sortedOn.length && !requestObj.groupedBy) {
-            sortGridData(requestObj.sortedOn, fullGridData || cloneGridData(storage.grids[id].originalData), id);
+            fullGridData = sortGridData(requestObj.sortedOn, fullGridData || cloneGridData(storage.grids[id].originalData), id);
         }
         storage.grids[id].alteredData = fullGridData;
         limitPageData(requestObj, fullGridData, callback);
@@ -2318,26 +2318,16 @@ var grid = (function _grid($) {
                 gridData = mergeSort(gridData, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string');
             else {
                 var sortedGridData = [];
+                var itemsToSort = [];
                 for (var j = 0; j < gridData.length; j++) {
-                    var itemsToSort = [];
                     if (!itemsToSort.length || itemsToSort[0][sortedItems[i-1].field] === gridData[j][sortedItems[i-1].field])
                         itemsToSort.push(gridData[j]);
                     else {
-                        if (itemsToSort.length === 1) sortedGridData.concat(itemsToSort);
-                        else sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string'));
+                        if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
+                        else sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string'));
                         itemsToSort.length = 0;
                         itemsToSort.push(gridData[j]);
                     }
-                    /*else if (itemsToSort.length === 1) {
-                        sortedGridData.concat(itemsToSort);
-                        itemsToSort.length = 0;
-                        itemsToSort.push(gridData[j]);
-                    }
-                    else {
-                        sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string'));
-                        itemsToSort.length = 0;
-                        itemsToSort.push(gridData[j]);
-                    }*/
                 }
                 gridData = sortedGridData;
             }

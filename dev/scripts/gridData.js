@@ -1,13 +1,14 @@
 var gridData = {
-    useValidator: true,     //specify that you want to use the validator with the grid
-    useFormatter: true,     //specify that you want to use the formatter with the grid
-    sortable: true,         //indicate if the grid's columns should be sortable or not - defaults to false. When set at this level, it sets all columns as sortable unless overridden at the column level
-    reorderable: true,      //indicate if the grid's columns should be reorderable or not - defaults to false.
-    groupable: true,        //indicate if the grid's data should be groupable or not - defaults to false.
-    filterable: true,       //indicate if the grid's data should be filterable or not - defaults to false. When set at this level, it sets all columns as filterable unless overridden at the column level
-    pagingOptions: [25, 50, 100],   //give the page size options the user can select
+    height: 400,
+    useValidator: true,
+    useFormatter: true,
+    sortable: true,
+    reorderable: true,
+    groupable: true,
+    filterable: true,
+    pagingOptions: [25, 50, 100],
     //pageSize: 50,
-    summaryRow: {           //needed for aggregates. When using server-side paging the values must be specified, if using client side paging, the grid will perform the aggregations for you.
+    summaryRow: {
         Service: {
             type: "count"
         },
@@ -42,14 +43,14 @@ var gridData = {
         },
         positionAt: "top"
     },
-    rows: {             //Additional classes that should be applied to tr elements of the grid
-        alternateRows: ["testAlt"],     //apply only to alternate rows
-        all: ["testAll"]                //apply to all rows
+    rows: {
+        alternateRows: ["testAlt"],
+        all: ["testAll"]
     },
-    columns: {          //The specification of the columns that will make up the grid
+    columns: {
         Service: {
-            filterable: true,       //override for column filtering
-            editable: true,         //
+            filterable: true,
+            editable: true,
             width: 160,
             attributes: {
                 cellClasses: ["custom-class", "anotherOne"],
@@ -58,7 +59,7 @@ var gridData = {
             }
         },
         Customer: {
-            type: "string",     //The type of data that is in the column - defaults to string. This affects filtering options, how the grid filters, and how the grid sorts
+            type: "string",
             width: 180
         },
         Phone: {
@@ -71,7 +72,8 @@ var gridData = {
         Labor: {
             type: "number",
             template: "{{data}} hour(s)",
-            decimals: 0,
+            format: '#',
+            //decimals: 0,
             selectable: true,
             options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
             width: 160,
@@ -89,13 +91,14 @@ var gridData = {
         },
         Cost: {
             type: "number",
-            symbol: "$",
-            template: "${{data}}",
+            format: '0C2',
+            //symbol: "$",
+            //template: "${{data}}",
             filterable: true,
             editable: true,
             min: 1,
             max: 10000,
-            width: 180,
+            width: 150,
             validation: {
                 required: true,
                 customRules: {
@@ -116,9 +119,10 @@ var gridData = {
         },
         Billed: {
             type: "number",
-            symbol: "$",
-            template: "${{data}}",
-            width: 125,
+            format: '0C2',
+            //symbol: "$",
+            //template: "${{data}}",
+            width: 155,
             validation: {
                 required: true,
                 customRules: {
@@ -137,7 +141,8 @@ var gridData = {
             width: 140,
             editable: true,
             title: "Parts Markup",
-            template: "{{data}}%",
+            //template: "{{data}}%",
+            format: '0P2',
             decimals: 0
         },
         Date: {
@@ -168,12 +173,13 @@ var gridData = {
             width: 150,
             editable: true,
             timeFormat: "12",
+            format: 'hh:mm:ss',
             delimiter: ":"
         },
         Paid: {
             type: "bool",
             editable: true,
-            width: 100
+            //width: 100
         }
     },
     dataSource: {
