@@ -2320,14 +2320,24 @@ var grid = (function _grid($) {
                 var sortedGridData = [];
                 for (var j = 0; j < gridData.length; j++) {
                     var itemsToSort = [];
-                    if (!itemsToSort.length || itemsToSort[0][sortedItems[i].field] === gridData[j][sortedItems[i].field])
+                    if (!itemsToSort.length || itemsToSort[0][sortedItems[i-1].field] === gridData[j][sortedItems[i-1].field])
                         itemsToSort.push(gridData[j]);
-                    else if (itemsToSort.length === 1) {
+                    else {
+                        if (itemsToSort.length === 1) sortedGridData.concat(itemsToSort);
+                        else sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string'));
+                        itemsToSort.length = 0;
+                        itemsToSort.push(gridData[j]);
+                    }
+                    /*else if (itemsToSort.length === 1) {
                         sortedGridData.concat(itemsToSort);
+                        itemsToSort.length = 0;
+                        itemsToSort.push(gridData[j]);
                     }
                     else {
                         sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string'));
-                    }
+                        itemsToSort.length = 0;
+                        itemsToSort.push(gridData[j]);
+                    }*/
                 }
                 gridData = sortedGridData;
             }
