@@ -1896,7 +1896,7 @@ var grid = (function _grid($) {
                         //...otherwise, remove it from the collection of sorted columns
                         elem[0].dataset.order = 'default';
                         storage.grids[id].sortedOn =  storage.grids[id].sortedOn.filter(function filterSortedColumns(item) {
-                            return item.field !== 'field';
+                            return item.field !== field;
                         });
                         elem.find('.sortSpan').removeClass('sort-desc').removeClass('sort-asc');
                         storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
@@ -1906,6 +1906,7 @@ var grid = (function _grid($) {
 
             if (!foundColumn) {
                 storage.grids[id].sortedOn.push({ field: field, sortDirection: 'asc' });
+                elem.find('.header-anchor').append('<span class="sort-asc sortSpan">Sort</span>');
             }
 
             //var previousSorted = headerDiv.find('[data-order]');
@@ -2067,7 +2068,7 @@ var grid = (function _grid($) {
         var pageSize = gridData.pageRequest.pageSize || gridData.pageSize;
         //var sortedOn = gridData.pageRequest.sortedOn || gridData.sortedOn || null;
         //var sortedBy = gridData.pageRequest.sortedBy || gridData.sortedBy || null;
-        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : null;
+        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
         var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
         var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
         var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
@@ -2320,13 +2321,16 @@ var grid = (function _grid($) {
                 var sortedGridData = [];
                 var itemsToSort = [];
                 for (var j = 0; j < gridData.length; j++) {
-                    if (!itemsToSort.length || itemsToSort[0][sortedItems[i-1].field] === gridData[j][sortedItems[i-1].field])
+                    if (!itemsToSort.length || itemsToSort[0][sortedItems[i - 1].field] === gridData[j][sortedItems[i - 1].field])
                         itemsToSort.push(gridData[j]);
                     else {
                         if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
                         else sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string'));
                         itemsToSort.length = 0;
                         itemsToSort.push(gridData[j]);
+                    }
+                    if (j === gridData.length - 1) {
+                        sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string'));
                     }
                 }
                 gridData = sortedGridData;

@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.28</p>
+      <p class="stat">55.25</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2738</p>
+      <p class="stat">2742</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">183.34</p>
+      <p class="stat">183.57</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">48.34</p>
+      <p class="stat">48.51</p>
     </div>
   </div>
 </div>
@@ -1987,7 +1987,7 @@ var grid = (function _grid($) {
                         //...otherwise, remove it from the collection of sorted columns
                         elem[0].dataset.order = &#039;default&#039;;
                         storage.grids[id].sortedOn =  storage.grids[id].sortedOn.filter(function filterSortedColumns(item) {
-                            return item.field !== &#039;field&#039;;
+                            return item.field !== field;
                         });
                         elem.find(&#039;.sortSpan&#039;).removeClass(&#039;sort-desc&#039;).removeClass(&#039;sort-asc&#039;);
                         storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
@@ -1997,6 +1997,7 @@ var grid = (function _grid($) {
 
             if (!foundColumn) {
                 storage.grids[id].sortedOn.push({ field: field, sortDirection: &#039;asc&#039; });
+                elem.find(&#039;.header-anchor&#039;).append(&#039;&lt;span class=&quot;sort-asc sortSpan&quot;&gt;Sort&lt;/span&gt;&#039;);
             }
 
             //var previousSorted = headerDiv.find(&#039;[data-order]&#039;);
@@ -2158,7 +2159,7 @@ var grid = (function _grid($) {
         var pageSize = gridData.pageRequest.pageSize || gridData.pageSize;
         //var sortedOn = gridData.pageRequest.sortedOn || gridData.sortedOn || null;
         //var sortedBy = gridData.pageRequest.sortedBy || gridData.sortedBy || null;
-        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : null;
+        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
         var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
         var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
         var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
@@ -2411,13 +2412,16 @@ var grid = (function _grid($) {
                 var sortedGridData = [];
                 var itemsToSort = [];
                 for (var j = 0; j &lt; gridData.length; j++) {
-                    if (!itemsToSort.length || itemsToSort[0][sortedItems[i-1].field] === gridData[j][sortedItems[i-1].field])
+                    if (!itemsToSort.length || itemsToSort[0][sortedItems[i - 1].field] === gridData[j][sortedItems[i - 1].field])
                         itemsToSort.push(gridData[j]);
                     else {
                         if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
                         else sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || &#039;string&#039;));
                         itemsToSort.length = 0;
                         itemsToSort.push(gridData[j]);
+                    }
+                    if (j === gridData.length - 1) {
+                        sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || &#039;string&#039;));
                     }
                 }
                 gridData = sortedGridData;
