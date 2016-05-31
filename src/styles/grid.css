@@ -179,10 +179,10 @@
   color: rgba(0, 0, 0, 0);
 }
 .sort-desc {
-  background-image: url('../images/arrowDown.svg');
+  background-image: url('../images/down-arrow.png');
 }
 .sort-asc {
-  background-image: url('../images/arrowUp.svg');
+  background-image: url('../images/up-arrow.png');
 }
 .filterSpan {
   background: rgba(0, 0, 0, 0) url('../images/menu.svg') no-repeat;

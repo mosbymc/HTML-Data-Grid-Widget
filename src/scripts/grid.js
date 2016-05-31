@@ -1898,6 +1898,10 @@ var grid = (function _grid($) {
             if (storage.grids[id].updating) return;		//can't sort if grid is updating
             var field = elem.data('field'),
                 foundColumn = false;
+
+            if (storage.grids[id].groupedBy && storage.grids[id].groupedBy === field)   //can't sort on a grouped field
+                return;
+
             for (var i = 0; i < storage.grids[id].sortedOn.length; i++) {
                 //if we find the field in the list of sorted columns....
                 if (storage.grids[id].sortedOn[i].field === field) {
@@ -1923,56 +1927,7 @@ var grid = (function _grid($) {
                 storage.grids[id].sortedOn.push({ field: field, sortDirection: 'asc' });
                 elem.find('.header-anchor').append('<span class="sort-asc sortSpan">Sort</span>');
             }
-
-            //var previousSorted = headerDiv.find('[data-order]');
-            var order;//, className;
-            if (elem[0].dataset.order === undefined || elem[0].dataset.order == 'default')
-                order = 'desc';
-            else if (elem[0].dataset.order === 'desc')
-                order = 'asc';
-            else
-                order = 'default';
-
-            /*elem[0].dataset.order = order;
-            if (previousSorted.length) {
-                if (previousSorted.data('field') !== elem.data('field')) {
-                    $('.sortSpan').remove();	//may need to target the "previousSorted" element before removing the sortSpan, but something isn't working correctly with that, so for now this'll do.
-                    previousSorted[0].removeAttribute('data-order');
-                    if (order === 'desc')
-                        className = 'sort-desc sortSpan';
-                    else if (order === 'asc')
-                        className = 'sort-asc sortSpan';
-                    else {
-                        className = '';
-                        storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
-                    }
-                    elem.find('.header-anchor').append('<span class="' + className + '">Sort</span>');
-                }
-                else {
-                    var span = elem.find('.sortSpan');
-                    if (order === 'desc')
-                        span.addClass('sort-desc').removeClass('sort-asc');
-                    else if (order === 'asc')
-                        span.removeClass('sort-desc').addClass('sort-asc');
-                    else {
-                        span.removeClass('sort-desc').removeClass('sort-asc');
-                        storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
-                    }
-                }
-            }
-            else {
-                if (order === 'desc')
-                    className = 'sort-desc sortSpan';
-                else if (order === 'asc')
-                    className = 'sort-asc sortSpan';
-                else {
-                    className = '';
-                    storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
-                }
-                elem.find('.header-anchor').append('<span class="' + className + '">Sort</span>');
-            }*/
-            storage.grids[id].pageRequest.sortedOn = elem.data('field');
-            storage.grids[id].pageRequest.sortedBy = order;
+            storage.grids[id].pageRequest.sortedOn = storage.grids[id].sortedOn;
             storage.grids[id].pageRequest.eventType = 'sort';
             preparePageDataGetRequest(id);
         });
@@ -2081,18 +2036,16 @@ var grid = (function _grid($) {
         var gridData = storage.grids[id];
         var pageNum = gridData.pageRequest.pageNum || gridData.pageNum;
         var pageSize = gridData.pageRequest.pageSize || gridData.pageSize;
-        //var sortedOn = gridData.pageRequest.sortedOn || gridData.sortedOn || null;
-        //var sortedBy = gridData.pageRequest.sortedBy || gridData.sortedBy || null;
         var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
         var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
         var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
         var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
         var groupedBy = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
+        var groupedDirection = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupedDirection : gridData.groupedDirection || null;
 
         var requestObj = {};
         if (gridData.sortable) {
             requestObj.sortedOn = sortedOn;
-            //requestObj.sortedBy = sortedBy;
         }
 
         if (gridData.filterable) {
@@ -2103,6 +2056,7 @@ var grid = (function _grid($) {
 
         if (gridData.groupable) {
             requestObj.groupedBy = groupedBy;
+            requestObj.groupedDirection = groupedDirection;
         }
 
         requestObj.pageSize = pageSize;
@@ -2130,8 +2084,8 @@ var grid = (function _grid($) {
                 gridData.pageNum = requestObj.pageNum;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.length;
                 gridData.groupedBy = requestObj.groupedBy;
+                gridData.groupedDirection = requestObj.groupedDirection;
                 gridData.sortedOn = requestObj.sortedOn;
-                //gridData.sortedBy = requestObj.sortedBy;
                 gridData.filteredOn = requestObj.filteredOn;
                 gridData.filterVal = requestObj.filterVal;
                 gridData.filterType = requestObj.filterType;
@@ -2211,7 +2165,8 @@ var grid = (function _grid($) {
         }
 
         if (requestObj.groupedBy) {	//Need to group the columns first, before sorting. Sorting grouped columns is going to be a bitch!
-            var groupedData = groupColumns(fullGridData, requestObj.groupedBy);
+            var groupedData = sortGridData([{ field: requestObj.groupedBy, sortDirection: requestObj.groupedDirection }], fullGridData || cloneGridData(storage.grids[id].originalData), id);
+            groupedData = groupColumns(groupedData, requestObj.groupedBy);
             if (requestObj.sortedOn.length) {
                 var sortedGroup = [];
                 for (var group in groupedData.groupings) {
