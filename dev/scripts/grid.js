@@ -80,6 +80,7 @@
  - Thoroughly test date & time regex usages
  - Find out what the hell 'groupingStatusChanged' is used for.
  - Update sorting to handle multi-sort
+ - Add try/catch to compareDateByTypes function
  */
 /*exported grid*/
 /**
@@ -2109,7 +2110,7 @@ var grid = (function _grid($) {
             var groupingStatus = gridData.groupingStatusChanged;
             if (response) {
                 //TODO: create a generic function to validate grid-data data types
-                //TODO: see if the closure will preserve the known values above - migt have tried this before because I can't imagine why I wouldn't already be making use of the closure.b
+                //TODO: see if the closure will preserve the known values above - might have tried this before because I can't imagine why I wouldn't already be making use of the closure.b
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
                 gridData.pageNum = requestObj.pageNum;
@@ -2321,7 +2322,7 @@ var grid = (function _grid($) {
                 var sortedGridData = [];
                 var itemsToSort = [];
                 for (var j = 0; j < gridData.length; j++) {
-                    if (!itemsToSort.length || itemsToSort[0][sortedItems[i - 1].field] === gridData[j][sortedItems[i - 1].field])
+                    if (!itemsToSort.length || compareValuesByType(itemsToSort[0][sortedItems[i - 1].field], gridData[j][sortedItems[i - 1].field], storage.grids[gridId].columns[sortedItems[i - 1].field].type, gridId))
                         itemsToSort.push(gridData[j]);
                     else {
                         if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
@@ -2481,6 +2482,31 @@ var grid = (function _grid($) {
             return null;
         }
         return newVal;
+    }
+
+    function compareValuesByType (val1, val2, dataType) {
+        switch (dataType) {
+            case 'string':
+                return val1.toString() === val2.toString();
+            case 'number':
+                return parseFloat(val1) === parseFloat(val2);
+            case 'boolean':
+                /*jshint -W018*/    //have to turn off jshint check for !! operation because there's not built-in way to turn it off in the config file and
+                //like most js devs, those of jshint aren't the most savvy JSers
+                return !!val1 === !!val2;
+            case 'date':
+                return new Date(val1) === new Date(val2);
+            case 'time':
+                var value1 = getNumbersFromTime(val1);
+                var value2 = getNumbersFromTime(val2);
+                if (value1[3] && value1[3] === 'PM')
+                    value1[0] += 12;
+                if (value2[3] && value2[3] === 'PM')
+                    value2[0] += 12;
+                return convertTimeArrayToSeconds(value1) === convertTimeArrayToSeconds(value2);
+            default:
+                return val1.toString() === val2.toString();
+        }
     }
 
     dataTypes = {

@@ -1,4 +1,6 @@
 {
+  "esversion": 5,
+  "futurehostile": true,
   "freeze": true,
   "latedef": "nofunc",
   "noarg": true,

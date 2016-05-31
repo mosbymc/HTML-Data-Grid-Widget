@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.25</p>
+      <p class="stat">55.22</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2742</p>
+      <p class="stat">2767</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">183.57</p>
+      <p class="stat">184.21</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">48.51</p>
+      <p class="stat">48.99</p>
     </div>
   </div>
 </div>
@@ -171,6 +171,7 @@
  - Thoroughly test date &amp; time regex usages
  - Find out what the hell &#039;groupingStatusChanged&#039; is used for.
  - Update sorting to handle multi-sort
+ - Add try/catch to compareDateByTypes function
  */
 /*exported grid*/
 /**
@@ -2200,7 +2201,7 @@ var grid = (function _grid($) {
             var groupingStatus = gridData.groupingStatusChanged;
             if (response) {
                 //TODO: create a generic function to validate grid-data data types
-                //TODO: see if the closure will preserve the known values above - migt have tried this before because I can&#039;t imagine why I wouldn&#039;t already be making use of the closure.b
+                //TODO: see if the closure will preserve the known values above - might have tried this before because I can&#039;t imagine why I wouldn&#039;t already be making use of the closure.b
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
                 gridData.pageNum = requestObj.pageNum;
@@ -2412,7 +2413,7 @@ var grid = (function _grid($) {
                 var sortedGridData = [];
                 var itemsToSort = [];
                 for (var j = 0; j &lt; gridData.length; j++) {
-                    if (!itemsToSort.length || itemsToSort[0][sortedItems[i - 1].field] === gridData[j][sortedItems[i - 1].field])
+                    if (!itemsToSort.length || compareValuesByType(itemsToSort[0][sortedItems[i - 1].field], gridData[j][sortedItems[i - 1].field], storage.grids[gridId].columns[sortedItems[i - 1].field].type, gridId))
                         itemsToSort.push(gridData[j]);
                     else {
                         if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
@@ -2572,6 +2573,31 @@ var grid = (function _grid($) {
             return null;
         }
         return newVal;
+    }
+
+    function compareValuesByType (val1, val2, dataType) {
+        switch (dataType) {
+            case &#039;string&#039;:
+                return val1.toString() === val2.toString();
+            case &#039;number&#039;:
+                return parseFloat(val1) === parseFloat(val2);
+            case &#039;boolean&#039;:
+                /*jshint -W018*/    //have to turn off jshint check for !! operation because there&#039;s not built-in way to turn it off in the config file and
+                //like most js devs, those of jshint aren&#039;t the most savvy JSers
+                return !!val1 === !!val2;
+            case &#039;date&#039;:
+                return new Date(val1) === new Date(val2);
+            case &#039;time&#039;:
+                var value1 = getNumbersFromTime(val1);
+                var value2 = getNumbersFromTime(val2);
+                if (value1[3] &amp;&amp; value1[3] === &#039;PM&#039;)
+                    value1[0] += 12;
+                if (value2[3] &amp;&amp; value2[3] === &#039;PM&#039;)
+                    value2[0] += 12;
+                return convertTimeArrayToSeconds(value1) === convertTimeArrayToSeconds(value2);
+            default:
+                return val1.toString() === val2.toString();
+        }
     }
 
     dataTypes = {
