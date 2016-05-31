@@ -810,6 +810,11 @@ input {
   padding-right: 5px;
   line-height: 2.286em;
 }
+.group_dir_select {
+  margin-top: 2.5px;
+  margin-bottom: 2.5px;
+  margin-left: 10px;
+}
 .filter-div-error {
   color: red;
   display: block;

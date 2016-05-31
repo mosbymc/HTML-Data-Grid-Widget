@@ -749,11 +749,11 @@ var grid = (function _grid($) {
             }
             if (gridData.columns[col].filterable === true) {
                 setFilterableClickListener(th, gridData, col);
-                createCellEditSaveDiv(gridElem);
+                createCellEditSaveDiv(gridData, gridElem);
             }
 
             if (gridData.columns[col].editable || gridData.columns[col].selectable)
-                createCellEditSaveDiv(gridElem);
+                createCellEditSaveDiv(gridData, gridElem);
 
             $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
 
@@ -920,6 +920,10 @@ var grid = (function _grid($) {
                     var groupTitle = gridData.columns[gridData.groupedBy].title || gridData.groupedBy;
                     groupTr.append('<td colspan="' + (columns.length + 1) + '"><p class="grouped"><a class="sort-desc sortSpan group_acc_link"></a>' + groupTitle + ': ' + groupedText + '</p></td>');
                 }
+            }
+            else if (!gridData.groupedBy && gridElem.find('.group_spacer').length) {
+                $(document).find('.group_col').remove();
+                $(document).find('.group_spacer').remove();
             }
             var tr = $('<tr></tr>').appendTo(contentTBody);
             if (i % 2) {
@@ -1342,12 +1346,12 @@ var grid = (function _grid($) {
         callGridEventHandlers(storage.grids[id].events.afterCellEdit, storage.grids[id].grid, null);
     }
 
-    function createCellEditSaveDiv(gridElem) {
+    function createCellEditSaveDiv(gridData, gridElem) {
         var id = gridElem.find('.grid-wrapper').data('grid_id');
         if ($('#grid_' + id + '_toolbar').length)	//if the toolbar has already been created, don't create it again.
             return;
 
-        var saveBar = $('<div id="grid_' + id + '_toolbar" class="toolbar clearfix"></div>').prependTo(gridElem);
+        var saveBar = $('<div id="grid_' + id + '_toolbar" class="toolbar clearfix" data-grid_id="' + id + '"></div>').prependTo(gridElem);
         var saveAnchor = $('<a href="#" class="toolbarAnchor saveToolbar"></a>').appendTo(saveBar);
         saveAnchor.append('<span class="toolbarSpan saveToolbarSpan"></span>Save Changes');
 
@@ -1421,39 +1425,49 @@ var grid = (function _grid($) {
             }
         });
 
-        if (storage.grids[id].groupable) {
-            var groupSpan = $('<span class="toolbarSpan group_span" style="float:right;"><span class="groupTextSpan">Group By: </span></span>').appendTo(saveBar);
-            var columnsList = $('<select class="input select group_select" style="float:right; display: inline; width: auto;"></select>').appendTo(groupSpan);
+        if (gridData.groupable) {
+            var groupSpan = $('<span class="toolbarSpan group_span" style="float:right;"><span class="groupTextSpan" style="float:left;">Group By: </span></span>').appendTo(saveBar);
+            var columnsList = $('<select class="input select group_select" style="float:none; display: inline; width: auto;"></select>').appendTo(groupSpan);
+            var dirList = $('<select class="input select group_dir_select" style="display: inline; width: auto;"></span>').appendTo(groupSpan);
+            dirList.append('<option value="asc">Ascending</span>');
+            dirList.append('<option value="desc">Descending</span>');
             columnsList.append('<option value="none">None</option>');
-            for (var col in storage.grids[id].columns) {
-                if (storage.grids[id].columns[col].groupable !== false) {
-                    var colTitle = storage.grids[id].columns[col].title || col;
+            for (var col in gridData.columns) {
+                if (gridData.columns[col].groupable !== false) {
+                    var colTitle = gridData.columns[col].title || col;
                     columnsList.append('<option value="' + col + '">' + colTitle + '</option>');
                 }
             }
-            columnsList.on('change', function groupBySelectCallback() {
-                if (storage.grids[id].updating) return;
-                if (Object.keys(storage.grids[id].columns).length === storage.grids[id].grid.find('colgroup').first().find('col').length && this.value !== 'none') {
-                    if (!storage.grids[id].groupedBy)
-                        storage.grids[id].groupingStatusChanged = true;
-                    var colGroups = storage.grids[id].grid.find('colgroup');
-                    colGroups.each(function iterateColGroupsForInsertCallback(idx, val) {
-                        $(val).prepend('<col class="group_col"/>');
-                    });
-                    storage.grids[id].grid.find('.grid-headerRow').prepend('<th class="group_spacer">&nbsp</th>');
-                    storage.grids[id].grid.find('.summary-row-header').prepend('<td class="group_spacer">&nbsp</td>');
-                }
-                else if (this.value === 'none') {
-                    storage.grids[id].groupingStatusChanged = true;
-                    storage.grids[id].grid.find('colgroup').find('.group_col').remove();
-                    storage.grids[id].grid.find('.group_spacer').remove();
-                    storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
-                }
-                storage.grids[id].pageRequest.groupedBy = this.value;
-                storage.grids[id].pageRequest.eventType = 'group';
-                preparePageDataGetRequest(id);
-            });
+            columnsList.on('change', groupByHandler);
+            dirList.on('change', groupByHandler);
         }
+    }
+
+    function groupByHandler() {
+        var id = $(this).parents('.toolbar').data('grid_id');
+        if (storage.grids[id].updating) return;
+        var colSelector = $(this).parents('.toolbar').find('.group_select'),
+            directionSelector = $(this).parents('.toolbar').find('.group_dir_select');
+        if (Object.keys(storage.grids[id].columns).length === storage.grids[id].grid.find('colgroup').first().find('col').length && colSelector.val() !== 'none') {
+            if (!storage.grids[id].groupedBy)
+                storage.grids[id].groupingStatusChanged = true;
+            var colGroups = storage.grids[id].grid.find('colgroup');
+            colGroups.each(function iterateColGroupsForInsertCallback(idx, val) {
+                $(val).prepend('<col class="group_col"/>');
+            });
+            storage.grids[id].grid.find('.grid-headerRow').prepend('<th class="group_spacer">&nbsp</th>');
+            storage.grids[id].grid.find('.summary-row-header').prepend('<td class="group_spacer">&nbsp</td>');
+        }
+        else if (colSelector.value === 'none') {
+            storage.grids[id].groupingStatusChanged = true;
+            storage.grids[id].grid.find('colgroup').find('.group_col').remove();
+            storage.grids[id].grid.find('.group_spacer').remove();
+            storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
+        }
+        storage.grids[id].pageRequest.groupedBy = colSelector.val() === 'none' ? undefined : colSelector.val();
+        storage.grids[id].pageRequest.groupDirection = colSelector.val() === 'none' ? undefined : directionSelector.val();
+        storage.grids[id].pageRequest.eventType = 'group';
+        preparePageDataGetRequest(id);
     }
 
     function createGridFooter(gridData, gridElem) {
@@ -2073,7 +2087,7 @@ var grid = (function _grid($) {
         var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
         var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
         var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
-        var groupedBy = gridData.pageRequest.groupedBy || gridData.groupedBy || null;
+        var groupedBy = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
 
         var requestObj = {};
         if (gridData.sortable) {
@@ -2110,7 +2124,7 @@ var grid = (function _grid($) {
             var groupingStatus = gridData.groupingStatusChanged;
             if (response) {
                 //TODO: create a generic function to validate grid-data data types
-                //TODO: see if the closure will preserve the known values above - might have tried this before because I can't imagine why I wouldn't already be making use of the closure.b
+                //TODO: see if the closure will preserve the known values above - might have tried this before because I can't imagine why I wouldn't already be making use of the closure.
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
                 gridData.pageNum = requestObj.pageNum;
@@ -2204,7 +2218,7 @@ var grid = (function _grid($) {
                     //sortedGroup = sortedGroup.concat(mergeSort(groupedData.groupings[group], requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || 'string'));
                     sortedGroup = sortedGroup.concat(sortGridData(requestObj.sortedOn, groupedData.groupings[group] || cloneGridData(storage.grids[id].originalData), id));
                 }
-                if (requestObj.sortedBy === 'asc') sortedGroup.reverse();
+                //if (requestObj.sortedBy === 'asc') sortedGroup.reverse();
                 storage.grids[id].alteredData = fullGridData;
                 limitPageData(requestObj, sortedGroup, callback);
                 return;
