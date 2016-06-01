@@ -69,6 +69,7 @@
  - Fix sorting chevron to not display on top of filter icon when column name is same size as column - DONE
  - Examine headers and fix DOM structure - DONE
  - Remove unused regex values & update 'inputTypes' to use validateCharacter function - DONE
+ - Find out what the hell 'groupingStatusChanged' is used for - DONE
  - Ensure all types are implemented across the board (number, time, date, boolean, string)
  - Add server paging + data saving/filtering/sorting
  - Add "transform" function to be called for the cell data in a column
@@ -78,9 +79,7 @@
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
- - Find out what the hell 'groupingStatusChanged' is used for.
  - Update sorting to handle multi-sort
- - Add try/catch to compareDateByTypes function
  */
 /*exported grid*/
 /**
@@ -124,10 +123,6 @@ var grid = (function _grid($) {
             createGridInstanceMethods(gridElem, id);
 
             (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
-
-            //if (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') validator.setAdditionalEvents(['blur', 'change']);
-            //else gridData.useValidator = false;
-
             gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function';
 
             if (gridData.constructor === Array) createGridColumnsFromArray(gridData, gridElem);
@@ -250,7 +245,7 @@ var grid = (function _grid($) {
                         if (typeof funcs !== 'function' && funcs.constructor !== Array) return false;
                         if (typeof funcs === 'function') funcs = [funcs];
                         if (~events.indexOf(evt)) {
-                            storage.grids[gridId].events[evt].concat(funcs);
+                            storage.grids[gridId].events[evt] = storage.grids[gridId].events[evt].concat(funcs);
                             return true;
                         }
                         return false;
@@ -1100,7 +1095,7 @@ var grid = (function _grid($) {
                     saveCellEditData(input);
                 });
             }
-            callGridEventHandlers(gridData.events.beforeDataBind, gridData.grid, null);
+            callGridEventHandlers(gridData.events.beforeCellEdit, gridData.grid, null);
         });
     }
 
@@ -1780,7 +1775,7 @@ var grid = (function _grid($) {
         var targetCol = $(e.currentTarget);
         var id = targetCol.parents('.grid-header-div').length ? targetCol.parents('.grid-wrapper').data('grid_id') : null;
         var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
-        if (!id || !droppedId) return;  //atleast one of the involved dom elements is not a grid column
+        if (!id || !droppedId) return;  //at least one of the involved dom elements is not a grid column
         if (id !== droppedId) return;   //can't swap columns from different grids
         if (storage.grids[id].updating) return;		//can't resort columns if grid is updating
         if (droppedCol[0].cellIndex === targetCol[0].cellIndex)
@@ -1914,11 +1909,10 @@ var grid = (function _grid($) {
                     }
                     else {
                         //...otherwise, remove it from the collection of sorted columns
-                        elem[0].dataset.order = 'default';
                         storage.grids[id].sortedOn =  storage.grids[id].sortedOn.filter(function filterSortedColumns(item) {
                             return item.field !== field;
                         });
-                        elem.find('.sortSpan').removeClass('sort-desc').removeClass('sort-asc');
+                        elem.find('.sortSpan').remove();
                         storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
                     }
                 }
@@ -2345,9 +2339,15 @@ var grid = (function _grid($) {
         return result;
     }
 
+    /**
+     * Calls all registered event handlers for a collection of events
+     * @param {Array} events - A collection of events to
+     * @param {Object} context - An object, array, or function to set as the context of the event handler
+     * @param  {Object} param - An object that contains metadata about the event
+     */
     function callGridEventHandlers(events, context, param) {
         if (events.length) {
-            for (var x = 0; x < events.pageRequested.length; x++)
+            for (var x = 0; x < events.length; x++)
                 events[x].call(context, param);
         }
     }
@@ -2360,6 +2360,14 @@ var grid = (function _grid($) {
         return -1;
     }
 
+    /**
+     * Formats the text in a grid cell - uses both column formats and column templates if provided
+     * @param {number} gridId - The id of the grid instance
+     * @param {string} column - The column of the grid that this data will be displayed in
+     * @param {string|number} value - The value to be formatted
+     * @returns {string|number} - Returns a formatted value if a column format and/or template were provided;
+     * otherwise, returns the value
+     */
     function getFormattedCellText(gridId, column, value) {
         var text;
         switch(storage.grids[gridId].columns[column].type) {
@@ -2424,6 +2432,12 @@ var grid = (function _grid($) {
         return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
     }
 
+    /**
+     * Validates that a given character is allowed with the given data type
+     * @param {number} code - The character's key code
+     * @param {string} dataType - The type of data to check for character validity
+     * @returns {string|number|null} - Returns the tested character if valid or null if not
+     */
     function validateCharacter(code, dataType) {
         var key = String.fromCharCode(code),
             newVal = insertKey($(this), key),
@@ -2434,18 +2448,29 @@ var grid = (function _grid($) {
         return newVal;
     }
 
+    /**
+     * Compares two values for equality after coercing both to the provided type
+     * @param {string|number} val1 - The first value to check for equality
+     * @param {string|number} val2 - The second value to check for equality
+     * @param {string} dataType - The type of data contained in the two values
+     * @returns {boolean} - Indicated equality or lack thereof
+     */
     function compareValuesByType (val1, val2, dataType) {
         switch (dataType) {
             case 'string':
                 return val1.toString() === val2.toString();
             case 'number':
-                return parseFloat(val1) === parseFloat(val2);
+                return parseFloat(val1.toString()) === parseFloat(val2.toString());
             case 'boolean':
                 /*jshint -W018*/    //have to turn off jshint check for !! operation because there's not built-in way to turn it off in the config file and
                 //like most js devs, those of jshint aren't the most savvy JSers
                 return !!val1 === !!val2;
             case 'date':
-                return new Date(val1) === new Date(val2);
+                var date1 = new Date(val1),
+                    date2 = new Date(val2);
+                if (typeof date1 === 'object' && typeof date2 === 'object' && date1 !== date1 && date2 !== date2)
+                    return true;    //invalid date values - creating a date from both values resulted in either NaN or 'Invalid Date', neither of which are equal to themselves.
+                return date1 === date2;
             case 'time':
                 var value1 = getNumbersFromTime(val1);
                 var value2 = getNumbersFromTime(val2);
@@ -2478,6 +2503,13 @@ var grid = (function _grid($) {
 
     aggregates = { count: 'Count: ', average: 'Avg: ', max: 'Max: ', min: 'Min: ', total: 'Total: ' };
 
+    /**
+     * Given a time of day value, will return the value formatted as specified for a given column of the grid
+     * @param {string} time - A string representing a time of day (eg '9:45:56 AM' or '17:36:43.222')
+     * @param {string} column - The column of the grid that provided the format
+     * @param {string|number} gridId - The id value of the grid this operation is being performed on
+     * @returns {string} - Returns the time formatted as specified for the given grid column
+     */
     function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
             formattedTime,
@@ -2508,24 +2540,32 @@ var grid = (function _grid($) {
             formattedTime = timeArray[0] + ':' + timeArray[1] + ':' + timeArray[2] + ' ' + timeArray[3];
             return timeArray.length === 3 ? formattedTime + ' ' + timeArray[3] : formattedTime;
         }
-
         return '';
     }
 
+    /**
+     * Takes a date value and a format and will return the date in the form provided
+     * @param {string} date - The date value to be formatted
+     * @param {string} format - The format that the date value should be in
+     * @returns {string|Date} - Returns a formatted date if able, otherwise will return a default JS date using the date provided as the seed
+     */
     function formatDateCellData(date, format) {
         var parseDate = Date.parse(date);
+        var jsDate = new Date(parseDate);
         if (!isNaN(parseDate) && format) {
-            var tempDate = new Date(parseDate);
-            var dd = tempDate.getUTCDate();
-            var mm = tempDate.getUTCMonth() + 1;
-            var yy = tempDate.getUTCFullYear();
-            return format.replace('mm', mm).replace('dd', dd).replace('yyyy', yy);
+            return format.replace('mm', (jsDate.getUTCMonth() + 1).toString()).replace('dd', jsDate.getUTCDate().toString()).replace('yyyy', jsDate.getUTCFullYear().toString());
         }
-        else if (!isNaN(parseDate))
-            return new Date(parseDate);
+        else if (!isNaN(parseDate))     //TODO: ensure this will work when parseDate is NaN - seems like feeding NaN to the Date func would not return a valid date
+            return new Date(jsDate);
         return '';
     }
 
+    /**
+     * Takes a number and a format string and will format the number according to the formatting rules
+     * @param {string|number} num - The number to be formatted before it is displayed in the grid
+     * @param {string} format - The format string that specifies how to format the number
+     * @returns {string|number} - Returns either the number it received if unable to properly format, or a string value of the formatted number
+     */
     function formatNumericCellData(num, format) {
         if (!format) return num;
         var formatSections = [];
@@ -2598,6 +2638,11 @@ var grid = (function _grid($) {
         return num;
     }
 
+    /**
+     * Given a format, this function will ensure it is valid and strip it of all invalid characters
+     * @param {string} format - A string denoting the format a value displayed in the grid should have.
+     * @returns {object} - Returns an object with the validated format string and metadata about how the value to be formatted should be treated
+     */
     function verifyFormat(format) {
         var formatSections = [];
         format = format.replace(/[^0#,.]/g , '');
@@ -2630,34 +2675,34 @@ var grid = (function _grid($) {
         };
     }
 
+    /**
+     * Given a format string for either currency or percent, will normalize it as a decimal format
+     * @param {string} format - A string denoting the currency or percent a value in a field should take.
+     * @returns {object} - Returns an object containing the normalized format string, as well as metadata on how to treat the value to be formatted.
+     */
     function createCurrencyOrPercentFormat(format) {
-        var charStripper = '\\d{0,2}]';
-        var cOrP = ~format.indexOf('P') ? 'P' : 'C';
+        var charStripper = '\\d{0,2}]',
+            cOrP = ~format.indexOf('P') ? 'P' : 'C';
         format = format.split(cOrP);
-        var wholeNums = verifyFormat(format[0]);
-        var re = new RegExp('[^' + cOrP + charStripper, 'g');
+        var wholeNums = verifyFormat(format[0]),
+            re = new RegExp('[^' + cOrP + charStripper, 'g');
         format = format[1].replace(re, '');
-        var numDecimals = 2,
-            newFormat;
+        var numDecimals = 2, newFormat;
         if (format.length)
             numDecimals = parseInt(format.substring(0,2));
 
-        if (wholeNums.value && numDecimals)
-            newFormat = wholeNums.value + '.';
-        else if (wholeNums.value)
-            newFormat = wholeNums.value;
+        if (wholeNums.value)
+            newFormat = numDecimals ? wholeNums.value + '.' : wholeNums.value;
         else if (numDecimals && cOrP === 'C')
             newFormat = '0.';
         else if (numDecimals && cOrP === 'P')
             newFormat = '00.';
-        else
-            newFormat = cOrP === 'C' ? '0' : '00';
+        else newFormat = cOrP === 'C' ? '0' : '00';
 
         for (var i = 0; i < numDecimals; i++) {
             newFormat += '0';
         }
-        return {
-            value: newFormat,
+        return { value: newFormat,
             shouldInsertSeparators: wholeNums.shouldInsertSeparators,
             alterer: cOrP == 'C' ? null : x100,
             prependedSymbol: cOrP === 'C' ? '$' : '',
@@ -2665,10 +2710,21 @@ var grid = (function _grid($) {
         };
     }
 
+    /**
+     * Multiples a number by 100
+     * @param {number} val - the number to by multiplied by 100
+     * @returns {number} - returns the multiple of the number and 100
+     */
     function x100(val) {
         return val * 100;
     }
 
+    /**
+     * Rounds a number to a given decimal place
+     * @param {number} val - the number to be rounded
+     * @param {number} dec - the number of decimals to retain after rounding
+     * @returns {number} - Returns the value rounded to the nth decimal place
+     */
     function roundNumber(val, dec) {
         var pow = Math.pow(10, dec || 0);
         return Math.round((val*pow))/pow;
