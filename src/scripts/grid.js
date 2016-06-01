@@ -164,7 +164,7 @@ var grid = (function _grid($) {
             {
                 /**
                  * Returns the data from whichever grid cell is active
-                 * @method _getActiveCellData
+                 * @method activeCellData
                  * @for Grid DOM element
                  * @protected
                  * @readonly
@@ -188,7 +188,7 @@ var grid = (function _grid($) {
             {
                 /**
                  * Returns the row index from whichever grid cell is active
-                 * @method _getSelectedRow
+                 * @method selectedRow
                  * @for Grid DOM element
                  * @protected
                  * @readonly
@@ -219,7 +219,7 @@ var grid = (function _grid($) {
                  * @type object
                  * @returns {Object|null} - {field: 'grid column name', columnIndex: 'column index'}
                  */
-                get: function _getSelectedColumn() {
+                get: function selectedColumn() {
                     var cell = gridElem.find('.active-cell');
                     if (!cell.length)
                         return null;
@@ -234,7 +234,7 @@ var grid = (function _grid($) {
                 'bindEvents': {
                     /**
                      * Binds event handlers to events
-                     * @method _bindGridEventss
+                     * @method bindEvents
                      * @for Grid DOM element
                      * @protected
                      * @param {string} evt - a string representing an event that the grid can cause
@@ -256,7 +256,7 @@ var grid = (function _grid($) {
                 'unbindEvents': {
                     /**
                      * Unbinds an event handler from the specified event
-                     * @method _unbindEvents
+                     * @method unbindEvents
                      * @for Grid DOM element
                      * @protected
                      * @param {string} evt - a string representing an event that the grid can cause
@@ -284,7 +284,7 @@ var grid = (function _grid($) {
                 'removeAllEventHandlers': {
                     /**
                      * Removes all registered event handlers from grid events
-                     * @method _removeAllEventHandlers
+                     * @method removeAllEventHandlers
                      * @for Grid DOM element
                      * @protected
                      */
@@ -299,7 +299,7 @@ var grid = (function _grid($) {
                 'getHandledEvents': {
                     /**
                      * Returns all events for which a handler has been registered
-                     * @method _getHandledEvents
+                     * @method getHandledEvents
                      * @for Grid DOM element
                      * @protected
                      * @readonly
@@ -321,7 +321,7 @@ var grid = (function _grid($) {
                 'getAvailableEvents': {
                     /**
                      * Returns a list of the events that the grid can cause
-                     * @method _getAvailableEvents
+                     * @method getAvailableEvents
                      * @for Grid DOM element
                      * @protected
                      * @readonly
@@ -338,7 +338,7 @@ var grid = (function _grid($) {
                 'getAggregates': {
                     /**
                      * Returns the aggregations for all columns
-                     * @method _getAggregates
+                     * @method getAggregates
                      * @for Grid DOM element
                      * @protected
                      * @readonly
@@ -355,7 +355,7 @@ var grid = (function _grid($) {
                 'getCurrentPageData': {
                     /**
                      * Returns the grid's page data.
-                     * @method _getCurrentPageData
+                     * @method getCurrentPageData
                      * @for Grid DOM element
                      * @protected
                      * @readOnly
@@ -412,7 +412,7 @@ var grid = (function _grid($) {
                 'getCurrentDataSourceData': {
                     /**
                      * Returns the grid's dataSource data
-                     * @method _getCurrentDataSourceData
+                     * @method getCurrentDataSourceData
                      * @for Grid DOM element
                      * @protected
                      * @param {int} index - The index of the dataSource.data to return the data for.
@@ -440,7 +440,7 @@ var grid = (function _grid($) {
                 'updatePageData': {
                     /**
                      * Updates the grid's page data; will also update the dataSource
-                     * @method _updatePageData
+                     * @method updatePageData
                      * @for Grid DOM element
                      * @protected
                      * @param {object} data
@@ -463,7 +463,7 @@ var grid = (function _grid($) {
                 'updateRowData': {
                     /**
                      * Updates the specified grid's row's data via the .index property
-                     * @method _updateRowData
+                     * @method updateRowData
                      * @for Grid DOM element
                      * @protected
                      * @param {object} rowData
@@ -499,7 +499,7 @@ var grid = (function _grid($) {
                 'updateCellData': {
                     /**
                      * Updates the specified grid's cell's data via the .index and .field properties
-                     * @method _updateCellData
+                     * @method updateCellData
                      * @for Grid DOM element
                      * @protected
                      * @param {object} cellData
@@ -557,7 +557,7 @@ var grid = (function _grid($) {
                 'destroy': {
                     /**
                      * Destroys the grid widget - includes the dataSource and the DOM element
-                     * @method _destroy
+                     * @method destroy
                      * @for Grid DOM element
                      * @protected
                      */
@@ -599,18 +599,13 @@ var grid = (function _grid($) {
         if (dataSource && typeof dataSource.data === 'object')
             callback(null, { data: dataSource.data, rowCount: dataSource.rowCount });
         else if (typeof dataSource.get == 'function') {
-            dataSource.get({
-                pageSize: 25,
-                pageNum: 1
-            }, function gridDataCallback(data) {
-                if (data)
-                    callback(null, data);
-                else
-                    callback(true, {});
+            dataSource.get({ pageSize: 25, pageNum: 1 },
+                function gridDataCallback(data) {
+                if (data) callback(null, data);
+                else callback(true, {});
             });
         }
-        else
-            callback(true, {});
+        else callback(true, {});
     }
 
     /**
@@ -686,11 +681,7 @@ var grid = (function _grid($) {
                     oldData.data[i][col] = newData[i][col];
                 }
                 if (!oldData.columns[col]) {
-                    oldData.columns[col] = {
-                        field: col,
-                        title: col,
-                        index: Object.keys(oldData.columns).length
-                    };
+                    oldData.columns[col] = { field: col, title: col, index: Object.keys(oldData.columns).length };
                 }
             }
         }
@@ -792,7 +783,7 @@ var grid = (function _grid($) {
      * @for grid
      * @private
      * @param {object} gridData
-     * @param {integer} gridId
+     * @param {number} gridId
      * @returns {object}
      */
     function buildAggregatesRow(gridData, gridId) {
@@ -1018,8 +1009,7 @@ var grid = (function _grid($) {
             var gridContent = storage.grids[id].grid.find('.grid-content-div');
             var gridData = storage.grids[id];
             if (e.target !== e.currentTarget) return;
-            if (gridContent.find('.invalid').length)
-                return;
+            if (gridContent.find('.invalid').length) return;
             var cell = $(e.currentTarget);
             cell.text('');
 
@@ -1104,8 +1094,7 @@ var grid = (function _grid($) {
             var gridContent = storage.grids[id].grid.find('.grid-content-div');
             var gridData = storage.grids[id];
             if (e.target !== e.currentTarget) return;
-            if (gridContent.find('.invalid').length)
-                return;
+            if (gridContent.find('.invalid').length) return;
             var cell = $(e.currentTarget);
             cell.text('');
             var index = cell.parents('tr').index();
@@ -1138,10 +1127,7 @@ var grid = (function _grid($) {
             select[0].focus();
 
             if (gridValidation) select.addClass('inputValidate');
-
-            if (gridValidation && dataAttributes !== '') {
-                attachValidationListener(select[0]);
-            }
+            if (gridValidation && dataAttributes !== '') attachValidationListener(select[0]);
             else {
                 select.on('blur', function cellEditBlurHandler() {
                     saveCellSelectData(select);
@@ -1156,14 +1142,10 @@ var grid = (function _grid($) {
             Object.defineProperty(
                 grid,
                 'validation',
-                {
-                    value: {},
-                    writable: false
-                }
+                { value: {}, writable: false }
             );
         }
-        if (columnValidation.required)
-            dataAttributes += 'data-required';
+        if (columnValidation.required) dataAttributes += 'data-required';
         if (columnValidation.customRules) {
             dataAttributes += ' data-customrules="';
             for (var rule in columnValidation.customRules) {
@@ -1172,11 +1154,8 @@ var grid = (function _grid($) {
                     Object.defineProperty(
                         grid.validation,
                         rule,
-                        {
-                            value: columnValidation.customRules[rule],
-                            writable: false,
-                            configurable: false
-                        });
+                        { value: columnValidation.customRules[rule], writable: false, configurable: false }
+                    );
                 }
             }
             dataAttributes += '"';
@@ -1233,11 +1212,9 @@ var grid = (function _grid($) {
         contentTable.css('width', headerTable[0].clientWidth);
 
         contentCols.each(function colIterationCallback(idx, val) {
-            if ($(val).hasClass('group_col'))
-                return;
+            if ($(val).hasClass('group_col')) return;
             var width;
-            if (width = $(headerCols[idx]).width())
-                $(val).css('width', width);
+            if (width = $(headerCols[idx]).width()) $(val).css('width', width);
         });
     }
 
@@ -1261,9 +1238,7 @@ var grid = (function _grid($) {
                     attachValidationListener(elem);
                 }
             }
-            else {
-                attachValidationListener(elem);
-            }
+            else attachValidationListener(elem);
         });
     }
 
@@ -1343,8 +1318,7 @@ var grid = (function _grid($) {
 
     function createCellEditSaveDiv(gridData, gridElem) {
         var id = gridElem.find('.grid-wrapper').data('grid_id');
-        if ($('#grid_' + id + '_toolbar').length)	//if the toolbar has already been created, don't create it again.
-            return;
+        if ($('#grid_' + id + '_toolbar').length) return;	//if the toolbar has already been created, don't create it again.
 
         var saveBar = $('<div id="grid_' + id + '_toolbar" class="toolbar clearfix" data-grid_id="' + id + '"></div>').prependTo(gridElem);
         var saveAnchor = $('<a href="#" class="toolbarAnchor saveToolbar"></a>').appendTo(saveBar);
@@ -1380,12 +1354,10 @@ var grid = (function _grid($) {
                         var tmpModel = cloneGridData(storage.grids[id].dataSource.data[dirtyCells[i].parents('tr').index()]);
                         var tmpMap = tmpModel._initialRowIndex;
                         var idx = existsInPutRequest(putRequestModels, tmpModel);
-                        if (~idx) {
+                        if (~idx)
                             putRequestModels[idx].dirtyFields.push(dirtyCells[i].data('field'));
-                        }
-                        else {
+                        else
                             putRequestModels.push({ cleanData: storage.grids[id].originalData[tmpMap], dirtyData: tmpModel, dirtyFields: [dirtyCells[i].data('field')] });
-                        }
                     }
 
                     for (i = 0; i < putRequestModels.length; i++) {
@@ -1602,9 +1574,7 @@ var grid = (function _grid($) {
                         filter.removeClass('hiddenFilter');
                         currFilter = $(val);
                     }
-                    else {
-                        filter.addClass('hiddenFilter');
-                    }
+                    else filter.addClass('hiddenFilter');
                 });
             }
 
@@ -1666,8 +1636,7 @@ var grid = (function _grid($) {
         button = $('<input type="button" value="Filter" class="filterButton button" data-field="' + field + '"/>').appendTo(filterDiv);
         resetButton.on('click', resetButtonClickHandler);
         button.on('click', filterButtonClickHandler);
-        if (filterInput && type !=='time' && type !== 'date')
-            filterInputValidation(filterInput);
+        if (filterInput && type !=='time' && type !== 'date') filterInputValidation(filterInput);
     }
 
     function filterInputValidation(input) {
@@ -1723,13 +1692,10 @@ var grid = (function _grid($) {
             }
         }
 
-        if (errors.length)
-            errors.remove();
-
+        if (errors.length) errors.remove();
         if (value === '' && gridData.filterVal === '') return;
 
         filterDiv.addClass('hiddenFilter');
-
         gridData.pageRequest.filteredOn = $(this).data('field');
         gridData.pageRequest.filterVal = value;
         gridData.pageRequest.filterType = selected;
@@ -1778,10 +1744,8 @@ var grid = (function _grid($) {
         if (!id || !droppedId) return;  //at least one of the involved dom elements is not a grid column
         if (id !== droppedId) return;   //can't swap columns from different grids
         if (storage.grids[id].updating) return;		//can't resort columns if grid is updating
-        if (droppedCol[0].cellIndex === targetCol[0].cellIndex)
-            return;
-        if (droppedCol[0].id === 'sliderDiv')
-            return;
+        if (droppedCol[0].cellIndex === targetCol[0].cellIndex) return;
+        if (droppedCol[0].id === 'sliderDiv') return;
 
         var parentDiv = targetCol.parents('.grid-header-div');
         var parentDivId = parentDiv.data('grid_header_id');
@@ -1796,17 +1760,13 @@ var grid = (function _grid($) {
 
         var droppedEvents = $._data(droppedCol[0], 'events');
         var targetEvents = $._data(targetCol[0], 'events');
-        if (droppedEvents.click)
-            setSortableClickListener(droppedClone);
+        if (droppedEvents.click) setSortableClickListener(droppedClone);
         setDragAndDropListeners(droppedClone);
-        if (targetEvents.click)
-            setSortableClickListener(targetClone);
+        if (targetEvents.click) setSortableClickListener(targetClone);
         setDragAndDropListeners(targetClone);
 
-        if (droppedClone.find('.filterSpan').length)
-            attachFilterListener(droppedClone.find('.filterSpan'));
-        if (targetClone.find('.filterSpan').length)
-            attachFilterListener(targetClone.find('.filterSpan'));
+        if (droppedClone.find('.filterSpan').length) attachFilterListener(droppedClone.find('.filterSpan'));
+        if (targetClone.find('.filterSpan').length) attachFilterListener(targetClone.find('.filterSpan'));
 
         droppedCol.replaceWith(targetClone);
         targetCol.replaceWith(droppedClone);
@@ -1829,12 +1789,8 @@ var grid = (function _grid($) {
             var droppedColSum = null,
                 targetColSum = null;
             sumRow.children().each(function iterateSumRowCellsCallback(idx, val) {
-                if ($(val).data('field') === droppedCol.data('field')) {
-                    droppedColSum = $(val);
-                }
-                else if ($(val).data('field') === targetCol.data('field')) {
-                    targetColSum = $(val);
-                }
+                if ($(val).data('field') === droppedCol.data('field')) droppedColSum = $(val);
+                else if ($(val).data('field') === targetCol.data('field')) targetColSum = $(val);
             });
             if (droppedColSum.length && targetColSum.length) {
                 var droppedColSumClone = droppedColSum.clone(true, true);
@@ -1895,8 +1851,7 @@ var grid = (function _grid($) {
             var field = elem.data('field'),
                 foundColumn = false;
 
-            if (storage.grids[id].groupedBy && storage.grids[id].groupedBy === field)   //can't sort on a grouped field
-                return;
+            if (storage.grids[id].groupedBy && storage.grids[id].groupedBy === field) return;   //can't sort on a grouped field
 
             for (var i = 0; i < storage.grids[id].sortedOn.length; i++) {
                 //if we find the field in the list of sorted columns....
@@ -2094,9 +2049,8 @@ var grid = (function _grid($) {
                     gridData.grid.find('.grid-footer-div').empty();
                     createGridFooter(gridData, gridData.grid);
                 }
-                if (gridData.pageRequest.eventType === 'filter' && gridData.summaryRow && gridData.summaryRow.positionAt === 'top') {
+                if (gridData.pageRequest.eventType === 'filter' && gridData.summaryRow && gridData.summaryRow.positionAt === 'top')
                     buildHeaderAggregations(gridData, id);
-                }
                 gridData.pageRequest = {};
             }
         }
@@ -2175,9 +2129,8 @@ var grid = (function _grid($) {
             return;
         }
 
-        if (requestObj.sortedOn.length && !requestObj.groupedBy) {
+        if (requestObj.sortedOn.length && !requestObj.groupedBy)
             fullGridData = sortGridData(requestObj.sortedOn, fullGridData || cloneGridData(storage.grids[id].originalData), id);
-        }
         storage.grids[id].alteredData = fullGridData;
         limitPageData(requestObj, fullGridData, callback);
     }
@@ -2266,7 +2219,7 @@ var grid = (function _grid($) {
                 var sortedGridData = [];
                 var itemsToSort = [];
                 for (var j = 0; j < gridData.length; j++) {
-                    if (!itemsToSort.length || compareValuesByType(itemsToSort[0][sortedItems[i - 1].field], gridData[j][sortedItems[i - 1].field], storage.grids[gridId].columns[sortedItems[i - 1].field].type, gridId))
+                    if (!itemsToSort.length || compareValuesByType(itemsToSort[0][sortedItems[i - 1].field], gridData[j][sortedItems[i - 1].field], storage.grids[gridId].columns[sortedItems[i - 1].field].type))
                         itemsToSort.push(gridData[j]);
                     else {
                         if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
@@ -2274,9 +2227,8 @@ var grid = (function _grid($) {
                         itemsToSort.length = 0;
                         itemsToSort.push(gridData[j]);
                     }
-                    if (j === gridData.length - 1) {
+                    if (j === gridData.length - 1)
                         sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string'));
-                    }
                 }
                 gridData = sortedGridData;
             }
@@ -2401,8 +2353,7 @@ var grid = (function _grid($) {
 
     function getNumbersFromTime(val) {
         var re = new RegExp(dataTypes.time);
-        if (!re.test(val))
-            return [];
+        if (!re.test(val)) return [];
         var timeGroups = re.exec(val);
         var hours = timeGroups[1] ? +timeGroups[1] : +timeGroups[6];
         var minutes, seconds, meridiem, retVal = [];
@@ -2422,8 +2373,7 @@ var grid = (function _grid($) {
         retVal.push(hours);
         retVal.push(minutes);
         retVal.push(seconds);
-        if (meridiem)
-            retVal.push(meridiem);
+        if (meridiem) retVal.push(meridiem);
         return retVal;
     }
 
@@ -2442,9 +2392,7 @@ var grid = (function _grid($) {
         var key = String.fromCharCode(code),
             newVal = insertKey($(this), key),
             re = new RegExp(dataTypes[dataType]);
-        if (!re.test(newVal)) {
-            return null;
-        }
+        if (!re.test(newVal)) return null;
         return newVal;
     }
 
@@ -2552,9 +2500,8 @@ var grid = (function _grid($) {
     function formatDateCellData(date, format) {
         var parseDate = Date.parse(date);
         var jsDate = new Date(parseDate);
-        if (!isNaN(parseDate) && format) {
+        if (!isNaN(parseDate) && format)
             return format.replace('mm', (jsDate.getUTCMonth() + 1).toString()).replace('dd', jsDate.getUTCDate().toString()).replace('yyyy', jsDate.getUTCFullYear().toString());
-        }
         else if (!isNaN(parseDate))     //TODO: ensure this will work when parseDate is NaN - seems like feeding NaN to the Date func would not return a valid date
             return new Date(jsDate);
         return '';
@@ -2612,8 +2559,7 @@ var grid = (function _grid($) {
                         wholeNums.push('0');
                         charsSinceComma++;
                     }
-                    else
-                        break;
+                    else break;
                 }
             }
             wholeNums = wholeNums.reverse().join('');
@@ -2626,8 +2572,7 @@ var grid = (function _grid($) {
                         fractionNums.push(dataSections[1].charAt(i));
                     else if (formatSections[1].charAt(i) === '0')
                         fractionNums.push('0');
-                    else
-                        break;
+                    else break;
                 }
             }
             fractionNums = fractionNums.join('');
@@ -2736,8 +2681,8 @@ var grid = (function _grid($) {
     }
 
     function getInputSelection(el) {		//Finds the cursor position in the input string - includes highlighted ranges.
-        var start = 0, end = 0, normalizedValue, range,
-            textInputRange, len, endRange;
+        var start = 0, end = 0,
+            normalizedValue, range, textInputRange, len, endRange;
 
         if (typeof el.selectionStart == 'number' && typeof el.selectionEnd == 'number') {
             start = el.selectionStart;
@@ -2760,16 +2705,12 @@ var grid = (function _grid($) {
                 endRange = el.createTextRange();
                 endRange.collapse(false);
 
-                if (textInputRange.compareEndPoints('StartToEnd', endRange) > -1) {
-                    start = end = len;
-                }
+                if (textInputRange.compareEndPoints('StartToEnd', endRange) > -1) start = end = len;
                 else {
                     start = -textInputRange.moveStart('character', -len);
                     start += normalizedValue.slice(0, start).split('\n').length - 1;
 
-                    if (textInputRange.compareEndPoints('EndToEnd', endRange) > -1) {
-                        end = len;
-                    }
+                    if (textInputRange.compareEndPoints('EndToEnd', endRange) > -1) end = len;
                     else {
                         end = -textInputRange.moveEnd('character', -len);
                         end += normalizedValue.slice(0, end).split('\n').length - 1;
@@ -2777,7 +2718,6 @@ var grid = (function _grid($) {
                 }
             }
         }
-
         return { start: start, end: end };
     }
 
