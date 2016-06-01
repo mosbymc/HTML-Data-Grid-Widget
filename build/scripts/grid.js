@@ -81,7 +81,6 @@
  - Find out what the hell 'groupingStatusChanged' is used for.
  - Update sorting to handle multi-sort
  - Add try/catch to compareDateByTypes function
- - Figure out why images are failing to show
  */
 /*exported grid*/
 /**
@@ -1449,6 +1448,7 @@ var grid = (function _grid($) {
         if (storage.grids[id].updating) return;
         var colSelector = $(this).parents('.toolbar').find('.group_select'),
             directionSelector = $(this).parents('.toolbar').find('.group_dir_select');
+        if (colSelector.val() === 'none' && (!storage.grids[id].groupedBy || storage.grids[id].groupedBy === 'none')) return;
         if (Object.keys(storage.grids[id].columns).length === storage.grids[id].grid.find('colgroup').first().find('col').length && colSelector.val() !== 'none') {
             if (!storage.grids[id].groupedBy)
                 storage.grids[id].groupingStatusChanged = true;
@@ -1459,7 +1459,7 @@ var grid = (function _grid($) {
             storage.grids[id].grid.find('.grid-headerRow').prepend('<th class="group_spacer">&nbsp</th>');
             storage.grids[id].grid.find('.summary-row-header').prepend('<td class="group_spacer">&nbsp</td>');
         }
-        else if (colSelector.value === 'none') {
+        else if (colSelector.val() === 'none') {
             storage.grids[id].groupingStatusChanged = true;
             storage.grids[id].grid.find('colgroup').find('.group_col').remove();
             storage.grids[id].grid.find('.group_spacer').remove();
@@ -2167,20 +2167,17 @@ var grid = (function _grid($) {
 
         if (requestObj.groupedBy) {
             var groupedData = sortGridData([{ field: requestObj.groupedBy, sortDirection: requestObj.groupSortDirection }], fullGridData || cloneGridData(storage.grids[id].originalData), id);
-            groupedData = groupColumns(groupedData, requestObj.groupedBy);
             if (requestObj.sortedOn.length) {
                 var sortedGroup = [];
                 for (var group in groupedData.groupings) {
-                    //sortedGroup = sortedGroup.concat(mergeSort(groupedData.groupings[group], requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || 'string'));
                     sortedGroup = sortedGroup.concat(sortGridData(requestObj.sortedOn, groupedData.groupings[group] || cloneGridData(storage.grids[id].originalData), id));
                 }
-                //if (requestObj.sortedBy === 'asc') sortedGroup.reverse();
                 storage.grids[id].alteredData = fullGridData;
                 limitPageData(requestObj, sortedGroup, callback);
                 return;
             }
-            storage.grids[id].alteredData = fullGridData;
-            limitPageData(requestObj, groupedData.groupedData, callback);
+            storage.grids[id].alteredData = groupedData;
+            limitPageData(requestObj, groupedData, callback);
             return;
         }
 
@@ -2265,23 +2262,6 @@ var grid = (function _grid($) {
             case 'nct':
                 return !~val.toLowerCase().indexOf(base.toLowerCase());
         }
-    }
-
-    function groupColumns(data, field) {
-        var groupings = {};
-        for (var i = 0; i < data.length; i++) {
-            if (groupings[data[i][field]])
-                groupings[data[i][field]].push(data[i]);
-            else
-                groupings[data[i][field]] = [data[i]];
-        }
-
-        var groupedData = [];
-        for (var group in groupings) {
-            groupedData = groupedData.concat(groupings[group]);
-        }
-
-        return { groupings: groupings, groupedData: groupedData };
     }
 
     function sortGridData (sortedItems, gridData, gridId) {

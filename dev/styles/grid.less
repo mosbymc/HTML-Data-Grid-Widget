@@ -13,7 +13,7 @@
 .loading {
   -webkit-animation: loading 1s infinite linear;
   animation: loading 1s infinite linear;
-  background-image: url('../images/group-down-arrow.svg');
+  background-image: url('../images/arrowDown.svg');
   z-index: 500;
   width: 10px;
   height: 10px;
@@ -45,7 +45,7 @@
 }
 
 .loading:before {
-  background-image: url('../images/group-down-arrow.svg');
+  background-image: url('../images/arrowDown.svg');
 }
 
 .grid-wrapper {
@@ -154,16 +154,16 @@
 }
 
 .group-asc {
-  background-image: url('../images/group-up-arrow.svg');
+  background: url('../images/arrowUp.svg') no-repeat;
 }
 
 .group-desc {
-  background-image: url('../images/group-down-arrow.svg');
+  background: url('../images/arrowDown.svg') no-repeat;
 }
 
 .sortSpan {
   margin-left: 7px;
-  background: @black no-repeat;
+  /*background: @black no-repeat;*/
   border-collapse: separate;
   border-color: @black;
   box-sizing: content-box;
@@ -190,11 +190,11 @@
 }
 
 .sort-desc {
-  background-image: url('../images/down-arrow.png');
+  background: url('../images/down-arrow.png') no-repeat;
 }
 
 .sort-asc {
-  background-image: url('../images/up-arrow.png');
+  background: url('../images/up-arrow.png') no-repeat;
 }
 
 .filterSpan {

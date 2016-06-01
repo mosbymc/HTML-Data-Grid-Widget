@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.14</p>
+      <p class="stat">55.12</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2736</p>
+      <p class="stat">2717</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">184.31</p>
+      <p class="stat">183.61</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">49.56</p>
+      <p class="stat">49.34</p>
     </div>
   </div>
 </div>
@@ -172,7 +172,6 @@
  - Find out what the hell &#039;groupingStatusChanged&#039; is used for.
  - Update sorting to handle multi-sort
  - Add try/catch to compareDateByTypes function
- - Figure out why images are failing to show
  */
 /*exported grid*/
 /**
@@ -1540,6 +1539,7 @@ var grid = (function _grid($) {
         if (storage.grids[id].updating) return;
         var colSelector = $(this).parents(&#039;.toolbar&#039;).find(&#039;.group_select&#039;),
             directionSelector = $(this).parents(&#039;.toolbar&#039;).find(&#039;.group_dir_select&#039;);
+        if (colSelector.val() === &#039;none&#039; &amp;&amp; (!storage.grids[id].groupedBy || storage.grids[id].groupedBy === &#039;none&#039;)) return;
         if (Object.keys(storage.grids[id].columns).length === storage.grids[id].grid.find(&#039;colgroup&#039;).first().find(&#039;col&#039;).length &amp;&amp; colSelector.val() !== &#039;none&#039;) {
             if (!storage.grids[id].groupedBy)
                 storage.grids[id].groupingStatusChanged = true;
@@ -1550,7 +1550,7 @@ var grid = (function _grid($) {
             storage.grids[id].grid.find(&#039;.grid-headerRow&#039;).prepend(&#039;&lt;th class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/th&gt;&#039;);
             storage.grids[id].grid.find(&#039;.summary-row-header&#039;).prepend(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
         }
-        else if (colSelector.value === &#039;none&#039;) {
+        else if (colSelector.val() === &#039;none&#039;) {
             storage.grids[id].groupingStatusChanged = true;
             storage.grids[id].grid.find(&#039;colgroup&#039;).find(&#039;.group_col&#039;).remove();
             storage.grids[id].grid.find(&#039;.group_spacer&#039;).remove();
@@ -2258,20 +2258,17 @@ var grid = (function _grid($) {
 
         if (requestObj.groupedBy) {
             var groupedData = sortGridData([{ field: requestObj.groupedBy, sortDirection: requestObj.groupSortDirection }], fullGridData || cloneGridData(storage.grids[id].originalData), id);
-            groupedData = groupColumns(groupedData, requestObj.groupedBy);
             if (requestObj.sortedOn.length) {
                 var sortedGroup = [];
                 for (var group in groupedData.groupings) {
-                    //sortedGroup = sortedGroup.concat(mergeSort(groupedData.groupings[group], requestObj.sortedOn, storage.grids[id].columns[requestObj.sortedOn].type || &#039;string&#039;));
                     sortedGroup = sortedGroup.concat(sortGridData(requestObj.sortedOn, groupedData.groupings[group] || cloneGridData(storage.grids[id].originalData), id));
                 }
-                //if (requestObj.sortedBy === &#039;asc&#039;) sortedGroup.reverse();
                 storage.grids[id].alteredData = fullGridData;
                 limitPageData(requestObj, sortedGroup, callback);
                 return;
             }
-            storage.grids[id].alteredData = fullGridData;
-            limitPageData(requestObj, groupedData.groupedData, callback);
+            storage.grids[id].alteredData = groupedData;
+            limitPageData(requestObj, groupedData, callback);
             return;
         }
 
@@ -2356,23 +2353,6 @@ var grid = (function _grid($) {
             case &#039;nct&#039;:
                 return !~val.toLowerCase().indexOf(base.toLowerCase());
         }
-    }
-
-    function groupColumns(data, field) {
-        var groupings = {};
-        for (var i = 0; i &lt; data.length; i++) {
-            if (groupings[data[i][field]])
-                groupings[data[i][field]].push(data[i]);
-            else
-                groupings[data[i][field]] = [data[i]];
-        }
-
-        var groupedData = [];
-        for (var group in groupings) {
-            groupedData = groupedData.concat(groupings[group]);
-        }
-
-        return { groupings: groupings, groupedData: groupedData };
     }
 
     function sortGridData (sortedItems, gridData, gridId) {
