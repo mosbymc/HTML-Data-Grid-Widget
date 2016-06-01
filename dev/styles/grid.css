@@ -13,7 +13,7 @@
 .loading {
   -webkit-animation: loading 1s infinite linear;
   animation: loading 1s infinite linear;
-  background-image: url('../images/arrowDown.svg');
+  background-image: url('../images/group-down-arrow.svg');
   z-index: 500;
   width: 10px;
   height: 10px;
@@ -40,7 +40,7 @@
   }
 }
 .loading:before {
-  background-image: url('../images/arrowDown.svg');
+  background-image: url('../images/group-down-arrow.svg');
 }
 .grid-wrapper {
   width: 100%;
@@ -148,6 +148,12 @@
   border-color: #e6e6e6;
   overflow-x: hidden;
 }
+.group-asc {
+  background-image: url('../images/group-up-arrow.svg');
+}
+.group-desc {
+  background-image: url('../images/group-down-arrow.svg');
+}
 .sortSpan {
   margin-left: 7px;
   background: rgba(0, 0, 0, 0) no-repeat;
@@ -185,10 +191,10 @@
   background-image: url('../images/up-arrow.png');
 }
 .filterSpan {
+  float: right;
   background: rgba(0, 0, 0, 0) url('../images/menu.svg') no-repeat;
   width: 12px;
   height: 12px;
-  float: right;
 }
 .filterSpan:visited {
   color: rgba(0, 0, 0, 0);
@@ -630,7 +636,7 @@
   border-right: 2px outset;
 }
 .step-up {
-  background-image: url('../images/arrowUp.svg');
+  background-image: url('../images/up-arrow.png');
   vertical-align: bottom;
   margin-top: 10px;
 }
@@ -639,7 +645,7 @@
   border-right: 2px outset;
 }
 .step-down {
-  background-image: url('../images/arrowDown.svg');
+  background-image: url('../images/down-arrow.png');
   vertical-align: top;
   margin-top: 1px;
 }

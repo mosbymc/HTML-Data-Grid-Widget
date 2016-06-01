@@ -81,6 +81,7 @@
  - Find out what the hell 'groupingStatusChanged' is used for.
  - Update sorting to handle multi-sort
  - Add try/catch to compareDateByTypes function
+ - Figure out why images are failing to show
  */
 /*exported grid*/
 /**
@@ -918,7 +919,7 @@ var grid = (function _grid($) {
                     var groupedText = getFormattedCellText(id, gridData.groupedBy, curRow);
                     var groupTr = $('<tr class="grouped_row_header"></tr>').appendTo(contentTBody);
                     var groupTitle = gridData.columns[gridData.groupedBy].title || gridData.groupedBy;
-                    groupTr.append('<td colspan="' + (columns.length + 1) + '"><p class="grouped"><a class="sort-desc sortSpan group_acc_link"></a>' + groupTitle + ': ' + groupedText + '</p></td>');
+                    groupTr.append('<td colspan="' + (columns.length + 1) + '"><p class="grouped"><a class="group-desc sortSpan group_acc_link"></a>' + groupTitle + ': ' + groupedText + '</p></td>');
                 }
             }
             else if (!gridData.groupedBy && gridElem.find('.group_spacer').length) {
@@ -1008,11 +1009,11 @@ var grid = (function _grid($) {
         }).on('click', function groupedAccordionsClickListenerCallback(e) {
             var accRow = $(e.currentTarget).parents('tr');
             if ($(e.currentTarget).data('state') === 'open') {
-                $(e.currentTarget).data('state', 'closed').removeClass('sort-desc').addClass('sort-asc');
+                $(e.currentTarget).data('state', 'closed').removeClass('group-desc').addClass('group-asc');
                 accRow.nextUntil('.grouped_row_header').css('display', 'none');
             }
             else {
-                $(e.currentTarget).data('state', 'open').removeClass('sort-asc').addClass('sort-desc');
+                $(e.currentTarget).data('state', 'open').removeClass('group-asc').addClass('group-desc');
                 accRow.nextUntil('.grouped_row_header').css('display', 'table-row');
             }
         });
@@ -1465,7 +1466,7 @@ var grid = (function _grid($) {
             storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
         }
         storage.grids[id].pageRequest.groupedBy = colSelector.val() === 'none' ? undefined : colSelector.val();
-        storage.grids[id].pageRequest.groupDirection = colSelector.val() === 'none' ? undefined : directionSelector.val();
+        storage.grids[id].pageRequest.groupSortDirection = colSelector.val() === 'none' ? undefined : directionSelector.val();
         storage.grids[id].pageRequest.eventType = 'group';
         preparePageDataGetRequest(id);
     }
@@ -2041,7 +2042,7 @@ var grid = (function _grid($) {
         var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
         var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
         var groupedBy = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
-        var groupedDirection = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupedDirection : gridData.groupedDirection || null;
+        var groupSortDirection = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
 
         var requestObj = {};
         if (gridData.sortable) {
@@ -2056,7 +2057,7 @@ var grid = (function _grid($) {
 
         if (gridData.groupable) {
             requestObj.groupedBy = groupedBy;
-            requestObj.groupedDirection = groupedDirection;
+            requestObj.groupSortDirection = groupSortDirection;
         }
 
         requestObj.pageSize = pageSize;
@@ -2084,7 +2085,7 @@ var grid = (function _grid($) {
                 gridData.pageNum = requestObj.pageNum;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.length;
                 gridData.groupedBy = requestObj.groupedBy;
-                gridData.groupedDirection = requestObj.groupedDirection;
+                gridData.groupSortDirection = requestObj.groupSortDirection;
                 gridData.sortedOn = requestObj.sortedOn;
                 gridData.filteredOn = requestObj.filteredOn;
                 gridData.filterVal = requestObj.filterVal;
@@ -2164,8 +2165,8 @@ var grid = (function _grid($) {
             storage.grids[id].alteredData = fullGridData;
         }
 
-        if (requestObj.groupedBy) {	//Need to group the columns first, before sorting. Sorting grouped columns is going to be a bitch!
-            var groupedData = sortGridData([{ field: requestObj.groupedBy, sortDirection: requestObj.groupedDirection }], fullGridData || cloneGridData(storage.grids[id].originalData), id);
+        if (requestObj.groupedBy) {
+            var groupedData = sortGridData([{ field: requestObj.groupedBy, sortDirection: requestObj.groupSortDirection }], fullGridData || cloneGridData(storage.grids[id].originalData), id);
             groupedData = groupColumns(groupedData, requestObj.groupedBy);
             if (requestObj.sortedOn.length) {
                 var sortedGroup = [];

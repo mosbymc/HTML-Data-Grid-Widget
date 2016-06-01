@@ -13,7 +13,7 @@
 .loading {
   -webkit-animation: loading 1s infinite linear;
   animation: loading 1s infinite linear;
-  background-image: url('../images/arrowDown.svg');
+  background-image: url('../images/group-down-arrow.svg');
   z-index: 500;
   width: 10px;
   height: 10px;
@@ -45,7 +45,7 @@
 }
 
 .loading:before {
-  background-image: url('../images/arrowDown.svg');
+  background-image: url('../images/group-down-arrow.svg');
 }
 
 .grid-wrapper {
@@ -153,6 +153,14 @@
   overflow-x: hidden;
 }
 
+.group-asc {
+  background-image: url('../images/group-up-arrow.svg');
+}
+
+.group-desc {
+  background-image: url('../images/group-down-arrow.svg');
+}
+
 .sortSpan {
   margin-left: 7px;
   background: @black no-repeat;
@@ -182,7 +190,7 @@
 }
 
 .sort-desc {
-  background-image: url('../images/down-arrow.png')
+  background-image: url('../images/down-arrow.png');
 }
 
 .sort-asc {
@@ -194,7 +202,6 @@
   background: @black url('../images/menu.svg') no-repeat;
   width: 12px;
   height: 12px;
-  float: right;
 
   &:visited {
     color: @black;
@@ -584,7 +591,7 @@
 }
 
 .step-up {
-  background-image: url('../images/arrowUp.svg');
+  background-image: url('../images/up-arrow.png');
   vertical-align: bottom;
   margin-top: 10px;
 }
@@ -595,7 +602,7 @@
 }
 
 .step-down {
-  background-image: url('../images/arrowDown.svg');
+  background-image: url('../images/down-arrow.png');
   vertical-align: top;
   margin-top: 1px;
 }
