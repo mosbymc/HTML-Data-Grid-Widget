@@ -70,16 +70,16 @@
  - Examine headers and fix DOM structure - DONE
  - Remove unused regex values & update 'inputTypes' to use validateCharacter function - DONE
  - Find out what the hell 'groupingStatusChanged' is used for - DONE
+ - Update sorting to handle multi-sort - DONE
+ - Add server paging + data saving/filtering/sorting - DONE
+ - Update API event methods to work with array and namespace - DONE
+ - Add "transform" function to be called for the cell data in a column - DONE
  - Ensure all types are implemented across the board (number, time, date, boolean, string)
- - Add server paging + data saving/filtering/sorting
- - Add "transform" function to be called for the cell data in a column
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Prevent filtering on non-safe values/add character validation on input to filtering divs
- - Update API event methods to work with array and namespace
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
- - Update sorting to handle multi-sort
  */
 /*exported grid*/
 /**
@@ -1032,10 +1032,10 @@ var grid = (function _grid($) {
                 dataAttributes += ' data-inputformat="' + storage.grids[id].columns[field].inputFormat + '"';
 
             switch (type) {
-                case 'bool':
+                case 'boolean':
                     input = $('<input type="checkbox" class="input checkbox active-cell"' + dataAttributes + '/>').appendTo(cell);
                     input[0].checked = !!(val || val === 'true');
-                    dataType = 'bool';
+                    dataType = 'boolean';
                     break;
                 case 'number':
                     inputVal = val;
@@ -1593,11 +1593,11 @@ var grid = (function _grid($) {
         var domName = title ? title : type;
         var filterInput, resetButton, button,
             span = $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv),
-            select = $('<select class="filterSelect select"></select>').appendTo(filterDiv);
-        select.append('<option value="eq">Equal to:</option>');
+            select = type !== 'boolean' ? $('<select class="filterSelect select"></select>').appendTo(filterDiv)
+                .append('<option value="eq">Equal to:</option>').append('<option value="neq">Not equal to:</option>') : null;
+
         switch (type) {
             case 'number':
-                select.append('<option value="neq">Not equal to:</option>');
                 select.append('<option value="gte">Greater than or equal to:</option>');
                 select.append('<option value="gt">Greater than:</option>');
                 select.append('<option value="lte">Less than or equal to:</option>');
@@ -1605,28 +1605,20 @@ var grid = (function _grid($) {
                 filterInput = $('<input type="text" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
                 break;
             case 'date':
-                select.append('<option value="neq">Not equal to:</option>');
-                select.append('<option value="gte">Equal to or later than:</option>');
-                select.append('<option value="gt">Later than:</option>');
-                select.append('<option value="lte">Equal to or before:</option>');
-                select.append('<option value="lt">Before:</option>');
-                filterInput = $('<input type="date" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
-                break;
             case 'time':
-                select.append('<option value="neq">Not equal to:</option>');
                 select.append('<option value="gte">Equal to or later than:</option>');
                 select.append('<option value="gt">Later than:</option>');
                 select.append('<option value="lte">Equal to or before:</option>');
                 select.append('<option value="lt">Before:</option>');
-                filterInput = $('<input type="text" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
+                var inputType = type === 'date' ? 'date' : 'text';
+                filterInput = $('<input type="' + inputType + '" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
                 break;
             case 'boolean':
-                var optSelect = $('<select class="filterSelect"></select>').appendTo(span);
+                var optSelect = $('<select class="filterSelect select"></select>').appendTo(span);
                 optSelect.append('<option value="true">True</option>');
                 optSelect.append('<option value="false">False</option>');
                 break;
             case 'string':
-                select.append('<option value="neq">Not equal to:</option>');
                 select.append('<option value="ct">Contains:</option>');
                 select.append('<option value="nct">Does not contain:</option>');
                 filterInput = $('<input class="filterInput input" type="text" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
@@ -1741,8 +1733,7 @@ var grid = (function _grid($) {
         var targetCol = $(e.currentTarget);
         var id = targetCol.parents('.grid-header-div').length ? targetCol.parents('.grid-wrapper').data('grid_id') : null;
         var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
-        if (!id || !droppedId) return;  //at least one of the involved dom elements is not a grid column
-        if (id !== droppedId) return;   //can't swap columns from different grids
+        if (!id || !droppedId || id !== droppedId) return;  //at least one of the involved dom elements is not a grid column, or they are from different grids
         if (storage.grids[id].updating) return;		//can't resort columns if grid is updating
         if (droppedCol[0].cellIndex === targetCol[0].cellIndex) return;
         if (droppedCol[0].id === 'sliderDiv') return;
@@ -1770,19 +1761,18 @@ var grid = (function _grid($) {
 
         droppedCol.replaceWith(targetClone);
         targetCol.replaceWith(droppedClone);
-
         droppedClone[0].dataset.index = targetIndex;
         targetClone[0].dataset.index = droppedIndex;
 
         swapContentCells(parentDivId, droppedIndex, targetIndex);
 
-        var targetWidth = $(colGroups[0].children[droppedIndex]).width();
-        var droppedWidth = $(colGroups[0].children[targetIndex]).width();
+        var targetWidth = colGroups[0].children[droppedIndex].style.width;
+        var droppedWidth = colGroups[0].children[targetIndex].style.width;
 
-        $(colGroups[0].children[droppedIndex]).width(droppedWidth);
-        $(colGroups[0].children[targetIndex]).width(targetWidth);
-        $(colGroups[1].children[droppedIndex]).width(droppedWidth);
-        $(colGroups[1].children[targetIndex]).width(targetWidth);
+        colGroups[0].children[targetIndex].style.width = targetWidth;
+        colGroups[0].children[droppedIndex].style.width = droppedWidth;
+        colGroups[1].children[targetIndex].style.width = targetWidth;
+        colGroups[1].children[droppedIndex].style.width = droppedWidth;
 
         var sumRow = parentDiv.find('.summary-row-header');
         if (sumRow.length) {
@@ -2343,7 +2333,7 @@ var grid = (function _grid($) {
         var template = storage.grids[gridId].columns[column].template;
         if (template) {
             if (typeof template === 'function')
-                return template(text);
+                return template.call(column, text);
             else if (typeof template === 'string')
                 return template.replace('{{data}}', text);
             return text;

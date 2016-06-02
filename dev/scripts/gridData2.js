@@ -177,8 +177,9 @@ var gridData = {
             delimiter: ":"
         },
         Paid: {
-            type: "bool",
+            type: "boolean",
             editable: true,
+            filterable: true,
             //width: 100
         }
     },
