@@ -80,6 +80,7 @@
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
+ - Create new regex string - one for character input validation, one for submit validation
  */
 /*exported grid*/
 /**
@@ -242,7 +243,7 @@ var grid = (function _grid($) {
                      * @returns {boolean} - indicates that the provided function(s) were or were not added as event listeners.
                      */
                     value: function _bindGridEvents(evt, funcs) {
-                        if (typeof funcs !== 'function' && funcs.constructor !== Array) return false;
+                        if (!funcs || (typeof funcs !== 'function' && funcs.constructor !== Array)) return false;
                         if (typeof funcs === 'function') funcs = [funcs];
                         if (~events.indexOf(evt)) {
                             storage.grids[gridId].events[evt] = storage.grids[gridId].events[evt].concat(funcs);
@@ -264,7 +265,7 @@ var grid = (function _grid($) {
                      * @returns {boolean} - indicates that the provided function(s) were or were not unbound
                      */
                     value: function _unbindEvents(evt, funcs) {
-                        if (~events.indexOf(evt) && (typeof funcs === 'function' || funcs.constructor === Array)) {
+                        if (~events.indexOf(evt) && (funcs || (typeof funcs === 'function' || funcs.constructor === Array))) {
                             if (typeof funcs === 'function') funcs = [funcs];
                             var tmpEvts = [];
                             for (var i = 0; i < storage.grids[gridId].events[evt].length; i++) {
@@ -2422,9 +2423,11 @@ var grid = (function _grid($) {
         }
     }
 
+    //TODO: figure out a way to have one regex for validation of characters on input and another regex for value validation on submit
     dataTypes = {
         string: '\.*',
-        number: '^\\-?([1-9]{1}[0-9]{0,2}(\\,[0-9]{3})*(\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(\\.[0-9]{0,2})?|0(\\.[0-9]{0,2})?|(\\.[0-9]{1,2})?)$',
+        //number: '^\\-?([1-9]{1}[0-9]{0,2}(\\,[0-9]{3})*(\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(\\.[0-9]{0,2})?|0(\\.[0-9]{0,2})?|(\\.[0-9]{1,2})?)$',
+        number: '^-?\\d+(\\.?\\d+?)?$', //this regex won't work as characters are being entered because a decimal will cause the string to fail since they haven't been able to fill in and decimal places yet
         boolean: '^true|false$',
         numeric: '^\\-?([1-9]{1}[0-9]{0,2}(\\,[0-9]{3})*(\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(\\.[0-9]{0,2})?|0(\\.[0-9]{0,2})?|(\\.[0-9]{1,2})?)$',
         numericTemp: '^-?(?:[1-9]{1}[0-9]{0,2}(?:,[0-9]{3})*(?:\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(?:\\.[0-9]{0,2})?|0(?:\\.[0-9]{0,2})?|(?:\\.[0-9]{1,2})?)$',
