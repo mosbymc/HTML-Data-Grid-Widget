@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.20</p>
+      <p class="stat">55.18</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2706</p>
+      <p class="stat">2744</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">183.49</p>
+      <p class="stat">183.89</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">49.28</p>
+      <p class="stat">49.39</p>
     </div>
   </div>
 </div>
@@ -1970,15 +1970,19 @@ var grid = (function _grid($) {
         var anchor = $(&#039;&lt;a href=&quot;#&quot;&gt;&lt;/a&gt;&#039;).appendTo(elem);
         anchor.append(&#039;&lt;span class=&quot;filterSpan&quot; data-type=&quot;&#039; + type + &#039;&quot; data-field=&quot;&#039; + elem.data(&#039;field&#039;) + &#039;&quot;&gt;&lt;/span&gt;&#039;);
         attachFilterListener(anchor);
-        $(document).on(&#039;click&#039;, function hideFilterHandler(e) {
-            if (!$(e.target).hasClass(&#039;filter-div&#039;)) {
-                if ($(e.target).parents(&#039;.filter-div&#039;).length &lt; 1) {
-                    $(document).find(&#039;.filter-div&#039;).each(function iterateFilterDivsCallback(idx, val) {
-                        $(val).addClass(&#039;hiddenFilter&#039;);
-                    });
+        if ($(document).find(&#039;.filterSpan&#039;).length &lt; 2) {   //TODO: check to see if I need one handler per grid, or just one per document
+            $(document).on(&#039;click&#039;, function hideFilterHandler(e) {
+                if (!$(e.target).hasClass(&#039;filter-div&#039;)) {
+                    if ($(e.target).parents(&#039;.filter-div&#039;).length &lt; 1) {
+                        $(document).find(&#039;.filter-div&#039;).each(function iterateFilterDivsCallback(idx, val) {
+                            if ($(val).find(&#039;.filterInput&#039;).length)
+                                $(val).find(&#039;.filterInput&#039;).val(&#039;&#039;);
+                            $(val).addClass(&#039;hiddenFilter&#039;);
+                        });
+                    }
                 }
-            }
-        });
+            });
+        }
         $(document).on(&#039;scroll&#039;, function scrollFilterHandler() {
             $(document).find(&#039;.filter-div&#039;).each(function iterateFilterDivsCallback(idx, val) {
                 var filter = $(val);
@@ -2076,9 +2080,7 @@ var grid = (function _grid($) {
         var groupSortDirection = gridData.pageRequest.eventType === &#039;group&#039; ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
 
         var requestObj = {};
-        if (gridData.sortable) {
-            requestObj.sortedOn = sortedOn;
-        }
+        if (gridData.sortable) requestObj.sortedOn = sortedOn;
 
         if (gridData.filterable) {
             requestObj.filteredOn = filteredOn;
@@ -2101,8 +2103,7 @@ var grid = (function _grid($) {
         if (gridData.dataSource.get &amp;&amp; typeof gridData.dataSource.get === &#039;function&#039;)
             gridData.dataSource.get(requestObj, getPageDataRequestCallback);
         else {
-            if (!gridData.alteredData)
-                gridData.alteredData = cloneGridData(gridData.originalData);
+            if (!gridData.alteredData) gridData.alteredData = cloneGridData(gridData.originalData);
             getPageData(requestObj, id, getPageDataRequestCallback);
         }
 
@@ -2247,10 +2248,8 @@ var grid = (function _grid($) {
                 curVal = getNumbersFromTime(gridData[i][field]);
                 baseVal = getNumbersFromTime(value);
 
-                if (gridData[i][field].indexOf(&#039;PM&#039;) &gt; -1)
-                    curVal[0] += 12;
-                if (value.indexOf(&#039;PM&#039;) &gt; -1)
-                    baseVal[0] += 12;
+                if (gridData[i][field].indexOf(&#039;PM&#039;) &gt; -1) curVal[0] += 12;
+                if (value.indexOf(&#039;PM&#039;) &gt; -1) baseVal[0] += 12;
 
                 curVal = convertTimeArrayToSeconds(curVal);
                 baseVal = convertTimeArrayToSeconds(baseVal);
@@ -2267,11 +2266,17 @@ var grid = (function _grid($) {
                 curVal = gridData[i][field];
                 baseVal = value;
             }
-            if (comparator(curVal, baseVal, filterType))
-                filteredData.push(gridData[i]);
+            if (comparator(curVal, baseVal, filterType)) filteredData.push(gridData[i]);
         }
     }
 
+    /**
+     * Using various equality operators, checks to for truth based on the type of the operator(s)
+     * @param {*) val - The value that is being checked against a base value
+     * @param {*} base - The based value against which values are compared
+     * @param {string} type - The type of equality operator(s) to be used in the comparison
+     * @returns {boolean} - Returns a boolean indicating that whether the comparison was true of false
+     */
     function comparator(val, base, type) {
         switch (type) {
             case &#039;eq&#039;:
@@ -2287,12 +2292,19 @@ var grid = (function _grid($) {
             case &#039;lt&#039;:
                 return val &lt; base;
             case &#039;ct&#039;:
-                return ~val.toLowerCase().indexOf(base.toLowerCase());
+                return !!~val.toLowerCase().indexOf(base.toLowerCase());
             case &#039;nct&#039;:
                 return !~val.toLowerCase().indexOf(base.toLowerCase());
         }
     }
 
+    /**
+     * Manages sorting grid data based on the field and data type
+     * @param {Array} sortedItems - An array of objects describing which columns are to be sorted and in which directions
+     * @param {Array} gridData - An array containing the grid data to be sorted
+     * @param {number} gridId - The id of the grid instance
+     * @returns {Array} - Returns an array of sorted grid data
+     */
     function sortGridData (sortedItems, gridData, gridId) {
         for (var i = 0; i &lt; sortedItems.length; i++) {
             if (i === 0)
@@ -2759,7 +2771,13 @@ var grid = (function _grid($) {
         return Math.round((val*pow))/pow;
     }
 
-    function insertKey(input, key) {		//Inserts the new character to it&#039;s position in the string based on cursor position
+    /**
+     * Inserts the new character to it&#039;s position in the string based on cursor position
+     * @param {object} input - A jQuery DOM element
+     * @param {string} key - The character newly entered into the input element
+     * @returns {string} - Returns the new value of the input
+     */
+    function insertKey(input, key) {
         var loc = getInputSelection(input[0]);
         return input.val().substring(0, loc.start) + key + input.val().substring(loc.end, input.val().length);
     }
@@ -2805,6 +2823,11 @@ var grid = (function _grid($) {
         return { start: start, end: end };
     }
 
+    /**
+     * Clones an object and returns a new object instance with the same values as the original
+     * @param {object|*} gridData - The object to be cloned
+     * @returns {*} - Returns a new instance of whatever type was given to the function
+     */
     function cloneGridData(gridData) { //Clones grid data so pass-by-reference doesn&#039;t mess up the values in other grids.
         if (gridData == null || typeof (gridData) !== &#039;object&#039;)
             return gridData;
@@ -2819,6 +2842,11 @@ var grid = (function _grid($) {
         return temp;
     }
 
+    /**
+     * Copies the contents of an array into a new array instance
+     * @param {Array} arr - The array to be copied
+     * @returns {Array} - Returns a new array instance containing the values in the original
+     */
     function cloneArray(arr) {
         var length = arr.length,
             newArr = new arr.constructor(length);
@@ -2835,10 +2863,20 @@ var grid = (function _grid($) {
         return newArr;
     }
 
+    /**
+     * Checks that a given variable is a DOM element
+     * @param {object} node - The variable being checked
+     * @returns {boolean} - Returns true if the variable is a DOM element, false if not
+     */
     function isDomElement(node) {
         return node &amp;&amp; node instanceof Element &amp;&amp; node instanceof Node &amp;&amp; typeof node.ownerDocument === &#039;object&#039;;
     }
 
+    /**
+     * Checks that a given variable is a number and not NaN
+     * @param {number} value - The number that is being checked
+     * @returns {boolean} Returns true if the value is a number, false if not
+     */
     function isNumber(value) {
         return typeof value === &#039;number&#039; &amp;&amp; value === value;
     }

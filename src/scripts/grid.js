@@ -1879,15 +1879,19 @@ var grid = (function _grid($) {
         var anchor = $('<a href="#"></a>').appendTo(elem);
         anchor.append('<span class="filterSpan" data-type="' + type + '" data-field="' + elem.data('field') + '"></span>');
         attachFilterListener(anchor);
-        $(document).on('click', function hideFilterHandler(e) {
-            if (!$(e.target).hasClass('filter-div')) {
-                if ($(e.target).parents('.filter-div').length < 1) {
-                    $(document).find('.filter-div').each(function iterateFilterDivsCallback(idx, val) {
-                        $(val).addClass('hiddenFilter');
-                    });
+        if ($(document).find('.filterSpan').length < 2) {   //TODO: check to see if I need one handler per grid, or just one per document
+            $(document).on('click', function hideFilterHandler(e) {
+                if (!$(e.target).hasClass('filter-div')) {
+                    if ($(e.target).parents('.filter-div').length < 1) {
+                        $(document).find('.filter-div').each(function iterateFilterDivsCallback(idx, val) {
+                            if ($(val).find('.filterInput').length)
+                                $(val).find('.filterInput').val('');
+                            $(val).addClass('hiddenFilter');
+                        });
+                    }
                 }
-            }
-        });
+            });
+        }
         $(document).on('scroll', function scrollFilterHandler() {
             $(document).find('.filter-div').each(function iterateFilterDivsCallback(idx, val) {
                 var filter = $(val);
@@ -1985,9 +1989,7 @@ var grid = (function _grid($) {
         var groupSortDirection = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
 
         var requestObj = {};
-        if (gridData.sortable) {
-            requestObj.sortedOn = sortedOn;
-        }
+        if (gridData.sortable) requestObj.sortedOn = sortedOn;
 
         if (gridData.filterable) {
             requestObj.filteredOn = filteredOn;
@@ -2010,8 +2012,7 @@ var grid = (function _grid($) {
         if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function')
             gridData.dataSource.get(requestObj, getPageDataRequestCallback);
         else {
-            if (!gridData.alteredData)
-                gridData.alteredData = cloneGridData(gridData.originalData);
+            if (!gridData.alteredData) gridData.alteredData = cloneGridData(gridData.originalData);
             getPageData(requestObj, id, getPageDataRequestCallback);
         }
 
@@ -2156,10 +2157,8 @@ var grid = (function _grid($) {
                 curVal = getNumbersFromTime(gridData[i][field]);
                 baseVal = getNumbersFromTime(value);
 
-                if (gridData[i][field].indexOf('PM') > -1)
-                    curVal[0] += 12;
-                if (value.indexOf('PM') > -1)
-                    baseVal[0] += 12;
+                if (gridData[i][field].indexOf('PM') > -1) curVal[0] += 12;
+                if (value.indexOf('PM') > -1) baseVal[0] += 12;
 
                 curVal = convertTimeArrayToSeconds(curVal);
                 baseVal = convertTimeArrayToSeconds(baseVal);
@@ -2176,11 +2175,17 @@ var grid = (function _grid($) {
                 curVal = gridData[i][field];
                 baseVal = value;
             }
-            if (comparator(curVal, baseVal, filterType))
-                filteredData.push(gridData[i]);
+            if (comparator(curVal, baseVal, filterType)) filteredData.push(gridData[i]);
         }
     }
 
+    /**
+     * Using various equality operators, checks to for truth based on the type of the operator(s)
+     * @param {*) val - The value that is being checked against a base value
+     * @param {*} base - The based value against which values are compared
+     * @param {string} type - The type of equality operator(s) to be used in the comparison
+     * @returns {boolean} - Returns a boolean indicating that whether the comparison was true of false
+     */
     function comparator(val, base, type) {
         switch (type) {
             case 'eq':
@@ -2196,12 +2201,19 @@ var grid = (function _grid($) {
             case 'lt':
                 return val < base;
             case 'ct':
-                return ~val.toLowerCase().indexOf(base.toLowerCase());
+                return !!~val.toLowerCase().indexOf(base.toLowerCase());
             case 'nct':
                 return !~val.toLowerCase().indexOf(base.toLowerCase());
         }
     }
 
+    /**
+     * Manages sorting grid data based on the field and data type
+     * @param {Array} sortedItems - An array of objects describing which columns are to be sorted and in which directions
+     * @param {Array} gridData - An array containing the grid data to be sorted
+     * @param {number} gridId - The id of the grid instance
+     * @returns {Array} - Returns an array of sorted grid data
+     */
     function sortGridData (sortedItems, gridData, gridId) {
         for (var i = 0; i < sortedItems.length; i++) {
             if (i === 0)
@@ -2668,7 +2680,13 @@ var grid = (function _grid($) {
         return Math.round((val*pow))/pow;
     }
 
-    function insertKey(input, key) {		//Inserts the new character to it's position in the string based on cursor position
+    /**
+     * Inserts the new character to it's position in the string based on cursor position
+     * @param {object} input - A jQuery DOM element
+     * @param {string} key - The character newly entered into the input element
+     * @returns {string} - Returns the new value of the input
+     */
+    function insertKey(input, key) {
         var loc = getInputSelection(input[0]);
         return input.val().substring(0, loc.start) + key + input.val().substring(loc.end, input.val().length);
     }
@@ -2714,6 +2732,11 @@ var grid = (function _grid($) {
         return { start: start, end: end };
     }
 
+    /**
+     * Clones an object and returns a new object instance with the same values as the original
+     * @param {object|*} gridData - The object to be cloned
+     * @returns {*} - Returns a new instance of whatever type was given to the function
+     */
     function cloneGridData(gridData) { //Clones grid data so pass-by-reference doesn't mess up the values in other grids.
         if (gridData == null || typeof (gridData) !== 'object')
             return gridData;
@@ -2728,6 +2751,11 @@ var grid = (function _grid($) {
         return temp;
     }
 
+    /**
+     * Copies the contents of an array into a new array instance
+     * @param {Array} arr - The array to be copied
+     * @returns {Array} - Returns a new array instance containing the values in the original
+     */
     function cloneArray(arr) {
         var length = arr.length,
             newArr = new arr.constructor(length);
@@ -2744,10 +2772,20 @@ var grid = (function _grid($) {
         return newArr;
     }
 
+    /**
+     * Checks that a given variable is a DOM element
+     * @param {object} node - The variable being checked
+     * @returns {boolean} - Returns true if the variable is a DOM element, false if not
+     */
     function isDomElement(node) {
         return node && node instanceof Element && node instanceof Node && typeof node.ownerDocument === 'object';
     }
 
+    /**
+     * Checks that a given variable is a number and not NaN
+     * @param {number} value - The number that is being checked
+     * @returns {boolean} Returns true if the value is a number, false if not
+     */
     function isNumber(value) {
         return typeof value === 'number' && value === value;
     }
