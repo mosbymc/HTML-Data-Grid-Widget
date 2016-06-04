@@ -74,13 +74,13 @@
  - Add server paging + data saving/filtering/sorting - DONE
  - Update API event methods to work with array and namespace - DONE
  - Add "transform" function to be called for the cell data in a column - DONE
+ - Create new regex string - one for character input validation, one for submit validation - DONE
  - Ensure all types are implemented across the board (number, time, date, boolean, string)
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Prevent filtering on non-safe values/add character validation on input to filtering divs
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
- - Create new regex string - one for character input validation, one for submit validation
  */
 /*exported grid*/
 /**
@@ -1041,7 +1041,7 @@ var grid = (function _grid($) {
                 case 'number':
                     inputVal = val;
                     input = $('<input type="text" value="' + inputVal + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
-                    dataType = 'numeric';
+                    dataType = 'number';
                     break;
                 case 'time':
                     input = $('<input type="text" value="' + val + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
@@ -1063,15 +1063,10 @@ var grid = (function _grid($) {
 
             input[0].focus();
 
-            if (dataType && dataType !== 'date' && dataType !== 'time') {
+            if (dataType) {
                 input.on('keypress', function restrictCharsHandler(e) {
-                    var code = e.charCode ? e.charCode : e.keyCode,
-                        newVal;
-                    if (newVal = validateCharacter.call(this, code, dataType)) {
-                        var id = $(this).parents('.grid-wrapper').data('grid_id');
-                        storage.grids[id].currentEdit[field] = newVal;
-                    }
-                    else {
+                    var code = e.charCode ? e.charCode : e.keyCode;
+                    if (!validateCharacter.call(this, code, dataType)) {
                         e.preventDefault();
                         return false;
                     }
@@ -1269,7 +1264,7 @@ var grid = (function _grid($) {
         //Types: date, number, string, boolean, time
         switch (type) {
             case 'number':
-                re = new RegExp(dataTypes.numeric);
+                re = new RegExp(dataTypes.number);
                 if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
                 saveVal = typeof storage.grids[id].dataSource.data[index][field] === 'string' ? parseFloat(val.replace(',', '')) : val;
                 break;
@@ -2389,14 +2384,15 @@ var grid = (function _grid($) {
      * Validates that a given character is allowed with the given data type
      * @param {number} code - The character's key code
      * @param {string} dataType - The type of data to check for character validity
-     * @returns {string|number|null} - Returns the tested character if valid or null if not
+     * @returns {boolean} - Returns the tested character if valid or null if not
      */
     function validateCharacter(code, dataType) {
-        var key = String.fromCharCode(code),
-            newVal = insertKey($(this), key),
-            re = new RegExp(dataTypes[dataType]);
-        if (!re.test(newVal)) return null;
-        return newVal;
+        var key = String.fromCharCode(code);
+        if (dataTypes[dataType]) {
+            var re = new RegExp(dataTypes[dataType + 'Char']);
+            return re.test(key);
+        }
+        return true;
     }
 
     /**
@@ -2435,21 +2431,18 @@ var grid = (function _grid($) {
         }
     }
 
-    //TODO: figure out a way to have one regex for validation of characters on input and another regex for value validation on submit
     dataTypes = {
-        string: '\.*',
-        //number: '^\\-?([1-9]{1}[0-9]{0,2}(\\,[0-9]{3})*(\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(\\.[0-9]{0,2})?|0(\\.[0-9]{0,2})?|(\\.[0-9]{1,2})?)$',
-        number: '^-?\\d+(\\.?\\d+?)?$', //this regex won't work as characters are being entered because a decimal will cause the string to fail since they haven't been able to fill in and decimal places yet
-        boolean: '^true|false$',
-        numeric: '^\\-?([1-9]{1}[0-9]{0,2}(\\,[0-9]{3})*(\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(\\.[0-9]{0,2})?|0(\\.[0-9]{0,2})?|(\\.[0-9]{1,2})?)$',
-        numericTemp: '^-?(?:[1-9]{1}[0-9]{0,2}(?:,[0-9]{3})*(?:\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(?:\\.[0-9]{0,2})?|0(?:\\.[0-9]{0,2})?|(?:\\.[0-9]{1,2})?)$',
+        number: '^-?(?:[1-9]{1}[0-9]{0,2}(?:,[0-9]{3})*(?:\\.[0-9]+)?|[1-9]{1}[0-9]{0,}(?:\\.[0-9]+)?|0(?:\\.[0-9]+)?|(?:\\.[0-9]+)?)$',
+        numberChar: '[\\d,\\.-]',
         integer: '^\\-?\\d+$',
         time: '^(0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\2([0-5]\\d))?)?(?:(\\ [AP]M))$|^([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\7([0-5]\\d))?)$',
+        timeChar: '[\\d\\.:\\ AMP]',
         date: '^(?:(?:(?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\2|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\5))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\8)|(?:(29|30)(\\/|-|\\.)' +
         '(0?[1,3-9]|1[0-2])\\11)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\15)|(?:(29)(\\/|-|\\.)(0?2))\\18)((?:(?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])' +
         '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\22|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\25)((?:1[6-9]|[2-9]\\d)?\\d{2}))))' +
         '|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\29)(29))))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)' +
-        '(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$'
+        '(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$',
+        dateChar: '[\\d\-\\.\\\]'
     };
 
     events = ['cellEditChange', 'beforeCellEdit', 'afterCellEdit', 'pageRequested', 'beforeDataBind', 'afterDataBind', 'columnReorder'];
@@ -2678,58 +2671,6 @@ var grid = (function _grid($) {
     function roundNumber(val, dec) {
         var pow = Math.pow(10, dec || 0);
         return Math.round((val*pow))/pow;
-    }
-
-    /**
-     * Inserts the new character to it's position in the string based on cursor position
-     * @param {object} input - A jQuery DOM element
-     * @param {string} key - The character newly entered into the input element
-     * @returns {string} - Returns the new value of the input
-     */
-    function insertKey(input, key) {
-        var loc = getInputSelection(input[0]);
-        return input.val().substring(0, loc.start) + key + input.val().substring(loc.end, input.val().length);
-    }
-
-    function getInputSelection(el) {		//Finds the cursor position in the input string - includes highlighted ranges.
-        var start = 0, end = 0,
-            normalizedValue, range, textInputRange, len, endRange;
-
-        if (typeof el.selectionStart == 'number' && typeof el.selectionEnd == 'number') {
-            start = el.selectionStart;
-            end = el.selectionEnd;
-        }
-        else {
-            range = document.selection.createRange();
-
-            if (range && range.parentElement() == el) {
-                len = el.value.length;
-                normalizedValue = el.value.replace(/\r\n/g, '\n');
-
-                // Create a working TextRange that lives only in the input
-                textInputRange = el.createTextRange();
-                textInputRange.moveToBookmark(range.getBookmark());
-
-                // Check if the start and end of the selection are at the very end
-                // of the input, since moveStart/moveEnd doesn't return what we want
-                // in those cases
-                endRange = el.createTextRange();
-                endRange.collapse(false);
-
-                if (textInputRange.compareEndPoints('StartToEnd', endRange) > -1) start = end = len;
-                else {
-                    start = -textInputRange.moveStart('character', -len);
-                    start += normalizedValue.slice(0, start).split('\n').length - 1;
-
-                    if (textInputRange.compareEndPoints('EndToEnd', endRange) > -1) end = len;
-                    else {
-                        end = -textInputRange.moveEnd('character', -len);
-                        end += normalizedValue.slice(0, end).split('\n').length - 1;
-                    }
-                }
-            }
-        }
-        return { start: start, end: end };
     }
 
     /**
