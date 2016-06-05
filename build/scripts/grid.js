@@ -81,6 +81,7 @@
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
+ - Determine what to do with input or grid data that does not pass formatting
  */
 /*exported grid*/
 /**
@@ -2339,7 +2340,7 @@ var grid = (function _grid($) {
         }
 
         var template = storage.grids[gridId].columns[column].template;
-        if (template) {
+        if (template && text !== '') {
             if (typeof template === 'function')
                 return template.call(column, text);
             else if (typeof template === 'string')
@@ -2496,11 +2497,12 @@ var grid = (function _grid($) {
      * @returns {string|Date} - Returns a formatted date if able, otherwise will return a default JS date using the date provided as the seed
      */
     function formatDateCellData(date, format) {
+        if (!format) return date;
         var parseDate = Date.parse(date);
         var jsDate = new Date(parseDate);
         if (!isNaN(parseDate) && format)
             return format.replace('mm', (jsDate.getUTCMonth() + 1).toString()).replace('dd', jsDate.getUTCDate().toString()).replace('yyyy', jsDate.getUTCFullYear().toString());
-        else if (!isNaN(parseDate))     //TODO: ensure this will work when parseDate is NaN - seems like feeding NaN to the Date func would not return a valid date
+        else if (!isNaN(parseDate))
             return new Date(jsDate);
         return '';
     }

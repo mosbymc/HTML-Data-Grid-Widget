@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.24</p>
+      <p class="stat">55.23</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2685</p>
+      <p class="stat">2686</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">186.07</p>
+      <p class="stat">186.17</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">48.26</p>
+      <p class="stat">48.29</p>
     </div>
   </div>
 </div>
@@ -172,6 +172,7 @@
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date &amp; time regex usages
+ - Determine what to do with input or grid data that does not pass formatting
  */
 /*exported grid*/
 /**
@@ -2430,7 +2431,7 @@ var grid = (function _grid($) {
         }
 
         var template = storage.grids[gridId].columns[column].template;
-        if (template) {
+        if (template &amp;&amp; text !== &#039;&#039;) {
             if (typeof template === &#039;function&#039;)
                 return template.call(column, text);
             else if (typeof template === &#039;string&#039;)
@@ -2587,11 +2588,12 @@ var grid = (function _grid($) {
      * @returns {string|Date} - Returns a formatted date if able, otherwise will return a default JS date using the date provided as the seed
      */
     function formatDateCellData(date, format) {
+        if (!format) return date;
         var parseDate = Date.parse(date);
         var jsDate = new Date(parseDate);
         if (!isNaN(parseDate) &amp;&amp; format)
             return format.replace(&#039;mm&#039;, (jsDate.getUTCMonth() + 1).toString()).replace(&#039;dd&#039;, jsDate.getUTCDate().toString()).replace(&#039;yyyy&#039;, jsDate.getUTCFullYear().toString());
-        else if (!isNaN(parseDate))     //TODO: ensure this will work when parseDate is NaN - seems like feeding NaN to the Date func would not return a valid date
+        else if (!isNaN(parseDate))
             return new Date(jsDate);
         return &#039;&#039;;
     }
