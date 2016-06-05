@@ -75,9 +75,9 @@
  - Update API event methods to work with array and namespace - DONE
  - Add "transform" function to be called for the cell data in a column - DONE
  - Create new regex string - one for character input validation, one for submit validation - DONE
+ - Prevent filtering on non-safe values/add character validation on input to filtering divs - DONE
  - Ensure all types are implemented across the board (number, time, date, boolean, string)
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
- - Prevent filtering on non-safe values/add character validation on input to filtering divs
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
@@ -157,7 +157,7 @@ var grid = (function _grid($) {
      * @method createGridInstanceMethods
      * @private
      * @param {object} gridElem - The DOM element that should be used to create the grid widget
-     * @param {integer} gridId - The id of this grid's instance
+     * @param {number} gridId - The id of this grid's instance
      */
     function createGridInstanceMethods(gridElem, gridId) {
         Object.defineProperty(
@@ -616,7 +616,7 @@ var grid = (function _grid($) {
      * @method initializeGrid
      * @for grid
      * @private
-     * @param {integer} id
+     * @param {number} id
      * @param {object} gridData
      * @param {object} gridElem
      */
@@ -758,7 +758,7 @@ var grid = (function _grid($) {
      * @for grid
      * @private
      * @param {object} gridData
-     * @param {integer} gridId
+     * @param {number} gridId
      */
     function buildHeaderAggregations(gridData, gridId) {
         var sum = buildAggregatesRow(gridData, gridId);
@@ -1875,7 +1875,7 @@ var grid = (function _grid($) {
         var anchor = $('<a href="#"></a>').appendTo(elem);
         anchor.append('<span class="filterSpan" data-type="' + type + '" data-field="' + elem.data('field') + '"></span>');
         attachFilterListener(anchor);
-        if ($(document).find('.filterSpan').length < 2) {   //TODO: check to see if I need one handler per grid, or just one per document
+        if ($(document).find('.filterSpan').length < 2) {
             $(document).on('click', function hideFilterHandler(e) {
                 if (!$(e.target).hasClass('filter-div')) {
                     if ($(e.target).parents('.filter-div').length < 1) {
@@ -2177,7 +2177,7 @@ var grid = (function _grid($) {
 
     /**
      * Using various equality operators, checks to for truth based on the type of the operator(s)
-     * @param {*) val - The value that is being checked against a base value
+     * @param {string|number|boolean} val - The value that is being checked against a base value
      * @param {*} base - The based value against which values are compared
      * @param {string} type - The type of equality operator(s) to be used in the comparison
      * @returns {boolean} - Returns a boolean indicating that whether the comparison was true of false
