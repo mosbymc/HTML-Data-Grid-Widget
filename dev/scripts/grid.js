@@ -1036,7 +1036,7 @@ var grid = (function _grid($) {
             switch (type) {
                 case 'boolean':
                     input = $('<input type="checkbox" class="input checkbox active-cell"' + dataAttributes + '/>').appendTo(cell);
-                    input[0].checked = !!(val || val === 'true');
+                    input[0].checked = typeof val === 'string' ? val === 'true' : !!val;
                     dataType = 'boolean';
                     break;
                 case 'number':
