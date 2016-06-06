@@ -76,12 +76,12 @@
  - Add "transform" function to be called for the cell data in a column - DONE
  - Create new regex string - one for character input validation, one for submit validation - DONE
  - Prevent filtering on non-safe values/add character validation on input to filtering divs - DONE
- - Ensure all types are implemented across the board (number, time, date, boolean, string)
+ - Determine what to do with input or grid data that does not pass formatting - DONE
+ - Ensure all types are implemented across the board (number, time, date, boolean, string) - DONE
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
- - Determine what to do with input or grid data that does not pass formatting
  */
 /*exported grid*/
 /**
@@ -547,7 +547,7 @@ var grid = (function _grid($) {
                                 }
                                 else
                                     tableCell = storage.grids[gridId].grid.find('.grid-content-div').find('table').find('tr:nth-child(' + (cell.index + 1) + ')').find('[data-field="' + cell.field + '"]');
-                                var text = getFormattedCellText(gridId, cell.field, cell.value);
+                                var text = getFormattedCellText(gridId, cell.field, cell.value) || cell.value;
                                 tableCell.text(text);
                                 if (setAsDirty) tableCell.prepend('<span class="dirty"></span>');
                             }
@@ -801,7 +801,7 @@ var grid = (function _grid($) {
             }
             if (typeof gridData.dataSource.get === 'function') {
                 if (gridData.summaryRow[col].type && gridData.summaryRow[col].value) {
-                    text = getFormattedCellText(gridId, col, gridData.summaryRow[col].value);
+                    text = getFormattedCellText(gridId, col, gridData.summaryRow[col].value) || gridData.summaryRow[col].value;
                     aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
                 }
                 else
@@ -810,7 +810,7 @@ var grid = (function _grid($) {
             else {
                 switch (gridData.summaryRow[col].type) {
                     case 'count':
-                        text = getFormattedCellText(gridId, col, gridData.dataSource.rowCount);
+                        text = getFormattedCellText(gridId, col, gridData.dataSource.rowCount) || gridData.dataSource.rowCount;
                         aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
                         break;
                     case 'average':
@@ -819,7 +819,7 @@ var grid = (function _grid($) {
                             total += parseFloat(data[i][col]);
                         }
                         var avg = parseFloat(total/parseFloat(gridData.dataSource.rowCount)).toFixed(2);
-                        text = getFormattedCellText(gridId, col, avg);
+                        text = getFormattedCellText(gridId, col, avg) || avg;
                         aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
                         break;
                     case 'total':
@@ -828,7 +828,7 @@ var grid = (function _grid($) {
                             total += parseFloat(data[i][col]);
                         }
                         if (type === 'currency') total = total.toFixed(2);
-                        text = getFormattedCellText(gridId, col, total);
+                        text = getFormattedCellText(gridId, col, total) || total;
                         aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
                         break;
                     case 'min':
@@ -836,7 +836,7 @@ var grid = (function _grid($) {
                         for (i = 0; i < gridData.dataSource.rowCount; i++) {
                             if (!min || parseFloat(data[i][col]) < min) min = parseFloat(data[i][col]);
                         }
-                        text = getFormattedCellText(gridId, col, min);
+                        text = getFormattedCellText(gridId, col, min) || min;
                         aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
                         break;
                     case 'max':
@@ -844,7 +844,7 @@ var grid = (function _grid($) {
                         for (i = 0; i < gridData.dataSource.rowCount; i++) {
                             if (!max || parseFloat(data[i][col]) > max) max = parseFloat(data[i][col]);
                         }
-                        text = getFormattedCellText(gridId, col, max);
+                        text = getFormattedCellText(gridId, col, max) || max;
                         aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
                         break;
                     case '':
@@ -903,7 +903,7 @@ var grid = (function _grid($) {
             if (gridData.groupedBy && gridData.groupedBy !== 'none') {
                 if (!curRow || gridData.dataSource.data[i][gridData.groupedBy] !== curRow) {
                     curRow = gridData.dataSource.data[i][gridData.groupedBy];
-                    var groupedText = getFormattedCellText(id, gridData.groupedBy, curRow);
+                    var groupedText = getFormattedCellText(id, gridData.groupedBy, curRow) || curRow;
                     var groupTr = $('<tr class="grouped_row_header"></tr>').appendTo(contentTBody);
                     var groupTitle = gridData.columns[gridData.groupedBy].title || gridData.groupedBy;
                     groupTr.append('<td colspan="' + (columns.length + 1) + '"><p class="grouped"><a class="group-desc sortSpan group_acc_link"></a>' + groupTitle + ': ' + groupedText + '</p></td>');
@@ -938,8 +938,8 @@ var grid = (function _grid($) {
                         td.addClass(gridData.columns[columns[j]].attributes.cellClasses[z]);
                     }
                 }
-
-                td.text(getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]));
+                var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
+                td.text(text);
                 //attach event handlers to save data
                 if (gridData.columns[columns[j]].editable) makeCellEditable(id, td);
                 else if (gridData.columns[columns[j]].selectable) makeCellSelectable(id, td);
@@ -1259,10 +1259,9 @@ var grid = (function _grid($) {
             field = cell.data('field'),
             type = storage.grids[id].columns[field].type || '',
             saveVal, re,
-            displayVal = getFormattedCellText(id, field, val);
+            displayVal = getFormattedCellText(id, field, val) || storage.grids[id].dataSource.data[index][field];
 
         input.remove();
-        //Types: date, number, string, boolean, time
         switch (type) {
             case 'number':
                 re = new RegExp(dataTypes.number);
@@ -1303,7 +1302,7 @@ var grid = (function _grid($) {
 
         var index = parentCell.parents('tr').index();
         var field = parentCell.data('field');
-        var text = getFormattedCellText(id, field, val);
+        var text = getFormattedCellText(id, field, val) || storage.grids[id].dataSource.data[index][field];
         parentCell.text(text);
         var previousVal = storage.grids[id].dataSource.data[index][field];
         if (previousVal !== val) {	//if the value didn't change, don't "save" the new val, and don't apply the "dirty" span
@@ -1381,7 +1380,7 @@ var grid = (function _grid($) {
                     var rowNum = storage.grids[id].pageSize;
                     var addend = (pageNum-1)*rowNum;
                     var cellVal = storage.grids[id].originalData[index][field] !== undefined ? storage.grids[id].originalData[index][field] : '';
-                    var text = getFormattedCellText(id, field, cellVal);
+                    var text = getFormattedCellText(id, field, cellVal) || cellVal;
                     dirtyCells[i].text(text);
                     dirtyCells[i].find('.dirty').remove();
                     storage.grids[id].dataSource.data[index][field] = storage.grids[id].originalData[index + addend][field];
@@ -2069,7 +2068,8 @@ var grid = (function _grid($) {
                     var cell = $(val).parents('td');
                     var index = cell.parents('tr').index();
                     var field = cell.data('field');
-                    cell.text(getFormattedCellText(id, cell.data('field'), storage.grids[id].originalData[index][field]));
+                    var text = getFormattedCellText(id, cell.data('field'), storage.grids[id].originalData[index][field]) || storage.grids[id].originalData[index][field];
+                    cell.text(text);
                     $(val).remove();
                 });
             }
@@ -2463,7 +2463,7 @@ var grid = (function _grid($) {
             format = storage.grids[gridId].columns[column].format,
             timeFormat = storage.grids[gridId].columns[column].timeFormat;
 
-        if (timeArray.length < 2) return '';    //TODO: should an empty string be returned here, or the value that was entered?
+        if (timeArray.length < 2) return '';
 
         if (timeFormat && timeFormat == '24' && timeArray.length === 4 && timeArray[3] === 'PM')
             timeArray[0] = timeArray[0] === 12 ? 0 : (timeArray[0] + 12);
