@@ -689,31 +689,45 @@ var grid = (function _grid($) {
     function attachTableSelectHandler(tableBody) {
         var gridId = tableBody.parents('.grid-wrapper').data('grid_id');
         var isSelectable = storage.grids[gridId].selectable;
-        if (isSelectable === true || isSelectable === 'row' || isSelectable === 'cell') {
-            tableBody.on('click', function tableBodySelectCallback(e) {
-                $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
-                    $(elem).removeClass('selected');
-                });
-                var target = $(e.target);
-                if (isSelectable === 'cell' && target[0].tagName.toUpperCase() === 'TD')
-                    target.addClass('selected');
-                else if (target[0].tagName.toUpperCase() === 'TR')
-                    target.addClass('selected');
-                else
-                    target.parents('tr').first().addClass('selected');
+        if (isSelectable) {
+            $(document).on('click', function tableBodySelectCallback(e) {
+                if (e.target === tableBody[0] || $(e.target).parents('tbody')[0] === tableBody[0]) {
+                    if (storage.grids[gridId].selecting) {
+                        storage.grids[gridId].selecting = false;
+                        return;
+                    }
+                    $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
+                        $(elem).removeClass('selected');
+                    });
+                    var target = $(e.target);
+                    if (isSelectable === 'cell' && target[0].tagName.toUpperCase() === 'TD')
+                        target.addClass('selected');
+                    else if (target[0].tagName.toUpperCase() === 'TR')
+                        target.addClass('selected');
+                    else
+                        target.parents('tr').first().addClass('selected');
+                }
             });
         }
-        else if (isSelectable === 'multi-row' || isSelectable === 'multi-cell') {
-            tableBody.on('mousedown', function mouseDownDragCallback(event) {
-                storage.grids[gridId].selecting = true;
-                var highlightDiv = $('<div class="selection-highlighter"></div>').appendTo(storage.grids[gridId].grid);
-                highlightDiv.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
-                highlightDiv.data('origin-y', event.pageY).data('origin-x', event.pageX);
+        if (isSelectable === 'multi-row' || isSelectable === 'multi-cell') {
 
-                tableBody.one('mouseup', function mouseUpDragCallback() {
-                    $(".selection-highlighter").remove();
-                    storage.grids[gridId].selecting = false;
-                });
+            $(document).on('mousedown', function mouseDownDragCallback(event) {
+                if (event.target === tableBody[0] || $(event.target).parents('tbody')[0] === tableBody[0]) {
+                    storage.grids[gridId].selecting = true;
+
+                    var highlightDiv = $('<div class="selection-highlighter"></div>').appendTo(storage.grids[gridId].grid);
+                    highlightDiv.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
+                    highlightDiv.data('origin-y', event.pageY).data('origin-x', event.pageX);
+
+                    $(document).one('mouseup', function mouseUpDragCallback() {
+                        $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
+                            $(elem).removeClass('selected');
+                        });
+                        var overlay = $(".selection-highlighter");
+                        selectHighlighted(overlay, gridId);
+                        overlay.remove();
+                    });
+                }
             });
 
             tableBody.on('mousemove', function bbb(ev) {
@@ -730,8 +744,10 @@ var grid = (function _grid($) {
                     var ctTop = contentTable.css('top');
                     var ctLeft = contentTable.css('left');
 
-                    if (clientX < ctLeft || clientX > (contentTable.css('width') - ctLeft) || clientY < ctTop || clientY > (contentTable.css('height') - ctTop))
-                        return; 
+                    if (clientX < ctLeft || clientX > (contentTable.css('width') - ctLeft) || clientY < ctTop || clientY > (contentTable.css('height') - ctTop)) {
+                        tableBody.trigger('mouseup');
+                        return;
+                    }
                     window.getSelection().removeAllRanges();
                     var highlightDiv = gridInstance.find('.selection-highlighter');
                     var originY = highlightDiv.data('origin-y');
@@ -744,6 +760,44 @@ var grid = (function _grid($) {
                 }
             });
         }
+    }
+
+    function selectHighlighted(overlay, gridId) {
+        var gridWidget = storage.grids[gridId].grid;
+        var offset = overlay.offset();
+        var top = offset.top;
+        var left = offset.left;
+        var right = parseFloat(overlay.css('width')) + left;
+        var bottom = parseFloat(overlay.css('height')) + top;
+        var gridElems = storage.grids[gridId].selectable === 'multi-cell' ? gridWidget.find('.grid-content-div').find('td') : gridWidget.find('.grid-content-div').find('tr');
+
+        gridElems.each(function highlightGridElemsCallback(idx, val) {
+            var element = $(val);
+            var eOffset = element.offset();
+            var eTop = eOffset.top;
+            var eLeft = eOffset.left;
+            var eRight = parseFloat(element.css('width')) + eLeft;
+            var eBottom = parseFloat(element.css('height')) + eTop;
+
+            if (eLeft <= left && eTop <= top && eBottom >= top && eBottom <= bottom && eRight <= right && eRight >= left)
+                element.addClass('selected');
+            else if (eLeft >= left && eLeft <= right && eTop >= top && eTop <= bottom && eBottom >= bottom && eRight >= right)
+                element.addClass('selected');
+            else if (eLeft >= left && eTop <= top && eBottom <= top && eBottom <= bottom && eRight >= right)
+                element.addClass('selected');
+            else if (eLeft <= left && eTop >= top && eTop >= bottom && eBottom >= bottom && eRight <= right)
+                element.addClass('selected');
+            else if (eLeft >= left && eTop >= top && eBottom <= bottom && eRight <= right)
+                element.addClass('selected');
+            else if (eLeft <= left && eTop <= top && eBottom >= bottom && eRight >= right)
+                element.addClass('selected');
+            else if (eLeft <= left && eTop <= top && eBottom >= top && eBottom <= bottom && eRight >= right)
+                element.addClass('selected');
+            else if (eLeft <= left && eTop >= top && eTop <= bottom && eBottom >= bottom && eRight >= right)
+                element.addClass('selected');
+            else if (eLeft <= left && eTop >= top && eBottom <= bottom && eRight >= right)
+                element.addClass('selected');
+        });
     }
 
     function createGroupTrEventHandlers() {

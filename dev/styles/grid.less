@@ -223,22 +223,26 @@
     empty-cells: show;
     border-width:0;
     outline:0;
-  }
 
-  tr {
-    &:hover {
-      background-color: #949aa3;
-    }
-    &:last-child td {
-      border-bottom-width: 0;
-    }
-  }
+    tr {
+      &:hover {
+        background-color: #949aa3;
+      }
+      &:last-child td {
+        border-bottom-width: 0;
+      }
 
-  td {
-    border-bottom: 1px solid @border-color;
-    .grid-th-td;
-    white-space: normal;
-    line-height: 1.6em;
+      td {
+        td:first-child {
+          border-left: none;
+        }
+        border-bottom: 1px solid @border-color;
+        border-left: 1px solid @border-color;
+        .grid-th-td;
+        white-space: normal;
+        line-height: 1.6em;
+      }
+    }
   }
 }
 

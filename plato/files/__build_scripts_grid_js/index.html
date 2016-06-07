@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.38</p>
+      <p class="stat">55.34</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2383</p>
+      <p class="stat">2437</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">185.36</p>
+      <p class="stat">188.78</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">50.43</p>
+      <p class="stat">52.03</p>
     </div>
   </div>
 </div>
@@ -780,31 +780,45 @@
     function attachTableSelectHandler(tableBody) {
         var gridId = tableBody.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
         var isSelectable = storage.grids[gridId].selectable;
-        if (isSelectable === true || isSelectable === &#039;row&#039; || isSelectable === &#039;cell&#039;) {
-            tableBody.on(&#039;click&#039;, function tableBodySelectCallback(e) {
-                $(&#039;.selected&#039;).each(function iterateSelectedItemsCallback(idx, elem) {
-                    $(elem).removeClass(&#039;selected&#039;);
-                });
-                var target = $(e.target);
-                if (isSelectable === &#039;cell&#039; &amp;&amp; target[0].tagName.toUpperCase() === &#039;TD&#039;)
-                    target.addClass(&#039;selected&#039;);
-                else if (target[0].tagName.toUpperCase() === &#039;TR&#039;)
-                    target.addClass(&#039;selected&#039;);
-                else
-                    target.parents(&#039;tr&#039;).first().addClass(&#039;selected&#039;);
+        if (isSelectable) {
+            $(document).on(&#039;click&#039;, function tableBodySelectCallback(e) {
+                if (e.target === tableBody[0] || $(e.target).parents(&#039;tbody&#039;)[0] === tableBody[0]) {
+                    if (storage.grids[gridId].selecting) {
+                        storage.grids[gridId].selecting = false;
+                        return;
+                    }
+                    $(&#039;.selected&#039;).each(function iterateSelectedItemsCallback(idx, elem) {
+                        $(elem).removeClass(&#039;selected&#039;);
+                    });
+                    var target = $(e.target);
+                    if (isSelectable === &#039;cell&#039; &amp;&amp; target[0].tagName.toUpperCase() === &#039;TD&#039;)
+                        target.addClass(&#039;selected&#039;);
+                    else if (target[0].tagName.toUpperCase() === &#039;TR&#039;)
+                        target.addClass(&#039;selected&#039;);
+                    else
+                        target.parents(&#039;tr&#039;).first().addClass(&#039;selected&#039;);
+                }
             });
         }
-        else if (isSelectable === &#039;multi-row&#039; || isSelectable === &#039;multi-cell&#039;) {
-            tableBody.on(&#039;mousedown&#039;, function mouseDownDragCallback(event) {
-                storage.grids[gridId].selecting = true;
-                var highlightDiv = $(&#039;&lt;div class=&quot;selection-highlighter&quot;&gt;&lt;/div&gt;&#039;).appendTo(storage.grids[gridId].grid);
-                highlightDiv.css(&#039;top&#039;, event.pageY).css(&#039;left&#039;, event.pageX).css(&#039;width&#039;, 0).css(&#039;height&#039;, 0);
-                highlightDiv.data(&#039;origin-y&#039;, event.pageY).data(&#039;origin-x&#039;, event.pageX);
+        if (isSelectable === &#039;multi-row&#039; || isSelectable === &#039;multi-cell&#039;) {
 
-                tableBody.one(&#039;mouseup&#039;, function mouseUpDragCallback() {
-                    $(&quot;.selection-highlighter&quot;).remove();
-                    storage.grids[gridId].selecting = false;
-                });
+            $(document).on(&#039;mousedown&#039;, function mouseDownDragCallback(event) {
+                if (event.target === tableBody[0] || $(event.target).parents(&#039;tbody&#039;)[0] === tableBody[0]) {
+                    storage.grids[gridId].selecting = true;
+
+                    var highlightDiv = $(&#039;&lt;div class=&quot;selection-highlighter&quot;&gt;&lt;/div&gt;&#039;).appendTo(storage.grids[gridId].grid);
+                    highlightDiv.css(&#039;top&#039;, event.pageY).css(&#039;left&#039;, event.pageX).css(&#039;width&#039;, 0).css(&#039;height&#039;, 0);
+                    highlightDiv.data(&#039;origin-y&#039;, event.pageY).data(&#039;origin-x&#039;, event.pageX);
+
+                    $(document).one(&#039;mouseup&#039;, function mouseUpDragCallback() {
+                        $(&#039;.selected&#039;).each(function iterateSelectedItemsCallback(idx, elem) {
+                            $(elem).removeClass(&#039;selected&#039;);
+                        });
+                        var overlay = $(&quot;.selection-highlighter&quot;);
+                        selectHighlighted(overlay, gridId);
+                        overlay.remove();
+                    });
+                }
             });
 
             tableBody.on(&#039;mousemove&#039;, function bbb(ev) {
@@ -821,8 +835,10 @@
                     var ctTop = contentTable.css(&#039;top&#039;);
                     var ctLeft = contentTable.css(&#039;left&#039;);
 
-                    if (clientX &lt; ctLeft || clientX &gt; (contentTable.css(&#039;width&#039;) - ctLeft) || clientY &lt; ctTop || clientY &gt; (contentTable.css(&#039;height&#039;) - ctTop))
-                        return; 
+                    if (clientX &lt; ctLeft || clientX &gt; (contentTable.css(&#039;width&#039;) - ctLeft) || clientY &lt; ctTop || clientY &gt; (contentTable.css(&#039;height&#039;) - ctTop)) {
+                        tableBody.trigger(&#039;mouseup&#039;);
+                        return;
+                    }
                     window.getSelection().removeAllRanges();
                     var highlightDiv = gridInstance.find(&#039;.selection-highlighter&#039;);
                     var originY = highlightDiv.data(&#039;origin-y&#039;);
@@ -835,6 +851,44 @@
                 }
             });
         }
+    }
+
+    function selectHighlighted(overlay, gridId) {
+        var gridWidget = storage.grids[gridId].grid;
+        var offset = overlay.offset();
+        var top = offset.top;
+        var left = offset.left;
+        var right = parseFloat(overlay.css(&#039;width&#039;)) + left;
+        var bottom = parseFloat(overlay.css(&#039;height&#039;)) + top;
+        var gridElems = storage.grids[gridId].selectable === &#039;multi-cell&#039; ? gridWidget.find(&#039;.grid-content-div&#039;).find(&#039;td&#039;) : gridWidget.find(&#039;.grid-content-div&#039;).find(&#039;tr&#039;);
+
+        gridElems.each(function highlightGridElemsCallback(idx, val) {
+            var element = $(val);
+            var eOffset = element.offset();
+            var eTop = eOffset.top;
+            var eLeft = eOffset.left;
+            var eRight = parseFloat(element.css(&#039;width&#039;)) + eLeft;
+            var eBottom = parseFloat(element.css(&#039;height&#039;)) + eTop;
+
+            if (eLeft &lt;= left &amp;&amp; eTop &lt;= top &amp;&amp; eBottom &gt;= top &amp;&amp; eBottom &lt;= bottom &amp;&amp; eRight &lt;= right &amp;&amp; eRight &gt;= left)
+                element.addClass(&#039;selected&#039;);
+            else if (eLeft &gt;= left &amp;&amp; eLeft &lt;= right &amp;&amp; eTop &gt;= top &amp;&amp; eTop &lt;= bottom &amp;&amp; eBottom &gt;= bottom &amp;&amp; eRight &gt;= right)
+                element.addClass(&#039;selected&#039;);
+            else if (eLeft &gt;= left &amp;&amp; eTop &lt;= top &amp;&amp; eBottom &lt;= top &amp;&amp; eBottom &lt;= bottom &amp;&amp; eRight &gt;= right)
+                element.addClass(&#039;selected&#039;);
+            else if (eLeft &lt;= left &amp;&amp; eTop &gt;= top &amp;&amp; eTop &gt;= bottom &amp;&amp; eBottom &gt;= bottom &amp;&amp; eRight &lt;= right)
+                element.addClass(&#039;selected&#039;);
+            else if (eLeft &gt;= left &amp;&amp; eTop &gt;= top &amp;&amp; eBottom &lt;= bottom &amp;&amp; eRight &lt;= right)
+                element.addClass(&#039;selected&#039;);
+            else if (eLeft &lt;= left &amp;&amp; eTop &lt;= top &amp;&amp; eBottom &gt;= bottom &amp;&amp; eRight &gt;= right)
+                element.addClass(&#039;selected&#039;);
+            else if (eLeft &lt;= left &amp;&amp; eTop &lt;= top &amp;&amp; eBottom &gt;= top &amp;&amp; eBottom &lt;= bottom &amp;&amp; eRight &gt;= right)
+                element.addClass(&#039;selected&#039;);
+            else if (eLeft &lt;= left &amp;&amp; eTop &gt;= top &amp;&amp; eTop &lt;= bottom &amp;&amp; eBottom &gt;= bottom &amp;&amp; eRight &gt;= right)
+                element.addClass(&#039;selected&#039;);
+            else if (eLeft &lt;= left &amp;&amp; eTop &gt;= top &amp;&amp; eBottom &lt;= bottom &amp;&amp; eRight &gt;= right)
+                element.addClass(&#039;selected&#039;);
+        });
     }
 
     function createGroupTrEventHandlers() {

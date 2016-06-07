@@ -218,14 +218,15 @@
   border-width: 0;
   outline: 0;
 }
-.grid-content-div tr:hover {
+.grid-content-div table tr:hover {
   background-color: #949aa3;
 }
-.grid-content-div tr:last-child td {
+.grid-content-div table tr:last-child td {
   border-bottom-width: 0;
 }
-.grid-content-div td {
+.grid-content-div table tr td {
   border-bottom: 1px solid #e6e6e6;
+  border-left: 1px solid #e6e6e6;
   border-collapse: separate;
   padding: 10px 12px;
   display: table-cell;
@@ -235,6 +236,9 @@
   text-overflow: ellipsis;
   white-space: normal;
   line-height: 1.6em;
+}
+.grid-content-div table tr td td:first-child {
+  border-left: none;
 }
 tr.selected,
 td.selected {
