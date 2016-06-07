@@ -82,6 +82,7 @@
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
+ - Add handler for mounsedown/mouseup event to highlight multiple cells/rows
  */
 /*exported grid*/
 /**
@@ -877,7 +878,7 @@ var grid = (function _grid($) {
         if (gridElem.find('.toolbar'))
             toolbarHeight = parseFloat(gridElem.find('.toolbar').css('height'));
 
-        contentHeight = gridData.height && isNumber(gridData.height) ? gridData.height - (headerHeight + footerHeight + toolbarHeight) + 'px' : '250px';
+        contentHeight = gridData.height && isNumber(parseFloat(gridData.height)) ? gridData.height - (headerHeight + footerHeight + toolbarHeight) + 'px' : '250px';
         var gridContent = gridElem.find('.grid-content-div').css('height', contentHeight);
         var id = gridContent.data('grid_content_id');
         var gcOffsets = gridContent.offset();
@@ -887,6 +888,7 @@ var grid = (function _grid($) {
         var contentTable = $('<table id="' + gridElem[0].id + '_content" style="height:auto;"></table>').appendTo(gridContent);
         var colGroup = $('<colgroup></colgroup>').appendTo(contentTable);
         var contentTBody = $('<tbody></tbody>').appendTo(contentTable);
+        if (gridData.selectable) attachTableSelectHandler(contentTBody);
         var columns = [];
         gridElem.find('th').each(function headerIterationCallback(idx, val) {
             if (!$(val).hasClass('group_spacer'))
@@ -988,6 +990,68 @@ var grid = (function _grid($) {
         storage.grids[id].dataSource.data = gridData.dataSource.data;
         loader.remove();
         storage.grids[id].updating = false;
+    }
+
+    //TODO: need to figure out best way to handle de-selection
+    //TODO: need to prevent deselection from happening when dragover occurs inside a current editing cell
+    function attachTableSelectHandler(tableBody) {
+        var gridId = tableBody.parents('.grid-wrapper').data('grid_id');
+        var isSelectable = storage.grids[gridId].selectable;
+        if (isSelectable === true || isSelectable === 'row' || isSelectable === 'cell') {
+            tableBody.on('click', function tableBodySelectCallback(e) {
+                $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
+                    $(elem).removeClass('selected');
+                });
+                var target = $(e.target);
+                if (isSelectable === 'cell' && target[0].tagName.toUpperCase() === 'TD')
+                    target.addClass('selected');
+                else if (target[0].tagName.toUpperCase() === 'TR')
+                    target.addClass('selected');
+                else
+                    target.parents('tr').first().addClass('selected');
+            });
+        }
+        else if (isSelectable === 'multi-row' || isSelectable === 'multi-cell') {
+            tableBody.on('mousedown', function mouseDownDragCallback(event) {
+                storage.grids[gridId].selecting = true;
+                var highlightDiv = $('<div class="selection-highlighter"></div>').appendTo(storage.grids[gridId].grid);
+                highlightDiv.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
+                highlightDiv.data('origin-y', event.pageY).data('origin-x', event.pageX);
+
+                tableBody.one('mouseup', function mouseUpDragCallback(/*evt*/) {
+                    $(".selection-highlighter").remove();
+                    storage.grids[gridId].selecting = false;
+                });
+            });
+
+            tableBody.on('mousemove', function bbb(ev) {
+                if (storage.grids[gridId].selecting) {
+                    var domElem = $(ev.target),
+                        domTag = domElem[0].tagName.toUpperCase();
+                    if (domTag === 'INPUT' || domTag === 'SELECT') return;
+
+                    var gridInstance = storage.grids[gridId].grid;
+                    var clientX = ev.clientX;
+                    var clientY = ev.clientY;
+
+                    var contentTable = gridInstance.find('.grid-content-div');
+                    var ctTop = contentTable.css('top');
+                    var ctLeft = contentTable.css('left');
+
+                    if (clientX < ctLeft || clientX > (contentTable.css('width') - ctLeft) || clientY < ctTop || clientY > (contentTable.css('height') - ctTop))
+                        tableBody.trigger('mouseup');
+                    window.getSelection().removeAllRanges();
+                    var highlightDiv = gridInstance.find('.selection-highlighter');
+                    var originY = highlightDiv.data('origin-y');
+                    var originX = highlightDiv.data('origin-x');
+                    var top = originY >= clientY ? clientY : originY;
+                    var left = originX >= clientX ? clientX : originX;
+                    var bottom = originY < clientY ? clientY : originY;
+                    var right = originX < clientX ? clientX : originX;
+                    highlightDiv.css('top', top).css('left', left).css('height', (bottom - top)).css('width', (right - left));
+                }
+            });
+        }
     }
 
     function createGroupTrEventHandlers() {
@@ -1458,10 +1522,18 @@ var grid = (function _grid($) {
 
         var pageOptions = gridData.pagingOptions;
         if (pageOptions && pageOptions.constructor === Array) {
-            var sizeSelectorSpan = $('<span class="page-size-span"></span>').appendTo(gridFooter);
-            var sizeSelect = $('<select class="size-selector input"></select>').appendTo(sizeSelectorSpan);
+            var sizeSelectorSpan = $('<span class="page-size-span"></span>'),
+                sizeSelect = $('<select class="size-selector input"></select>'),
+                numOptions = 0;
             for (var i = 0; i < pageOptions.length; i++) {
-                sizeSelect.append('<option value="' + pageOptions[i] + '">' + pageOptions[i] + '</option>');
+                if (isNumber(parseFloat(pageOptions[i]))) {
+                    sizeSelect.append('<option value="' + pageOptions[i] + '">' + pageOptions[i] + '</option>');
+                    numOptions++;
+                }
+            }
+            if (numOptions) {
+                sizeSelectorSpan.appendTo(gridFooter);
+                sizeSelect.appendTo(sizeSelectorSpan);
             }
             sizeSelect.val(storage.grids[id].pageSize);
             sizeSelectorSpan.append('Rows per page');

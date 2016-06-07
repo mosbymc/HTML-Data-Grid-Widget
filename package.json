@@ -40,6 +40,7 @@
     "gulp-nodemon": "^2.0.6",
     "gulp-plumber": "^1.1.0",
     "gulp-print": "^2.0.1",
+    "gulp-strip-comments": "^2.4.3",
     "gulp-task-listing": "^1.0.1",
     "gulp-util": "^3.0.7",
     "gulp-yuidoc": "^0.1.2",

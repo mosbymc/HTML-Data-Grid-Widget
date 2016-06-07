@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Plato - ./dev/scripts/grid.js</title>
+  <title>Plato - ./build/scripts/grid.js</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="">
@@ -36,7 +36,7 @@
 
 <div class="jumbotron">
   <div class="container">
-    <h1>./dev/scripts/grid.js</h1>
+    <h1>./build/scripts/grid.js</h1>
   </div>
 </div>
 
@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.31</p>
+      <p class="stat">55.38</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2714</p>
+      <p class="stat">2383</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">186.80</p>
+      <p class="stat">185.36</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">49.14</p>
+      <p class="stat">50.43</p>
     </div>
   </div>
 </div>
@@ -89,117 +89,18 @@
 
 <div class="container">
   <div class="row">
-    <textarea id="file-source" class="col-md-12">/*
- The MIT License (MIT)
- Copyright © 2014 &lt;copyright holders&gt;
-
- Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”),
- to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-*/
-/*
- TODO:
- - Need to reattach event listeners for sorting and filtering when columns are reordered. - DONE
- - Need to reorder summary row on column reorder - DONE
- - Remove click handlers on in-cell edit to stop event propagation and check the event target/currentTarget - DONE
- - On cell edit/select, need to make sure that the prefix/postfix is applied to the value in the cell - DONE
- - Work on resizing columns - DONE
- - Need to figure out how to properly display the last cell in the header row - DONE
- - Figure out column sizing - DONE
- - Specify a min-width for column re-sizing, beyond which the cell cannot be made smaller - DONE
- - Add loading icon (fa fa-spinner fa-pulse fa-2x) - DONE
- - Fix editable/selectable cells with client-side paging - DONE
- - Fix column sizing issue - DONE
- - Fix paging + row counter - DONE
- - Add max and min for sum row - DONE
- - Refactor class names and ids + storage attr names - DONE
- - Stop page from jumping when links are clicked - DONE
- - Make sure reordered columns don&#039;t swap sizes - DONE
- - Prevent horizontal scroll when sorting/filtering - DONE
- - Make sure when removing filter that it remain sorted - DONE
- - Figure out loader placement - DONE
- - Fix column resizing after column reordering (resize, then reorder, then resize) - DONE
- - Fix saving the new value to work on empty string/undefined - DONE
- - Should probably clone grid data on create. Maintain a separate copy of data from what Devs have access to - DONE
- - Need to create grid content from &quot;create&quot; function, not headers function - DONE
- - Add a &quot;rowCount&quot; field to the dateSource for server-side actions - DONE
- - Fix page size changing to stay on correct page, and display the correct rows - DONE
- - Fix filtering on empty string - DONE
- - Fix &quot;Delete Changes&quot; when a new value has been selected twice before saving - DONE
- - Figure out why &quot;insertKey&quot; isn&#039;t working on highlights - DONE
- - Add ability to alternate row colors - DONE
- - Fix resizing on grouped rows - DONE
- - Add &quot;undo&quot; filter/sort/group ability in toolbar - DONE
- - During paging, grouped and/or sorted data is being un-grouped (filtered data too likely) - DONE
- - Fix paging on filtered data - DONE
- - Redo summary row so that it works with server-side paging as well - DONE
- - Fix reordering on grouped grid - DONE
- - See about only giving the dataSource.data the needed data for the current grid page - DONE
- - Add a template field for column data - DONE
- - Fix NaN/Undefined rows on filter/sorting - DONE
- - Add a field for custom classes to be applied to cells/rows - DONE
- - Change class setters for columns/rows to &quot;attributes&quot;, include style attr - DONE
- - Redo aggregates on filter - DONE
- - Fire event on cell edit/select - DONE
- - Disable all buttons/inputs on grid when waiting for page content - DONE
- - Add getters for page data, selected row, column, cell - DONE
- - Add &#039;destroy&#039; function to remove dom elements and events - DONE
- - Figure out how to get correct row index of &#039;originalData&#039; when updating cell data on save - DONE
- - Add function to programatically update grid display data; dirty flag - DONE
- - Implement true aggregates + fix naming of row grouping - DONE
- - Check aggregations for existence of column before trying to build row&#039;s aggregates - DONE
- - Fix filtering/sorting on time - DONE
- - Rework setting column widths - DONE
- - Fix sorting chevron to not display on top of filter icon when column name is same size as column - DONE
- - Examine headers and fix DOM structure - DONE
- - Remove unused regex values &amp; update &#039;inputTypes&#039; to use validateCharacter function - DONE
- - Find out what the hell &#039;groupingStatusChanged&#039; is used for - DONE
- - Update sorting to handle multi-sort - DONE
- - Add server paging + data saving/filtering/sorting - DONE
- - Update API event methods to work with array and namespace - DONE
- - Add &quot;transform&quot; function to be called for the cell data in a column - DONE
- - Create new regex string - one for character input validation, one for submit validation - DONE
- - Prevent filtering on non-safe values/add character validation on input to filtering divs - DONE
- - Determine what to do with input or grid data that does not pass formatting - DONE
- - Ensure all types are implemented across the board (number, time, date, boolean, string) - DONE
- - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
- - Add integration tests if possible
- - Add type checking - passed in grid data
- - Thoroughly test date &amp; time regex usages
- */
-/*exported grid*/
-/**
- * grid module - object for creating and manipulating grid widgets
- * @class grid
- * @function _grid
- * @param {object} $ - jQuery alias
- */
-var grid = (function _grid($) {
+    <textarea id="file-source" class="col-md-12">var grid = (function _grid($) {
     &#039;use strict&#039;;
     var dataTypes, events, storage, aggregates;
 
-    /**
-     * Exposed on the grid module. Called to create a grid widget.
-     * @function create
-     * @static
-     * @param {object} gridData - The dataSource object needed to initialize the grid
-     * @param {object} gridElem - The DOM element that should be used to create the grid widget
-     */
     function create(gridData, gridElem) {
         if (gridData &amp;&amp; isDomElement(gridElem)) {
             var id = storage.count;
-            if (id &gt; 0) {   //test to check if previously created grids still exist
+            if (id &gt; 0) {   
                 var tmp = id - 1;
-                while (tmp &gt; -1) {  //iterate through all previous grids
-                    if (storage.grids[tmp] != null &amp;&amp; !$(&#039;body&#039;).find(&#039;#&#039; + storage.grids[tmp].grid[0].id).length)     //if not found in the body
-                        delete storage.grids[tmp];      //remove the data from storage
+                while (tmp &gt; -1) {  
+                    if (storage.grids[tmp] != null &amp;&amp; !$(&#039;body&#039;).find(&#039;#&#039; + storage.grids[tmp].grid[0].id).length)     
+                        delete storage.grids[tmp];      
                     tmp--;
                 }
             }
@@ -242,29 +143,11 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Adds publicly accessible methods to the DOM element that was
-     * passed to the &#039;create&#039; function to initialize the grid widget
-     * @method createGridInstanceMethods
-     * @private
-     * @param {object} gridElem - The DOM element that should be used to create the grid widget
-     * @param {number} gridId - The id of this grid&#039;s instance
-     */
     function createGridInstanceMethods(gridElem, gridId) {
         Object.defineProperty(
             gridElem[0].grid,
             &#039;activeCellData&#039;,
             {
-                /**
-                 * Returns the data from whichever grid cell is active
-                 * @method activeCellData
-                 * @for Grid DOM element
-                 * @protected
-                 * @readonly
-                 * @default grid cell&#039;s .text() value
-                 * @type string
-                 * @returns {string|null} - cell data
-                 */
                 get: function _getActiveCellData() {
                     var cell = gridElem.find(&#039;.active-cell&#039;);
                     if (!cell.length)
@@ -279,16 +162,6 @@ var grid = (function _grid($) {
             gridElem[0].grid,
             &#039;selectedRow&#039;,
             {
-                /**
-                 * Returns the row index from whichever grid cell is active
-                 * @method selectedRow
-                 * @for Grid DOM element
-                 * @protected
-                 * @readonly
-                 * @default Active cell&#039;s row index
-                 * @type integer
-                 * @returns {integer} - cell row index
-                 */
                 get: function _getSelectedRow() {
                     var cell = gridElem.find(&#039;.active-cell&#039;);
                     if (!cell.length)
@@ -301,17 +174,6 @@ var grid = (function _grid($) {
             gridElem[0].grid,
             &#039;selectedColumn&#039;,
             {
-                /**
-                 * Returns the selected column and column index of whichever
-                 * cell is currently active
-                 * @method _getSelectedColumn
-                 * @for Grid DOM element
-                 * @protected
-                 * @readonly
-                 * @default { field: &#039;field name&#039;, columnIndex: &#039;column index&#039; }
-                 * @type object
-                 * @returns {Object|null} - {field: &#039;grid column name&#039;, columnIndex: &#039;column index&#039;}
-                 */
                 get: function selectedColumn() {
                     var cell = gridElem.find(&#039;.active-cell&#039;);
                     if (!cell.length)
@@ -325,15 +187,6 @@ var grid = (function _grid($) {
         Object.defineProperties(
             gridElem[0].grid, {
                 &#039;bindEvents&#039;: {
-                    /**
-                     * Binds event handlers to events
-                     * @method bindEvents
-                     * @for Grid DOM element
-                     * @protected
-                     * @param {string} evt - a string representing an event that the grid can cause
-                     * @param {*} funcs - the event handler
-                     * @returns {boolean} - indicates that the provided function(s) were or were not added as event listeners.
-                     */
                     value: function _bindGridEvents(evt, funcs) {
                         if (!funcs || (typeof funcs !== &#039;function&#039; &amp;&amp; funcs.constructor !== Array)) return false;
                         if (typeof funcs === &#039;function&#039;) funcs = [funcs];
@@ -347,15 +200,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 &#039;unbindEvents&#039;: {
-                    /**
-                     * Unbinds an event handler from the specified event
-                     * @method unbindEvents
-                     * @for Grid DOM element
-                     * @protected
-                     * @param {string} evt - a string representing an event that the grid can cause
-                     * @param {*} funcs - the function object, or array of function objects to unbind
-                     * @returns {boolean} - indicates that the provided function(s) were or were not unbound
-                     */
                     value: function _unbindEvents(evt, funcs) {
                         if (~events.indexOf(evt) &amp;&amp; (funcs || (typeof funcs === &#039;function&#039; || funcs.constructor === Array))) {
                             if (typeof funcs === &#039;function&#039;) funcs = [funcs];
@@ -375,12 +219,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 &#039;removeAllEventHandlers&#039;: {
-                    /**
-                     * Removes all registered event handlers from grid events
-                     * @method removeAllEventHandlers
-                     * @for Grid DOM element
-                     * @protected
-                     */
                     value: function _removeAllEventHandlers() {
                         for (var i = 0; i &lt; events.length; i++) {
                             storage.grids[gridId].events[events[i]] = [];
@@ -390,16 +228,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 &#039;getHandledEvents&#039;: {
-                    /**
-                     * Returns all events for which a handler has been registered
-                     * @method getHandledEvents
-                     * @for Grid DOM element
-                     * @protected
-                     * @readonly
-                     * @default Array of grid events that currently have registered a handler
-                     * @type Array
-                     * @returns {Array} - The list of events that currently have a handler
-                     */
                     value: function _getHandledEvents() {
                         var evts = [];
                         for (var i = 0; i &lt; events.length; i++) {
@@ -412,16 +240,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 &#039;getAvailableEvents&#039;: {
-                    /**
-                     * Returns a list of the events that the grid can cause
-                     * @method getAvailableEvents
-                     * @for Grid DOM element
-                     * @protected
-                     * @readonly
-                     * @default Array of available grid events to listen for
-                     * @type Array
-                     * @returns {Array} - The list of all events that a handler can be registered for
-                     */
                     value: function _getAvailableEvents() {
                         return events;
                     },
@@ -429,16 +247,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 &#039;getAggregates&#039;: {
-                    /**
-                     * Returns the aggregations for all columns
-                     * @method getAggregates
-                     * @for Grid DOM element
-                     * @protected
-                     * @readonly
-                     * @default aggregates object
-                     * @type object
-                     * @returns {Object} - The aggregations that are currently in use for this page of the grid
-                     */
                     value: function _getAggregates() {
                         return storage.grids[gridId].summaryRow;
                     },
@@ -446,18 +254,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 &#039;getCurrentPageData&#039;: {
-                    /**
-                     * Returns the grid&#039;s page data.
-                     * @method getCurrentPageData
-                     * @for Grid DOM element
-                     * @protected
-                     * @readOnly
-                     * @default dataSource.data
-                     * @type Array
-                     * @param {int} index - The index of the grid page to return the data for.
-                     * @returns {Array} - An array with either all grid page data, or a single index&#039;s data if a
-                     * valid index was passed to the function
-                     */
                     value: function _getCurrentPageData(index) {
                         var rows = [],
                             result = [],
@@ -503,15 +299,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 &#039;getCurrentDataSourceData&#039;: {
-                    /**
-                     * Returns the grid&#039;s dataSource data
-                     * @method getCurrentDataSourceData
-                     * @for Grid DOM element
-                     * @protected
-                     * @param {int} index - The index of the dataSource.data to return the data for.
-                     * @returns {Array} - An array with either all grid page data, or a single index&#039;s data if a
-                     * valid index was passed to the function
-                     */
                     value: function _getCurrentDataSourceData(index) {
                         var i;
                         if (typeof index === &#039;number&#039; &amp;&amp; index &gt; -1 &amp;&amp; index &lt;= storage.grids[gridId].dataSource.data.length) {
@@ -531,13 +318,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 &#039;updatePageData&#039;: {
-                    /**
-                     * Updates the grid&#039;s page data; will also update the dataSource
-                     * @method updatePageData
-                     * @for Grid DOM element
-                     * @protected
-                     * @param {object} data
-                     */
                     value: function _updatePageData(data) {
                         if (data != null &amp;&amp; typeof data === &#039;object&#039; &amp;&amp; data.constructor === Array) {
                             storage.grids[gridId].dataSource.data = data;
@@ -554,13 +334,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 &#039;updateRowData&#039;: {
-                    /**
-                     * Updates the specified grid&#039;s row&#039;s data via the .index property
-                     * @method updateRowData
-                     * @for Grid DOM element
-                     * @protected
-                     * @param {object} rowData
-                     */
                     value: function _updateRowData(rowData) {
                         var appliedUpdate = false;
                         if (!rowData)
@@ -590,14 +363,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 &#039;updateCellData&#039;: {
-                    /**
-                     * Updates the specified grid&#039;s cell&#039;s data via the .index and .field properties
-                     * @method updateCellData
-                     * @for Grid DOM element
-                     * @protected
-                     * @param {object} cellData
-                     * @param {boolean} setAsDirty
-                     */
                     value: function _updateCellData(cellData, setAsDirty) {
                         if (!cellData) return;
                         if (cellData.constructor === Array) {
@@ -648,12 +413,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 &#039;destroy&#039;: {
-                    /**
-                     * Destroys the grid widget - includes the dataSource and the DOM element
-                     * @method destroy
-                     * @for Grid DOM element
-                     * @protected
-                     */
                     value: function _destroy() {
                         findChildren(storage.grids[gridId].grid.children());
                         delete storage.grids[gridId];
@@ -679,15 +438,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Abstraction for getting grid data so the &#039;create&#039; function doesn&#039;t
-     * care whether it was passed in, or if there is a server call to get it.
-     * @method getInitialGridData
-     * @for grid
-     * @private
-     * @param {object} dataSource - The dataSource for grid creation
-     * @param {function} callback - The callback function
-     */
     function getInitialGridData(dataSource, callback) {
         if (dataSource &amp;&amp; typeof dataSource.data === &#039;object&#039;)
             callback(null, { data: dataSource.data, rowCount: dataSource.rowCount });
@@ -701,16 +451,6 @@ var grid = (function _grid($) {
         else callback(true, {});
     }
 
-    /**
-     * Initializes an instance of the grid after retrieving the dataSource data.
-     * Sets the internal instance of the grid&#039;s data, calls to create the footer and content
-     * @method initializeGrid
-     * @for grid
-     * @private
-     * @param {number} id
-     * @param {object} gridData
-     * @param {object} gridElem
-     */
     function initializeGrid(id, gridData, gridElem) {
         var storageData = cloneGridData(gridData);
         storageData.events = {
@@ -783,14 +523,6 @@ var grid = (function _grid($) {
         create(oldData, gridElem);
     }
 
-    /**
-     * Creates the grid&#039;s headers given the column metadata passed to the create function
-     * @method createGridHeaders
-     * @for grid
-     * @private
-     * @param {object} gridData
-     * @param {object} gridElem
-     */
     function createGridHeaders(gridData, gridElem) {
         var gridHeader = gridElem.find(&#039;.grid-header-div&#039;);
         var gridHeadWrap = gridHeader.find(&#039;.grid-header-wrapper&#039;);
@@ -842,15 +574,6 @@ var grid = (function _grid($) {
         setColWidth(gridData, gridElem);
     }
 
-    /**
-     * Builds the header&#039;s aggregations row if specified to be displayed at the
-     * top of the grid
-     * @method buildHeaderAggregations
-     * @for grid
-     * @private
-     * @param {object} gridData
-     * @param {number} gridId
-     */
     function buildHeaderAggregations(gridData, gridId) {
         var sum = buildAggregatesRow(gridData, gridId);
         if (sum) {
@@ -869,16 +592,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Gets the aggregations - either passed in with metadata if server-side paging,
-     * or calculates the aggregations if client-side paging.
-     * @method buildAggregatesRow
-     * @for grid
-     * @private
-     * @param {object} gridData
-     * @param {number} gridId
-     * @returns {object}
-     */
     function buildAggregatesRow(gridData, gridId) {
         var aggData = {},
             data = gridData.alteredData ? gridData.alteredData :  gridData.dataSource.data,
@@ -951,15 +664,6 @@ var grid = (function _grid($) {
         return null;
     }
 
-    /**
-     * Creates the body of the grid. Sets the text in each cell and wires
-     * up the event listeners
-     * @method createGridContent
-     * @for grid
-     * @private
-     * @param {object} gridData
-     * @param {object} gridElem
-     */
     function createGridContent(gridData, gridElem) {
         var contentHeight;
         var footerHeight = parseFloat(gridElem.find(&#039;.grid-footer-div&#039;).css(&#039;height&#039;));
@@ -1032,7 +736,6 @@ var grid = (function _grid($) {
                 }
                 var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
                 td.text(text);
-                //attach event handlers to save data
                 if (gridData.columns[columns[j]].editable) makeCellEditable(id, td);
                 else if (gridData.columns[columns[j]].selectable) makeCellSelectable(id, td);
             }
@@ -1062,19 +765,11 @@ var grid = (function _grid($) {
             headWrap.scrollLeft(cDiv.scrollLeft());
         });
 
-        /*
-         This is set to make up for the vertical scroll bar that the gridContent div has.
-         It helps keep the header columns aligned with the content columns, and makes
-         the scroll handler for the content grid work correctly.
-         */
         var headerId = &#039;grid-header-&#039; + gridContent.data(&#039;grid_content_id&#039;);
         var headDiv = $(&#039;#&#039; + headerId);
         var sizeDiff = headDiv[0].clientWidth - gridContent[0].clientWidth;
         headDiv.css(&#039;paddingRight&#039;, sizeDiff);
 
-        //Once the column widths have been set (i.e. the first time creating the grid), they shouldn&#039;t change size again....
-        //any time the grid is paged, sorted, filtered, etc., the cell widths shouldn&#039;t change, the new data should just be dumped into
-        //the grid.
         copyGridWidth(gridElem);
 
         storage.grids[id].dataSource.data = gridData.dataSource.data;
@@ -1083,22 +778,63 @@ var grid = (function _grid($) {
     }
 
     function attachTableSelectHandler(tableBody) {
-        tableBody.on(&#039;click&#039;, function tableBodySelectCallback(e) {
-            $(&#039;.selectable&#039;).each(function iterateSelectedItemsCallback(idx, elem) {
-                $(elem).removeClass(&#039;selected&#039;);
-            });
-            var target = $(e.target);
-            var gridId = target.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
-            var isSelectable;
-            if (isSelectable = storage.grids[gridId].selectable) {
+        var gridId = tableBody.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
+        var isSelectable = storage.grids[gridId].selectable;
+        if (isSelectable === true || isSelectable === &#039;row&#039; || isSelectable === &#039;cell&#039;) {
+            tableBody.on(&#039;click&#039;, function tableBodySelectCallback(e) {
+                $(&#039;.selected&#039;).each(function iterateSelectedItemsCallback(idx, elem) {
+                    $(elem).removeClass(&#039;selected&#039;);
+                });
+                var target = $(e.target);
                 if (isSelectable === &#039;cell&#039; &amp;&amp; target[0].tagName.toUpperCase() === &#039;TD&#039;)
                     target.addClass(&#039;selected&#039;);
                 else if (target[0].tagName.toUpperCase() === &#039;TR&#039;)
                     target.addClass(&#039;selected&#039;);
                 else
                     target.parents(&#039;tr&#039;).first().addClass(&#039;selected&#039;);
-            }
-        });
+            });
+        }
+        else if (isSelectable === &#039;multi-row&#039; || isSelectable === &#039;multi-cell&#039;) {
+            tableBody.on(&#039;mousedown&#039;, function mouseDownDragCallback(event) {
+                storage.grids[gridId].selecting = true;
+                var highlightDiv = $(&#039;&lt;div class=&quot;selection-highlighter&quot;&gt;&lt;/div&gt;&#039;).appendTo(storage.grids[gridId].grid);
+                highlightDiv.css(&#039;top&#039;, event.pageY).css(&#039;left&#039;, event.pageX).css(&#039;width&#039;, 0).css(&#039;height&#039;, 0);
+                highlightDiv.data(&#039;origin-y&#039;, event.pageY).data(&#039;origin-x&#039;, event.pageX);
+
+                tableBody.one(&#039;mouseup&#039;, function mouseUpDragCallback() {
+                    $(&quot;.selection-highlighter&quot;).remove();
+                    storage.grids[gridId].selecting = false;
+                });
+            });
+
+            tableBody.on(&#039;mousemove&#039;, function bbb(ev) {
+                if (storage.grids[gridId].selecting) {
+                    var domElem = $(ev.target),
+                        domTag = domElem[0].tagName.toUpperCase();
+                    if (domTag === &#039;INPUT&#039; || domTag === &#039;SELECT&#039;) return;
+
+                    var gridInstance = storage.grids[gridId].grid;
+                    var clientX = ev.clientX;
+                    var clientY = ev.clientY;
+
+                    var contentTable = gridInstance.find(&#039;.grid-content-div&#039;);
+                    var ctTop = contentTable.css(&#039;top&#039;);
+                    var ctLeft = contentTable.css(&#039;left&#039;);
+
+                    if (clientX &lt; ctLeft || clientX &gt; (contentTable.css(&#039;width&#039;) - ctLeft) || clientY &lt; ctTop || clientY &gt; (contentTable.css(&#039;height&#039;) - ctTop))
+                        return; 
+                    window.getSelection().removeAllRanges();
+                    var highlightDiv = gridInstance.find(&#039;.selection-highlighter&#039;);
+                    var originY = highlightDiv.data(&#039;origin-y&#039;);
+                    var originX = highlightDiv.data(&#039;origin-x&#039;);
+                    var top = originY &gt;= clientY ? clientY : originY;
+                    var left = originX &gt;= clientX ? clientX : originX;
+                    var bottom = originY &lt; clientY ? clientY : originY;
+                    var right = originX &lt; clientX ? clientX : originX;
+                    highlightDiv.css(&#039;top&#039;, top).css(&#039;left&#039;, left).css(&#039;height&#039;, (bottom - top)).css(&#039;width&#039;, (right - left));
+                }
+            });
+        }
     }
 
     function createGroupTrEventHandlers() {
@@ -1207,7 +943,7 @@ var grid = (function _grid($) {
             cell.text(&#039;&#039;);
             var index = cell.parents(&#039;tr&#039;).index();
             var field = cell.data(&#039;field&#039;);
-            if (storage.grids[id].updating) return;		//can&#039;t edit a cell if the grid is updating
+            if (storage.grids[id].updating) return;		
 
             var gridValidation = storage.grids[id].useValidator ? storage.grids[id].columns[field].validation : null;
             var dataAttributes = &#039;&#039;;
@@ -1271,13 +1007,6 @@ var grid = (function _grid($) {
         return dataAttributes;
     }
 
-    /**
-     * Sets the column widths of the grid&#039;s header. If width properties are supplied as part
-     * of a column&#039;s metadata, the specified value is used; otherwise this function lets
-     * the column choose an auto-width.
-     * @param {object} gridData
-     * @param {object} gridElem
-     */
     function setColWidth(gridData, gridElem) {
         var columnNames = {},
             name,
@@ -1303,14 +1032,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Copies the grid&#039;s column&#039;s widths to subsequent page data so that a consistent
-     * width is maintained.
-     * @method copyGridWidth
-     * @for grid
-     * @private
-     * @param {object} gridElem
-     */
     function copyGridWidth(gridElem) {
         var headerCols = gridElem.find(&#039;.grid-header-div&#039;).find(&#039;col&#039;);
         var contentCols = gridElem.find(&#039;.grid-content-div&#039;).find(&#039;col&#039;);
@@ -1326,14 +1047,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Attaches an event listener to a specific grid cell for the
-     * &#039;validated&#039; event. Overrides the normal &#039;blur&#039; behavior for cell editing
-     * @method attachValidationListener
-     * @for grid
-     * @private
-     * @param {object} elem
-     */
     function attachValidationListener(elem) {
         $(document).one(&#039;validated&#039;, function validationHandlerCallback(e, eventData) {
             if (eventData.element === elem) {
@@ -1350,15 +1063,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * On blur or successful validation if using the validator, removed the input from the
-     * grid cell, saves the data in the alteredData array and set a dirty flag on the grid dom
-     * element if the value changed
-     * @method saveCellEditData
-     * @for grid
-     * @private
-     * @param {object} input
-     */
     function saveCellEditData(input) {
         var val;
         if (input[0].type == &#039;checkbox&#039;) val = input.is(&#039;:checked&#039;);
@@ -1380,14 +1084,14 @@ var grid = (function _grid($) {
                 saveVal = typeof storage.grids[id].dataSource.data[index][field] === &#039;string&#039; ? parseFloat(val.replace(&#039;,&#039;, &#039;&#039;)) : val;
                 break;
             case &#039;date&#039;:
-                saveVal = displayVal;   //this and time are the only types that have the same displayVal and saveVel
+                saveVal = displayVal;   
                 break;
             case &#039;time&#039;:
                 re = new RegExp(dataTypes.time);
                 if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
-                saveVal = displayVal;   //this and date are the only types that have the same displayVal and saveVal
+                saveVal = displayVal;   
                 break;
-            default: 		//string, boolean
+            default: 		
                 saveVal = val;
                 break;
         }
@@ -1395,7 +1099,7 @@ var grid = (function _grid($) {
         cell.text(displayVal);
         storage.grids[id].currentEdit[field] = null;
         var previousVal = storage.grids[id].dataSource.data[index][field];
-        if (previousVal !== saveVal &amp;&amp; !(&#039;&#039; === saveVal &amp;&amp; undefined === previousVal)) {	//if the value didn&#039;t change, don&#039;t &quot;save&quot; the new val, and don&#039;t apply the &quot;dirty&quot; span
+        if (previousVal !== saveVal &amp;&amp; !(&#039;&#039; === saveVal &amp;&amp; undefined === previousVal)) {	
             storage.grids[id].dataSource.data[index][field] = saveVal;
             cell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
         }
@@ -1416,7 +1120,7 @@ var grid = (function _grid($) {
         var text = getFormattedCellText(id, field, val) || storage.grids[id].dataSource.data[index][field];
         parentCell.text(text);
         var previousVal = storage.grids[id].dataSource.data[index][field];
-        if (previousVal !== val) {	//if the value didn&#039;t change, don&#039;t &quot;save&quot; the new val, and don&#039;t apply the &quot;dirty&quot; span
+        if (previousVal !== val) {	
             parentCell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
             storage.grids[id].dataSource.data[index][field] = val;
         }
@@ -1425,7 +1129,7 @@ var grid = (function _grid($) {
 
     function createCellEditSaveDiv(gridData, gridElem) {
         var id = gridElem.find(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
-        if ($(&#039;#grid_&#039; + id + &#039;_toolbar&#039;).length) return;	//if the toolbar has already been created, don&#039;t create it again.
+        if ($(&#039;#grid_&#039; + id + &#039;_toolbar&#039;).length) return;	
 
         var saveBar = $(&#039;&lt;div id=&quot;grid_&#039; + id + &#039;_toolbar&quot; class=&quot;toolbar clearfix&quot; data-grid_id=&quot;&#039; + id + &#039;&quot;&gt;&lt;/div&gt;&#039;).prependTo(gridElem);
         var saveAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;toolbarAnchor saveToolbar&quot;&gt;&lt;/a&gt;&#039;).appendTo(saveBar);
@@ -1606,13 +1310,13 @@ var grid = (function _grid($) {
             $(val).on(&#039;click&#039;, function gridFooterAnchorClickHandlerCallback(e) {
                 e.preventDefault();
                 var link = e.currentTarget.tagName === &#039;A&#039; ? $(e.currentTarget) : $(e.srcElement).parents(&#039;.grid-page-link&#039;);
-                if (link.hasClass(&#039;link-disabled&#039;)) {	//If the pager link that was clicked on is disabled, return.
+                if (link.hasClass(&#039;link-disabled&#039;)) {	
                     return;
                 }
                 var gridFooter = link.parents(&#039;.grid-footer-div&#039;);
                 var allPagers = gridFooter.find(&#039;a&#039;);
                 var id = parseInt(link.parents(&#039;.grid-wrapper&#039;)[0].dataset.grid_id);
-                if (storage.grids[id].updating) return;		//can&#039;t page if grid is updating
+                if (storage.grids[id].updating) return;		
                 var gridData = storage.grids[id];
                 var pageSize = gridData.pageSize;
                 var pagerInfo = gridFooter.find(&#039;.pageinfo&#039;);
@@ -1669,14 +1373,14 @@ var grid = (function _grid($) {
 
     function attachFilterListener(filterElem) {
         filterElem.on(&#039;click&#039;, function filterClickCallback(e) {
-            e.stopPropagation();	//stop event bubbling so that the column won&#039;t also get sorted when the filter icon is clicked.
+            e.stopPropagation();	
             e.preventDefault();
             var filterAnchor = $(e.target);
             var filterCell = filterAnchor.parents(&#039;th&#039;);
             var type = filterAnchor.data(&#039;type&#039;);
             var grid = filterElem.parents(&#039;.grid-wrapper&#039;);
             var id = grid.data(&#039;grid_id&#039;);
-            if (storage.grids[id].updating) return;		//can&#039;t filter when the grid is updating
+            if (storage.grids[id].updating) return;		
             var filters = grid.find(&#039;.filter-div&#039;);
             var currFilter = null;
             var field = filterAnchor.data(&#039;field&#039;);
@@ -1761,7 +1465,7 @@ var grid = (function _grid($) {
         var filterDiv = $(e.currentTarget).parents(&#039;.filter-div&#039;);
         var value = filterDiv.find(&#039;.filterInput&#039;).val();
         var gridId = filterDiv.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
-        if (storage.grids[gridId].updating) return;		//can&#039;t filter if grid is updating
+        if (storage.grids[gridId].updating) return;		
         var gridData = storage.grids[gridId];
 
         if (value === &#039;&#039; &amp;&amp; gridData.filterVal === &#039;&#039;) return;
@@ -1785,7 +1489,7 @@ var grid = (function _grid($) {
             selected = filterDiv.find(&#039;.filterSelect&#039;).val(),
             value = filterDiv.find(&#039;.filterInput&#039;).val(),
             gridId = filterDiv.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
-        if (storage.grids[gridId].updating) return;		//can&#039;t filter if grid is updating
+        if (storage.grids[gridId].updating) return;		
         var gridData = storage.grids[gridId],
             type = filterDiv.data(&#039;type&#039;),
             errors = filterDiv.find(&#039;.filter-div-error&#039;),
@@ -1848,8 +1552,8 @@ var grid = (function _grid($) {
         var targetCol = $(e.currentTarget);
         var id = targetCol.parents(&#039;.grid-header-div&#039;).length ? targetCol.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;) : null;
         var droppedId = droppedCol.parents(&#039;.grid-header-div&#039;).length ? droppedCol.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;) : null;
-        if (!id || !droppedId || id !== droppedId) return;  //at least one of the involved dom elements is not a grid column, or they are from different grids
-        if (storage.grids[id].updating) return;		//can&#039;t resort columns if grid is updating
+        if (!id || !droppedId || id !== droppedId) return;  
+        if (storage.grids[id].updating) return;		
         if (droppedCol[0].cellIndex === targetCol[0].cellIndex) return;
         if (droppedCol[0].id === &#039;sliderDiv&#039;) return;
 
@@ -1952,23 +1656,20 @@ var grid = (function _grid($) {
         elem.on(&#039;click&#039;, function handleHeaderClickCallback() {
             var headerDiv = elem.parents(&#039;.grid-header-div&#039;);
             var id = parseInt(headerDiv.data(&#039;grid_header_id&#039;));
-            if (storage.grids[id].updating) return;		//can&#039;t sort if grid is updating
+            if (storage.grids[id].updating) return;		
             var field = elem.data(&#039;field&#039;),
                 foundColumn = false;
 
-            if (storage.grids[id].groupedBy &amp;&amp; storage.grids[id].groupedBy === field) return;   //can&#039;t sort on a grouped field
+            if (storage.grids[id].groupedBy &amp;&amp; storage.grids[id].groupedBy === field) return;   
 
             for (var i = 0; i &lt; storage.grids[id].sortedOn.length; i++) {
-                //if we find the field in the list of sorted columns....
                 if (storage.grids[id].sortedOn[i].field === field) {
                     foundColumn = true;
-                    //...if it had been sorted ascending, change it to descending...
                     if (storage.grids[id].sortedOn[i].sortDirection === &#039;asc&#039;) {
                         storage.grids[id].sortedOn[i].sortDirection = &#039;desc&#039;;
                         elem.find(&#039;.sortSpan&#039;).addClass(&#039;sort-desc&#039;).removeClass(&#039;sort-asc&#039;);
                     }
                     else {
-                        //...otherwise, remove it from the collection of sorted columns
                         storage.grids[id].sortedOn =  storage.grids[id].sortedOn.filter(function filterSortedColumns(item) {
                             return item.field !== field;
                         });
@@ -2026,7 +1727,7 @@ var grid = (function _grid($) {
         e.preventDefault();
         var sliderDiv = $(e.currentTarget);
         var id = sliderDiv.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
-        if (storage.grids[id].updating) return;		//can&#039;t resize columns if grid is updating
+        if (storage.grids[id].updating) return;		
         var targetCell = document.getElementById(sliderDiv.data(&#039;targetindex&#039;));
         var targetBox = targetCell.getBoundingClientRect();
         var endPos = e.originalEvent.pageX;
@@ -2088,8 +1789,6 @@ var grid = (function _grid($) {
         });
     }
 
-    //All page request-related functions call here. This sets up the request object and then calls either
-    //the internal or the supplied GET function to get a new page of grid data.
     function preparePageDataGetRequest(id) {
         storage.grids[id].updating = true;
         var gridData = storage.grids[id];
@@ -2133,8 +1832,6 @@ var grid = (function _grid($) {
         function getPageDataRequestCallback(response) {
             var groupingStatus = gridData.groupingStatusChanged;
             if (response) {
-                //TODO: create a generic function to validate grid-data data types
-                //TODO: see if the closure will preserve the known values above - might have tried this before because I can&#039;t imagine why I wouldn&#039;t already be making use of the closure.
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
                 gridData.pageNum = requestObj.pageNum;
@@ -2195,12 +1892,6 @@ var grid = (function _grid($) {
         }
     }
 
-    //Default GET function - used for client-side page updates
-    //As long as there isn&#039;t a &quot;remove sort&quot; functionality, and a filter hasn&#039;t been applied or removed,
-    //then I only need to do one of the data manipulations below. Adding or removing a filter complicates things,
-    //as does removing sorting. For now, I am going to do things the &quot;dumb&quot; way, but I may revisit this later to
-    //see if there is a faster way to manipulate the data.
-    //TODO: update this function based both on the multi-sort addition and the comment above
     function getPageData(requestObj, id, callback) {
         var eventType = storage.grids[id].pageRequest.eventType;
         var fullGridData = cloneGridData(storage.grids[id].alteredData);
@@ -2216,7 +1907,7 @@ var grid = (function _grid($) {
                 fullGridData = filterGridData(requestObj.filterType, requestObj.filterVal, requestObj.filteredOn, dataType, cloneGridData(storage.grids[id].originalData));
             }
             else fullGridData = cloneGridData(storage.grids[id].originalData);
-            requestObj.pageNum = 1;		//reset the page to the first page when a filter is applied or removed.
+            requestObj.pageNum = 1;		
             storage.grids[id].alteredData = fullGridData;
         }
 
@@ -2242,10 +1933,6 @@ var grid = (function _grid($) {
         limitPageData(requestObj, fullGridData, callback);
     }
 
-    //==========================================================================================================================//
-    //																															//
-    //													HELPER FUNCTIONS														//
-    //==========================================================================================================================//
 
     function limitPageData(requestObj, fullGridData, callback) {
         var returnData;
@@ -2294,13 +1981,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Using various equality operators, checks to for truth based on the type of the operator(s)
-     * @param {string|number|boolean} val - The value that is being checked against a base value
-     * @param {*} base - The based value against which values are compared
-     * @param {string} type - The type of equality operator(s) to be used in the comparison
-     * @returns {boolean} - Returns a boolean indicating that whether the comparison was true of false
-     */
     function comparator(val, base, type) {
         switch (type) {
             case &#039;eq&#039;:
@@ -2322,13 +2002,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Manages sorting grid data based on the field and data type
-     * @param {Array} sortedItems - An array of objects describing which columns are to be sorted and in which directions
-     * @param {Array} gridData - An array containing the grid data to be sorted
-     * @param {number} gridId - The id of the grid instance
-     * @returns {Array} - Returns an array of sorted grid data
-     */
     function sortGridData (sortedItems, gridData, gridId) {
         for (var i = 0; i &lt; sortedItems.length; i++) {
             if (i === 0)
@@ -2354,13 +2027,6 @@ var grid = (function _grid($) {
         return gridData;
     }
 
-    /**
-     * @method Merge-Sort algorithm for grid data client-side sorting
-     * @param {object} data - the grid&#039;s data
-     * @param {object} sortObj - object that contains the field that the grid data is being sorted on and the direction of the sort
-     * @param {string} type - the type of the data (string, number, time, date, boolean)
-     * @returns {*}
-     */
     function mergeSort(data, sortObj, type) {
         if (data.length &lt; 2) return data;
         var middle = parseInt(data.length / 2);
@@ -2409,12 +2075,6 @@ var grid = (function _grid($) {
         return result;
     }
 
-    /**
-     * Calls all registered event handlers for a collection of events
-     * @param {Array} events - A collection of events to
-     * @param {Object} context - An object, array, or function to set as the context of the event handler
-     * @param  {Object} param - An object that contains metadata about the event
-     */
     function callGridEventHandlers(events, context, param) {
         if (events.length) {
             for (var x = 0; x &lt; events.length; x++)
@@ -2430,14 +2090,6 @@ var grid = (function _grid($) {
         return -1;
     }
 
-    /**
-     * Formats the text in a grid cell - uses both column formats and column templates if provided
-     * @param {number} gridId - The id of the grid instance
-     * @param {string} column - The column of the grid that this data will be displayed in
-     * @param {string|number} value - The value to be formatted
-     * @returns {string|number} - Returns a formatted value if a column format and/or template were provided;
-     * otherwise, returns the value
-     */
     function getFormattedCellText(gridId, column, value) {
         var text;
         switch(storage.grids[gridId].columns[column].type) {
@@ -2500,12 +2152,6 @@ var grid = (function _grid($) {
         return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
     }
 
-    /**
-     * Validates that a given character is allowed with the given data type
-     * @param {number} code - The character&#039;s key code
-     * @param {string} dataType - The type of data to check for character validity
-     * @returns {boolean} - Returns the tested character if valid or null if not
-     */
     function validateCharacter(code, dataType) {
         var key = String.fromCharCode(code);
         if (dataTypes[dataType]) {
@@ -2515,13 +2161,6 @@ var grid = (function _grid($) {
         return true;
     }
 
-    /**
-     * Compares two values for equality after coercing both to the provided type
-     * @param {string|number} val1 - The first value to check for equality
-     * @param {string|number} val2 - The second value to check for equality
-     * @param {string} dataType - The type of data contained in the two values
-     * @returns {boolean} - Indicated equality or lack thereof
-     */
     function compareValuesByType (val1, val2, dataType) {
         switch (dataType) {
             case &#039;string&#039;:
@@ -2529,14 +2168,12 @@ var grid = (function _grid($) {
             case &#039;number&#039;:
                 return parseFloat(val1.toString()) === parseFloat(val2.toString());
             case &#039;boolean&#039;:
-                /*jshint -W018*/    //have to turn off jshint check for !! operation because there&#039;s not built-in way to turn it off in the config file and
-                //like most js devs, those of jshint aren&#039;t the most savvy JSers
                 return !!val1 === !!val2;
             case &#039;date&#039;:
                 var date1 = new Date(val1),
                     date2 = new Date(val2);
                 if (typeof date1 === &#039;object&#039; &amp;&amp; typeof date2 === &#039;object&#039; &amp;&amp; date1 !== date1 &amp;&amp; date2 !== date2)
-                    return true;    //invalid date values - creating a date from both values resulted in either NaN or &#039;Invalid Date&#039;, neither of which are equal to themselves.
+                    return true;    
                 return date1 === date2;
             case &#039;time&#039;:
                 var value1 = getNumbersFromTime(val1);
@@ -2569,13 +2206,6 @@ var grid = (function _grid($) {
 
     aggregates = { count: &#039;Count: &#039;, average: &#039;Avg: &#039;, max: &#039;Max: &#039;, min: &#039;Min: &#039;, total: &#039;Total: &#039; };
 
-    /**
-     * Given a time of day value, will return the value formatted as specified for a given column of the grid
-     * @param {string} time - A string representing a time of day (eg &#039;9:45:56 AM&#039; or &#039;17:36:43.222&#039;)
-     * @param {string} column - The column of the grid that provided the format
-     * @param {string|number} gridId - The id value of the grid this operation is being performed on
-     * @returns {string} - Returns the time formatted as specified for the given grid column
-     */
     function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
             formattedTime,
@@ -2609,12 +2239,6 @@ var grid = (function _grid($) {
         return &#039;&#039;;
     }
 
-    /**
-     * Takes a date value and a format and will return the date in the form provided
-     * @param {string} date - The date value to be formatted
-     * @param {string} format - The format that the date value should be in
-     * @returns {string|Date} - Returns a formatted date if able, otherwise will return a default JS date using the date provided as the seed
-     */
     function formatDateCellData(date, format) {
         if (!format) return date;
         var parseDate = Date.parse(date);
@@ -2626,12 +2250,6 @@ var grid = (function _grid($) {
         return &#039;&#039;;
     }
 
-    /**
-     * Takes a number and a format string and will format the number according to the formatting rules
-     * @param {string|number} num - The number to be formatted before it is displayed in the grid
-     * @param {string} format - The format string that specifies how to format the number
-     * @returns {string|number} - Returns either the number it received if unable to properly format, or a string value of the formatted number
-     */
     function formatNumericCellData(num, format) {
         if (!format) return num;
         var formatSections = [];
@@ -2651,7 +2269,7 @@ var grid = (function _grid($) {
         num = roundNumber(+num, decimals);
         var sign = 0 &gt; +num ? -1 : 1;
         num = num.toString();
-        num = num.replace(new RegExp(&#039;,&#039;, &#039;g&#039;), &#039;&#039;).replace(&#039;-&#039;, &#039;&#039;);   //remove all commas: either the format didn&#039;t specify commas, or we will replace them later
+        num = num.replace(new RegExp(&#039;,&#039;, &#039;g&#039;), &#039;&#039;).replace(&#039;-&#039;, &#039;&#039;);   
         var dataDecimalIndex = ~num.indexOf(&#039;.&#039;) ? num.indexOf(&#039;.&#039;) : num.length;
         dataSections[0] = num.substring(0, dataDecimalIndex).split(&#039;&#039;).reverse().join(&#039;&#039;);
         if (dataDecimalIndex &lt; format.length)
@@ -2702,11 +2320,6 @@ var grid = (function _grid($) {
         return num;
     }
 
-    /**
-     * Given a format, this function will ensure it is valid and strip it of all invalid characters
-     * @param {string} format - A string denoting the format a value displayed in the grid should have.
-     * @returns {object} - Returns an object with the validated format string and metadata about how the value to be formatted should be treated
-     */
     function verifyFormat(format) {
         var formatSections = [];
         format = format.replace(/[^0#,.]/g , &#039;&#039;);
@@ -2739,11 +2352,6 @@ var grid = (function _grid($) {
         };
     }
 
-    /**
-     * Given a format string for either currency or percent, will normalize it as a decimal format
-     * @param {string} format - A string denoting the currency or percent a value in a field should take.
-     * @returns {object} - Returns an object containing the normalized format string, as well as metadata on how to treat the value to be formatted.
-     */
     function createCurrencyOrPercentFormat(format) {
         var charStripper = &#039;\\d{0,2}]&#039;,
             cOrP = ~format.indexOf(&#039;P&#039;) ? &#039;P&#039; : &#039;C&#039;;
@@ -2774,32 +2382,16 @@ var grid = (function _grid($) {
         };
     }
 
-    /**
-     * Multiples a number by 100
-     * @param {number} val - the number to by multiplied by 100
-     * @returns {number} - returns the multiple of the number and 100
-     */
     function x100(val) {
         return val * 100;
     }
 
-    /**
-     * Rounds a number to a given decimal place
-     * @param {number} val - the number to be rounded
-     * @param {number} dec - the number of decimals to retain after rounding
-     * @returns {number} - Returns the value rounded to the nth decimal place
-     */
     function roundNumber(val, dec) {
         var pow = Math.pow(10, dec || 0);
         return Math.round((val*pow))/pow;
     }
 
-    /**
-     * Clones an object and returns a new object instance with the same values as the original
-     * @param {object|*} gridData - The object to be cloned
-     * @returns {*} - Returns a new instance of whatever type was given to the function
-     */
-    function cloneGridData(gridData) { //Clones grid data so pass-by-reference doesn&#039;t mess up the values in other grids.
+    function cloneGridData(gridData) { 
         if (gridData == null || typeof (gridData) !== &#039;object&#039;)
             return gridData;
 
@@ -2813,11 +2405,6 @@ var grid = (function _grid($) {
         return temp;
     }
 
-    /**
-     * Copies the contents of an array into a new array instance
-     * @param {Array} arr - The array to be copied
-     * @returns {Array} - Returns a new array instance containing the values in the original
-     */
     function cloneArray(arr) {
         var length = arr.length,
             newArr = new arr.constructor(length);
@@ -2834,20 +2421,10 @@ var grid = (function _grid($) {
         return newArr;
     }
 
-    /**
-     * Checks that a given variable is a DOM element
-     * @param {object} node - The variable being checked
-     * @returns {boolean} - Returns true if the variable is a DOM element, false if not
-     */
     function isDomElement(node) {
         return node &amp;&amp; node instanceof Element &amp;&amp; node instanceof Node &amp;&amp; typeof node.ownerDocument === &#039;object&#039;;
     }
 
-    /**
-     * Checks that a given variable is a number and not NaN
-     * @param {number} value - The number that is being checked
-     * @returns {boolean} Returns true if the value is a number, false if not
-     */
     function isNumber(value) {
         return typeof value === &#039;number&#039; &amp;&amp; value === value;
     }

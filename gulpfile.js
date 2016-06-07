@@ -12,7 +12,7 @@ gulp.task('default', ['help']);
 
 gulp.task('plato', function(done) {
     var plato = require('plato');
-    plato.inspect(config.gridJs, config.plato.report, config.plato.options, function noop(){
+    plato.inspect(config.build + 'scripts/grid.js', config.plato.report, config.plato.options, function noop(){
         done();
     });
 });
@@ -49,7 +49,7 @@ gulp.task('clean-esdoc', function(done) {
     clean(['./esdoc/**/*.*'], done);
 });
 
-gulp.task('lint', ['plato'], function() {
+gulp.task('lint', /*['plato'],*/ function() {
     log('Linting source with JSCS and JSHint.');
     return gulp
         .src(config.gridJs)
@@ -118,6 +118,13 @@ gulp.task('optimize', ['minify-css', 'optimize-js', 'images'], function() {
     log('Optimizing JavaScript and CSS + compressing images!');
 });
 
+gulp.task('teststuff', ['optimize'], function() {
+    var plato = require('plato');
+    plato.inspect(config.build + 'scripts/grid.js', config.plato.report, config.plato.options, function noop(){
+        //done();
+    });
+});
+
 gulp.task('minify-css', ['styles'], function() {
     log('Minifing CSS');
 
@@ -133,6 +140,7 @@ gulp.task('optimize-js', ['lint', 'clean-code'], function() {
 
     return gulp.src(config.gridJs)
         .pipe(_.plumber())
+        .pipe(_.stripComments())
         .pipe(gulp.dest(config.build + 'scripts'))
         .pipe(gulp.dest(config.source + 'scripts'))
         .pipe(_.closureCompiler({
