@@ -714,10 +714,11 @@ var grid = (function _grid($) {
             $(document).on('mousedown', function mouseDownDragCallback(event) {
                 if (event.target === tableBody[0] || $(event.target).parents('tbody')[0] === tableBody[0]) {
                     storage.grids[gridId].selecting = true;
-
                     var highlightDiv = $('<div class="selection-highlighter"></div>').appendTo(storage.grids[gridId].grid);
                     highlightDiv.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
                     highlightDiv.data('origin-y', event.pageY).data('origin-x', event.pageX);
+                    highlightDiv.data('origin-scroll_top', tableBody.parents('.grid-content-div').scrollTop());
+                    highlightDiv.data('origin-scroll_left', tableBody.parents('.grid-content-div').scrollLeft());
 
                     $(document).one('mouseup', function mouseUpDragCallback() {
                         $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
@@ -730,7 +731,7 @@ var grid = (function _grid($) {
                 }
             });
 
-            tableBody.on('mousemove', function bbb(ev) {
+            $(document).on('mousemove', function bbb(ev) {
                 if (storage.grids[gridId].selecting) {
                     var domElem = $(ev.target),
                         domTag = domElem[0].tagName.toUpperCase();
@@ -756,7 +757,20 @@ var grid = (function _grid($) {
                     var left = originX >= clientX ? clientX : originX;
                     var bottom = originY < clientY ? clientY : originY;
                     var right = originX < clientX ? clientX : originX;
-                    highlightDiv.css('top', top).css('left', left).css('height', (bottom - top)).css('width', (right - left));
+                    var vScroll = Math.abs(highlightDiv.data('origin-scroll_top') - contentTable.scrollTop());
+                    var hScroll = Math.abs(highlightDiv.data('origin-scroll_left') - contentTable.scrollLeft());
+                    var scrollDown = highlightDiv.data('origin-scroll_top') < contentTable.scrollTop();
+                    var scrollRight = highlightDiv.data('origin-scroll_left') < contentTable.scrollLeft();
+                    var height, width;
+                    if (scrollDown && (bottom - top + vScroll) >= gridInstance.height()) {
+                        top = gridInstance.offset().top;
+                        height = gridInstance.height();
+                    }
+                    if (scrollRight && (right - left + hScroll) >= gridInstance.width()) {
+                        left = gridInstance.offset().left;
+                        width = gridInstance.width();
+                    }
+                    highlightDiv.css('top', top).css('left', left).css('height', height || (bottom - top + vScroll)).css('width', width || (right - left + hScroll));
                 }
             });
         }
@@ -1072,20 +1086,41 @@ var grid = (function _grid($) {
     }
 
     function saveCellSelectData(select) {
-        var gridContent = select.parents('.grid-wrapper').find('.grid-content-div');
-        var val = select.val();
-        var parentCell = select.parents('td');
+        var gridContent = select.parents('.grid-wrapper').find('.grid-content-div'),
+            val = select.val(),
+            parentCell = select.parents('td');
         select.remove();
-        var id = gridContent.data('grid_content_id');
+        var id = gridContent.data('grid_content_id'),
+            index = parentCell.parents('tr').index(),
+            field = parentCell.data('field'),
+            type = storage.grids[id].columns[field].type || '',
+            displayVal = getFormattedCellText(id, field, val) || storage.grids[id].dataSource.data[index][field],
+            re, saveVal;
 
-        var index = parentCell.parents('tr').index();
-        var field = parentCell.data('field');
-        var text = getFormattedCellText(id, field, val) || storage.grids[id].dataSource.data[index][field];
-        parentCell.text(text);
+        switch (type) {
+            case 'number':
+                re = new RegExp(dataTypes.number);
+                if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
+                saveVal = typeof storage.grids[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
+                break;
+            case 'date':
+                saveVal = displayVal;   
+                break;
+            case 'time':
+                re = new RegExp(dataTypes.time);
+                if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
+                saveVal = displayVal;   
+                break;
+            default: 		
+                saveVal = val;
+                break;
+        }
+
+        parentCell.text(displayVal);
         var previousVal = storage.grids[id].dataSource.data[index][field];
-        if (previousVal !== val) {	
+        if (previousVal !== saveVal) {	
             parentCell.prepend('<span class="dirty"></span>');
-            storage.grids[id].dataSource.data[index][field] = val;
+            storage.grids[id].dataSource.data[index][field] = saveVal;
         }
         callGridEventHandlers(storage.grids[id].events.afterCellEdit, storage.grids[id].grid, null);
     }

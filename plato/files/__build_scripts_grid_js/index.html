@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.34</p>
+      <p class="stat">55.11</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2437</p>
+      <p class="stat">2472</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">188.85</p>
+      <p class="stat">191.22</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">52.05</p>
+      <p class="stat">53.08</p>
     </div>
   </div>
 </div>
@@ -805,10 +805,11 @@
             $(document).on(&#039;mousedown&#039;, function mouseDownDragCallback(event) {
                 if (event.target === tableBody[0] || $(event.target).parents(&#039;tbody&#039;)[0] === tableBody[0]) {
                     storage.grids[gridId].selecting = true;
-
                     var highlightDiv = $(&#039;&lt;div class=&quot;selection-highlighter&quot;&gt;&lt;/div&gt;&#039;).appendTo(storage.grids[gridId].grid);
                     highlightDiv.css(&#039;top&#039;, event.pageY).css(&#039;left&#039;, event.pageX).css(&#039;width&#039;, 0).css(&#039;height&#039;, 0);
                     highlightDiv.data(&#039;origin-y&#039;, event.pageY).data(&#039;origin-x&#039;, event.pageX);
+                    highlightDiv.data(&#039;origin-scroll_top&#039;, tableBody.parents(&#039;.grid-content-div&#039;).scrollTop());
+                    highlightDiv.data(&#039;origin-scroll_left&#039;, tableBody.parents(&#039;.grid-content-div&#039;).scrollLeft());
 
                     $(document).one(&#039;mouseup&#039;, function mouseUpDragCallback() {
                         $(&#039;.selected&#039;).each(function iterateSelectedItemsCallback(idx, elem) {
@@ -821,7 +822,7 @@
                 }
             });
 
-            tableBody.on(&#039;mousemove&#039;, function bbb(ev) {
+            $(document).on(&#039;mousemove&#039;, function bbb(ev) {
                 if (storage.grids[gridId].selecting) {
                     var domElem = $(ev.target),
                         domTag = domElem[0].tagName.toUpperCase();
@@ -847,7 +848,20 @@
                     var left = originX &gt;= clientX ? clientX : originX;
                     var bottom = originY &lt; clientY ? clientY : originY;
                     var right = originX &lt; clientX ? clientX : originX;
-                    highlightDiv.css(&#039;top&#039;, top).css(&#039;left&#039;, left).css(&#039;height&#039;, (bottom - top)).css(&#039;width&#039;, (right - left));
+                    var vScroll = Math.abs(highlightDiv.data(&#039;origin-scroll_top&#039;) - contentTable.scrollTop());
+                    var hScroll = Math.abs(highlightDiv.data(&#039;origin-scroll_left&#039;) - contentTable.scrollLeft());
+                    var scrollDown = highlightDiv.data(&#039;origin-scroll_top&#039;) &lt; contentTable.scrollTop();
+                    var scrollRight = highlightDiv.data(&#039;origin-scroll_left&#039;) &lt; contentTable.scrollLeft();
+                    var height, width;
+                    if (scrollDown &amp;&amp; (bottom - top + vScroll) &gt;= gridInstance.height()) {
+                        top = gridInstance.offset().top;
+                        height = gridInstance.height();
+                    }
+                    if (scrollRight &amp;&amp; (right - left + hScroll) &gt;= gridInstance.width()) {
+                        left = gridInstance.offset().left;
+                        width = gridInstance.width();
+                    }
+                    highlightDiv.css(&#039;top&#039;, top).css(&#039;left&#039;, left).css(&#039;height&#039;, height || (bottom - top + vScroll)).css(&#039;width&#039;, width || (right - left + hScroll));
                 }
             });
         }
@@ -1163,20 +1177,41 @@
     }
 
     function saveCellSelectData(select) {
-        var gridContent = select.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-content-div&#039;);
-        var val = select.val();
-        var parentCell = select.parents(&#039;td&#039;);
+        var gridContent = select.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-content-div&#039;),
+            val = select.val(),
+            parentCell = select.parents(&#039;td&#039;);
         select.remove();
-        var id = gridContent.data(&#039;grid_content_id&#039;);
+        var id = gridContent.data(&#039;grid_content_id&#039;),
+            index = parentCell.parents(&#039;tr&#039;).index(),
+            field = parentCell.data(&#039;field&#039;),
+            type = storage.grids[id].columns[field].type || &#039;&#039;,
+            displayVal = getFormattedCellText(id, field, val) || storage.grids[id].dataSource.data[index][field],
+            re, saveVal;
 
-        var index = parentCell.parents(&#039;tr&#039;).index();
-        var field = parentCell.data(&#039;field&#039;);
-        var text = getFormattedCellText(id, field, val) || storage.grids[id].dataSource.data[index][field];
-        parentCell.text(text);
+        switch (type) {
+            case &#039;number&#039;:
+                re = new RegExp(dataTypes.number);
+                if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
+                saveVal = typeof storage.grids[id].dataSource.data[index][field] === &#039;string&#039; ? val : parseFloat(val.replace(&#039;,&#039;, &#039;&#039;));
+                break;
+            case &#039;date&#039;:
+                saveVal = displayVal;   
+                break;
+            case &#039;time&#039;:
+                re = new RegExp(dataTypes.time);
+                if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
+                saveVal = displayVal;   
+                break;
+            default: 		
+                saveVal = val;
+                break;
+        }
+
+        parentCell.text(displayVal);
         var previousVal = storage.grids[id].dataSource.data[index][field];
-        if (previousVal !== val) {	
+        if (previousVal !== saveVal) {	
             parentCell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
-            storage.grids[id].dataSource.data[index][field] = val;
+            storage.grids[id].dataSource.data[index][field] = saveVal;
         }
         callGridEventHandlers(storage.grids[id].events.afterCellEdit, storage.grids[id].grid, null);
     }
