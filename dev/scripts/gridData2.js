@@ -121,6 +121,7 @@ var gridData = {
         Billed: {
             type: "number",
             format: '0C2',
+            editable: true,
             //symbol: "$",
             //template: "${{data}}",
             width: 155,

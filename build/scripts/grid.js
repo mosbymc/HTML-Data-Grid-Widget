@@ -1044,7 +1044,7 @@ var grid = (function _grid($) {
             case 'number':
                 re = new RegExp(dataTypes.number);
                 if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
-                saveVal = typeof storage.grids[id].dataSource.data[index][field] === 'string' ? parseFloat(val.replace(',', '')) : val;
+                saveVal = typeof storage.grids[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
                 break;
             case 'date':
                 saveVal = displayVal;   
@@ -2093,7 +2093,7 @@ var grid = (function _grid($) {
         if (timeGroups[2]) {
             minutes = +timeGroups[3] || 0;
             seconds = +timeGroups[4]  || 0;
-            meridiem = timeGroups[5] || null;
+            meridiem = timeGroups[5].replace(' ', '') || null;
         }
         else if (timeGroups[6]) {
             minutes = +timeGroups[8] || 0;

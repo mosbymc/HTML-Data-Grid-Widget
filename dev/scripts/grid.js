@@ -84,6 +84,7 @@
  - Thoroughly test date & time regex usages
  - Add handler for mounsedown/mouseup event to highlight multiple cells/rows
  - Fix selectable cells to compare values based on type
+ - Fix dirty markers positioning
  */
 /*exported grid*/
 /**
@@ -1404,7 +1405,7 @@ var grid = (function _grid($) {
             case 'number':
                 re = new RegExp(dataTypes.number);
                 if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
-                saveVal = typeof storage.grids[id].dataSource.data[index][field] === 'string' ? parseFloat(val.replace(',', '')) : val;
+                saveVal = typeof storage.grids[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
                 break;
             case 'date':
                 saveVal = displayVal;   //this and time are the only types that have the same displayVal and saveVel
@@ -2505,7 +2506,7 @@ var grid = (function _grid($) {
         if (timeGroups[2]) {
             minutes = +timeGroups[3] || 0;
             seconds = +timeGroups[4]  || 0;
-            meridiem = timeGroups[5] || null;
+            meridiem = timeGroups[5].replace(' ', '') || null;
         }
         else if (timeGroups[6]) {
             minutes = +timeGroups[8] || 0;

@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">188.78</p>
+      <p class="stat">188.85</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">52.03</p>
+      <p class="stat">52.05</p>
     </div>
   </div>
 </div>
@@ -1135,7 +1135,7 @@
             case &#039;number&#039;:
                 re = new RegExp(dataTypes.number);
                 if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
-                saveVal = typeof storage.grids[id].dataSource.data[index][field] === &#039;string&#039; ? parseFloat(val.replace(&#039;,&#039;, &#039;&#039;)) : val;
+                saveVal = typeof storage.grids[id].dataSource.data[index][field] === &#039;string&#039; ? val : parseFloat(val.replace(&#039;,&#039;, &#039;&#039;));
                 break;
             case &#039;date&#039;:
                 saveVal = displayVal;   
@@ -2184,7 +2184,7 @@
         if (timeGroups[2]) {
             minutes = +timeGroups[3] || 0;
             seconds = +timeGroups[4]  || 0;
-            meridiem = timeGroups[5] || null;
+            meridiem = timeGroups[5].replace(&#039; &#039;, &#039;&#039;) || null;
         }
         else if (timeGroups[6]) {
             minutes = +timeGroups[8] || 0;
