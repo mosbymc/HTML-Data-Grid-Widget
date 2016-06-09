@@ -118,7 +118,7 @@ gulp.task('optimize', ['minify-css', 'optimize-js', 'images'], function() {
     log('Optimizing JavaScript and CSS + compressing images!');
 });
 
-gulp.task('teststuff', ['optimize'], function() {
+gulp.task('build', ['optimize'], function() {
     var plato = require('plato');
     plato.inspect(config.build + 'scripts/grid.js', config.plato.report, config.plato.options, function noop(){
         //done();

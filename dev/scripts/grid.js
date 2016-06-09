@@ -80,11 +80,13 @@
  - Ensure all types are implemented across the board (number, time, date, boolean, string) - DONE
  - Fix dirty markers positioning - DONE
  - Fix selectable cells to compare values based on type - DONE
+ - Add handler for mounsedown/mouseup event to highlight multiple cells/rows - DONE
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
- - Add handler for mounsedown/mouseup event to highlight multiple cells/rows
+ - Update grid instance functions that return selected cells/rows based on new select functionality
+ - Make the select overlay unable to visually grow larger than the containing table but track the total height/width based on the scrollTop/scrollLeft
  */
 /*exported grid*/
 /**
@@ -1046,6 +1048,8 @@ var grid = (function _grid($) {
                     highlightDiv.data('origin-y', event.pageY).data('origin-x', event.pageX);
                     highlightDiv.data('origin-scroll_top', tableBody.parents('.grid-content-div').scrollTop());
                     highlightDiv.data('origin-scroll_left', tableBody.parents('.grid-content-div').scrollLeft());
+                    highlightDiv.data('actual-height', 0);
+                    highlightDiv.data('actual-width', 0);
 
                     $(document).one('mouseup', function mouseUpDragCallback() {
                         $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
@@ -1054,7 +1058,6 @@ var grid = (function _grid($) {
                         var overlay = $(".selection-highlighter");
                         selectHighlighted(overlay, gridId);
                         overlay.remove();
-                        //storage.grids[gridId].selecting = false;
                     });
                 }
             });
@@ -1087,9 +1090,14 @@ var grid = (function _grid($) {
                     var right = originX < clientX ? clientX : originX;
                     var vScroll = Math.abs(highlightDiv.data('origin-scroll_top') - contentTable.scrollTop());
                     var hScroll = Math.abs(highlightDiv.data('origin-scroll_left') - contentTable.scrollLeft());
+                    console.log('scroll top: ' + contentTable.scrollTop());
+                    console.log('overlay height: ' +(bottom - top + vScroll));
+                    console.log('mouse Y: ' + clientY);
                     var scrollDown = highlightDiv.data('origin-scroll_top') < contentTable.scrollTop();
                     var scrollRight = highlightDiv.data('origin-scroll_left') < contentTable.scrollLeft();
                     var height, width;
+                    highlightDiv.data('actual-height', (bottom - top + vScroll));
+                    highlightDiv.data('actual-width', (right - left + hScroll));
                     if (scrollDown && (bottom - top + vScroll) >= gridInstance.height()) {
                         top = gridInstance.offset().top;
                         height = gridInstance.height();
