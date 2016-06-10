@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.07</p>
+      <p class="stat">54.72</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2479</p>
+      <p class="stat">2549</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">190.74</p>
+      <p class="stat">192.49</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">53.33</p>
+      <p class="stat">54.83</p>
     </div>
   </div>
 </div>
@@ -783,6 +783,7 @@
         if (isSelectable) {
             $(document).on(&#039;click&#039;, function tableBodySelectCallback(e) {
                 if (e.target === tableBody[0] || $(e.target).parents(&#039;tbody&#039;)[0] === tableBody[0]) {
+                    console.log(storage.grids[gridId].selecting);
                     if (storage.grids[gridId].selecting) {
                         storage.grids[gridId].selecting = false;
                         return;
@@ -810,10 +811,13 @@
                     highlightDiv.data(&#039;origin-y&#039;, event.pageY).data(&#039;origin-x&#039;, event.pageX);
                     highlightDiv.data(&#039;origin-scroll_top&#039;, tableBody.parents(&#039;.grid-content-div&#039;).scrollTop());
                     highlightDiv.data(&#039;origin-scroll_left&#039;, tableBody.parents(&#039;.grid-content-div&#039;).scrollLeft());
+                    highlightDiv.data(&#039;last-scroll_top_pos&#039;, tableBody.parents(&#039;.grid-content-div&#039;).scrollTop());
+                    highlightDiv.data(&#039;last-scroll_left_pos&#039;, tableBody.parents(&#039;.grid-content-div&#039;).scrollLeft());
                     highlightDiv.data(&#039;actual-height&#039;, 0);
                     highlightDiv.data(&#039;actual-width&#039;, 0);
 
                     $(document).one(&#039;mouseup&#039;, function mouseUpDragCallback() {
+                        storage.grids[gridId].selecting = false;
                         $(&#039;.selected&#039;).each(function iterateSelectedItemsCallback(idx, elem) {
                             $(elem).removeClass(&#039;selected&#039;);
                         });
@@ -835,40 +839,81 @@
                     var clientY = ev.clientY;
 
                     var contentTable = gridInstance.find(&#039;.grid-content-div&#039;);
-                    var ctTop = contentTable.css(&#039;top&#039;);
-                    var ctLeft = contentTable.css(&#039;left&#039;);
 
-                    if (clientX &lt; ctLeft || clientX &gt; (contentTable.css(&#039;width&#039;) - ctLeft) || clientY &lt; ctTop || clientY &gt; (contentTable.css(&#039;height&#039;) - ctTop)) {
-                        tableBody.trigger(&#039;mouseup&#039;);
-                        return;
-                    }
+                    var ctTop = contentTable.offset().top;
+                    var ctLeft = contentTable.offset().left;
+
                     window.getSelection().removeAllRanges();
                     var highlightDiv = gridInstance.find(&#039;.selection-highlighter&#039;);
+
+                    var vScrollDiff = 0,
+                        vScrollDir = 0,
+                        hScrollDiff = 0,
+                        hScrollDir = 0;
+                    var ctBottom = ctTop + contentTable.height();
+                    var ctRight = ctLeft + contentTable.width();
+
+                    if (clientX &lt; ctLeft) clientX = ctLeft;
+                    if (clientY &lt; ctTop) clientY = ctTop;
+
                     var originY = highlightDiv.data(&#039;origin-y&#039;);
                     var originX = highlightDiv.data(&#039;origin-x&#039;);
                     var top = originY &gt;= clientY ? clientY : originY;
                     var left = originX &gt;= clientX ? clientX : originX;
                     var bottom = originY &lt; clientY ? clientY : originY;
                     var right = originX &lt; clientX ? clientX : originX;
-                    var vScroll = Math.abs(highlightDiv.data(&#039;origin-scroll_top&#039;) - contentTable.scrollTop());
-                    var hScroll = Math.abs(highlightDiv.data(&#039;origin-scroll_left&#039;) - contentTable.scrollLeft());
-                    console.log(&#039;scroll top: &#039; + contentTable.scrollTop());
-                    console.log(&#039;overlay height: &#039; +(bottom - top + vScroll));
-                    console.log(&#039;mouse Y: &#039; + clientY);
-                    var scrollDown = highlightDiv.data(&#039;origin-scroll_top&#039;) &lt; contentTable.scrollTop();
-                    var scrollRight = highlightDiv.data(&#039;origin-scroll_left&#039;) &lt; contentTable.scrollLeft();
-                    var height, width;
-                    highlightDiv.data(&#039;actual-height&#039;, (bottom - top + vScroll));
-                    highlightDiv.data(&#039;actual-width&#039;, (right - left + hScroll));
-                    if (scrollDown &amp;&amp; (bottom - top + vScroll) &gt;= gridInstance.height()) {
-                        top = gridInstance.offset().top;
-                        height = gridInstance.height();
+                    var displayHeight, displayWidth;
+
+                    if (bottom &gt; ctBottom) bottom = ctBottom;
+                    if (right &gt; ctRight) right = ctRight;
+
+                    if (contentTable.scrollTop() !== highlightDiv.data(&#039;origin-scroll_top&#039;)) {
+                        vScrollDiff = Math.abs(highlightDiv.data(&#039;origin-scroll_top&#039;) - contentTable.scrollTop());
+                        vScrollDir = contentTable.scrollTop() &gt; highlightDiv.data(&#039;origin-scroll_top&#039;) ? 1 : -1;
                     }
-                    if (scrollRight &amp;&amp; (right - left + hScroll) &gt;= gridInstance.width()) {
-                        left = gridInstance.offset().left;
-                        width = gridInstance.width();
+
+                    if (contentTable.scrollLeft() !== highlightDiv.data(&#039;origin-scroll_left&#039;)) {
+                        hScrollDiff = Math.abs(highlightDiv.data(&#039;origin-scroll_left&#039;) - contentTable.scrollLeft());
+                        hScrollDir = contentTable.scrollLeft() &gt; highlightDiv.data(&#039;origin-scroll_left&#039;) ? 1 : -1;
                     }
-                    highlightDiv.css(&#039;top&#039;, top).css(&#039;left&#039;, left).css(&#039;height&#039;, height || (bottom - top + vScroll)).css(&#039;width&#039;, width || (right - left + hScroll));
+
+                    if (vScrollDir &gt; 0) {
+                        top = top - vScrollDiff &lt; ctTop ? ctTop : top - vScrollDiff;
+                        displayHeight = bottom - top + vScrollDiff;
+                    }
+                    else if (vScrollDir &lt; 0) {
+                        bottom = bottom + vScrollDiff &gt; ctBottom ? ctBottom : bottom + vScrollDiff;
+                        displayHeight = bottom - top + vScrollDiff;
+                    }
+                    else {
+                        displayHeight = bottom - top;
+                    }
+
+                    if (hScrollDir &gt; 0) {
+                        left = left + hScrollDir &lt; ctLeft ? ctLeft : left + hScrollDir;
+                        displayWidth = right - left + hScrollDir;
+                    }
+                    else if (hScrollDir &lt; 0) {
+                        right = right + hScrollDir &gt; ctRight ? ctRight : right + hScrollDir;
+                        displayWidth = right - left + hScrollDir;
+                    }
+                    else {
+                        displayWidth = right - left;
+                    }
+
+
+                    if (displayHeight &gt; contentTable.height()) displayHeight = contentTable.height();
+                    if (displayWidth &gt; contentTable.width()) displayWidth = contentTable.width();
+                    var actualHeight = vScrollDir &gt; -1 ? displayHeight + vScrollDiff : displayHeight - vScrollDiff;
+                    var actualWidth = hScrollDir &gt; -1 ? displayWidth + hScrollDiff : displayWidth - hScrollDiff;
+
+
+
+                    highlightDiv.css(&#039;top&#039;, top).css(&#039;left&#039;, left).css(&#039;height&#039;, (bottom - top)).css(&#039;width&#039;, (right - left));
+                    highlightDiv.data(&#039;last-scroll_top_pos&#039;, contentTable.scrollTop());
+                    highlightDiv.data(&#039;last-scroll_left_pos&#039;, contentTable.scrollLeft());
+                    highlightDiv.data(&#039;actual-height&#039;, actualHeight);
+                    highlightDiv.data(&#039;actual-width&#039;, actualWidth);
                 }
             });
         }
@@ -879,8 +924,23 @@
         var offset = overlay.offset();
         var top = offset.top;
         var left = offset.left;
-        var right = parseFloat(overlay.css(&#039;width&#039;)) + left;
-        var bottom = parseFloat(overlay.css(&#039;height&#039;)) + top;
+        console.log(&#039;Original Right: &#039; + (parseFloat(overlay.css(&#039;width&#039;)) + left));
+        console.log(&#039;Original Bottom: &#039; + (parseFloat(overlay.css(&#039;height&#039;)) + top));
+        console.log(&#039;Width: &#039; + parseFloat(overlay.css(&#039;width&#039;)));
+        console.log(&#039;Height: &#039; + parseFloat(overlay.css(&#039;height&#039;)));
+        console.log(&#039;Data-actual-width: &#039; + parseFloat(overlay.data(&#039;actual-width&#039;)));
+        console.log(&#039;Data-actual-height: &#039; + parseFloat(overlay.data(&#039;actual-height&#039;)));
+        var right = parseFloat(overlay.data(&#039;actual-width&#039;)) + left;
+        var bottom = parseFloat(overlay.data(&#039;actual-height&#039;)) + top;
+        if (parseFloat(overlay.data(&#039;actual-height&#039;)) &gt; gridWidget.find(&#039;.grid-content-div&#039;).height()) {
+            bottom = (gridWidget.find(&#039;.grid-content-div&#039;).offset().top + gridWidget.find(&#039;.grid-content-div&#039;).height());
+            top = bottom - parseFloat(overlay.data(&#039;actual-height&#039;));
+        }
+        console.log(&#039;Top: &#039; + top);
+        console.log(&#039;Left: &#039; + left);
+        console.log(&#039;Right: &#039; + right);
+        console.log(&#039;Bottom: &#039; + bottom);
+        console.log(&#039;&#039;);
         var gridElems = storage.grids[gridId].selectable === &#039;multi-cell&#039; ? gridWidget.find(&#039;.grid-content-div&#039;).find(&#039;td&#039;) : gridWidget.find(&#039;.grid-content-div&#039;).find(&#039;tr&#039;);
 
         gridElems.each(function highlightGridElemsCallback(idx, val) {
@@ -909,6 +969,16 @@
                 element.addClass(&#039;selected&#039;);
             else if (eLeft &lt;= left &amp;&amp; eTop &gt;= top &amp;&amp; eBottom &lt;= bottom &amp;&amp; eRight &gt;= right)
                 element.addClass(&#039;selected&#039;);
+            else if (eLeft &lt;= left &amp;&amp; eTop &gt;= top &amp;&amp; eBottom &lt;= bottom &amp;&amp; eRight &lt;= right &amp;&amp; eRight &gt;= left)
+                element.addClass(&#039;selected&#039;);
+
+            if (!element.hasClass(&#039;selected&#039;)) {
+                console.log(&#039;Row Top: &#039; + eTop);
+                console.log(&#039;Row Left: &#039; + eLeft);
+                console.log(&#039;Row Right: &#039; + eRight);
+                console.log(&#039;Row Bottom: &#039; + eBottom);
+                console.log(&#039;&#039;);
+            }
         });
     }
 
