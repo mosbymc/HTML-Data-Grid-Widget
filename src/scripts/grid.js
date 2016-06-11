@@ -711,17 +711,17 @@ var grid = (function _grid($) {
             });
         }
         if (isSelectable === 'multi-row' || isSelectable === 'multi-cell') {
-
             $(document).on('mousedown', function mouseDownDragCallback(event) {
                 if (event.target === tableBody[0] || $(event.target).parents('tbody')[0] === tableBody[0]) {
                     storage.grids[gridId].selecting = true;
+                    var contentDiv = tableBody.parents('.grid-content-div');
                     var highlightDiv = $('<div class="selection-highlighter"></div>').appendTo(storage.grids[gridId].grid);
                     highlightDiv.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
                     highlightDiv.data('origin-y', event.pageY).data('origin-x', event.pageX);
-                    highlightDiv.data('origin-scroll_top', tableBody.parents('.grid-content-div').scrollTop());
-                    highlightDiv.data('origin-scroll_left', tableBody.parents('.grid-content-div').scrollLeft());
-                    highlightDiv.data('last-scroll_top_pos', tableBody.parents('.grid-content-div').scrollTop());
-                    highlightDiv.data('last-scroll_left_pos', tableBody.parents('.grid-content-div').scrollLeft());
+                    highlightDiv.data('origin-scroll_top', contentDiv.scrollTop());
+                    highlightDiv.data('origin-scroll_left', contentDiv.scrollLeft());
+                    highlightDiv.data('last-scroll_top_pos', contentDiv.scrollTop());
+                    highlightDiv.data('last-scroll_left_pos', contentDiv.scrollLeft());
                     highlightDiv.data('actual-height', 0);
                     highlightDiv.data('actual-width', 0);
 
@@ -733,11 +733,19 @@ var grid = (function _grid($) {
                         var overlay = $(".selection-highlighter");
                         selectHighlighted(overlay, gridId);
                         overlay.remove();
+                        contentDiv.off('scroll');
+                        $(document).off('mousemove');
+                    });
+
+                    contentDiv.on('scroll', function updateSelectOverlayOnScrollHandler() {
+                        if (storage.grids[gridId].selecting) {
+                            window.getSelection().removeAllRanges();
+                        }
                     });
                 }
             });
 
-            $(document).on('mousemove', function bbb(ev) {
+            $(document).on('mousemove', function updateSelectOverlayOnMouseMoveHandler(ev) {
                 if (storage.grids[gridId].selecting) {
                     var domElem = $(ev.target),
                         domTag = domElem[0].tagName.toUpperCase();
@@ -751,7 +759,6 @@ var grid = (function _grid($) {
 
                     var ctTop = contentTable.offset().top;
                     var ctLeft = contentTable.offset().left;
-
                     window.getSelection().removeAllRanges();
                     var highlightDiv = gridInstance.find('.selection-highlighter');
 
@@ -772,7 +779,6 @@ var grid = (function _grid($) {
                     var bottom = originY < clientY ? clientY : originY;
                     var right = originX < clientX ? clientX : originX;
                     var displayHeight, displayWidth;
-
                     if (bottom > ctBottom) bottom = ctBottom;
                     if (right > ctRight) right = ctRight;
 
@@ -794,9 +800,7 @@ var grid = (function _grid($) {
                         bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
                         displayHeight = bottom - top + vScrollDiff;
                     }
-                    else {
-                        displayHeight = bottom - top;
-                    }
+                    else displayHeight = bottom - top;
 
                     if (hScrollDir > 0) {
                         left = left + hScrollDir < ctLeft ? ctLeft : left + hScrollDir;
@@ -806,18 +810,12 @@ var grid = (function _grid($) {
                         right = right + hScrollDir > ctRight ? ctRight : right + hScrollDir;
                         displayWidth = right - left + hScrollDir;
                     }
-                    else {
-                        displayWidth = right - left;
-                    }
-
+                    else displayWidth = right - left;
 
                     if (displayHeight > contentTable.height()) displayHeight = contentTable.height();
                     if (displayWidth > contentTable.width()) displayWidth = contentTable.width();
                     var actualHeight = displayHeight + vScrollDiff;
-                    var actualWidth = hScrollDir > -1 ? displayWidth + hScrollDiff : displayWidth - hScrollDiff;
-
-
-
+                    var actualWidth = displayWidth + hScrollDiff;
                     highlightDiv.css('top', top).css('left', left).css('height', (bottom - top)).css('width', (right - left));
                     highlightDiv.data('last-scroll_top_pos', contentTable.scrollTop());
                     highlightDiv.data('last-scroll_left_pos', contentTable.scrollLeft());
@@ -839,8 +837,8 @@ var grid = (function _grid($) {
         console.log('Height: ' + parseFloat(overlay.css('height')));
         console.log('Data-actual-width: ' + parseFloat(overlay.data('actual-width')));
         console.log('Data-actual-height: ' + parseFloat(overlay.data('actual-height')));
-        var right = parseFloat(overlay.data('actual-width')) + left;
-        var bottom = parseFloat(overlay.data('actual-height')) + top;
+        var right = parseFloat(overlay.data('actual-width')) - left;
+        var bottom = parseFloat(overlay.data('actual-height')) - top;
         if (parseFloat(overlay.data('actual-height')) > gridWidget.find('.grid-content-div').height()) {
             if (overlay.data('origin-scroll_top') > overlay.data('last-scroll_top_pos')) {
                 top = gridWidget.find('.grid-content-div').offset().top;

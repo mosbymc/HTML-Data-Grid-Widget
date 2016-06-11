@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">54.70</p>
+      <p class="stat">54.76</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2555</p>
+      <p class="stat">2553</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">192.81</p>
+      <p class="stat">192.85</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">54.93</p>
+      <p class="stat">54.99</p>
     </div>
   </div>
 </div>
@@ -802,17 +802,17 @@
             });
         }
         if (isSelectable === &#039;multi-row&#039; || isSelectable === &#039;multi-cell&#039;) {
-
             $(document).on(&#039;mousedown&#039;, function mouseDownDragCallback(event) {
                 if (event.target === tableBody[0] || $(event.target).parents(&#039;tbody&#039;)[0] === tableBody[0]) {
                     storage.grids[gridId].selecting = true;
+                    var contentDiv = tableBody.parents(&#039;.grid-content-div&#039;);
                     var highlightDiv = $(&#039;&lt;div class=&quot;selection-highlighter&quot;&gt;&lt;/div&gt;&#039;).appendTo(storage.grids[gridId].grid);
                     highlightDiv.css(&#039;top&#039;, event.pageY).css(&#039;left&#039;, event.pageX).css(&#039;width&#039;, 0).css(&#039;height&#039;, 0);
                     highlightDiv.data(&#039;origin-y&#039;, event.pageY).data(&#039;origin-x&#039;, event.pageX);
-                    highlightDiv.data(&#039;origin-scroll_top&#039;, tableBody.parents(&#039;.grid-content-div&#039;).scrollTop());
-                    highlightDiv.data(&#039;origin-scroll_left&#039;, tableBody.parents(&#039;.grid-content-div&#039;).scrollLeft());
-                    highlightDiv.data(&#039;last-scroll_top_pos&#039;, tableBody.parents(&#039;.grid-content-div&#039;).scrollTop());
-                    highlightDiv.data(&#039;last-scroll_left_pos&#039;, tableBody.parents(&#039;.grid-content-div&#039;).scrollLeft());
+                    highlightDiv.data(&#039;origin-scroll_top&#039;, contentDiv.scrollTop());
+                    highlightDiv.data(&#039;origin-scroll_left&#039;, contentDiv.scrollLeft());
+                    highlightDiv.data(&#039;last-scroll_top_pos&#039;, contentDiv.scrollTop());
+                    highlightDiv.data(&#039;last-scroll_left_pos&#039;, contentDiv.scrollLeft());
                     highlightDiv.data(&#039;actual-height&#039;, 0);
                     highlightDiv.data(&#039;actual-width&#039;, 0);
 
@@ -824,11 +824,19 @@
                         var overlay = $(&quot;.selection-highlighter&quot;);
                         selectHighlighted(overlay, gridId);
                         overlay.remove();
+                        contentDiv.off(&#039;scroll&#039;);
+                        $(document).off(&#039;mousemove&#039;);
+                    });
+
+                    contentDiv.on(&#039;scroll&#039;, function updateSelectOverlayOnScrollHandler() {
+                        if (storage.grids[gridId].selecting) {
+                            window.getSelection().removeAllRanges();
+                        }
                     });
                 }
             });
 
-            $(document).on(&#039;mousemove&#039;, function bbb(ev) {
+            $(document).on(&#039;mousemove&#039;, function updateSelectOverlayOnMouseMoveHandler(ev) {
                 if (storage.grids[gridId].selecting) {
                     var domElem = $(ev.target),
                         domTag = domElem[0].tagName.toUpperCase();
@@ -842,7 +850,6 @@
 
                     var ctTop = contentTable.offset().top;
                     var ctLeft = contentTable.offset().left;
-
                     window.getSelection().removeAllRanges();
                     var highlightDiv = gridInstance.find(&#039;.selection-highlighter&#039;);
 
@@ -863,7 +870,6 @@
                     var bottom = originY &lt; clientY ? clientY : originY;
                     var right = originX &lt; clientX ? clientX : originX;
                     var displayHeight, displayWidth;
-
                     if (bottom &gt; ctBottom) bottom = ctBottom;
                     if (right &gt; ctRight) right = ctRight;
 
@@ -885,9 +891,7 @@
                         bottom = bottom + vScrollDiff &gt; ctBottom ? ctBottom : bottom + vScrollDiff;
                         displayHeight = bottom - top + vScrollDiff;
                     }
-                    else {
-                        displayHeight = bottom - top;
-                    }
+                    else displayHeight = bottom - top;
 
                     if (hScrollDir &gt; 0) {
                         left = left + hScrollDir &lt; ctLeft ? ctLeft : left + hScrollDir;
@@ -897,18 +901,12 @@
                         right = right + hScrollDir &gt; ctRight ? ctRight : right + hScrollDir;
                         displayWidth = right - left + hScrollDir;
                     }
-                    else {
-                        displayWidth = right - left;
-                    }
-
+                    else displayWidth = right - left;
 
                     if (displayHeight &gt; contentTable.height()) displayHeight = contentTable.height();
                     if (displayWidth &gt; contentTable.width()) displayWidth = contentTable.width();
                     var actualHeight = displayHeight + vScrollDiff;
-                    var actualWidth = hScrollDir &gt; -1 ? displayWidth + hScrollDiff : displayWidth - hScrollDiff;
-
-
-
+                    var actualWidth = displayWidth + hScrollDiff;
                     highlightDiv.css(&#039;top&#039;, top).css(&#039;left&#039;, left).css(&#039;height&#039;, (bottom - top)).css(&#039;width&#039;, (right - left));
                     highlightDiv.data(&#039;last-scroll_top_pos&#039;, contentTable.scrollTop());
                     highlightDiv.data(&#039;last-scroll_left_pos&#039;, contentTable.scrollLeft());
@@ -930,8 +928,8 @@
         console.log(&#039;Height: &#039; + parseFloat(overlay.css(&#039;height&#039;)));
         console.log(&#039;Data-actual-width: &#039; + parseFloat(overlay.data(&#039;actual-width&#039;)));
         console.log(&#039;Data-actual-height: &#039; + parseFloat(overlay.data(&#039;actual-height&#039;)));
-        var right = parseFloat(overlay.data(&#039;actual-width&#039;)) + left;
-        var bottom = parseFloat(overlay.data(&#039;actual-height&#039;)) + top;
+        var right = parseFloat(overlay.data(&#039;actual-width&#039;)) - left;
+        var bottom = parseFloat(overlay.data(&#039;actual-height&#039;)) - top;
         if (parseFloat(overlay.data(&#039;actual-height&#039;)) &gt; gridWidget.find(&#039;.grid-content-div&#039;).height()) {
             if (overlay.data(&#039;origin-scroll_top&#039;) &gt; overlay.data(&#039;last-scroll_top_pos&#039;)) {
                 top = gridWidget.find(&#039;.grid-content-div&#039;).offset().top;
