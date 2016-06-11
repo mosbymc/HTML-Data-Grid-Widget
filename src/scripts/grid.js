@@ -813,7 +813,7 @@ var grid = (function _grid($) {
 
                     if (displayHeight > contentTable.height()) displayHeight = contentTable.height();
                     if (displayWidth > contentTable.width()) displayWidth = contentTable.width();
-                    var actualHeight = vScrollDir > -1 ? displayHeight + vScrollDiff : displayHeight - vScrollDiff;
+                    var actualHeight = displayHeight + vScrollDiff;
                     var actualWidth = hScrollDir > -1 ? displayWidth + hScrollDiff : displayWidth - hScrollDiff;
 
 
@@ -842,8 +842,14 @@ var grid = (function _grid($) {
         var right = parseFloat(overlay.data('actual-width')) + left;
         var bottom = parseFloat(overlay.data('actual-height')) + top;
         if (parseFloat(overlay.data('actual-height')) > gridWidget.find('.grid-content-div').height()) {
-            bottom = (gridWidget.find('.grid-content-div').offset().top + gridWidget.find('.grid-content-div').height());
-            top = bottom - parseFloat(overlay.data('actual-height'));
+            if (overlay.data('origin-scroll_top') > overlay.data('last-scroll_top_pos')) {
+                top = gridWidget.find('.grid-content-div').offset().top;
+                bottom = top + parseFloat(overlay.data('actual-height'));
+            }
+            else {
+                bottom = (gridWidget.find('.grid-content-div').offset().top + gridWidget.find('.grid-content-div').height());
+                top = bottom - parseFloat(overlay.data('actual-height'));
+            }
         }
         console.log('Top: ' + top);
         console.log('Left: ' + left);
