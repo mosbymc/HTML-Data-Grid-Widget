@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">54.76</p>
+      <p class="stat">54.72</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2553</p>
+      <p class="stat">2564</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">192.85</p>
+      <p class="stat">193.39</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">54.99</p>
+      <p class="stat">55.25</p>
     </div>
   </div>
 </div>
@@ -831,10 +831,21 @@
                     contentDiv.on(&#039;scroll&#039;, function updateSelectOverlayOnScrollHandler() {
                         if (storage.grids[gridId].selecting) {
                             window.getSelection().removeAllRanges();
+                            var scrollTopPos = contentDiv.scrollTop(),
+                                scrollLeftPos = contentDiv.scrollLeft(),
+                                vScrollDiff = Math.abs(highlightDiv.data(&#039;origin-scroll_top&#039;) - scrollTopPos),
+                                hScrollDiff = Math.abs(highlightDiv.data(&#039;origin-scroll_left&#039;) - scrollLeftPos);
+
+                            highlightDiv.data(&#039;last-scroll_top_pos&#039;, scrollTopPos);
+                            highlightDiv.data(&#039;last-scroll_left_pos&#039;, scrollLeftPos);
+                            highlightDiv.data(&#039;actual-height&#039;, (highlightDiv.height() + vScrollDiff));
+                            highlightDiv.data(&#039;actual-width&#039;, (highlightDiv.width() + hScrollDiff));
+
                         }
                     });
                 }
             });
+
 
             $(document).on(&#039;mousemove&#039;, function updateSelectOverlayOnMouseMoveHandler(ev) {
                 if (storage.grids[gridId].selecting) {

@@ -740,10 +740,21 @@ var grid = (function _grid($) {
                     contentDiv.on('scroll', function updateSelectOverlayOnScrollHandler() {
                         if (storage.grids[gridId].selecting) {
                             window.getSelection().removeAllRanges();
+                            var scrollTopPos = contentDiv.scrollTop(),
+                                scrollLeftPos = contentDiv.scrollLeft(),
+                                vScrollDiff = Math.abs(highlightDiv.data('origin-scroll_top') - scrollTopPos),
+                                hScrollDiff = Math.abs(highlightDiv.data('origin-scroll_left') - scrollLeftPos);
+
+                            highlightDiv.data('last-scroll_top_pos', scrollTopPos);
+                            highlightDiv.data('last-scroll_left_pos', scrollLeftPos);
+                            highlightDiv.data('actual-height', (highlightDiv.height() + vScrollDiff));
+                            highlightDiv.data('actual-width', (highlightDiv.width() + hScrollDiff));
+
                         }
                     });
                 }
             });
+
 
             $(document).on('mousemove', function updateSelectOverlayOnMouseMoveHandler(ev) {
                 if (storage.grids[gridId].selecting) {

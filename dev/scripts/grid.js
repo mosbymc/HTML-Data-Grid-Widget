@@ -1053,6 +1053,16 @@ var grid = (function _grid($) {
                     contentDiv.on('scroll', function updateSelectOverlayOnScrollHandler() {
                         if (storage.grids[gridId].selecting) {
                             window.getSelection().removeAllRanges();
+                            var scrollTopPos = contentDiv.scrollTop(),
+                                scrollLeftPos = contentDiv.scrollLeft(),
+                                vScrollDiff = Math.abs(highlightDiv.data('origin-scroll_top') - scrollTopPos),
+                                hScrollDiff = Math.abs(highlightDiv.data('origin-scroll_left') - scrollLeftPos);
+
+                            highlightDiv.data('last-scroll_top_pos', scrollTopPos);
+                            highlightDiv.data('last-scroll_left_pos', scrollLeftPos);
+                            highlightDiv.data('actual-height', (highlightDiv.height() + vScrollDiff));
+                            highlightDiv.data('actual-width', (highlightDiv.width() + hScrollDiff));
+
                             //var highlightDiv = contentDiv.find('.selection-highlighter');
                             /*
                                 TODO:
@@ -1064,6 +1074,41 @@ var grid = (function _grid($) {
                     });
                 }
             });
+
+            /*$(document).on('mousemove', function updateSelectOverlayOnMouseMoveHandler(ev) {
+                if (storage.grids[gridId].selecting) {
+                    var domElem = $(ev.target),
+                        domTag = domElem[0].tagName.toUpperCase();
+                    if (domTag === 'INPUT' || domTag === 'SELECT') return;
+
+                    var gridInstance = storage.grids[gridId].grid;
+                    var clientX = ev.clientX;
+                    var clientY = ev.clientY;
+
+                    var contentTable = gridInstance.find('.grid-content-div');
+
+                    var ctTop = contentTable.offset().top;
+                    var ctLeft = contentTable.offset().left;
+                    window.getSelection().removeAllRanges();
+                    var highlightDiv = gridInstance.find('.selection-highlighter');
+
+                    var ctBottom = ctTop + contentTable.height();
+                    var ctRight = ctLeft + contentTable.width();
+
+                    if (clientX < ctLeft) clientX = ctLeft;
+                    if (clientY < ctTop) clientY = ctTop;
+
+                    var originY = highlightDiv.data('origin-y');
+                    var originX = highlightDiv.data('origin-x');
+                    var top = originY >= clientY ? clientY : originY;
+                    var left = originX >= clientX ? clientX : originX;
+                    var bottom = originY < clientY ? clientY : originY;
+                    var right = originX < clientX ? clientX : originX;
+                    var displayHeight, displayWidth;
+                    if (bottom > ctBottom) bottom = ctBottom;
+                    if (right > ctRight) right = ctRight;
+                }
+            });*/
 
             $(document).on('mousemove', function updateSelectOverlayOnMouseMoveHandler(ev) {
                 if (storage.grids[gridId].selecting) {
