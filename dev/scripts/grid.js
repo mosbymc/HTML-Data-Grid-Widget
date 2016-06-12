@@ -1030,7 +1030,7 @@ var grid = (function _grid($) {
                     var contentDiv = tableBody.parents('.grid-content-div');
                     var highlightDiv = $('<div class="selection-highlighter"></div>').appendTo(storage.grids[gridId].grid);
                     highlightDiv.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
-                    highlightDiv.data('origin-y', event.pageY).data('origin-x', event.pageX);
+                    highlightDiv.data('origin-y', event.pageY).data('origin-x', event.pageX).data('mouse-pos-x', event.pageX).data('mouse-pos-y', event.pageY);
                     highlightDiv.data('origin-scroll_top', contentDiv.scrollTop());
                     highlightDiv.data('origin-scroll_left', contentDiv.scrollLeft());
                     highlightDiv.data('last-scroll_top_pos', contentDiv.scrollTop());
@@ -1053,64 +1053,27 @@ var grid = (function _grid($) {
                     contentDiv.on('scroll', function updateSelectOverlayOnScrollHandler() {
                         if (storage.grids[gridId].selecting) {
                             window.getSelection().removeAllRanges();
-                            var scrollTopPos = contentDiv.scrollTop(),
-                                scrollLeftPos = contentDiv.scrollLeft(),
-                                vScrollDiff = Math.abs(highlightDiv.data('origin-scroll_top') - scrollTopPos),
-                                hScrollDiff = Math.abs(highlightDiv.data('origin-scroll_left') - scrollLeftPos);
+                            setOverlayDimensions(contentDiv, $(".selection-highlighter"), gridId);
+                        }
+                    });
 
-                            highlightDiv.data('last-scroll_top_pos', scrollTopPos);
-                            highlightDiv.data('last-scroll_left_pos', scrollLeftPos);
-                            highlightDiv.data('actual-height', (highlightDiv.height() + vScrollDiff));
-                            highlightDiv.data('actual-width', (highlightDiv.width() + hScrollDiff));
+                    $(document).on('mousemove', function updateSelectOverlayOnMouseMoveHandler(ev) {
+                        if (storage.grids[gridId].selecting) {
+                            var domElem = $(ev.target),
+                                domTag = domElem[0].tagName.toUpperCase();
+                            if (domTag === 'INPUT' || domTag === 'SELECT') return;
 
-                            //var highlightDiv = contentDiv.find('.selection-highlighter');
-                            /*
-                                TODO:
-                                Create a new function that serves both scrolling and mouse move events. Mouse move should calculate the new mouse position before
-                                calling the function, and this function should calculate the new scrollTop/scrollLeft position before calling it. The new function
-                                will simply need to examine the data attributes of the overlay element to adjust it's size and actual size.
-                             */
+                            var overlay = storage.grids[gridId].grid.find('.selection-highlighter');
+
+                            overlay.data('mouse-pos-x', ev.pageX).data('mouse-pos-y', ev.pageY);
+
+                            setOverlayDimensions(storage.grids[gridId].grid.find('.grid-content-div'), overlay, gridId);
                         }
                     });
                 }
             });
 
             /*$(document).on('mousemove', function updateSelectOverlayOnMouseMoveHandler(ev) {
-                if (storage.grids[gridId].selecting) {
-                    var domElem = $(ev.target),
-                        domTag = domElem[0].tagName.toUpperCase();
-                    if (domTag === 'INPUT' || domTag === 'SELECT') return;
-
-                    var gridInstance = storage.grids[gridId].grid;
-                    var clientX = ev.clientX;
-                    var clientY = ev.clientY;
-
-                    var contentTable = gridInstance.find('.grid-content-div');
-
-                    var ctTop = contentTable.offset().top;
-                    var ctLeft = contentTable.offset().left;
-                    window.getSelection().removeAllRanges();
-                    var highlightDiv = gridInstance.find('.selection-highlighter');
-
-                    var ctBottom = ctTop + contentTable.height();
-                    var ctRight = ctLeft + contentTable.width();
-
-                    if (clientX < ctLeft) clientX = ctLeft;
-                    if (clientY < ctTop) clientY = ctTop;
-
-                    var originY = highlightDiv.data('origin-y');
-                    var originX = highlightDiv.data('origin-x');
-                    var top = originY >= clientY ? clientY : originY;
-                    var left = originX >= clientX ? clientX : originX;
-                    var bottom = originY < clientY ? clientY : originY;
-                    var right = originX < clientX ? clientX : originX;
-                    var displayHeight, displayWidth;
-                    if (bottom > ctBottom) bottom = ctBottom;
-                    if (right > ctRight) right = ctRight;
-                }
-            });*/
-
-            $(document).on('mousemove', function updateSelectOverlayOnMouseMoveHandler(ev) {
                 if (storage.grids[gridId].selecting) {
                     var domElem = $(ev.target),
                         domTag = domElem[0].tagName.toUpperCase();
@@ -1143,7 +1106,7 @@ var grid = (function _grid($) {
 
                          Note: also need to add a scroll listener in case user uses mouse wheel to scroll grid div - need to make sure that if not using
                          mouse wheel that the scroll handler doesn't fire in addition to mouse move handler
-                     */
+
 
                     var vScrollDiff = 0,
                         vScrollDir = 0,
@@ -1205,7 +1168,75 @@ var grid = (function _grid($) {
                     highlightDiv.data('actual-height', actualHeight);
                     highlightDiv.data('actual-width', actualWidth);
                 }
-            });
+            });*/
+        }
+
+        function setOverlayDimensions(contentDiv, overlay, gridId) {
+            var gridInstance = storage.grids[gridId].grid;
+            var clientX = overlay.data('mouse-pos-x');
+            var clientY = overlay.data('mouse-pos-y');
+
+            var ctTop = contentDiv.offset().top;
+            var ctLeft = contentDiv.offset().left;
+            window.getSelection().removeAllRanges();
+            var highlightDiv = gridInstance.find('.selection-highlighter');
+            var vScrollDiff = 0,
+                vScrollDir = 0,
+                hScrollDiff = 0,
+                hScrollDir = 0;
+            var ctBottom = ctTop + contentDiv.height();
+            var ctRight = ctLeft + contentDiv.width();
+
+            if (clientX < ctLeft) clientX = ctLeft;
+            if (clientY < ctTop) clientY = ctTop;
+
+            var originY = highlightDiv.data('origin-y');
+            var originX = highlightDiv.data('origin-x');
+            var top = originY >= clientY ? clientY : originY;
+            var left = originX >= clientX ? clientX : originX;
+            var bottom = originY < clientY ? clientY : originY;
+            var right = originX < clientX ? clientX : originX;
+            var displayHeight, displayWidth;
+            if (bottom > ctBottom) bottom = ctBottom;
+            if (right > ctRight) right = ctRight;
+
+            //console.log('ClientX: ' + clientX);
+            //console.log('ClientY: ' + clientY);
+            //console.log('top: ' + top);
+            //console.log('left: ' + left);
+            //console.log('width: ' + (right - left));
+            //console.log('height: ' + (bottom - top));
+            //console.log('');
+
+            if (contentDiv.scrollTop() !== highlightDiv.data('origin-scroll_top')) {
+                vScrollDiff = Math.abs(highlightDiv.data('origin-scroll_top') - contentDiv.scrollTop());
+                vScrollDir = contentDiv.scrollTop() > highlightDiv.data('origin-scroll_top') ? 1 : -1;
+            }
+
+            if (contentDiv.scrollLeft() !== highlightDiv.data('origin-scroll_left')) {
+                hScrollDiff = Math.abs(highlightDiv.data('origin-scroll_left') - contentDiv.scrollLeft());
+                hScrollDir = contentDiv.scrollLeft() > highlightDiv.data('origin-scroll_left') ? 1 : -1;
+            }
+
+            if (vScrollDir > 0) top = top - vScrollDiff < ctTop ? ctTop : top - vScrollDiff;
+            else if (vScrollDir < 0) bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
+            displayHeight = bottom - top + vScrollDiff;
+
+            if (hScrollDir > 0) left = left - hScrollDir < ctLeft ? ctLeft : left - hScrollDir;
+            else if (hScrollDir < 0) right = right + hScrollDir > ctRight ? ctRight : right + hScrollDir;
+            displayWidth = right - left + hScrollDir;
+
+            if (displayHeight > contentDiv.height()) displayHeight = contentDiv.height();
+            if (displayWidth > contentDiv.width()) displayWidth = contentDiv.width();
+            var actualHeight = displayHeight + vScrollDiff;
+            var actualWidth = displayWidth + hScrollDiff;
+            highlightDiv.css('top', top).css('left', left).css('height', (bottom - top)).css('width', (right - left));
+            highlightDiv.data('last-scroll_top_pos', contentDiv.scrollTop());
+            highlightDiv.data('last-scroll_left_pos', contentDiv.scrollLeft());
+            highlightDiv.data('actual-height', actualHeight);
+            highlightDiv.data('actual-width', actualWidth);
+
+            console.log()
         }
     }
 
@@ -1214,24 +1245,33 @@ var grid = (function _grid($) {
         var offset = overlay.offset();
         var top = offset.top;
         var left = offset.left;
+        console.log('Overlay Pos Top: ' + overlay.position().top);
+        console.log('Overlay Pos Left: ' + overlay.position().left);
         console.log('Original Right: ' + (parseFloat(overlay.css('width')) + left));
         console.log('Original Bottom: ' + (parseFloat(overlay.css('height')) + top));
         console.log('Width: ' + parseFloat(overlay.css('width')));
         console.log('Height: ' + parseFloat(overlay.css('height')));
         console.log('Data-actual-width: ' + parseFloat(overlay.data('actual-width')));
         console.log('Data-actual-height: ' + parseFloat(overlay.data('actual-height')));
-        var right = parseFloat(overlay.data('actual-width')) - left;
-        var bottom = parseFloat(overlay.data('actual-height')) - top;
+        var right = parseFloat(overlay.data('actual-width')) + left;
+        var bottom = parseFloat(overlay.data('actual-height')) + top;
+
+        console.log('top: ' + top);
+        console.log('left: ' + left);
+        console.log('');
         if (parseFloat(overlay.data('actual-height')) > gridWidget.find('.grid-content-div').height()) {
             if (overlay.data('origin-scroll_top') > overlay.data('last-scroll_top_pos')) {
+                console.log('Scroll up');
                 top = gridWidget.find('.grid-content-div').offset().top;
                 bottom = top + parseFloat(overlay.data('actual-height'));
             }
             else {
+                console.log('scroll down');
                 bottom = (gridWidget.find('.grid-content-div').offset().top + gridWidget.find('.grid-content-div').height());
                 top = bottom - parseFloat(overlay.data('actual-height'));
             }
         }
+        console.log('');
         console.log('Top: ' + top);
         console.log('Left: ' + left);
         console.log('Right: ' + right);
@@ -1273,6 +1313,8 @@ var grid = (function _grid($) {
                 console.log('Row Left: ' + eLeft);
                 console.log('Row Right: ' + eRight);
                 console.log('Row Bottom: ' + eBottom);
+                console.log('Row Pos Top: ' + element.position().top);
+                console.log('Row Pos Left: ' + element.position().left);
                 console.log('');
             }
         });
