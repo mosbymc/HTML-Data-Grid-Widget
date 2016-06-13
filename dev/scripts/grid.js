@@ -81,13 +81,14 @@
  - Fix dirty markers positioning - DONE
  - Fix selectable cells to compare values based on type - DONE
  - Add handler for mounsedown/mouseup event to highlight multiple cells/rows - DONE
+ - Fix the 'selecting' status - DONE
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
  - Update grid instance functions that return selected cells/rows based on new select functionality
  - Make the select overlay unable to visually grow larger than the containing table but track the total height/width based on the scrollTop/scrollLeft
- - Fix the 'selecting' status - something's not detecting it correctly and the mousemove handler is still picking up events after mouse up
+ - Work on selecting rows/cells when user scrolls up/down and then changes mouse/scroll direction.
  */
 /*exported grid*/
 /**
@@ -1069,7 +1070,7 @@ var grid = (function _grid($) {
         //TODO: the display height/width. Once 'selectHighlighted' is called, the measurements appear to be accurate according to what it receives - I don't
         //TODO: believe the cause lies there.
         //
-        //TODO: after further study, I think this may be occurring due to a delay in the asynchronous event handler. Basically, before the event handler executes,
+        //TODO: After further study, I think this may be occurring due to a delay in the asynchronous event handler. Basically, before the event handler executes,
         //TODO: another mousemove event has fired and has adjusted the 'mouse-pos-y' data attribute of the overlay. This makes for excess pixels that are unaccounted
         //TODO: for when processing the first mousemove event, but which nonetheless affect the actual-height value.
         function setOverlayDimensions(contentDiv, overlay, gridId) {
@@ -1094,18 +1095,15 @@ var grid = (function _grid($) {
                 left = originX >= clientX ? clientX : originX,
                 bottom = originY < clientY ? clientY : originY,
                 right = originX < clientX ? clientX : originX,
-                displayHeight, displayWidth;
+                displayHeight, displayWidth,
+                trueHeight, trueWidth;
             if (bottom > ctBottom) bottom = ctBottom;
             if (right > ctRight) right = ctRight;
 
-            //console.log('Initial left: ' + left);
-            //console.log('Initial Right: ' + right);
-            console.log('Initial Top: ' + top);
-            console.log('Initials Bottom: ' + bottom);
-
-            if (contentDiv.scrollTop() !== highlightDiv.data('origin-scroll_top')) {
-                vScrollDiff = Math.abs(highlightDiv.data('origin-scroll_top') - contentDiv.scrollTop());
-                vScrollDir = contentDiv.scrollTop() > highlightDiv.data('origin-scroll_top') ? 1 : -1;
+            if (contentDiv.scrollTop() !== highlightDiv.data('last-scroll_top_pos')) {
+                vScrollDiff = Math.abs(highlightDiv.data('last-scroll_top_pos') - contentDiv.scrollTop());
+                vScrollDir = contentDiv.scrollTop() > highlightDiv.data('last-scroll_top_pos') ? 1 : -1;
+                console.log('vScrollDiff: ' + vScrollDiff);
             }
 
             if (contentDiv.scrollLeft() !== highlightDiv.data('origin-scroll_left')) {
@@ -1113,28 +1111,35 @@ var grid = (function _grid($) {
                 hScrollDir = contentDiv.scrollLeft() > highlightDiv.data('origin-scroll_left') ? 1 : -1;
             }
 
-            if (vScrollDir > 0) top = top - vScrollDiff < ctTop ? ctTop : top - vScrollDiff;
-            else if (vScrollDir < 0) bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
-            displayHeight = bottom - top + vScrollDiff;
+            if (vScrollDir > 0) {
+                if (highlightDiv.data('last-scroll_top_pos') !== highlightDiv.data('origin-scroll_top') || highlightDiv.data('actual-height') > bottom - top)
+                    trueHeight = highlightDiv.data('actual-height') + vScrollDiff;
+                else trueHeight = bottom - top + vScrollDiff;
+                top = top - vScrollDiff < ctTop ? ctTop : top - vScrollDiff;
+                highlightDiv.data('origin-y', top);
+            }
+            else if (vScrollDir < 0) {
+                if (highlightDiv.data('last-scroll_top_pos') !== highlightDiv.data('origin-scroll_top') || highlightDiv.data('actual-height') > bottom - top)
+                    trueHeight = highlightDiv.data('actual-height') + vScrollDiff;
+                else trueHeight = bottom - top + vScrollDiff;
+                bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
+                top = bottom - trueHeight < ctTop ? ctTop : bottom - trueHeight;
+            }
+            else trueHeight = bottom - top > highlightDiv.data('actual-height') ? bottom - top : highlightDiv.data('actual-height');
 
-            console.log('Initial Display Height: ' + displayHeight);
+            if (hScrollDir > 0) left = left - hScrollDiff < ctLeft ? ctLeft : left - hScrollDiff;
+            else if (hScrollDir < 0) right = right + hScrollDiff > ctRight ? ctRight : right + hScrollDiff;
+            trueWidth = right - left;
 
-            if (hScrollDir > 0) left = left - hScrollDir < ctLeft ? ctLeft : left - hScrollDir;
-            else if (hScrollDir < 0) right = right + hScrollDir > ctRight ? ctRight : right + hScrollDir;
-            displayWidth = right - left + hScrollDir;
+            highlightDiv.data('actual-height', trueHeight);
+            highlightDiv.data('actual-width', trueWidth);
 
-            if (displayHeight > contentDiv.height()) displayHeight = contentDiv.height();
-            if (displayWidth > contentDiv.width()) displayWidth = contentDiv.width();
+            displayHeight = trueHeight > contentDiv.height() ? contentDiv.height() : trueHeight;
+            displayWidth = trueWidth > contentDiv.width() ? contentDiv.width() : trueWidth;
 
-            console.log('Adjusted Display Height: ' + displayHeight);
-            console.log('Actual Height: ' + (displayHeight + vScrollDiff));
-            console.log('');
-
-            highlightDiv.css('top', top).css('left', left).css('height', (bottom - top)).css('width', (right - left));
+            highlightDiv.css('top', top).css('left', left).css('height', displayHeight).css('width', displayWidth);
             highlightDiv.data('last-scroll_top_pos', contentDiv.scrollTop());
             highlightDiv.data('last-scroll_left_pos', contentDiv.scrollLeft());
-            highlightDiv.data('actual-height', (displayHeight + vScrollDiff));
-            highlightDiv.data('actual-width', (displayWidth + hScrollDiff));
         }
     }
 
@@ -1145,8 +1150,6 @@ var grid = (function _grid($) {
             left = offset.left,
             right = parseFloat(overlay.data('actual-width')) + left,
             bottom = parseFloat(overlay.data('actual-height')) + top;
-        console.log('top: ' + top);
-        console.log('Original height: ' + (bottom - top));
 
         //TODO: check these to make sure the calculations are correct
         if (parseFloat(overlay.data('actual-height')) > contentDiv.height()) {
@@ -1159,12 +1162,6 @@ var grid = (function _grid($) {
                 top = bottom - parseFloat(overlay.data('actual-height'));
             }
         }
-        console.log('Adjusted height: ' + (bottom -top));
-        console.log('Right: ' + right);
-        console.log('Left: ' + left);
-        console.log('Top: ' + top);
-        console.log('Bottom: ' + bottom);
-        console.log('');
 
         var gridElems = storage.grids[gridId].selectable === 'multi-cell' ? contentDiv.find('td') : contentDiv.find('tr');
 
@@ -1176,35 +1173,8 @@ var grid = (function _grid($) {
                 eRight = parseFloat(element.css('width')) + eLeft,
                 eBottom = parseFloat(element.css('height')) + eTop;
 
-            //console.log('eRight: ' + eRight);
-            //console.log('eLeft: ' + eLeft);
-            //console.log('eTop: ' + eTop);
-            //console.log('eBottom: ' + eBottom);
-            //console.log('');
-
             if (left > eRight || right < eLeft || top > eBottom || bottom < eTop) return;
             else element.addClass('selected');
-
-            /*if (eLeft <= left && eTop <= top && eBottom >= top && eBottom <= bottom && eRight <= right && eRight >= left)
-                element.addClass('selected');
-            else if (eLeft >= left && eLeft <= right && eTop >= top && eTop <= bottom && eBottom >= bottom && eRight >= right)
-                element.addClass('selected');
-            else if (eLeft >= left && eTop <= top && eBottom <= top && eBottom <= bottom && eRight >= right)
-                element.addClass('selected');
-            else if (eLeft <= left && eTop >= top && eTop >= bottom && eBottom >= bottom && eRight <= right)
-                element.addClass('selected');
-            else if (eLeft >= left && eTop >= top && eBottom <= bottom && eRight <= right)
-                element.addClass('selected');
-            else if (eLeft <= left && eTop <= top && eBottom >= bottom && eRight >= right)
-                element.addClass('selected');
-            else if (eLeft <= left && eTop <= top && eBottom >= top && eBottom <= bottom && eRight >= right)
-                element.addClass('selected');
-            else if (eLeft <= left && eTop >= top && eTop <= bottom && eBottom >= bottom && eRight >= right)
-                element.addClass('selected');
-            else if (eLeft <= left && eTop >= top && eBottom <= bottom && eRight >= right)
-                element.addClass('selected');
-            else if (eLeft <= left && eTop >= top && eBottom <= bottom && eRight <= right && eRight >= left)
-                element.addClass('selected');*/
         });
     }
 

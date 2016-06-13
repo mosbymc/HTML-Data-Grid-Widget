@@ -773,16 +773,15 @@ var grid = (function _grid($) {
                 left = originX >= clientX ? clientX : originX,
                 bottom = originY < clientY ? clientY : originY,
                 right = originX < clientX ? clientX : originX,
-                displayHeight, displayWidth;
+                displayHeight, displayWidth,
+                trueHeight, trueWidth;
             if (bottom > ctBottom) bottom = ctBottom;
             if (right > ctRight) right = ctRight;
 
-            console.log('Initial Top: ' + top);
-            console.log('Initials Bottom: ' + bottom);
-
-            if (contentDiv.scrollTop() !== highlightDiv.data('origin-scroll_top')) {
-                vScrollDiff = Math.abs(highlightDiv.data('origin-scroll_top') - contentDiv.scrollTop());
-                vScrollDir = contentDiv.scrollTop() > highlightDiv.data('origin-scroll_top') ? 1 : -1;
+            if (contentDiv.scrollTop() !== highlightDiv.data('last-scroll_top_pos')) {
+                vScrollDiff = Math.abs(highlightDiv.data('last-scroll_top_pos') - contentDiv.scrollTop());
+                vScrollDir = contentDiv.scrollTop() > highlightDiv.data('last-scroll_top_pos') ? 1 : -1;
+                console.log('vScrollDiff: ' + vScrollDiff);
             }
 
             if (contentDiv.scrollLeft() !== highlightDiv.data('origin-scroll_left')) {
@@ -790,28 +789,35 @@ var grid = (function _grid($) {
                 hScrollDir = contentDiv.scrollLeft() > highlightDiv.data('origin-scroll_left') ? 1 : -1;
             }
 
-            if (vScrollDir > 0) top = top - vScrollDiff < ctTop ? ctTop : top - vScrollDiff;
-            else if (vScrollDir < 0) bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
-            displayHeight = bottom - top + vScrollDiff;
+            if (vScrollDir > 0) {
+                if (highlightDiv.data('last-scroll_top_pos') !== highlightDiv.data('origin-scroll_top') || highlightDiv.data('actual-height') > bottom - top)
+                    trueHeight = highlightDiv.data('actual-height') + vScrollDiff;
+                else trueHeight = bottom - top + vScrollDiff;
+                top = top - vScrollDiff < ctTop ? ctTop : top - vScrollDiff;
+                highlightDiv.data('origin-y', top);
+            }
+            else if (vScrollDir < 0) {
+                if (highlightDiv.data('last-scroll_top_pos') !== highlightDiv.data('origin-scroll_top') || highlightDiv.data('actual-height') > bottom - top)
+                    trueHeight = highlightDiv.data('actual-height') + vScrollDiff;
+                else trueHeight = bottom - top + vScrollDiff;
+                bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
+                top = bottom - trueHeight < ctTop ? ctTop : bottom - trueHeight;
+            }
+            else trueHeight = bottom - top > highlightDiv.data('actual-height') ? bottom - top : highlightDiv.data('actual-height');
 
-            console.log('Initial Display Height: ' + displayHeight);
+            if (hScrollDir > 0) left = left - hScrollDiff < ctLeft ? ctLeft : left - hScrollDiff;
+            else if (hScrollDir < 0) right = right + hScrollDiff > ctRight ? ctRight : right + hScrollDiff;
+            trueWidth = right - left;
 
-            if (hScrollDir > 0) left = left - hScrollDir < ctLeft ? ctLeft : left - hScrollDir;
-            else if (hScrollDir < 0) right = right + hScrollDir > ctRight ? ctRight : right + hScrollDir;
-            displayWidth = right - left + hScrollDir;
+            highlightDiv.data('actual-height', trueHeight);
+            highlightDiv.data('actual-width', trueWidth);
 
-            if (displayHeight > contentDiv.height()) displayHeight = contentDiv.height();
-            if (displayWidth > contentDiv.width()) displayWidth = contentDiv.width();
+            displayHeight = trueHeight > contentDiv.height() ? contentDiv.height() : trueHeight;
+            displayWidth = trueWidth > contentDiv.width() ? contentDiv.width() : trueWidth;
 
-            console.log('Adjusted Display Height: ' + displayHeight);
-            console.log('Actual Height: ' + (displayHeight + vScrollDiff));
-            console.log('');
-
-            highlightDiv.css('top', top).css('left', left).css('height', (bottom - top)).css('width', (right - left));
+            highlightDiv.css('top', top).css('left', left).css('height', displayHeight).css('width', displayWidth);
             highlightDiv.data('last-scroll_top_pos', contentDiv.scrollTop());
             highlightDiv.data('last-scroll_left_pos', contentDiv.scrollLeft());
-            highlightDiv.data('actual-height', (displayHeight + vScrollDiff));
-            highlightDiv.data('actual-width', (displayWidth + hScrollDiff));
         }
     }
 
@@ -822,8 +828,6 @@ var grid = (function _grid($) {
             left = offset.left,
             right = parseFloat(overlay.data('actual-width')) + left,
             bottom = parseFloat(overlay.data('actual-height')) + top;
-        console.log('top: ' + top);
-        console.log('Original height: ' + (bottom - top));
 
         if (parseFloat(overlay.data('actual-height')) > contentDiv.height()) {
             if (overlay.data('origin-scroll_top') > overlay.data('last-scroll_top_pos')) {
@@ -835,12 +839,6 @@ var grid = (function _grid($) {
                 top = bottom - parseFloat(overlay.data('actual-height'));
             }
         }
-        console.log('Adjusted height: ' + (bottom -top));
-        console.log('Right: ' + right);
-        console.log('Left: ' + left);
-        console.log('Top: ' + top);
-        console.log('Bottom: ' + bottom);
-        console.log('');
 
         var gridElems = storage.grids[gridId].selectable === 'multi-cell' ? contentDiv.find('td') : contentDiv.find('tr');
 
@@ -852,10 +850,8 @@ var grid = (function _grid($) {
                 eRight = parseFloat(element.css('width')) + eLeft,
                 eBottom = parseFloat(element.css('height')) + eTop;
 
-
             if (left > eRight || right < eLeft || top > eBottom || bottom < eTop) return;
             else element.addClass('selected');
-
         });
     }
 
