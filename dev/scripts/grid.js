@@ -997,15 +997,12 @@ var grid = (function _grid($) {
         storage.grids[id].updating = false;
     }
 
-    //TODO: need to figure out best way to handle de-selection
-    //TODO: need to prevent deselection from happening when dragover occurs inside a current editing cell
     function attachTableSelectHandler(tableBody) {
         var gridId = tableBody.parents('.grid-wrapper').data('grid_id');
         var isSelectable = storage.grids[gridId].selectable;
         if (isSelectable) {
             $(document).on('click', function tableBodySelectCallback(e) {
                 if (e.target === tableBody[0] || $(e.target).parents('tbody')[0] === tableBody[0]) {
-                    console.log(storage.grids[gridId].selecting);
                     if (storage.grids[gridId].selecting) {
                         storage.grids[gridId].selecting = false;
                         return;
@@ -1027,19 +1024,15 @@ var grid = (function _grid($) {
             $(document).on('mousedown', function mouseDownDragCallback(event) {
                 if (event.target === tableBody[0] || $(event.target).parents('tbody')[0] === tableBody[0]) {
                     storage.grids[gridId].selecting = true;
-                    var contentDiv = tableBody.parents('.grid-content-div');
-                    var highlightDiv = $('<div class="selection-highlighter"></div>').appendTo(storage.grids[gridId].grid);
-                    highlightDiv.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
-                    highlightDiv.data('origin-y', event.pageY).data('origin-x', event.pageX).data('mouse-pos-x', event.pageX).data('mouse-pos-y', event.pageY);
-                    highlightDiv.data('origin-scroll_top', contentDiv.scrollTop());
-                    highlightDiv.data('origin-scroll_left', contentDiv.scrollLeft());
-                    highlightDiv.data('last-scroll_top_pos', contentDiv.scrollTop());
-                    highlightDiv.data('last-scroll_left_pos', contentDiv.scrollLeft());
-                    highlightDiv.data('actual-height', 0);
-                    highlightDiv.data('actual-width', 0);
+                    var contentDiv = tableBody.parents('.grid-content-div'),
+                        overlay = $('<div class="selection-highlighter"></div>').appendTo(storage.grids[gridId].grid);
+                    overlay.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
+                    overlay.data('origin-y', event.pageY).data('origin-x', event.pageX).data('mouse-pos-x', event.pageX).data('mouse-pos-y', event.pageY);
+                    overlay.data('origin-scroll_top', contentDiv.scrollTop()).data('origin-scroll_left', contentDiv.scrollLeft());
+                    overlay.data('last-scroll_top_pos', contentDiv.scrollTop()).data('last-scroll_left_pos', contentDiv.scrollLeft());
+                    overlay.data('actual-height', 0).data('actual-width', 0);
 
                     $(document).one('mouseup', function mouseUpDragCallback() {
-                        storage.grids[gridId].selecting = false;
                         $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
                             $(elem).removeClass('selected');
                         });
@@ -1052,161 +1045,63 @@ var grid = (function _grid($) {
 
                     contentDiv.on('scroll', function updateSelectOverlayOnScrollHandler() {
                         if (storage.grids[gridId].selecting) {
-                            window.getSelection().removeAllRanges();
                             setOverlayDimensions(contentDiv, $(".selection-highlighter"), gridId);
                         }
                     });
 
                     $(document).on('mousemove', function updateSelectOverlayOnMouseMoveHandler(ev) {
                         if (storage.grids[gridId].selecting) {
-                            var domElem = $(ev.target),
-                                domTag = domElem[0].tagName.toUpperCase();
+                            var domTag = ev.target.tagName.toUpperCase();
                             if (domTag === 'INPUT' || domTag === 'SELECT') return;
 
                             var overlay = storage.grids[gridId].grid.find('.selection-highlighter');
-
                             overlay.data('mouse-pos-x', ev.pageX).data('mouse-pos-y', ev.pageY);
-
                             setOverlayDimensions(storage.grids[gridId].grid.find('.grid-content-div'), overlay, gridId);
                         }
                     });
                 }
             });
-
-            /*$(document).on('mousemove', function updateSelectOverlayOnMouseMoveHandler(ev) {
-                if (storage.grids[gridId].selecting) {
-                    var domElem = $(ev.target),
-                        domTag = domElem[0].tagName.toUpperCase();
-                    if (domTag === 'INPUT' || domTag === 'SELECT') return;
-
-                    var gridInstance = storage.grids[gridId].grid;
-                    var clientX = ev.clientX;
-                    var clientY = ev.clientY;
-
-                    var contentTable = gridInstance.find('.grid-content-div');
-
-                    var ctTop = contentTable.offset().top;
-                    var ctLeft = contentTable.offset().left;
-                    window.getSelection().removeAllRanges();
-                    var highlightDiv = gridInstance.find('.selection-highlighter');
-                    /*
-                        First get mouse page coordinates
-                        Then compare their coordinates with the coordinates of the div containing table
-                            If the mouse coordinates exist outside of the div, adjust dimensions of overlay to stay within the boundaries
-                            Else adjust the width/height as normal
-                        Check to see if the div's scroll top/left has changed since the mouse-down event
-                            If it has, check to see if we're scrolling up/down and right/left
-                        Whichever direction(s) we're scrolling, check to see if the origin position of the mouse down event
-                        has gone off the grid based on scrolling
-                            If it has, restrict the width to the size of the containing div and adjust the actual-width/height accordingly
-                        On mouse up, check actual-width/height to know how large the overlay was meant to be and which grid cells/rows would fall inside of it
-
-                        Note: if the user does scroll the grid, but then backtracks to the origin scroll state, then the size of the overlay should be adjusted
-                         as they scroll back, not immediately shrink down to where it was at the origin
-
-                         Note: also need to add a scroll listener in case user uses mouse wheel to scroll grid div - need to make sure that if not using
-                         mouse wheel that the scroll handler doesn't fire in addition to mouse move handler
-
-
-                    var vScrollDiff = 0,
-                        vScrollDir = 0,
-                        hScrollDiff = 0,
-                        hScrollDir = 0;
-                    var ctBottom = ctTop + contentTable.height();
-                    var ctRight = ctLeft + contentTable.width();
-
-                    if (clientX < ctLeft) clientX = ctLeft;
-                    if (clientY < ctTop) clientY = ctTop;
-
-                    var originY = highlightDiv.data('origin-y');
-                    var originX = highlightDiv.data('origin-x');
-                    var top = originY >= clientY ? clientY : originY;
-                    var left = originX >= clientX ? clientX : originX;
-                    var bottom = originY < clientY ? clientY : originY;
-                    var right = originX < clientX ? clientX : originX;
-                    var displayHeight, displayWidth;
-                    if (bottom > ctBottom) bottom = ctBottom;
-                    if (right > ctRight) right = ctRight;
-
-                    if (contentTable.scrollTop() !== highlightDiv.data('origin-scroll_top')) {
-                        vScrollDiff = Math.abs(highlightDiv.data('origin-scroll_top') - contentTable.scrollTop());
-                        vScrollDir = contentTable.scrollTop() > highlightDiv.data('origin-scroll_top') ? 1 : -1;
-                    }
-
-                    if (contentTable.scrollLeft() !== highlightDiv.data('origin-scroll_left')) {
-                        hScrollDiff = Math.abs(highlightDiv.data('origin-scroll_left') - contentTable.scrollLeft());
-                        hScrollDir = contentTable.scrollLeft() > highlightDiv.data('origin-scroll_left') ? 1 : -1;
-                    }
-
-                    if (vScrollDir > 0) {
-                        top = top - vScrollDiff < ctTop ? ctTop : top - vScrollDiff;
-                        displayHeight = bottom - top + vScrollDiff;
-                    }
-                    else if (vScrollDir < 0) {
-                        bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
-                        displayHeight = bottom - top + vScrollDiff;
-                    }
-                    else displayHeight = bottom - top;
-
-                    if (hScrollDir > 0) {
-                        left = left + hScrollDir < ctLeft ? ctLeft : left + hScrollDir;
-                        displayWidth = right - left + hScrollDir;
-                    }
-                    else if (hScrollDir < 0) {
-                        right = right + hScrollDir > ctRight ? ctRight : right + hScrollDir;
-                        displayWidth = right - left + hScrollDir;
-                    }
-                    else displayWidth = right - left;
-
-                    if (displayHeight > contentTable.height()) displayHeight = contentTable.height();
-                    if (displayWidth > contentTable.width()) displayWidth = contentTable.width();
-                    var actualHeight = displayHeight + vScrollDiff;
-                    var actualWidth = displayWidth + hScrollDiff;
-                    highlightDiv.css('top', top).css('left', left).css('height', (bottom - top)).css('width', (right - left));
-                    highlightDiv.data('last-scroll_top_pos', contentTable.scrollTop());
-                    highlightDiv.data('last-scroll_left_pos', contentTable.scrollLeft());
-                    highlightDiv.data('actual-height', actualHeight);
-                    highlightDiv.data('actual-width', actualWidth);
-                }
-            });*/
         }
 
+        //TODO: There something causing the selecting of rows/cells to highlight more than it should once a scroll action has taken place...
+        //TODO: ... I'm pretty sure it specifically happens once the top/bottom has been scrolled out of view, less scrolling will not cause this to occur.
+        //TODO: I'm not 100%, but I believe the causation is coming from this function when adjusting the top/bottom, left/right or when adjusting
+        //TODO: the display height/width. Once 'selectHighlighted' is called, the measurements appear to be accurate according to what it receives - I don't
+        //TODO: believe the cause lies there.
+        //
+        //TODO: after further study, I think this may be occurring due to a delay in the asynchronous event handler. Basically, before the event handler executes,
+        //TODO: another mousemove event has fired and has adjusted the 'mouse-pos-y' data attribute of the overlay. This makes for excess pixels that are unaccounted
+        //TODO: for when processing the first mousemove event, but which nonetheless affect the actual-height value.
         function setOverlayDimensions(contentDiv, overlay, gridId) {
-            var gridInstance = storage.grids[gridId].grid;
-            var clientX = overlay.data('mouse-pos-x');
-            var clientY = overlay.data('mouse-pos-y');
-
-            var ctTop = contentDiv.offset().top;
-            var ctLeft = contentDiv.offset().left;
+            var gridInstance = storage.grids[gridId].grid,
+                ctTop = contentDiv.offset().top,
+                ctLeft = contentDiv.offset().left,
+                ctBottom = ctTop + contentDiv.height(),
+                ctRight = ctLeft + contentDiv.width(),
+                clientX = overlay.data('mouse-pos-x') < ctLeft ? ctLeft : overlay.data('mouse-pos-x'),
+                clientY = overlay.data('mouse-pos-y') < ctTop ? ctTop: overlay.data('mouse-pos-y');
             window.getSelection().removeAllRanges();
-            var highlightDiv = gridInstance.find('.selection-highlighter');
-            var vScrollDiff = 0,
+            var highlightDiv = gridInstance.find('.selection-highlighter'),
+                vScrollDiff = 0,
                 vScrollDir = 0,
                 hScrollDiff = 0,
                 hScrollDir = 0;
-            var ctBottom = ctTop + contentDiv.height();
-            var ctRight = ctLeft + contentDiv.width();
 
-            if (clientX < ctLeft) clientX = ctLeft;
-            if (clientY < ctTop) clientY = ctTop;
-
-            var originY = highlightDiv.data('origin-y');
-            var originX = highlightDiv.data('origin-x');
-            var top = originY >= clientY ? clientY : originY;
-            var left = originX >= clientX ? clientX : originX;
-            var bottom = originY < clientY ? clientY : originY;
-            var right = originX < clientX ? clientX : originX;
-            var displayHeight, displayWidth;
+            //TODO: make sure these calculations are correct and see if I need to wait until after figuring out the actual height/width before altering the display height/width
+            var originY = highlightDiv.data('origin-y'),
+                originX = highlightDiv.data('origin-x'),
+                top = originY >= clientY ? clientY : originY,
+                left = originX >= clientX ? clientX : originX,
+                bottom = originY < clientY ? clientY : originY,
+                right = originX < clientX ? clientX : originX,
+                displayHeight, displayWidth;
             if (bottom > ctBottom) bottom = ctBottom;
             if (right > ctRight) right = ctRight;
 
-            //console.log('ClientX: ' + clientX);
-            //console.log('ClientY: ' + clientY);
-            //console.log('top: ' + top);
-            //console.log('left: ' + left);
-            //console.log('width: ' + (right - left));
-            //console.log('height: ' + (bottom - top));
-            //console.log('');
+            //console.log('Initial left: ' + left);
+            //console.log('Initial Right: ' + right);
+            console.log('Initial Top: ' + top);
+            console.log('Initials Bottom: ' + bottom);
 
             if (contentDiv.scrollTop() !== highlightDiv.data('origin-scroll_top')) {
                 vScrollDiff = Math.abs(highlightDiv.data('origin-scroll_top') - contentDiv.scrollTop());
@@ -1222,72 +1117,75 @@ var grid = (function _grid($) {
             else if (vScrollDir < 0) bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
             displayHeight = bottom - top + vScrollDiff;
 
+            console.log('Initial Display Height: ' + displayHeight);
+
             if (hScrollDir > 0) left = left - hScrollDir < ctLeft ? ctLeft : left - hScrollDir;
             else if (hScrollDir < 0) right = right + hScrollDir > ctRight ? ctRight : right + hScrollDir;
             displayWidth = right - left + hScrollDir;
 
             if (displayHeight > contentDiv.height()) displayHeight = contentDiv.height();
             if (displayWidth > contentDiv.width()) displayWidth = contentDiv.width();
-            var actualHeight = displayHeight + vScrollDiff;
-            var actualWidth = displayWidth + hScrollDiff;
+
+            console.log('Adjusted Display Height: ' + displayHeight);
+            console.log('Actual Height: ' + (displayHeight + vScrollDiff));
+            console.log('');
+
             highlightDiv.css('top', top).css('left', left).css('height', (bottom - top)).css('width', (right - left));
             highlightDiv.data('last-scroll_top_pos', contentDiv.scrollTop());
             highlightDiv.data('last-scroll_left_pos', contentDiv.scrollLeft());
-            highlightDiv.data('actual-height', actualHeight);
-            highlightDiv.data('actual-width', actualWidth);
-
-            console.log()
+            highlightDiv.data('actual-height', (displayHeight + vScrollDiff));
+            highlightDiv.data('actual-width', (displayWidth + hScrollDiff));
         }
     }
 
     function selectHighlighted(overlay, gridId) {
-        var gridWidget = storage.grids[gridId].grid;
-        var offset = overlay.offset();
-        var top = offset.top;
-        var left = offset.left;
-        console.log('Overlay Pos Top: ' + overlay.position().top);
-        console.log('Overlay Pos Left: ' + overlay.position().left);
-        console.log('Original Right: ' + (parseFloat(overlay.css('width')) + left));
-        console.log('Original Bottom: ' + (parseFloat(overlay.css('height')) + top));
-        console.log('Width: ' + parseFloat(overlay.css('width')));
-        console.log('Height: ' + parseFloat(overlay.css('height')));
-        console.log('Data-actual-width: ' + parseFloat(overlay.data('actual-width')));
-        console.log('Data-actual-height: ' + parseFloat(overlay.data('actual-height')));
-        var right = parseFloat(overlay.data('actual-width')) + left;
-        var bottom = parseFloat(overlay.data('actual-height')) + top;
-
+        var contentDiv = storage.grids[gridId].grid.find('.grid-content-div'),
+            offset = overlay.offset(),
+            top = offset.top,
+            left = offset.left,
+            right = parseFloat(overlay.data('actual-width')) + left,
+            bottom = parseFloat(overlay.data('actual-height')) + top;
         console.log('top: ' + top);
-        console.log('left: ' + left);
-        console.log('');
-        if (parseFloat(overlay.data('actual-height')) > gridWidget.find('.grid-content-div').height()) {
+        console.log('Original height: ' + (bottom - top));
+
+        //TODO: check these to make sure the calculations are correct
+        if (parseFloat(overlay.data('actual-height')) > contentDiv.height()) {
             if (overlay.data('origin-scroll_top') > overlay.data('last-scroll_top_pos')) {
-                console.log('Scroll up');
-                top = gridWidget.find('.grid-content-div').offset().top;
+                top = contentDiv.offset().top;
                 bottom = top + parseFloat(overlay.data('actual-height'));
             }
             else {
-                console.log('scroll down');
-                bottom = (gridWidget.find('.grid-content-div').offset().top + gridWidget.find('.grid-content-div').height());
+                bottom = (contentDiv.offset().top + contentDiv.height());
                 top = bottom - parseFloat(overlay.data('actual-height'));
             }
         }
-        console.log('');
-        console.log('Top: ' + top);
-        console.log('Left: ' + left);
+        console.log('Adjusted height: ' + (bottom -top));
         console.log('Right: ' + right);
+        console.log('Left: ' + left);
+        console.log('Top: ' + top);
         console.log('Bottom: ' + bottom);
         console.log('');
-        var gridElems = storage.grids[gridId].selectable === 'multi-cell' ? gridWidget.find('.grid-content-div').find('td') : gridWidget.find('.grid-content-div').find('tr');
+
+        var gridElems = storage.grids[gridId].selectable === 'multi-cell' ? contentDiv.find('td') : contentDiv.find('tr');
 
         gridElems.each(function highlightGridElemsCallback(idx, val) {
-            var element = $(val);
-            var eOffset = element.offset();
-            var eTop = eOffset.top;
-            var eLeft = eOffset.left;
-            var eRight = parseFloat(element.css('width')) + eLeft;
-            var eBottom = parseFloat(element.css('height')) + eTop;
+            var element = $(val),
+                eOffset = element.offset(),
+                eTop = eOffset.top,
+                eLeft = eOffset.left,
+                eRight = parseFloat(element.css('width')) + eLeft,
+                eBottom = parseFloat(element.css('height')) + eTop;
 
-            if (eLeft <= left && eTop <= top && eBottom >= top && eBottom <= bottom && eRight <= right && eRight >= left)
+            //console.log('eRight: ' + eRight);
+            //console.log('eLeft: ' + eLeft);
+            //console.log('eTop: ' + eTop);
+            //console.log('eBottom: ' + eBottom);
+            //console.log('');
+
+            if (left > eRight || right < eLeft || top > eBottom || bottom < eTop) return;
+            else element.addClass('selected');
+
+            /*if (eLeft <= left && eTop <= top && eBottom >= top && eBottom <= bottom && eRight <= right && eRight >= left)
                 element.addClass('selected');
             else if (eLeft >= left && eLeft <= right && eTop >= top && eTop <= bottom && eBottom >= bottom && eRight >= right)
                 element.addClass('selected');
@@ -1306,17 +1204,7 @@ var grid = (function _grid($) {
             else if (eLeft <= left && eTop >= top && eBottom <= bottom && eRight >= right)
                 element.addClass('selected');
             else if (eLeft <= left && eTop >= top && eBottom <= bottom && eRight <= right && eRight >= left)
-                element.addClass('selected');
-
-            if (!element.hasClass('selected')) {
-                console.log('Row Top: ' + eTop);
-                console.log('Row Left: ' + eLeft);
-                console.log('Row Right: ' + eRight);
-                console.log('Row Bottom: ' + eBottom);
-                console.log('Row Pos Top: ' + element.position().top);
-                console.log('Row Pos Left: ' + element.position().left);
-                console.log('');
-            }
+                element.addClass('selected');*/
         });
     }
 
