@@ -1028,8 +1028,10 @@ var grid = (function _grid($) {
                     var contentDiv = tableBody.parents('.grid-content-div'),
                         overlay = $('<div class="selection-highlighter"></div>').appendTo(storage.grids[gridId].grid);
                     overlay.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
-                    overlay.data('origin-y', event.pageY).data('origin-x', event.pageX).data('mouse-pos-x', event.pageX).data('mouse-pos-y', event.pageY);
+                    overlay.data('origin-y', event.pageY + contentDiv.scrollTop()).data('origin-x', event.pageX + contentDiv.scrollLeft()).data('mouse-pos-x', event.pageX).data('mouse-pos-y', event.pageY);
                     overlay.data('previous-top', event.pageY).data('previous-left', event.pageX);
+                    overlay.data('previous-bottom', event.pageY).data('previous-right', event.pageX);
+                    overlay.data('previous-mouse-pos-y', event.pageY).data('previous-mouse-pos-x', event.pageX);
                     overlay.data('origin-scroll_top', contentDiv.scrollTop()).data('origin-scroll_left', contentDiv.scrollLeft());
                     overlay.data('last-scroll_top_pos', contentDiv.scrollTop()).data('last-scroll_left_pos', contentDiv.scrollLeft());
                     overlay.data('actual-height', 0).data('actual-width', 0).data('last-scroll_top_dir', null).data('last-scroll_left_dir', null);
@@ -1065,121 +1067,181 @@ var grid = (function _grid($) {
             });
         }
 
-        function setOverlayDimensions(contentDiv, overlay, gridId) {
-            var gridInstance = storage.grids[gridId].grid,
-                ctTop = contentDiv.offset().top,
+        function setOverlayDimensions(contentDiv, overlay) {
+            var ctTop = contentDiv.offset().top,
                 ctLeft = contentDiv.offset().left,
                 ctBottom = ctTop + contentDiv.height(),
                 ctRight = ctLeft + contentDiv.width(),
                 clientX = overlay.data('mouse-pos-x') < ctLeft ? ctLeft : overlay.data('mouse-pos-x'),
                 clientY = overlay.data('mouse-pos-y') < ctTop ? ctTop: overlay.data('mouse-pos-y');
             window.getSelection().removeAllRanges();
-            var highlightDiv = gridInstance.find('.selection-highlighter'),
-                vScrollDiff = 0,
+            var vScrollDiff = 0,
                 vScrollDir = 0,
                 hScrollDiff = 0,
                 hScrollDir = 0;
 
             //TODO: make sure these calculations are correct and see if I need to wait until after figuring out the actual height/width before altering the display height/width
-            var originY = highlightDiv.data('previous-top'),
-                originX = highlightDiv.data('previous-left'),
-                top = originY >= clientY ? clientY : originY,
-                left = originX >= clientX ? clientX : originX,
-                bottom = originY < clientY ? clientY : originY,
-                right = originX < clientX ? clientX : originX,
+            var originTop = overlay.data('previous-top'),
+                originLeft = overlay.data('previous-left'),
+                originBottom = overlay.data('previous-bottom'),
+                originRight = overlay.data('previous-right'),
+                top = originTop >= clientY ? clientY : originTop,
+                left = originLeft >= clientX ? clientX : originLeft,
+                bottom = originBottom < clientY ? clientY : originBottom,
+                right = originRight < clientX ? clientX : originRight,
                 displayHeight, displayWidth,
                 trueHeight, trueWidth;
             if (bottom > ctBottom) bottom = ctBottom;
             if (right > ctRight) right = ctRight;
 
-            //console.log('Origin-X: ' + originX);
-            //console.log('Origin-Y: ' + originY);
-            //console.log('top: ' + top);
-            //console.log('left: ' + left);
-            //console.log('right: ' + right);
-            //console.log('bottom: ' + bottom);
-            //console.log('');
-
-            if (contentDiv.scrollTop() !== highlightDiv.data('last-scroll_top_pos')) {
-                vScrollDiff = Math.abs(highlightDiv.data('last-scroll_top_pos') - contentDiv.scrollTop());
-                vScrollDir = contentDiv.scrollTop() > highlightDiv.data('last-scroll_top_pos') ? 1 : -1;
-                //console.log('vScrollDiff: ' + vScrollDiff);
+            if (contentDiv.scrollTop() !== overlay.data('last-scroll_top_pos')) {
+                vScrollDiff = Math.abs(overlay.data('last-scroll_top_pos') - contentDiv.scrollTop());
+                vScrollDir = contentDiv.scrollTop() > overlay.data('last-scroll_top_pos') ? 1 : -1;
             }
 
-            if (contentDiv.scrollLeft() !== highlightDiv.data('origin-scroll_left')) {
-                hScrollDiff = Math.abs(highlightDiv.data('origin-scroll_left') - contentDiv.scrollLeft());
-                hScrollDir = contentDiv.scrollLeft() > highlightDiv.data('origin-scroll_left') ? 1 : -1;
+            if (contentDiv.scrollLeft() !== overlay.data('origin-scroll_left')) {
+                hScrollDiff = Math.abs(overlay.data('origin-scroll_left') - contentDiv.scrollLeft());
+                hScrollDir = contentDiv.scrollLeft() > overlay.data('origin-scroll_left') ? 1 : -1;
             }
 
-            console.log('mouse-pos-y: ' + highlightDiv.data('mouse-pos-y'));
-            console.log('origin-y: ' + highlightDiv.data('origin-y'));
-            if (vScrollDir > 0) {   //scrolling down...
-                if (highlightDiv.data('mouse-pos-y') <= highlightDiv.data('origin-y')) { //...but the current mouse position is higher than the initial mouse position
+            //console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
+            //console.log('origin-y: ' + overlay.data('origin-y'));
+            /*if (vScrollDir > 0) {   //scrolling down...
+                if (overlay.data('mouse-pos-y') <= overlay.data('origin-y')) { //...but the current mouse position is higher than the initial mouse position
+                    console.log('');
                     console.log('Scrolling down; getting smaller');
-                    trueHeight = highlightDiv.data('actual-height') - vScrollDiff;
-                    bottom = trueHeight >= highlightDiv.height() ? bottom : highlightDiv.height() + top - vScrollDiff;
+                    trueHeight = overlay.data('actual-height') - vScrollDiff;
+                    bottom = trueHeight >= overlay.height() ? bottom : overlay.height() + top - vScrollDiff;
                 }
                 else {  //..else, we're scrolling down and selecting down
+                    console.log('');
                     console.log('Scrolling down; getting larger');
-                    if (highlightDiv.data('last-scroll_top_pos') !== highlightDiv.data('origin-scroll_top') || highlightDiv.data('actual-height') > bottom - top)
-                        trueHeight = highlightDiv.data('actual-height') + vScrollDiff;
+                    if (overlay.data('last-scroll_top_pos') !== overlay.data('origin-scroll_top') || overlay.data('actual-height') > bottom - top)
+                        trueHeight = overlay.data('actual-height') + vScrollDiff;
                     else trueHeight = bottom - top + vScrollDiff;
                     top = top - vScrollDiff < ctTop ? ctTop : top - vScrollDiff;
                 }
-                highlightDiv.data('previous-top', top);
+                overlay.data('previous-top', top);
             }
             else if (vScrollDir < 0) {  //scrolling up....
-                if (highlightDiv.data('mouse-pos-y') > highlightDiv.data('origin-y')) { //...but the current mouse position is lower than the initial mouse position
+                if (overlay.data('mouse-pos-y') > overlay.data('origin-y')) { //...but the current mouse position is lower than the initial mouse position
+                    console.log('');
                     console.log('Scrolling up; getting smaller');
-                    trueHeight = highlightDiv.data('actual-height') - vScrollDiff;
-                    top = trueHeight >= highlightDiv.height() ? top : top - vScrollDiff;
+                    trueHeight = overlay.data('actual-height') - vScrollDiff;
+                    top = trueHeight >= overlay.height() ? top : top - vScrollDiff;
                 }
                 else {
+                    console.log('');
                     console.log('Scrolling up; getting larger');
-                    if (highlightDiv.data('last-scroll_top_pos') !== highlightDiv.data('origin-scroll_top') || highlightDiv.data('actual-height') > bottom - top)
-                        trueHeight = highlightDiv.data('actual-height') + vScrollDiff;
+                    if (overlay.data('last-scroll_top_pos') !== overlay.data('origin-scroll_top') || overlay.data('actual-height') > bottom - top)
+                        trueHeight = overlay.data('actual-height') + vScrollDiff;
                     else trueHeight = bottom - top + vScrollDiff;
                     bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
                     top = bottom - trueHeight < ctTop ? ctTop : bottom - trueHeight;
                 }
-                highlightDiv.data('previous-top', top);
+                overlay.data('previous-top', top);
             }
             else {  //no scrolling happened
-                if (highlightDiv.data('last-scroll_top_pos') > highlightDiv.data('origin-y') && highlightDiv.data('mouse-pos-y') < highlightDiv.data('last-scroll_top_pos')) {
-                    if (highlightDiv.data('mouse-pos-y') > top) {
-                        bottom = highlightDiv.data('mouse-pos-y');
-                        trueHeight = trueHeight - Math.abs(highlightDiv.data('last-scroll_top_pos') - highlightDiv.data('mouse-pos-y'));
+                if (overlay.data('previous-top') === overlay.offset.top())
+                if (overlay.data('previous-top') >= overlay.data('origin-y') && overlay.data('mouse-pos-y') < overlay.data('previous-top')) {
+                    if (overlay.data('mouse-pos-y') > top) {
+                        console.log('');
+                        console.log('Mouse move up; getting smaller');
+                        console.log('previous-top: ' + overlay.data('previous-top'));
+                        console.log('origin-y: ' + overlay.data('origin-y'));
+                        console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
+                        bottom = overlay.data('mouse-pos-y');
+                        trueHeight = overlay.data('actual-height') - Math.abs(overlay.data('previous-top') - overlay.data('mouse-pos-y'));
                     }
                     else {  //this should only occur once per direction change at most (won't occur if the bottom doesn't cross the origin, or if it's a scroll event that crosses the origin)
-                        top = highlightDiv.data('mouse-pos-y');
-                        bottom = highlightDiv.offset().top - highlightDiv.height();
+                        console.log('');
+                        console.log('Mouse move up; flop');
+                        console.log('previous-top: ' + overlay.data('previous-top'));
+                        console.log('origin-y: ' + overlay.data('origin-y'));
+                        console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
+                        top = overlay.data('mouse-pos-y');
+                        bottom = overlay.offset().top - overlay.height();
                         trueHeight = bottom - top;
                     }
                 }
-                else if (highlightDiv.data('last-scroll_top_pos') < highlightDiv.data('origin-y') && highlightDiv.data('mouse-pos-y') > highlightDiv.data('last-scroll_top_pos')) {
-                    if (highlightDiv.data('mouse-pos-y') < top) {
-                        
+                else if (overlay.data('previous-top') <= overlay.data('origin-y') && overlay.data('mouse-pos-y') > overlay.data('previous-top')) {
+                    if (overlay.data('mouse-pos-y') < bottom) {
+                        console.log('');
+                        console.log('Mouse move down; getting smaller');
+                        console.log('previous-top: ' + overlay.data('previous-top'));
+                        console.log('origin-y: ' + overlay.data('origin-y'));
+                        console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
+                        top = overlay.data('mouse-pos-y');
+                        trueHeight = overlay.data('actual-height') - Math.abs(overlay.data('previous-top') - overlay.data('mouse-pos-y'));
+                    }
+                    else {
+                        console.log('');
+                        console.log('Mouse move down; flop');
+                        console.log('previous-top: ' + overlay.data('previous-top'));
+                        console.log('origin-y: ' + overlay.data('origin-y'));
+                        console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
+                        top = overlay.offset().top;
+                        bottom = overlay.height() + top;
+                        trueHeight = bottom - top;
                     }
                 }
-                else
-                trueHeight = bottom - top > highlightDiv.data('actual-height') ? bottom - top : highlightDiv.data('actual-height');
+                else {
+                    console.log('');
+                    console.log('Plain mouse move');
+                    console.log('previous-top: ' + overlay.data('previous-top'));
+                    console.log('origin-y: ' + overlay.data('origin-y'));
+                    console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
+                    trueHeight = bottom - top > overlay.data('actual-height') ? bottom - top : overlay.data('actual-height');
+                }
+            }*/
+            //console.log('');
+            //console.log('previous-mouse-pos-y: ' + overlay.data('previous-mouse-pos-y'));
+            if (overlay.data('mouse-pos-y') < bottom && overlay.data('mouse-pos-y') > top && overlay.data('mouse-pos-y') <= overlay.data('previous-mouse-pos-y')) {
+                bottom = overlay.data('mouse-pos-y');
             }
-            console.log('');
+            else if (overlay.data('mouse-pos-y') > top && overlay.data('mouse-pos-y') < bottom && overlay.data('mouse-pos-y') >= overlay.data('previous-mouse-pos-y')) {
+                top = overlay.data('mouse-pos-y');
+            }
+
+            if (overlay.data('mouse-pos-x') < right && overlay.data('mouse-pos-x') > left && overlay.data('mouse-pos-x') <= overlay.data('previous-mouse-pos-x')) {
+                right = overlay.data('mouse-pos-x');
+            }
+            else if (overlay.data('mouse-pos-x') > left && overlay.data('mouse-pos-x') < right && overlay.data('mouse-pos-x') >= overlay.data('previous-mouse-pos-x')) {
+                left = overlay.data('mouse-pos-x');
+            }
+
+            if (vScrollDir > 0) {
+                if (overlay.data('last-scroll_top_pos') !== overlay.data('origin-scroll_top') || overlay.data('actual-height') > bottom - top)
+                    trueHeight = overlay.data('actual-height') + vScrollDiff;
+                else trueHeight = bottom - top + vScrollDiff;
+                top = top - vScrollDiff < ctTop ? ctTop : top - vScrollDiff;
+                overlay.data('origin-y', top);
+            }
+            else if (vScrollDir < 0) {
+                if (overlay.data('last-scroll_top_pos') !== overlay.data('origin-scroll_top') || overlay.data('actual-height') > bottom - top)
+                    trueHeight = overlay.data('actual-height') + vScrollDiff;
+                else trueHeight = bottom - top + vScrollDiff;
+                bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
+                top = bottom - trueHeight < ctTop ? ctTop : bottom - trueHeight;
+            }
+            else trueHeight = bottom - top > overlay.data('actual-height') ? bottom - top : overlay.data('actual-height');
 
             //TODO: update horizontal positioning to work like the vertical positioning above
             if (hScrollDir > 0) left = left - hScrollDiff < ctLeft ? ctLeft : left - hScrollDiff;
             else if (hScrollDir < 0) right = right + hScrollDiff > ctRight ? ctRight : right + hScrollDiff;
             trueWidth = right - left;
 
-            highlightDiv.data('actual-height', trueHeight);
-            highlightDiv.data('actual-width', trueWidth);
+            overlay.data('actual-height', trueHeight);
+            overlay.data('actual-width', trueWidth);
 
             displayHeight = bottom - top;
             displayWidth = right - left;
-
-            highlightDiv.css('top', top).css('left', left).css('height', displayHeight).css('width', displayWidth);
-            highlightDiv.data('last-scroll_top_pos', contentDiv.scrollTop()).data('last-scroll_top_dir', vScrollDir);
-            highlightDiv.data('last-scroll_left_pos', contentDiv.scrollLeft()).data('last-scroll_left_dir', hScrollDir);
+            
+            overlay.css('top', top).css('left', left).css('height', displayHeight).css('width', displayWidth);
+            overlay.data('previous-top', top).data('previous-left', left).data('previous-bottom', bottom).data('previous-right', right);
+            overlay.data('previous-mouse-pos-y', overlay.data('mouse-pos-y')).data('previous-mouse-pos-x', overlay.data('mouse-pos-x'));
+            overlay.data('last-scroll_top_pos', contentDiv.scrollTop()).data('last-scroll_top_dir', vScrollDir);
+            overlay.data('last-scroll_left_pos', contentDiv.scrollLeft()).data('last-scroll_left_dir', hScrollDir);
         }
     }
 
