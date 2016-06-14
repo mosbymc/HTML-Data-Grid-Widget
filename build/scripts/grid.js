@@ -717,9 +717,10 @@ var grid = (function _grid($) {
                         overlay = $('<div class="selection-highlighter"></div>').appendTo(storage.grids[gridId].grid);
                     overlay.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
                     overlay.data('origin-y', event.pageY).data('origin-x', event.pageX).data('mouse-pos-x', event.pageX).data('mouse-pos-y', event.pageY);
+                    overlay.data('previous-top', event.pageY).data('previous-left', event.pageX);
                     overlay.data('origin-scroll_top', contentDiv.scrollTop()).data('origin-scroll_left', contentDiv.scrollLeft());
                     overlay.data('last-scroll_top_pos', contentDiv.scrollTop()).data('last-scroll_left_pos', contentDiv.scrollLeft());
-                    overlay.data('actual-height', 0).data('actual-width', 0);
+                    overlay.data('actual-height', 0).data('actual-width', 0).data('last-scroll_top_dir', null).data('last-scroll_left_dir', null);
 
                     $(document).one('mouseup', function mouseUpDragCallback() {
                         $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
@@ -767,8 +768,8 @@ var grid = (function _grid($) {
                 hScrollDiff = 0,
                 hScrollDir = 0;
 
-            var originY = highlightDiv.data('origin-y'),
-                originX = highlightDiv.data('origin-x'),
+            var originY = highlightDiv.data('previous-top'),
+                originX = highlightDiv.data('previous-left'),
                 top = originY >= clientY ? clientY : originY,
                 left = originX >= clientX ? clientX : originX,
                 bottom = originY < clientY ? clientY : originY,
@@ -778,10 +779,10 @@ var grid = (function _grid($) {
             if (bottom > ctBottom) bottom = ctBottom;
             if (right > ctRight) right = ctRight;
 
+
             if (contentDiv.scrollTop() !== highlightDiv.data('last-scroll_top_pos')) {
                 vScrollDiff = Math.abs(highlightDiv.data('last-scroll_top_pos') - contentDiv.scrollTop());
                 vScrollDir = contentDiv.scrollTop() > highlightDiv.data('last-scroll_top_pos') ? 1 : -1;
-                console.log('vScrollDiff: ' + vScrollDiff);
             }
 
             if (contentDiv.scrollLeft() !== highlightDiv.data('origin-scroll_left')) {
@@ -789,21 +790,60 @@ var grid = (function _grid($) {
                 hScrollDir = contentDiv.scrollLeft() > highlightDiv.data('origin-scroll_left') ? 1 : -1;
             }
 
-            if (vScrollDir > 0) {
-                if (highlightDiv.data('last-scroll_top_pos') !== highlightDiv.data('origin-scroll_top') || highlightDiv.data('actual-height') > bottom - top)
-                    trueHeight = highlightDiv.data('actual-height') + vScrollDiff;
-                else trueHeight = bottom - top + vScrollDiff;
-                top = top - vScrollDiff < ctTop ? ctTop : top - vScrollDiff;
-                highlightDiv.data('origin-y', top);
+            console.log('mouse-pos-y: ' + highlightDiv.data('mouse-pos-y'));
+            console.log('origin-y: ' + highlightDiv.data('origin-y'));
+            if (vScrollDir > 0) {   
+                if (highlightDiv.data('mouse-pos-y') <= highlightDiv.data('origin-y')) { 
+                    console.log('Scrolling down; getting smaller');
+                    trueHeight = highlightDiv.data('actual-height') - vScrollDiff;
+                    bottom = trueHeight >= highlightDiv.height() ? bottom : highlightDiv.height() + top - vScrollDiff;
+                }
+                else {  
+                    console.log('Scrolling down; getting larger');
+                    if (highlightDiv.data('last-scroll_top_pos') !== highlightDiv.data('origin-scroll_top') || highlightDiv.data('actual-height') > bottom - top)
+                        trueHeight = highlightDiv.data('actual-height') + vScrollDiff;
+                    else trueHeight = bottom - top + vScrollDiff;
+                    top = top - vScrollDiff < ctTop ? ctTop : top - vScrollDiff;
+                }
+                highlightDiv.data('previous-top', top);
             }
-            else if (vScrollDir < 0) {
-                if (highlightDiv.data('last-scroll_top_pos') !== highlightDiv.data('origin-scroll_top') || highlightDiv.data('actual-height') > bottom - top)
-                    trueHeight = highlightDiv.data('actual-height') + vScrollDiff;
-                else trueHeight = bottom - top + vScrollDiff;
-                bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
-                top = bottom - trueHeight < ctTop ? ctTop : bottom - trueHeight;
+            else if (vScrollDir < 0) {  
+                if (highlightDiv.data('mouse-pos-y') > highlightDiv.data('origin-y')) { 
+                    console.log('Scrolling up; getting smaller');
+                    trueHeight = highlightDiv.data('actual-height') - vScrollDiff;
+                    top = trueHeight >= highlightDiv.height() ? top : top - vScrollDiff;
+                }
+                else {
+                    console.log('Scrolling up; getting larger');
+                    if (highlightDiv.data('last-scroll_top_pos') !== highlightDiv.data('origin-scroll_top') || highlightDiv.data('actual-height') > bottom - top)
+                        trueHeight = highlightDiv.data('actual-height') + vScrollDiff;
+                    else trueHeight = bottom - top + vScrollDiff;
+                    bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
+                    top = bottom - trueHeight < ctTop ? ctTop : bottom - trueHeight;
+                }
+                highlightDiv.data('previous-top', top);
             }
-            else trueHeight = bottom - top > highlightDiv.data('actual-height') ? bottom - top : highlightDiv.data('actual-height');
+            else {  
+                if (highlightDiv.data('last-scroll_top_pos') > highlightDiv.data('origin-y') && highlightDiv.data('mouse-pos-y') < highlightDiv.data('last-scroll_top_pos')) {
+                    if (highlightDiv.data('mouse-pos-y') > top) {
+                        bottom = highlightDiv.data('mouse-pos-y');
+                        trueHeight = trueHeight - Math.abs(highlightDiv.data('last-scroll_top_pos') - highlightDiv.data('mouse-pos-y'));
+                    }
+                    else {  
+                        top = highlightDiv.data('mouse-pos-y');
+                        bottom = highlightDiv.offset().top - highlightDiv.height();
+                        trueHeight = bottom - top;
+                    }
+                }
+                else if (highlightDiv.data('last-scroll_top_pos') < highlightDiv.data('origin-y') && highlightDiv.data('mouse-pos-y') > highlightDiv.data('last-scroll_top_pos')) {
+                    if (highlightDiv.data('mouse-pos-y') < top) {
+
+                                            }
+                }
+                else
+                trueHeight = bottom - top > highlightDiv.data('actual-height') ? bottom - top : highlightDiv.data('actual-height');
+            }
+            console.log('');
 
             if (hScrollDir > 0) left = left - hScrollDiff < ctLeft ? ctLeft : left - hScrollDiff;
             else if (hScrollDir < 0) right = right + hScrollDiff > ctRight ? ctRight : right + hScrollDiff;
@@ -812,12 +852,12 @@ var grid = (function _grid($) {
             highlightDiv.data('actual-height', trueHeight);
             highlightDiv.data('actual-width', trueWidth);
 
-            displayHeight = trueHeight > contentDiv.height() ? contentDiv.height() : trueHeight;
-            displayWidth = trueWidth > contentDiv.width() ? contentDiv.width() : trueWidth;
+            displayHeight = bottom - top;
+            displayWidth = right - left;
 
             highlightDiv.css('top', top).css('left', left).css('height', displayHeight).css('width', displayWidth);
-            highlightDiv.data('last-scroll_top_pos', contentDiv.scrollTop());
-            highlightDiv.data('last-scroll_left_pos', contentDiv.scrollLeft());
+            highlightDiv.data('last-scroll_top_pos', contentDiv.scrollTop()).data('last-scroll_top_dir', vScrollDir);
+            highlightDiv.data('last-scroll_left_pos', contentDiv.scrollLeft()).data('last-scroll_left_dir', hScrollDir);
         }
     }
 
