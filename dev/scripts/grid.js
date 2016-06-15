@@ -1090,7 +1090,7 @@ var grid = (function _grid($) {
                 bottom = originBottom < clientY ? clientY : originBottom,
                 right = originRight < clientX ? clientX : originRight,
                 displayHeight, displayWidth,
-                trueHeight, trueWidth;
+                trueHeight, trueWidth, adjustedScrollTop;
             if (bottom > ctBottom) bottom = ctBottom;
             if (right > ctRight) right = ctRight;
 
@@ -1104,107 +1104,74 @@ var grid = (function _grid($) {
                 hScrollDir = contentDiv.scrollLeft() > overlay.data('origin-scroll_left') ? 1 : -1;
             }
 
-            //console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
-            //console.log('origin-y: ' + overlay.data('origin-y'));
-            /*if (vScrollDir > 0) {   //scrolling down...
-                if (overlay.data('mouse-pos-y') <= overlay.data('origin-y')) { //...but the current mouse position is higher than the initial mouse position
-                    console.log('');
-                    console.log('Scrolling down; getting smaller');
-                    trueHeight = overlay.data('actual-height') - vScrollDiff;
-                    bottom = trueHeight >= overlay.height() ? bottom : overlay.height() + top - vScrollDiff;
-                }
-                else {  //..else, we're scrolling down and selecting down
-                    console.log('');
-                    console.log('Scrolling down; getting larger');
-                    if (overlay.data('last-scroll_top_pos') !== overlay.data('origin-scroll_top') || overlay.data('actual-height') > bottom - top)
-                        trueHeight = overlay.data('actual-height') + vScrollDiff;
-                    else trueHeight = bottom - top + vScrollDiff;
-                    top = top - vScrollDiff < ctTop ? ctTop : top - vScrollDiff;
-                }
-                overlay.data('previous-top', top);
-            }
-            else if (vScrollDir < 0) {  //scrolling up....
-                if (overlay.data('mouse-pos-y') > overlay.data('origin-y')) { //...but the current mouse position is lower than the initial mouse position
-                    console.log('');
-                    console.log('Scrolling up; getting smaller');
-                    trueHeight = overlay.data('actual-height') - vScrollDiff;
-                    top = trueHeight >= overlay.height() ? top : top - vScrollDiff;
-                }
-                else {
-                    console.log('');
-                    console.log('Scrolling up; getting larger');
-                    if (overlay.data('last-scroll_top_pos') !== overlay.data('origin-scroll_top') || overlay.data('actual-height') > bottom - top)
-                        trueHeight = overlay.data('actual-height') + vScrollDiff;
-                    else trueHeight = bottom - top + vScrollDiff;
-                    bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
-                    top = bottom - trueHeight < ctTop ? ctTop : bottom - trueHeight;
-                }
-                overlay.data('previous-top', top);
-            }
-            else {  //no scrolling happened
-                if (overlay.data('previous-top') === overlay.offset.top())
-                if (overlay.data('previous-top') >= overlay.data('origin-y') && overlay.data('mouse-pos-y') < overlay.data('previous-top')) {
-                    if (overlay.data('mouse-pos-y') > top) {
-                        console.log('');
-                        console.log('Mouse move up; getting smaller');
-                        console.log('previous-top: ' + overlay.data('previous-top'));
-                        console.log('origin-y: ' + overlay.data('origin-y'));
-                        console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
-                        bottom = overlay.data('mouse-pos-y');
-                        trueHeight = overlay.data('actual-height') - Math.abs(overlay.data('previous-top') - overlay.data('mouse-pos-y'));
-                    }
-                    else {  //this should only occur once per direction change at most (won't occur if the bottom doesn't cross the origin, or if it's a scroll event that crosses the origin)
-                        console.log('');
-                        console.log('Mouse move up; flop');
-                        console.log('previous-top: ' + overlay.data('previous-top'));
-                        console.log('origin-y: ' + overlay.data('origin-y'));
-                        console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
-                        top = overlay.data('mouse-pos-y');
-                        bottom = overlay.offset().top - overlay.height();
-                        trueHeight = bottom - top;
-                    }
-                }
-                else if (overlay.data('previous-top') <= overlay.data('origin-y') && overlay.data('mouse-pos-y') > overlay.data('previous-top')) {
-                    if (overlay.data('mouse-pos-y') < bottom) {
-                        console.log('');
-                        console.log('Mouse move down; getting smaller');
-                        console.log('previous-top: ' + overlay.data('previous-top'));
-                        console.log('origin-y: ' + overlay.data('origin-y'));
-                        console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
-                        top = overlay.data('mouse-pos-y');
-                        trueHeight = overlay.data('actual-height') - Math.abs(overlay.data('previous-top') - overlay.data('mouse-pos-y'));
-                    }
-                    else {
-                        console.log('');
-                        console.log('Mouse move down; flop');
-                        console.log('previous-top: ' + overlay.data('previous-top'));
-                        console.log('origin-y: ' + overlay.data('origin-y'));
-                        console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
-                        top = overlay.offset().top;
-                        bottom = overlay.height() + top;
-                        trueHeight = bottom - top;
-                    }
-                }
-                else {
-                    console.log('');
-                    console.log('Plain mouse move');
-                    console.log('previous-top: ' + overlay.data('previous-top'));
-                    console.log('origin-y: ' + overlay.data('origin-y'));
-                    console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
-                    trueHeight = bottom - top > overlay.data('actual-height') ? bottom - top : overlay.data('actual-height');
-                }
-            }*/
-            //console.log('');
-            //console.log('previous-mouse-pos-y: ' + overlay.data('previous-mouse-pos-y'));
+            //TODO: Still need to add actual-height calculations to this section
             if (overlay.data('mouse-pos-y') < bottom && overlay.data('mouse-pos-y') > top && overlay.data('mouse-pos-y') <= overlay.data('previous-mouse-pos-y')) {
-                bottom = overlay.data('mouse-pos-y');
+                if (top === contentDiv.offset().top && overlay.data('mouse-pos-y') - 20 <= top && contentDiv.scrollTop() > 0 && overlay.data('origin-y') < contentDiv.offset().top + contentDiv.scrollTop() - 20) {
+                    console.log('=================== FLIPPED ===================');
+                    var adjustedBottom = top + 25;
+                    adjustedScrollTop = overlay.data('mouse-pos-y') - adjustedBottom;
+                    console.log('TOP: ' + top);
+                    console.log('MOUSE-POS-Y: ' + overlay.data('mouse-pos-y'));
+                    console.log('ORIGINAL BOTTOM: ' +  bottom);
+                    console.log('ORIGINAL SCROLLTOP: ' +  contentDiv.scrollTop());
+                    console.log('ADJUSTED BOTTOM: ' + adjustedBottom);
+                    console.log('ADJUSTED SCROLLTOP: ' + adjustedScrollTop);
+                    console.log('ORIGIN-Y: ' + overlay.data('origin-y'));
+                    contentDiv.scrollTop(contentDiv.scrollTop() + adjustedScrollTop);
+                    top = contentDiv.offset().top + contentDiv.scrollTop() > overlay.data('origin-y') ? contentDiv.offset().top : overlay.data('origin-y');
+                    bottom = adjustedBottom;
+                    console.log('ADJUSTED TOP: ' + top);
+                }
+                else {
+                    console.log('Flop bottom');
+                    console.log('');
+                    bottom = overlay.data('mouse-pos-y');
+                    console.log('origin-y: ' + overlay.data('origin-y'));
+                    console.log('top: ' + top);
+                    console.log('contentDiv top: ' + contentDiv.offset().top);
+                    console.log('offset + top: ' + (top + contentDiv.scrollTop()));
+                    if (bottom - top < 10)
+                        console.log('CLOSE TO FLIPPING');
+                    /*if (top > contentDiv.offset().top && bottom - overlay.data('actual-height') >= contentDiv.offset().top) {
+                     console.log('Adjust top here');
+                     top = bottom - overlay.data('actual-height');
+                     }
+                     if (overlay.data('origin-y') < top && top < contentDiv.offset().top) {
+                     console.log('Adjust top');
+                     top = contentDiv.offset().top < overlay.data('origin-y') ? overlay.data('origin-y') : contentDiv.offset().top;
+                     }*/
+                }
             }
             else if (overlay.data('mouse-pos-y') > top && overlay.data('mouse-pos-y') < bottom && overlay.data('mouse-pos-y') >= overlay.data('previous-mouse-pos-y')) {
-                top = overlay.data('mouse-pos-y');
+                if (bottom === (contentDiv.offset().top + contentDiv.height())&& overlay.data('mouse-pos-y') + 20 >= bottom && contentDiv.scrollTop() < contentDiv[0].scrollHeight &&
+                    overlay.data('origin-y') > (contentDiv.offset().top + contentDiv.height() + contentDiv.scrollTop() + 20)) {
+                    var adjustedTop = bottom - 25;
+                    adjustedScrollTop = adjustedTop - overlay.data('mouse-pos-y');
+                    console.log('BOTTOM: ' + bottom);
+                    console.log('MOUSE-POS-Y: ' + overlay.data('mouse-pos-y'));
+                    console.log('ORIGINAL TOP: ' +  top);
+                    console.log('ORIGINAL SCROLLTOP: ' +  contentDiv.scrollTop());
+                    console.log('ADJUSTED TOP: ' + adjustedTop);
+                    console.log('ADJUSTED SCROLLTOP: ' + adjustedScrollTop);
+                    console.log('ORIGIN-Y: ' + overlay.data('origin-y'));
+                    contentDiv.scrollTop(contentDiv.scrollTop() - adjustedScrollTop);
+                    bottom = (contentDiv.offset().top + contentDiv.scrollTop() + contentDiv.height() < overlay.data('origin-y')) ?
+                    contentDiv.offset().top + contentDiv.height() : overlay.data('origin-y');
+                    top = adjustedTop;
+                    console.log('ADJUSTED BOTTOM: ' + bottom);
+                }
+                else top = overlay.data('mouse-pos-y');
             }
 
             if (overlay.data('mouse-pos-x') < right && overlay.data('mouse-pos-x') > left && overlay.data('mouse-pos-x') <= overlay.data('previous-mouse-pos-x')) {
-                right = overlay.data('mouse-pos-x');
+                if (left === contentDiv.offset().left && overlay.data('mouse-pos-x') - 20 <= left && contentDiv.scrollLeft() > 0 && overlay.data('origin-x') < contentDiv.offset().left + contentDiv.scrollLeft() - 20) {
+                    var adjustedRight = top + 25;
+                    var adjustedScrollLeft = overlay.data('mouse-pos-x') - adjustedRight;
+                    contentDiv.scrollLeft(contentDiv.scrollLeft() + adjustedScrollLeft);
+                    left = contentDiv.offset().left + contentDiv.scrollLeft() > overlay.data('origin-x') ? contentDiv.offset().left : overlay.data('origin-x');
+                    right = adjustedRight;
+                }
+                else right = overlay.data('mouse-pos-x');
             }
             else if (overlay.data('mouse-pos-x') > left && overlay.data('mouse-pos-x') < right && overlay.data('mouse-pos-x') >= overlay.data('previous-mouse-pos-x')) {
                 left = overlay.data('mouse-pos-x');
@@ -1215,7 +1182,6 @@ var grid = (function _grid($) {
                     trueHeight = overlay.data('actual-height') + vScrollDiff;
                 else trueHeight = bottom - top + vScrollDiff;
                 top = top - vScrollDiff < ctTop ? ctTop : top - vScrollDiff;
-                overlay.data('origin-y', top);
             }
             else if (vScrollDir < 0) {
                 if (overlay.data('last-scroll_top_pos') !== overlay.data('origin-scroll_top') || overlay.data('actual-height') > bottom - top)
@@ -1236,7 +1202,7 @@ var grid = (function _grid($) {
 
             displayHeight = bottom - top;
             displayWidth = right - left;
-            
+
             overlay.css('top', top).css('left', left).css('height', displayHeight).css('width', displayWidth);
             overlay.data('previous-top', top).data('previous-left', left).data('previous-bottom', bottom).data('previous-right', right);
             overlay.data('previous-mouse-pos-y', overlay.data('mouse-pos-y')).data('previous-mouse-pos-x', overlay.data('mouse-pos-x'));

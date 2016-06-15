@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">54.93</p>
+      <p class="stat">54.49</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2531</p>
+      <p class="stat">2580</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">193.60</p>
+      <p class="stat">194.96</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">54.64</p>
+      <p class="stat">56.64</p>
     </div>
   </div>
 </div>
@@ -868,7 +868,7 @@
                 bottom = originBottom &lt; clientY ? clientY : originBottom,
                 right = originRight &lt; clientX ? clientX : originRight,
                 displayHeight, displayWidth,
-                trueHeight, trueWidth;
+                trueHeight, trueWidth, adjustedScrollTop;
             if (bottom &gt; ctBottom) bottom = ctBottom;
             if (right &gt; ctRight) right = ctRight;
 
@@ -883,14 +883,64 @@
             }
 
             if (overlay.data(&#039;mouse-pos-y&#039;) &lt; bottom &amp;&amp; overlay.data(&#039;mouse-pos-y&#039;) &gt; top &amp;&amp; overlay.data(&#039;mouse-pos-y&#039;) &lt;= overlay.data(&#039;previous-mouse-pos-y&#039;)) {
-                bottom = overlay.data(&#039;mouse-pos-y&#039;);
+                if (top === contentDiv.offset().top &amp;&amp; overlay.data(&#039;mouse-pos-y&#039;) - 20 &lt;= top &amp;&amp; contentDiv.scrollTop() &gt; 0 &amp;&amp; overlay.data(&#039;origin-y&#039;) &lt; contentDiv.offset().top + contentDiv.scrollTop() - 20) {
+                    console.log(&#039;=================== FLIPPED ===================&#039;);
+                    var adjustedBottom = top + 25;
+                    adjustedScrollTop = overlay.data(&#039;mouse-pos-y&#039;) - adjustedBottom;
+                    console.log(&#039;TOP: &#039; + top);
+                    console.log(&#039;MOUSE-POS-Y: &#039; + overlay.data(&#039;mouse-pos-y&#039;));
+                    console.log(&#039;ORIGINAL BOTTOM: &#039; +  bottom);
+                    console.log(&#039;ORIGINAL SCROLLTOP: &#039; +  contentDiv.scrollTop());
+                    console.log(&#039;ADJUSTED BOTTOM: &#039; + adjustedBottom);
+                    console.log(&#039;ADJUSTED SCROLLTOP: &#039; + adjustedScrollTop);
+                    console.log(&#039;ORIGIN-Y: &#039; + overlay.data(&#039;origin-y&#039;));
+                    contentDiv.scrollTop(contentDiv.scrollTop() + adjustedScrollTop);
+                    top = contentDiv.offset().top + contentDiv.scrollTop() &gt; overlay.data(&#039;origin-y&#039;) ? contentDiv.offset().top : overlay.data(&#039;origin-y&#039;);
+                    bottom = adjustedBottom;
+                    console.log(&#039;ADJUSTED TOP: &#039; + top);
+                }
+                else {
+                    console.log(&#039;Flop bottom&#039;);
+                    console.log(&#039;&#039;);
+                    bottom = overlay.data(&#039;mouse-pos-y&#039;);
+                    console.log(&#039;origin-y: &#039; + overlay.data(&#039;origin-y&#039;));
+                    console.log(&#039;top: &#039; + top);
+                    console.log(&#039;contentDiv top: &#039; + contentDiv.offset().top);
+                    console.log(&#039;offset + top: &#039; + (top + contentDiv.scrollTop()));
+                    if (bottom - top &lt; 10)
+                        console.log(&#039;CLOSE TO FLIPPING&#039;);
+                }
             }
             else if (overlay.data(&#039;mouse-pos-y&#039;) &gt; top &amp;&amp; overlay.data(&#039;mouse-pos-y&#039;) &lt; bottom &amp;&amp; overlay.data(&#039;mouse-pos-y&#039;) &gt;= overlay.data(&#039;previous-mouse-pos-y&#039;)) {
-                top = overlay.data(&#039;mouse-pos-y&#039;);
+                if (bottom === (contentDiv.offset().top + contentDiv.height())&amp;&amp; overlay.data(&#039;mouse-pos-y&#039;) + 20 &gt;= bottom &amp;&amp; contentDiv.scrollTop() &lt; contentDiv[0].scrollHeight &amp;&amp;
+                    overlay.data(&#039;origin-y&#039;) &gt; (contentDiv.offset().top + contentDiv.height() + contentDiv.scrollTop() + 20)) {
+                    var adjustedTop = bottom - 25;
+                    adjustedScrollTop = adjustedTop - overlay.data(&#039;mouse-pos-y&#039;);
+                    console.log(&#039;BOTTOM: &#039; + bottom);
+                    console.log(&#039;MOUSE-POS-Y: &#039; + overlay.data(&#039;mouse-pos-y&#039;));
+                    console.log(&#039;ORIGINAL TOP: &#039; +  top);
+                    console.log(&#039;ORIGINAL SCROLLTOP: &#039; +  contentDiv.scrollTop());
+                    console.log(&#039;ADJUSTED TOP: &#039; + adjustedTop);
+                    console.log(&#039;ADJUSTED SCROLLTOP: &#039; + adjustedScrollTop);
+                    console.log(&#039;ORIGIN-Y: &#039; + overlay.data(&#039;origin-y&#039;));
+                    contentDiv.scrollTop(contentDiv.scrollTop() - adjustedScrollTop);
+                    bottom = (contentDiv.offset().top + contentDiv.scrollTop() + contentDiv.height() &lt; overlay.data(&#039;origin-y&#039;)) ?
+                    contentDiv.offset().top + contentDiv.height() : overlay.data(&#039;origin-y&#039;);
+                    top = adjustedTop;
+                    console.log(&#039;ADJUSTED BOTTOM: &#039; + bottom);
+                }
+                else top = overlay.data(&#039;mouse-pos-y&#039;);
             }
 
             if (overlay.data(&#039;mouse-pos-x&#039;) &lt; right &amp;&amp; overlay.data(&#039;mouse-pos-x&#039;) &gt; left &amp;&amp; overlay.data(&#039;mouse-pos-x&#039;) &lt;= overlay.data(&#039;previous-mouse-pos-x&#039;)) {
-                right = overlay.data(&#039;mouse-pos-x&#039;);
+                if (left === contentDiv.offset().left &amp;&amp; overlay.data(&#039;mouse-pos-x&#039;) - 20 &lt;= left &amp;&amp; contentDiv.scrollLeft() &gt; 0 &amp;&amp; overlay.data(&#039;origin-x&#039;) &lt; contentDiv.offset().left + contentDiv.scrollLeft() - 20) {
+                    var adjustedRight = top + 25;
+                    var adjustedScrollLeft = overlay.data(&#039;mouse-pos-x&#039;) - adjustedRight;
+                    contentDiv.scrollLeft(contentDiv.scrollLeft() + adjustedScrollLeft);
+                    left = contentDiv.offset().left + contentDiv.scrollLeft() &gt; overlay.data(&#039;origin-x&#039;) ? contentDiv.offset().left : overlay.data(&#039;origin-x&#039;);
+                    right = adjustedRight;
+                }
+                else right = overlay.data(&#039;mouse-pos-x&#039;);
             }
             else if (overlay.data(&#039;mouse-pos-x&#039;) &gt; left &amp;&amp; overlay.data(&#039;mouse-pos-x&#039;) &lt; right &amp;&amp; overlay.data(&#039;mouse-pos-x&#039;) &gt;= overlay.data(&#039;previous-mouse-pos-x&#039;)) {
                 left = overlay.data(&#039;mouse-pos-x&#039;);
@@ -901,7 +951,6 @@
                     trueHeight = overlay.data(&#039;actual-height&#039;) + vScrollDiff;
                 else trueHeight = bottom - top + vScrollDiff;
                 top = top - vScrollDiff &lt; ctTop ? ctTop : top - vScrollDiff;
-                overlay.data(&#039;origin-y&#039;, top);
             }
             else if (vScrollDir &lt; 0) {
                 if (overlay.data(&#039;last-scroll_top_pos&#039;) !== overlay.data(&#039;origin-scroll_top&#039;) || overlay.data(&#039;actual-height&#039;) &gt; bottom - top)
@@ -922,7 +971,7 @@
             displayHeight = bottom - top;
             displayWidth = right - left;
 
-                        overlay.css(&#039;top&#039;, top).css(&#039;left&#039;, left).css(&#039;height&#039;, displayHeight).css(&#039;width&#039;, displayWidth);
+            overlay.css(&#039;top&#039;, top).css(&#039;left&#039;, left).css(&#039;height&#039;, displayHeight).css(&#039;width&#039;, displayWidth);
             overlay.data(&#039;previous-top&#039;, top).data(&#039;previous-left&#039;, left).data(&#039;previous-bottom&#039;, bottom).data(&#039;previous-right&#039;, right);
             overlay.data(&#039;previous-mouse-pos-y&#039;, overlay.data(&#039;mouse-pos-y&#039;)).data(&#039;previous-mouse-pos-x&#039;, overlay.data(&#039;mouse-pos-x&#039;));
             overlay.data(&#039;last-scroll_top_pos&#039;, contentDiv.scrollTop()).data(&#039;last-scroll_top_dir&#039;, vScrollDir);
