@@ -998,6 +998,10 @@ var grid = (function _grid($) {
         storage.grids[id].updating = false;
     }
 
+    /**
+     * Attaches handlers for click, mousemove, mousedown, mouseup, and scroll events depending on the value of the selectable attribute of the grid
+     * @param {object} tableBody - The body of the grid's content table
+     */
     function attachTableSelectHandler(tableBody) {
         var gridId = tableBody.parents('.grid-wrapper').data('grid_id');
         var isSelectable = storage.grids[gridId].selectable;
@@ -1049,7 +1053,7 @@ var grid = (function _grid($) {
 
                     contentDiv.on('scroll', function updateSelectOverlayOnScrollHandler() {
                         if (storage.grids[gridId].selecting) {
-                            setOverlayDimensions(contentDiv, $(".selection-highlighter"), gridId);
+                            setOverlayDimensions(contentDiv, $(".selection-highlighter"));
                         }
                     });
 
@@ -1060,13 +1064,19 @@ var grid = (function _grid($) {
 
                             var overlay = storage.grids[gridId].grid.find('.selection-highlighter');
                             overlay.data('mouse-pos-x', ev.pageX).data('mouse-pos-y', ev.pageY);
-                            setOverlayDimensions(storage.grids[gridId].grid.find('.grid-content-div'), overlay, gridId);
+                            setOverlayDimensions(storage.grids[gridId].grid.find('.grid-content-div'), overlay);
                         }
                     });
                 }
             });
         }
 
+        /**
+         * Called by both the mousemove and scroll events, this function determines the appearance of the overlay and the true
+         * selection dimensions based on the distance the mouse has moved since the mousedown event, and the amount/direction of scrollng
+         * @param {object} contentDiv - The div containing the table that holds the actual content (not the header table)
+         * @param {object} overlay - The overlay div used to display the user's active selection
+         */
         function setOverlayDimensions(contentDiv, overlay) {
             var ctTop = contentDiv.offset().top,
                 ctLeft = contentDiv.offset().left,
@@ -1211,6 +1221,12 @@ var grid = (function _grid($) {
         }
     }
 
+    /**
+     * This function is called after the mouseup event and uses the dimensions of the overlay to apply
+     * the 'selected' class to all grid elements that it overlaps
+     * @param {object} overlay - The overlay element created to display the user's active selection
+     * @param {number} gridId - The id of the grid widget instance
+     */
     function selectHighlighted(overlay, gridId) {
         var contentDiv = storage.grids[gridId].grid.find('.grid-content-div'),
             offset = overlay.offset(),
@@ -1262,6 +1278,12 @@ var grid = (function _grid($) {
         });
     }
 
+    /**
+     * Makes a grid cell editable on a click event. Used for grid cells whose values can be changed and whose column configuration
+     * has its editable property set to true
+     * @param {number} id - The id of the grid widget instance
+     * @param {object} td - The grid cell to attach the click listener to
+     */
     function makeCellEditable(id, td) {
         td.on('click', function editableCellClickHandler(e) {
             var gridContent = storage.grids[id].grid.find('.grid-content-div');
@@ -1342,6 +1364,12 @@ var grid = (function _grid($) {
         });
     }
 
+    /**
+     * Makes a grid cell selectable on a click event. Used for grid cells whose values can be changed to a limited set
+     * or pre-specified values and whose column configuration provided the list of values and has its selectable property set to true
+     * @param {number} id - The id of the grid widget instance
+     * @param {object} td - The grid cell to attach the click listener to
+     */
     function makeCellSelectable(id, td) {
         td.on('click', function selectableCellClickHandler(e) {
             var gridContent = storage.grids[id].grid.find('.grid-content-div');
@@ -1390,6 +1418,14 @@ var grid = (function _grid($) {
         });
     }
 
+    /**
+     * If the validator is being used and a column has validation functions to run when editing values, this will determine
+     * the appropriate classes and data-attributes that should be applied to the cell's input in order for validation to run
+     * as well as set up a namespace for the validation functions to be execute in
+     * @param {object} columnValidation - The validation rules provided in the column's configuration
+     * @param {string} dataAttributes - The data-attributes for the cell's input
+     * @returns {string} - The final form of the data-attribute after the namespace has been created and all validation functions determined
+     */
     function setupCellValidation(columnValidation, dataAttributes) {
         if (!grid.validation) {
             Object.defineProperty(
@@ -1496,13 +1532,13 @@ var grid = (function _grid($) {
     }
 
     /**
-     * On blur or successful validation if using the validator, removed the input from the
+     * On blur or successful validation if using the validator, removes the input from the
      * grid cell, saves the data in the alteredData array and set a dirty flag on the grid dom
      * element if the value changed
      * @method saveCellEditData
      * @for grid
      * @private
-     * @param {object} input
+     * @param {object} input - The input element that was edited
      */
     function saveCellEditData(input) {
         var val;
@@ -1549,6 +1585,15 @@ var grid = (function _grid($) {
         callGridEventHandlers(storage.grids[id].events.afterCellEdit, storage.grids[id].grid, null);
     }
 
+    /**
+     * On blur or successful validation if using the validator, removes the input from the
+     * grid cell, saves the data in the alteredData array and set a dirty flag on the grid dom
+     * element if the value changed
+     * @method saveCellSelectData
+     * @for grid
+     * @private
+     * @param {object} select - The select dom element
+     */
     function saveCellSelectData(select) {
         var gridContent = select.parents('.grid-wrapper').find('.grid-content-div'),
             val = select.val(),
@@ -2154,6 +2199,12 @@ var grid = (function _grid($) {
         });
     }
 
+    /**
+     * Add the filter icon to a filterable grid header and attaches an event listener when the icon is clicked
+     * @param {object} elem - The grid header element whose column values are filterable
+     * @param {object} gridData - The metadata describing the grid's behavior and attributes
+     * @param {string} col - The name of the field associated with the filterable grid column
+     */
     function setFilterableClickListener(elem, gridData, col) {
         var type = gridData.columns[col].type || 'string';
         var anchor = $('<a href="#"></a>').appendTo(elem);
@@ -2188,6 +2239,10 @@ var grid = (function _grid($) {
         });
     }
 
+    /**
+     * Handler for column resizing - alters the width of a grid column based on mouse movement
+     * @param {object} e - The drag event that was fired by the browser
+     */
     function handleResizeDragCallback(e) {
         e.preventDefault();
         var sliderDiv = $(e.currentTarget);
@@ -2230,6 +2285,12 @@ var grid = (function _grid($) {
         }
     }
 
+    /**
+     * Swaps the cells of a grid when a column re-ordering happens
+     * @param {number} gridId - The id of the grid widget instance
+     * @param {number} droppedIndex - The column index of the column that was 'dropped'
+     * @param {number} targetIndex - The column index of the column that was the target of the dropped column
+     */
     function swapContentCells(gridId, droppedIndex, targetIndex) {
         var gridData = storage.grids[gridId];
         $('#grid-content-' + gridId).find('tr').each(function iterateContentRowsCallback(idx, val) {

@@ -737,7 +737,7 @@ var grid = (function _grid($) {
 
                     contentDiv.on('scroll', function updateSelectOverlayOnScrollHandler() {
                         if (storage.grids[gridId].selecting) {
-                            setOverlayDimensions(contentDiv, $(".selection-highlighter"), gridId);
+                            setOverlayDimensions(contentDiv, $(".selection-highlighter"));
                         }
                     });
 
@@ -748,7 +748,7 @@ var grid = (function _grid($) {
 
                             var overlay = storage.grids[gridId].grid.find('.selection-highlighter');
                             overlay.data('mouse-pos-x', ev.pageX).data('mouse-pos-y', ev.pageY);
-                            setOverlayDimensions(storage.grids[gridId].grid.find('.grid-content-div'), overlay, gridId);
+                            setOverlayDimensions(storage.grids[gridId].grid.find('.grid-content-div'), overlay);
                         }
                     });
                 }
