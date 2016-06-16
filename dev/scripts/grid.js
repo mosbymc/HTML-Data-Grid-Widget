@@ -679,6 +679,11 @@ var grid = (function _grid($) {
         callGridEventHandlers(storageData.events.afterDataBind, storageData.grid, eventObj);
     }
 
+    /**
+     * Adds new columns to the grid based on a collection of objects passed to the function
+     * @param {Array} newData - A collection of new column names and values to add to the grid
+     * @param {object} gridElem - The grid DOM widget
+     */
     function addNewColumns(newData, gridElem) {
         var oldGrid = $(gridElem).find('.grid-wrapper');
         var id = oldGrid.data('grid_id');
@@ -1305,6 +1310,9 @@ var grid = (function _grid($) {
         });
     }
 
+    /**
+     * Attaches click event handlers for each grouped header row in the grid
+     */
     function createGroupTrEventHandlers() {
         $('.group_acc_link').each(function iterateAccordionsCallback(idx, val) {
             $(val).data('state', 'open');
@@ -1677,6 +1685,12 @@ var grid = (function _grid($) {
         callGridEventHandlers(storage.grids[id].events.afterCellEdit, storage.grids[id].grid, null);
     }
 
+    /**
+     * Creates the toolbar div used for saving and deleting changes as well as grouping the grid's
+     * data by selected columns
+     * @param {Array} gridData - The collection of data displayed in the grid
+     * @param {object} gridElem - The DOM element used for the grid widget
+     */
     function createCellEditSaveDiv(gridData, gridElem) {
         var id = gridElem.find('.grid-wrapper').data('grid_id');
         if ($('#grid_' + id + '_toolbar').length) return;	//if the toolbar has already been created, don't create it again.
@@ -1771,6 +1785,10 @@ var grid = (function _grid($) {
         }
     }
 
+    /**
+     * Handler for the change event when a user selects a column from the group-by selector input.
+     * This will call the function to get a new page of grid data based on the choosen grouping.
+     */
     function groupByHandler() {
         var id = $(this).parents('.toolbar').data('grid_id');
         if (storage.grids[id].updating) return;
@@ -2432,6 +2450,12 @@ var grid = (function _grid($) {
         }
     }
 
+    /**
+     * Used when saving changes made to grid data. If being used for server-side updates, this
+     * function will eventually call the provided function for saving changes to the grid. Otherwise,
+     * it will update its internal reference to the grid's data
+     * @param {number} id - The id of the grid widget instance
+     */
     function prepareGridDataUpdateRequest(id) {
         storage.grids[id].updating = true;
         var requestObj = {
@@ -2534,6 +2558,15 @@ var grid = (function _grid($) {
         callback({ rowCount: fullGridData.length, data: returnData });
     }
 
+    /**
+     * Filters the grid's data when being used for client-side updates. Based on the filtered column, value, and type
+     * this function will determine which data should remain in the collection
+     * @param {string} filterType - The type of filter selected by the user (=, !=, >, >=, etc)
+     * @param {string|number|boolean} value - The value against which the filter should apply to the grid data
+     * @param {string} field - The name of the column to apply the filter to
+     * @param {string} dataType - The type of data being filtered (string, number, boolean, time, date)
+     * @param {Array} gridData - The collection of grid data to filter
+     */
     function filterGridData(filterType, value, field, dataType, gridData) {
         var filteredData = [], curVal, baseVal;
 
@@ -2739,6 +2772,12 @@ var grid = (function _grid($) {
         return text;
     }
 
+    /**
+     * Given a string, this function will ensure it is in a valid time format and has a legitimate
+     * time value. This returns a standard format as a response.
+     * @param {string} val - The value being tested for time legitimacy
+     * @returns {Array} - An array containing hours, minutes, seconds of the day (if 12 hour time format, also contains meridiem)
+     */
     function getNumbersFromTime(val) {
         var re = new RegExp(dataTypes.time);
         if (!re.test(val)) return [];
@@ -2765,6 +2804,12 @@ var grid = (function _grid($) {
         return retVal;
     }
 
+    /**
+     * Given the array the 'getNumbersFromTime' function produces, this function will turn the values
+     * into seconds for comparisons when filtering and sorting grid data.
+     * @param {Array} timeArray - An array of the type produced by the 'getNumbersFromTime' function
+     * @returns {number} - Returns a value in seconds for the time of day
+     */
     function convertTimeArrayToSeconds(timeArray) {
         var hourVal = timeArray[0] === 12 || timeArray[0] === 24 ? timeArray[0] - 12 : timeArray[0];
         return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
