@@ -2220,6 +2220,10 @@ var grid = (function _grid($) {
         }
     }
 
+    /**
+     * Sets a click handler for all sortable columns on the column header
+     * @param {object} elem - The DOM element that has the click handler attached
+     */
     function setSortableClickListener(elem) {
         elem.on('click', function handleHeaderClickCallback() {
             var headerDiv = elem.parents('.grid-header-div');
