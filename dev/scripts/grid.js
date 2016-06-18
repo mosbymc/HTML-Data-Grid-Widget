@@ -1817,6 +1817,11 @@ var grid = (function _grid($) {
         preparePageDataGetRequest(id);
     }
 
+    /**
+     * Creates the footer for the grid widget
+     * @param {object} gridData - The metadata describing this grid widget instance
+     * @param {object} gridElem - The DOM element that contains the grid widget
+     */
     function createGridFooter(gridData, gridElem) {
         var gridFooter = gridElem.find('.grid-footer-div');
         var id = gridFooter.data('grid_footer_id');
@@ -1873,6 +1878,10 @@ var grid = (function _grid($) {
         setPagerEventListeners(gridFooter);
     }
 
+    /**
+     * Attaches click handlers to each pager
+     * @param {object} gridFooter - The grid's DOM footer element
+     */
     function setPagerEventListeners(gridFooter) {
         gridFooter.find('a').each(function iterateGridFooterAnchorsCallback(idx, val) {
             $(val).on('click', function gridFooterAnchorClickHandlerCallback(e) {
