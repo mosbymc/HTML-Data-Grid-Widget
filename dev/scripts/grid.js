@@ -1948,6 +1948,10 @@ var grid = (function _grid($) {
         });
     }
 
+    /**
+     * Attaches a click handler to each filter element in the grid's header
+     * @param {object} filterElem - The DOM element that has the click handler attached to it
+     */
     function attachFilterListener(filterElem) {
         filterElem.on('click', function filterClickCallback(e) {
             e.stopPropagation();	//stop event bubbling so that the column won't also get sorted when the filter icon is clicked.
@@ -1984,6 +1988,13 @@ var grid = (function _grid($) {
         });
     }
 
+    /**
+     * Creates the modal filter div and populates the filter types in the selector
+     * @param {string} type - The type of data to be filtered (string, number, boolean, date, time)
+     * @param {string} field - The column of data being filtered
+     * @param {object} grid - The DOM element for the grid widget
+     * @param {string} title - The title supplied in the metadata for the grid's column
+     */
     function createFilterDiv(type, field, grid, title) {
         var filterDiv = $('<div class="filter-div" data-parentfield="' + field + '" data-type="' + type + '"></div>').appendTo(grid);
         var domName = title ? title : type;
@@ -2027,6 +2038,10 @@ var grid = (function _grid($) {
         if (filterInput && type !=='time' && type !== 'date') filterInputValidation(filterInput);
     }
 
+    /**
+     * Attaches a keypress handler on the inputs in a filter modal
+     * @param {object} input - The DOM input element
+     */
     function filterInputValidation(input) {
         input.on('keypress', function restrictCharsHandler(e) {
             var code = e.charCode? e.charCode : e.keyCode,
