@@ -1132,7 +1132,8 @@ var grid = (function _grid($) {
             }
 
             //TODO: Still need to add actual-height calculations to this section
-            if (overlay.data('mouse-pos-y') < bottom && overlay.data('mouse-pos-y') > top && overlay.data('mouse-pos-y') <= overlay.data('previous-mouse-pos-y')) {
+            if (overlay.data('mouse-pos-y') < bottom && overlay.data('mouse-pos-y') > top && overlay.data('mouse-pos-y') <= overlay.data('previous-mouse-pos-y') &&
+                overlay.data('mouse-pos-y') > (overlay.data('origin-y') - contentDiv.scrollTop() - overlay.data('origin-scroll_top'))) {
                 if (top === contentDiv.offset().top && overlay.data('mouse-pos-y') - 20 <= top && contentDiv.scrollTop() > 0 && overlay.data('origin-y') < contentDiv.offset().top + contentDiv.scrollTop() - 20) {
                     console.log('=================== FLIPPED ===================');
                     var adjustedBottom = top + 25;
@@ -1145,18 +1146,19 @@ var grid = (function _grid($) {
                     console.log('ADJUSTED BOTTOM: ' + adjustedBottom);
                     console.log('ADJUSTED SCROLLTOP: ' + adjustedScrollTop);
                     console.log('ORIGIN-Y: ' + overlay.data('origin-y'));
+                    overlay.data('actual-height', (overlay.data('actual-height') - adjustedBottom - bottom));
                     contentDiv.scrollTop(contentDiv.scrollTop() + adjustedScrollTop);
                     top = contentDiv.offset().top + contentDiv.scrollTop() > overlay.data('origin-y') ? contentDiv.offset().top : overlay.data('origin-y');
                     bottom = adjustedBottom;
                     console.log('ADJUSTED TOP: ' + top);
                 }
                 else {
-                    //console.log('Flop bottom');
                     console.log('');
                     console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
                     console.log('previous-mouse-pos-y: ' + overlay.data('previous-mouse-pos-y'));
                     console.log('contentDiv scrollTop: ' + contentDiv.scrollTop());
                     console.log('origin-y: ' + overlay.data('origin-y'));
+                    overlay.data('actual-height', (overlay.data('actual-height') - bottom - overlay.data('mouse-pos-y')));
                     bottom = overlay.data('mouse-pos-y');
                     console.log('origin-y: ' + overlay.data('origin-y'));
                     console.log('top: ' + top);
@@ -1175,7 +1177,8 @@ var grid = (function _grid($) {
                      }*/
                 }
             }
-            else if (overlay.data('mouse-pos-y') > top && overlay.data('mouse-pos-y') < bottom && overlay.data('mouse-pos-y') >= overlay.data('previous-mouse-pos-y')) {
+            else if (overlay.data('mouse-pos-y') > top && overlay.data('mouse-pos-y') < bottom && overlay.data('mouse-pos-y') >= overlay.data('previous-mouse-pos-y') &&
+                overlay.data('mouse-pos-y') < (overlay.data('origin-y') + overlay.data('origin-scroll_top') + contentDiv.scrollTop())) {
                 if (bottom === (contentDiv.offset().top + contentDiv.height())&& overlay.data('mouse-pos-y') + 20 >= bottom && contentDiv.scrollTop() < contentDiv[0].scrollHeight - contentDiv[0].clientHeight &&
                     overlay.data('origin-y') > (contentDiv.offset().top + contentDiv.height() + contentDiv.scrollTop() + 20)) {
                     var adjustedTop = bottom - 25;
@@ -1191,6 +1194,7 @@ var grid = (function _grid($) {
                     console.log('CLIENTHEIGHT: ' + contentDiv[0].clientHeight);
                     contentDiv.scrollTop(contentDiv.scrollTop() - adjustedScrollTop);
                     console.log('NEW SCROLLTOP: ' + contentDiv.scrollTop());
+                    overlay.data('actual-height', (overlay.data('actual-height') - adjustedTop - top));
                     bottom = (contentDiv.offset().top + contentDiv.scrollTop() + contentDiv.height() < overlay.data('origin-y')) ?
                     ctBottom : overlay.data('origin-y');
                     top = adjustedTop;
@@ -1209,6 +1213,7 @@ var grid = (function _grid($) {
                     console.log('ClientHeight: ' + contentDiv[0].clientHeight);
                     console.log('CONTENT DIV SCROLLHEIGHT: ' + contentDiv[0].scrollHeight);
                     console.log('');
+                    overlay.data('actual-height', (overlay.data('actual-height') - top - overlay.data('mouse-pos-y')));
                     top = overlay.data('mouse-pos-y');
                 }
             }
