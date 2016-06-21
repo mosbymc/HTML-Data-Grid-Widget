@@ -1152,6 +1152,7 @@ var grid = (function _grid($) {
                     bottom = adjustedBottom;
                     console.log('ADJUSTED TOP: ' + top);
                 }
+                    //TODO: should probably make this an 'else/if' statement and then add an 'else' statement at the end to catch all other reverse direction changes
                 else {
                     console.log('');
                     console.log('mouse-pos-y: ' + overlay.data('mouse-pos-y'));
