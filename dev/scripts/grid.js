@@ -1131,6 +1131,47 @@ var grid = (function _grid($) {
                 hScrollDir = contentDiv.scrollLeft() > overlay.data('origin-scroll_left') ? 1 : -1;
             }
 
+            /*if (overlay.data('mouse-pos-y') < bottom && overlay.data('mouse-pos-y') > top && (overlay.data('origin-y') < contentDiv.offset().top + contentDiv.scrollTop() ||
+                overlay.data('origin-y') > contentDiv.offset().top + contentDiv.height() + contentDiv.scrollTop())) {
+                if (top === contentDiv.offset().top && overlay.data('mouse-pos-y') - 20 <= top && contentDiv.scrollTop() > 0 && overlay.data('origin-y') < contentDiv.offset().top + contentDiv.scrollTop() - 20 &&
+                    overlay.data('mouse-pos-y') <= overlay.data('previous-mouse-pos-y')) {
+                    var adjustedBottom = top + 25;
+                    adjustedScrollTop = overlay.data('mouse-pos-y') - adjustedBottom;
+                    overlay.data('actual-height', (overlay.data('actual-height') - adjustedBottom - bottom));
+                    contentDiv.scrollTop(contentDiv.scrollTop() + adjustedScrollTop);
+                    top = contentDiv.offset().top + contentDiv.scrollTop() > overlay.data('origin-y') ? contentDiv.offset().top : overlay.data('origin-y');
+                    bottom = adjustedBottom;
+                    console.log('first');
+                    console.log('');
+                }
+                else if (top === contentDiv.offset().top && overlay.data('mouse-pos-y') - 20 <= top && overlay.data('mouse-pos-y') <= overlay.data('previous-mouse-pos-y')){
+                    overlay.data('actual-height', (overlay.data('actual-height') - bottom - overlay.data('mouse-pos-y')));
+                    bottom = overlay.data('mouse-pos-y');
+                    console.log('second');
+                    console.log('');
+                }
+                else if (bottom === (contentDiv.offset().top + contentDiv.height()) && overlay.data('mouse-pos-y') + 20 >= bottom && contentDiv.scrollTop() < contentDiv[0].scrollHeight - contentDiv[0].clientHeight &&
+                    overlay.data('origin-y') > (contentDiv.offset().top + contentDiv.height() + contentDiv.scrollTop() + 20) && overlay.data('mouse-pos-y') >= overlay.data('previous-mouse-pos-y')) {
+                    var adjustedTop = bottom - 25;
+                    adjustedScrollTop = adjustedTop - overlay.data('mouse-pos-y');
+                    contentDiv.scrollTop(contentDiv.scrollTop() - adjustedScrollTop);
+                    overlay.data('actual-height', (overlay.data('actual-height') - adjustedTop - top));
+                    bottom = (contentDiv.offset().top + contentDiv.scrollTop() + contentDiv.height() < overlay.data('origin-y')) ?
+                        ctBottom : overlay.data('origin-y');
+                    top = adjustedTop;
+                    console.log('third');
+                    console.log('');
+                }
+                else if (overlay.data('mouse-pos-y') >= overlay.data('previous-mouse-pos-y')){
+                    overlay.data('actual-height', (overlay.data('actual-height') - top - overlay.data('mouse-pos-y')));
+                    top = overlay.data('mouse-pos-y');
+                    console.log('fourth');
+                    console.log('');
+                }
+                console.log('first if');
+                console.log('');
+            }*/
+
             //TODO: Still need to add actual-height calculations to this section
             if (overlay.data('mouse-pos-y') < bottom && overlay.data('mouse-pos-y') > top && overlay.data('mouse-pos-y') <= overlay.data('previous-mouse-pos-y') &&
                 overlay.data('mouse-pos-y') > (overlay.data('origin-y') - contentDiv.scrollTop() - overlay.data('origin-scroll_top'))) {
