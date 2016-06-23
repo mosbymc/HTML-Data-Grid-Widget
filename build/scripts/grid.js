@@ -718,6 +718,7 @@ var grid = (function _grid($) {
                     overlay.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
                     overlay.data('origin-y', event.pageY + contentDiv.scrollTop()).data('origin-x', event.pageX + contentDiv.scrollLeft()).data('mouse-pos-x', event.pageX).data('mouse-pos-y', event.pageY);
                     overlay.data('previous-top', event.pageY).data('previous-left', event.pageX);
+                    overlay.data('event-type', 'mouse');
                     overlay.data('previous-bottom', event.pageY).data('previous-right', event.pageX);
                     overlay.data('previous-mouse-pos-y', event.pageY).data('previous-mouse-pos-x', event.pageX);
                     overlay.data('origin-scroll_top', contentDiv.scrollTop()).data('origin-scroll_left', contentDiv.scrollLeft());
@@ -738,7 +739,8 @@ var grid = (function _grid($) {
 
                     contentDiv.on('scroll', function updateSelectOverlayOnScrollHandler() {
                         if (storage.grids[gridId].selecting) {
-                            setOverlayDimensions(contentDiv, $(".selection-highlighter"));
+                            overlay.data('event-type', 'scroll');
+                            setOverlayDimensions(contentDiv, overlay);
                         }
                     });
 
@@ -747,7 +749,7 @@ var grid = (function _grid($) {
                             var domTag = ev.target.tagName.toUpperCase();
                             if (domTag === 'INPUT' || domTag === 'SELECT') return;
 
-                            var overlay = storage.grids[gridId].grid.find('.selection-highlighter');
+                            overlay.data('event-type', 'mouse');
                             overlay.data('mouse-pos-x', ev.pageX).data('mouse-pos-y', ev.pageY);
                             setOverlayDimensions(storage.grids[gridId].grid.find('.grid-content-div'), overlay);
                         }
@@ -793,39 +795,85 @@ var grid = (function _grid($) {
             }
 
 
-            if (overlay.data('origin-y') > (ctTop + contentDiv.scrollTop()) && overlay.data('origin-y') < (ctBottom + contentDiv.scrollTop())) {
-                var minVal = Math.min((overlay.data('origin-y') -  contentDiv.scrollTop()), overlay.data('mouse-pos-y'));
-                var maxVal = minVal === (overlay.data('origin-y') -  contentDiv.scrollTop())? overlay.data('mouse-pos-y') : (overlay.data('origin-y') -  contentDiv.scrollTop());
-                top = minVal < ctTop ? ctTop : minVal;
-                bottom = maxVal > ctBottom ? ctBottom : maxVal;
-                console.log('1');
-            }
-            else if (overlay.data('origin-y') <= ctTop + contentDiv.scrollTop()) {
-                console.log('2');
-                top = ctTop;
-                if (overlay.data('mouse-pos-y') - 20 <= ctTop && contentDiv.scrollTop() > 0) {
-                    var adjustedBottom = top + 25;
-                    adjustedScrollTop = overlay.data('mouse-pos-y') - adjustedBottom;
-                    overlay.data('actual-height', (overlay.data('actual-height') - adjustedBottom - bottom));
-                    contentDiv.scrollTop(contentDiv.scrollTop() + adjustedScrollTop);
-                    bottom = adjustedBottom;
+            if (overlay.data('event-type') === 'scroll') {
+                if (overlay.data('origin-y') < ctTop + contentDiv.scrollTop()) {
+                    if (overlay.data('mouse-pos-y') - 20 <= ctTop && contentDiv.scrollTop() > 0) {
+                        var ab = top + 25;
+                        var ast = overlay.data('mouse-pos-y') - ab;
+                        overlay.data('actual-height', (overlay.data('actual-height') - ab - bottom));
+                        contentDiv.scrollTop(contentDiv.scrollTop() + ast);
+                        bottom = ab;
+                    }
+                    else {
+                        top = ctTop;
+                        bottom = overlay.data('mouse-pos-y') > ctBottom ? ctBottom : overlay.data('mouse-pos-y');
+                    }
+                    console.log('Bottom: ' + bottom);
+                    console.log('Origin-y: ' + overlay.data('origin-y'));
+                    trueHeight = bottom + contentDiv.scrollTop() - overlay.data('origin-y');
                 }
-                else
-                    bottom = overlay.data('mouse-pos-y') > ctBottom ? ctBottom : overlay.data('mouse-pos-y');
+                else if (overlay.data('origin-y') > ctBottom + contentDiv.scrollTop()) {
+                    if (overlay.data('mouse-pos-y') + 20 >= ctBottom && contentDiv.scrollTop() < contentDiv[0].scrollHeight - contentDiv[0].clientHeight) {
+                        var at = ctBottom - 25;
+                        var st = at - overlay.data('mouse-pos-y');
+                        contentDiv.scrollTop(contentDiv.scrollTop() - st);
+                        overlay.data('actual-height', (overlay.data('actual-height') - at - top));
+                        top = at;
+                    }
+                    else {
+                        top = overlay.data('mouse-pos-y') < ctTop ? ctTop : overlay.data('mouse-pos-y');
+                        bottom = ctBottom;
+                    }
+                    trueHeight = overlay.data('origin-y') - top + contentDiv.scrollTop();
+                }
+                else {
+                    if (overlay.data('origin-y') < (overlay.data('mouse-pos-y') + contentDiv.scrollTop())) {
+                        top = overlay.data('origin-y') - contentDiv.scrollTop();
+                        bottom = overlay.data('mouse-pos-y') > ctBottom ? ctBottom : overlay.data('mouse-pos-y');
+                    }
+                    else {
+                        top = overlay.data('mouse-pos-y') < ctTop ? ctTop : overlay.data('mouse-pos-y');
+                        bottom = overlay.data('origin-y') - contentDiv.scrollTop();
+                    }
+                    trueHeight = bottom - top;
+                }
             }
             else {
-                console.log('3');
-                bottom = ctBottom;
-                if (overlay.data('mouse-pos-y') + 20 >= ctBottom && contentDiv.scrollTop() < contentDiv[0].scrollHeight - contentDiv[0].clientHeight) {
-                    var adjustedTop = bottom - 25;
-                    adjustedScrollTop = adjustedTop - overlay.data('mouse-pos-y');
-                    contentDiv.scrollTop(contentDiv.scrollTop() - adjustedScrollTop);
-                    overlay.data('actual-height', (overlay.data('actual-height') - adjustedTop - top));
-                    top = adjustedTop;
+                if (overlay.data('origin-y') > (ctTop + contentDiv.scrollTop()) && overlay.data('origin-y') < (ctBottom + contentDiv.scrollTop())) {
+                    var minVal = Math.min((overlay.data('origin-y') - contentDiv.scrollTop()), overlay.data('mouse-pos-y'));
+                    var maxVal = minVal === (overlay.data('origin-y') - contentDiv.scrollTop()) ? overlay.data('mouse-pos-y') : (overlay.data('origin-y') - contentDiv.scrollTop());
+                    top = minVal < ctTop ? ctTop : minVal;
+                    bottom = maxVal > ctBottom ? ctBottom : maxVal;
+                    trueHeight = bottom - top;
                 }
-                else
-                    top = overlay.data('mouse-pos-y') < ctTop ? ctTop : overlay.data('mouse-pos-y');
+                else if (overlay.data('origin-y') <= ctTop + contentDiv.scrollTop()) {
+                    top = ctTop;
+                    if (overlay.data('mouse-pos-y') - 20 <= ctTop && contentDiv.scrollTop() > 0) {
+                        var adjustedBottom = top + 25;
+                        adjustedScrollTop = overlay.data('mouse-pos-y') - adjustedBottom;
+                        overlay.data('actual-height', (overlay.data('actual-height') - adjustedBottom - bottom));
+                        contentDiv.scrollTop(contentDiv.scrollTop() + adjustedScrollTop);
+                        bottom = adjustedBottom;
+                    }
+                    else
+                        bottom = overlay.data('mouse-pos-y') > ctBottom ? ctBottom : overlay.data('mouse-pos-y');
+                    trueHeight = bottom + contentDiv.scrollTop() - overlay.data('origin-y');
+                }
+                else {
+                    bottom = ctBottom;
+                    if (overlay.data('mouse-pos-y') + 20 >= ctBottom && contentDiv.scrollTop() < contentDiv[0].scrollHeight - contentDiv[0].clientHeight) {
+                        var adjustedTop = bottom - 25;
+                        adjustedScrollTop = adjustedTop - overlay.data('mouse-pos-y');
+                        contentDiv.scrollTop(contentDiv.scrollTop() - adjustedScrollTop);
+                        overlay.data('actual-height', (overlay.data('actual-height') - adjustedTop - top));
+                        top = adjustedTop;
+                    }
+                    else
+                        top = overlay.data('mouse-pos-y') < ctTop ? ctTop : overlay.data('mouse-pos-y');
+                    trueHeight = overlay.data('origin-y') - top + contentDiv.scrollTop();
+                }
             }
+            console.log('TrueHeight: ' + overlay.data('actual-height'));
 
 
 
@@ -845,20 +893,6 @@ var grid = (function _grid($) {
                 left = overlay.data('mouse-pos-x');
             }
 
-            if (vScrollDir > 0) {
-                if (overlay.data('last-scroll_top_pos') !== overlay.data('origin-scroll_top') || overlay.data('actual-height') > bottom - top)
-                    trueHeight = overlay.data('actual-height') + vScrollDiff;
-                else trueHeight = bottom - top + vScrollDiff;
-                top = top - vScrollDiff < ctTop ? ctTop : top - vScrollDiff;
-            }
-            else if (vScrollDir < 0) {
-                if (overlay.data('last-scroll_top_pos') !== overlay.data('origin-scroll_top') || overlay.data('actual-height') > bottom - top)
-                    trueHeight = overlay.data('actual-height') + vScrollDiff;
-                else trueHeight = bottom - top + vScrollDiff;
-                bottom = bottom + vScrollDiff > ctBottom ? ctBottom : bottom + vScrollDiff;
-                top = bottom - trueHeight < ctTop ? ctTop : bottom - trueHeight;
-            }
-            else trueHeight = bottom - top > overlay.data('actual-height') ? bottom - top : overlay.data('actual-height');
 
             if (hScrollDir > 0) left = left - hScrollDiff < ctLeft ? ctLeft : left - hScrollDiff;
             else if (hScrollDir < 0) right = right + hScrollDiff > ctRight ? ctRight : right + hScrollDiff;
@@ -902,6 +936,8 @@ var grid = (function _grid($) {
                 top = bottom - parseFloat(overlay.data('actual-height'));
             }
         }
+
+        console.log('True Height: ' + overlay.data('actual-height'));
 
         var gridElems = storage.grids[gridId].selectable === 'multi-cell' ? contentDiv.find('td') : contentDiv.find('tr');
 
