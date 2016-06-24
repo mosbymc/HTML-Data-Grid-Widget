@@ -945,7 +945,6 @@ var grid = (function _grid($) {
                     trueWidth = overlay.data('origin-x') - left - contentDiv.scrollLeft();
                 }
             }
-            console.log('TrueWidth: ' + overlay.data('actual-width'));
 
 
             overlay.data('actual-height', trueHeight);
@@ -976,16 +975,19 @@ var grid = (function _grid($) {
             right = parseFloat(overlay.data('actual-width')) + left,
             bottom = parseFloat(overlay.data('actual-height')) + top;
 
-        if (parseFloat(overlay.data('actual-height')) > contentDiv.height()) {
-            if (overlay.data('origin-scroll_top') > overlay.data('last-scroll_top_pos')) {
-                top = contentDiv.offset().top;
-                bottom = top + parseFloat(overlay.data('actual-height'));
+        if (top + overlay.data('actual-height') > contentDiv.offset().top + contentDiv.height() || top + overlay.height() - overlay.data('actual-height') < contentDiv.offset().top) {
+            if (overlay.data('origin-scroll_top') > overlay.data('last-scroll_top_pos')) {  
+                bottom = top + overlay.data('actual-height');
             }
             else {
-                bottom = (contentDiv.offset().top + contentDiv.height());
-                top = bottom - parseFloat(overlay.data('actual-height'));
+                bottom = top + overlay.height();
+                top = bottom - overlay.data('actual-height');
             }
         }
+
+        console.log('Overlay Top: ' + top);
+        console.log('Overlay Bottom: ' + bottom);
+
 
         console.log('True Height: ' + overlay.data('actual-height'));
 

@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2662</p>
+      <p class="stat">2664</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">199.51</p>
+      <p class="stat">199.46</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">58.12</p>
+      <p class="stat">58.17</p>
     </div>
   </div>
 </div>
@@ -1036,7 +1036,6 @@
                     trueWidth = overlay.data(&#039;origin-x&#039;) - left - contentDiv.scrollLeft();
                 }
             }
-            console.log(&#039;TrueWidth: &#039; + overlay.data(&#039;actual-width&#039;));
 
 
             overlay.data(&#039;actual-height&#039;, trueHeight);
@@ -1067,16 +1066,19 @@
             right = parseFloat(overlay.data(&#039;actual-width&#039;)) + left,
             bottom = parseFloat(overlay.data(&#039;actual-height&#039;)) + top;
 
-        if (parseFloat(overlay.data(&#039;actual-height&#039;)) &gt; contentDiv.height()) {
-            if (overlay.data(&#039;origin-scroll_top&#039;) &gt; overlay.data(&#039;last-scroll_top_pos&#039;)) {
-                top = contentDiv.offset().top;
-                bottom = top + parseFloat(overlay.data(&#039;actual-height&#039;));
+        if (top + overlay.data(&#039;actual-height&#039;) &gt; contentDiv.offset().top + contentDiv.height() || top + overlay.height() - overlay.data(&#039;actual-height&#039;) &lt; contentDiv.offset().top) {
+            if (overlay.data(&#039;origin-scroll_top&#039;) &gt; overlay.data(&#039;last-scroll_top_pos&#039;)) {  
+                bottom = top + overlay.data(&#039;actual-height&#039;);
             }
             else {
-                bottom = (contentDiv.offset().top + contentDiv.height());
-                top = bottom - parseFloat(overlay.data(&#039;actual-height&#039;));
+                bottom = top + overlay.height();
+                top = bottom - overlay.data(&#039;actual-height&#039;);
             }
         }
+
+        console.log(&#039;Overlay Top: &#039; + top);
+        console.log(&#039;Overlay Bottom: &#039; + bottom);
+
 
         console.log(&#039;True Height: &#039; + overlay.data(&#039;actual-height&#039;));
 
