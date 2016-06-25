@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">53.98</p>
+      <p class="stat">53.93</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2664</p>
+      <p class="stat">2669</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">199.46</p>
+      <p class="stat">200.10</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">58.17</p>
+      <p class="stat">58.35</p>
     </div>
   </div>
 </div>
@@ -1060,27 +1060,32 @@
 
     function selectHighlighted(overlay, gridId) {
         var contentDiv = storage.grids[gridId].grid.find(&#039;.grid-content-div&#039;),
+            ctOffset = contentDiv.offset(),
+            ctHeight = contentDiv.height,
+            ctWidth = contentDiv.width(),
+            width = overlay.width(),
+            height = overlay.height(),
             offset = overlay.offset(),
             top = offset.top,
             left = offset.left,
             right = parseFloat(overlay.data(&#039;actual-width&#039;)) + left,
             bottom = parseFloat(overlay.data(&#039;actual-height&#039;)) + top;
 
-        if (top + overlay.data(&#039;actual-height&#039;) &gt; contentDiv.offset().top + contentDiv.height() || top + overlay.height() - overlay.data(&#039;actual-height&#039;) &lt; contentDiv.offset().top) {
-            if (overlay.data(&#039;origin-scroll_top&#039;) &gt; overlay.data(&#039;last-scroll_top_pos&#039;)) {  
-                bottom = top + overlay.data(&#039;actual-height&#039;);
-            }
+        if (top + overlay.data(&#039;actual-height&#039;) &gt; ctOffset.top + ctHeight || top + height - overlay.data(&#039;actual-height&#039;) &lt; ctOffset.top) {
+            if (overlay.data(&#039;origin-scroll_top&#039;) &gt; overlay.data(&#039;last-scroll_top_pos&#039;)) bottom = top + overlay.data(&#039;actual-height&#039;);
             else {
-                bottom = top + overlay.height();
+                bottom = top + height;
                 top = bottom - overlay.data(&#039;actual-height&#039;);
             }
         }
 
-        console.log(&#039;Overlay Top: &#039; + top);
-        console.log(&#039;Overlay Bottom: &#039; + bottom);
-
-
-        console.log(&#039;True Height: &#039; + overlay.data(&#039;actual-height&#039;));
+        if (left + overlay.data(&#039;actual-width&#039;) &gt; ctOffset.left + ctWidth || left + width - overlay.data(&#039;actual-width&#039;) &lt; ctOffset.left) {
+            if (overlay.data(&#039;origin-scroll_left&#039;) &gt; overlay.data(&#039;last-scroll_left_pos&#039;)) right = left + overlay.data(&#039;actual-width&#039;);
+            else {
+                right = left + width;
+                left = right = overlay.data(&#039;actual-width&#039;);
+            }
+        }
 
         var gridElems = storage.grids[gridId].selectable === &#039;multi-cell&#039; ? contentDiv.find(&#039;td&#039;) : contentDiv.find(&#039;tr&#039;);
 

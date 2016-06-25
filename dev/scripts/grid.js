@@ -1340,58 +1340,32 @@ var grid = (function _grid($) {
      */
     function selectHighlighted(overlay, gridId) {
         var contentDiv = storage.grids[gridId].grid.find('.grid-content-div'),
+            ctOffset = contentDiv.offset(),
+            ctHeight = contentDiv.height,
+            ctWidth = contentDiv.width(),
+            width = overlay.width(),
+            height = overlay.height(),
             offset = overlay.offset(),
             top = offset.top,
             left = offset.left,
             right = parseFloat(overlay.data('actual-width')) + left,
             bottom = parseFloat(overlay.data('actual-height')) + top;
-            //scrollDiff = 0;
 
-        //TODO: I think this top test is the correct adjuster for top/bottom locs, but need to test - don't delete others till this one is proven
-        if (top + overlay.data('actual-height') > contentDiv.offset().top + contentDiv.height() || top + overlay.height() - overlay.data('actual-height') < contentDiv.offset().top) {
-            if (overlay.data('origin-scroll_top') > overlay.data('last-scroll_top_pos')) {  //scrolled up
-                bottom = top + overlay.data('actual-height');
-            }
+        if (top + overlay.data('actual-height') > ctOffset.top + ctHeight || top + height - overlay.data('actual-height') < ctOffset.top) {
+            if (overlay.data('origin-scroll_top') > overlay.data('last-scroll_top_pos')) bottom = top + overlay.data('actual-height');
             else {
-                bottom = top + overlay.height();
+                bottom = top + height;
                 top = bottom - overlay.data('actual-height');
             }
         }
 
-        /*if (overlay.data('actual-height') > contentDiv.height() && overlay.data('origin-scroll_top') !== overlay.data('last-scroll_top_pos')) {
-            scrollDiff = Math.abs(overlay.data('origin-scroll_top') - overlay.data('last-scroll_top_pos'));
-
-            if (overlay.data('origin-scroll_top') > overlay.data('last-scroll_top_pos')) {
-
-            }
-        }
-
-        if (overlay.data('origin-scroll_top') > overlay.data('last-scroll_top_pos')) {
-            scrollDiff = overlay.data('origin-scroll_top') - overlay.data('last-scroll_top_pos');
-            top = top + scrollDiff;
-            bottom = bottom + scrollDiff;
-        }
-        else if (overlay.data('origin-scroll_top') < overlay.data('last-scroll_top_pos')) {
-            scrollDiff = overlay.data('last-scroll_top_pos') - overlay.data('origin-scroll_top');
-            top = top - scrollDiff;
-            bottom = bottom - scrollDiff;
-        }*/
-        console.log('Overlay Top: ' + top);
-        console.log('Overlay Bottom: ' + bottom);
-
-        //TODO: check these to make sure the calculations are correct
-        /*if (parseFloat(overlay.data('actual-height')) > contentDiv.height()) {
-            if (overlay.data('origin-scroll_top') > overlay.data('last-scroll_top_pos')) {
-                top = contentDiv.offset().top;
-                bottom = top + parseFloat(overlay.data('actual-height'));
-            }
+        if (left + overlay.data('actual-width') > ctOffset.left + ctWidth || left + width - overlay.data('actual-width') < ctOffset.left) {
+            if (overlay.data('origin-scroll_left') > overlay.data('last-scroll_left_pos')) right = left + overlay.data('actual-width');
             else {
-                bottom = (contentDiv.offset().top + contentDiv.height());
-                top = bottom - parseFloat(overlay.data('actual-height'));
+                right = left + width;
+                left = right = overlay.data('actual-width');
             }
-        }*/
-
-        console.log('True Height: ' + overlay.data('actual-height'));
+        }
 
         var gridElems = storage.grids[gridId].selectable === 'multi-cell' ? contentDiv.find('td') : contentDiv.find('tr');
 
