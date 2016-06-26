@@ -766,9 +766,7 @@ var grid = (function _grid($) {
                 clientX = overlay.data('mouse-pos-x') < ctLeft ? ctLeft : overlay.data('mouse-pos-x'),
                 clientY = overlay.data('mouse-pos-y') < ctTop ? ctTop: overlay.data('mouse-pos-y');
             window.getSelection().removeAllRanges();
-            var vScrollDiff = 0,
-                vScrollDir = 0,
-                hScrollDiff = 0,
+            var vScrollDir = 0,
                 hScrollDir = 0;
 
             var originTop = overlay.data('previous-top'),
@@ -785,15 +783,12 @@ var grid = (function _grid($) {
             if (right > ctRight) right = ctRight;
 
             if (contentDiv.scrollTop() !== overlay.data('last-scroll_top_pos')) {
-                vScrollDiff = Math.abs(overlay.data('last-scroll_top_pos') - contentDiv.scrollTop());
                 vScrollDir = contentDiv.scrollTop() > overlay.data('last-scroll_top_pos') ? 1 : -1;
             }
 
             if (contentDiv.scrollLeft() !== overlay.data('origin-scroll_left')) {
-                hScrollDiff = Math.abs(overlay.data('origin-scroll_left') - contentDiv.scrollLeft());
                 hScrollDir = contentDiv.scrollLeft() > overlay.data('origin-scroll_left') ? 1 : -1;
             }
-
 
             if (overlay.data('event-type') === 'scroll') {
                 if (overlay.data('origin-y') < ctTop + contentDiv.scrollTop()) {
@@ -945,7 +940,6 @@ var grid = (function _grid($) {
                     trueWidth = overlay.data('origin-x') - left - contentDiv.scrollLeft();
                 }
             }
-
 
             overlay.data('actual-height', trueHeight);
             overlay.data('actual-width', trueWidth);

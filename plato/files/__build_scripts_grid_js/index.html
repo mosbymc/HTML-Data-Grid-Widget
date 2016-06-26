@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">53.93</p>
+      <p class="stat">53.96</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2669</p>
+      <p class="stat">2663</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">200.10</p>
+      <p class="stat">200.02</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">58.35</p>
+      <p class="stat">58.21</p>
     </div>
   </div>
 </div>
@@ -857,9 +857,7 @@
                 clientX = overlay.data(&#039;mouse-pos-x&#039;) &lt; ctLeft ? ctLeft : overlay.data(&#039;mouse-pos-x&#039;),
                 clientY = overlay.data(&#039;mouse-pos-y&#039;) &lt; ctTop ? ctTop: overlay.data(&#039;mouse-pos-y&#039;);
             window.getSelection().removeAllRanges();
-            var vScrollDiff = 0,
-                vScrollDir = 0,
-                hScrollDiff = 0,
+            var vScrollDir = 0,
                 hScrollDir = 0;
 
             var originTop = overlay.data(&#039;previous-top&#039;),
@@ -876,15 +874,12 @@
             if (right &gt; ctRight) right = ctRight;
 
             if (contentDiv.scrollTop() !== overlay.data(&#039;last-scroll_top_pos&#039;)) {
-                vScrollDiff = Math.abs(overlay.data(&#039;last-scroll_top_pos&#039;) - contentDiv.scrollTop());
                 vScrollDir = contentDiv.scrollTop() &gt; overlay.data(&#039;last-scroll_top_pos&#039;) ? 1 : -1;
             }
 
             if (contentDiv.scrollLeft() !== overlay.data(&#039;origin-scroll_left&#039;)) {
-                hScrollDiff = Math.abs(overlay.data(&#039;origin-scroll_left&#039;) - contentDiv.scrollLeft());
                 hScrollDir = contentDiv.scrollLeft() &gt; overlay.data(&#039;origin-scroll_left&#039;) ? 1 : -1;
             }
-
 
             if (overlay.data(&#039;event-type&#039;) === &#039;scroll&#039;) {
                 if (overlay.data(&#039;origin-y&#039;) &lt; ctTop + contentDiv.scrollTop()) {
@@ -1036,7 +1031,6 @@
                     trueWidth = overlay.data(&#039;origin-x&#039;) - left - contentDiv.scrollLeft();
                 }
             }
-
 
             overlay.data(&#039;actual-height&#039;, trueHeight);
             overlay.data(&#039;actual-width&#039;, trueWidth);

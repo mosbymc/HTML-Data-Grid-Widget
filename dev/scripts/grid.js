@@ -1093,9 +1093,9 @@ var grid = (function _grid($) {
                 clientX = overlay.data('mouse-pos-x') < ctLeft ? ctLeft : overlay.data('mouse-pos-x'),
                 clientY = overlay.data('mouse-pos-y') < ctTop ? ctTop: overlay.data('mouse-pos-y');
             window.getSelection().removeAllRanges();
-            var vScrollDiff = 0,
-                vScrollDir = 0,
-                hScrollDiff = 0,
+            //var vScrollDiff = 0,
+            var vScrollDir = 0,
+                //hScrollDiff = 0,
                 hScrollDir = 0;
 
             //TODO: make sure these calculations are correct and see if I need to wait until after figuring out the actual height/width before altering the display height/width
@@ -1113,31 +1113,14 @@ var grid = (function _grid($) {
             if (right > ctRight) right = ctRight;
 
             if (contentDiv.scrollTop() !== overlay.data('last-scroll_top_pos')) {
-                vScrollDiff = Math.abs(overlay.data('last-scroll_top_pos') - contentDiv.scrollTop());
+                //vScrollDiff = Math.abs(overlay.data('last-scroll_top_pos') - contentDiv.scrollTop());
                 vScrollDir = contentDiv.scrollTop() > overlay.data('last-scroll_top_pos') ? 1 : -1;
             }
 
             if (contentDiv.scrollLeft() !== overlay.data('origin-scroll_left')) {
-                hScrollDiff = Math.abs(overlay.data('origin-scroll_left') - contentDiv.scrollLeft());
+                //hScrollDiff = Math.abs(overlay.data('origin-scroll_left') - contentDiv.scrollLeft());
                 hScrollDir = contentDiv.scrollLeft() > overlay.data('origin-scroll_left') ? 1 : -1;
             }
-
-            /*
-                If the origin is on the screen,
-                    take the min value for top, and max value for bottom
-                Else If the origin is above the top,
-                    set the top equal to content div top
-                    If the current mouse position is within 20 pixels of the top
-                        change the scroll top and adjust the bottom accordingly
-                    Else
-                        set the bottom equal to the current mouse position
-                Else (the origin is below the bottom)
-                    set the bottom equal to the content div bottom
-                    If the current mouse position is within 20 pixels of the bottom
-                        change the scroll top and adjust the top accordingly
-                    Else
-                        set the top equal to the current mouse position
-             */
 
             //TODO: I believe this logic is finally working correctly. I still need to make updates to the actual height in the section, but the behavior seems to function correctly now
             if (overlay.data('event-type') === 'scroll') {
@@ -1223,7 +1206,6 @@ var grid = (function _grid($) {
                     if (overlay.data('mouse-pos-x') - 20 <= ctLeft && contentDiv.scrollLeft() > 0) {
                         var al = left + 25;
                         var asl = overlay.data('mouse-pos-x') - al;
-                        //overlay.data('actual-width', (overlay.data('actual-width') - al - bottom));
                         contentDiv.scrollTop(contentDiv.scrollTop() + asl);
                         bottom = al;
                     }
@@ -1238,7 +1220,6 @@ var grid = (function _grid($) {
                         var adjustedLeft = ctRight - 25;
                         var scrollLeft = adjustedLeft - overlay.data('mouse-pos-x');
                         contentDiv.scrollLeft(contentDiv.scrollLeft() - scrollLeft);
-                        //overlay.data('actual-width', (overlay.data('actual-width') - adjustedLeft - right));
                         left = adjustedLeft;
                     }
                     else {
@@ -1272,7 +1253,6 @@ var grid = (function _grid($) {
                     if (overlay.data('mouse-pos-x') - 20 <= ctLeft && contentDiv.scrollLeft() > 0) {
                         var ar = left + 25;
                         var adjustedScrollLeft = overlay.data('mouse-pos-x') - ar;
-                        //overlay.data('actual-height', (overlay.data('actual-height') - adjustedBottom - bottom));
                         contentDiv.scrollLeft(contentDiv.scrollLeft() + adjustedScrollLeft);
                         right = ar;
                     }
@@ -1286,7 +1266,6 @@ var grid = (function _grid($) {
                         var al2 = bottom - 25;
                         adjustedScrollTop = al2 - overlay.data('mouse-pos-x');
                         contentDiv.scrollLeft(contentDiv.scrollLeft() - adjustedScrollTop);
-                        //overlay.data('actual-height', (overlay.data('actual-height') - adjustedTop - top));
                         left = al2;
                     }
                     else
@@ -1294,23 +1273,6 @@ var grid = (function _grid($) {
                     trueWidth = overlay.data('origin-x') - left - contentDiv.scrollLeft();
                 }
             }
-            //console.log('TrueWidth: ' + overlay.data('actual-width'));
-
-            /*if (overlay.data('mouse-pos-x') < right && overlay.data('mouse-pos-x') > left && overlay.data('mouse-pos-x') <= overlay.data('previous-mouse-pos-x')) {
-                if (left === contentDiv.offset().left && overlay.data('mouse-pos-x') - 20 <= left && contentDiv.scrollLeft() > 0 && overlay.data('origin-x') < contentDiv.offset().left + contentDiv.scrollLeft() - 20) {
-                    var adjustedRight = top + 25;
-                    var adjustedScrollLeft = overlay.data('mouse-pos-x') - adjustedRight;
-                    contentDiv.scrollLeft(contentDiv.scrollLeft() + adjustedScrollLeft);
-                    left = contentDiv.offset().left + contentDiv.scrollLeft() > overlay.data('origin-x') ? contentDiv.offset().left : overlay.data('origin-x');
-                    right = adjustedRight;
-                }
-                else {
-                    right = overlay.data('mouse-pos-x');
-                }
-            }
-            else if (overlay.data('mouse-pos-x') > left && overlay.data('mouse-pos-x') < right && overlay.data('mouse-pos-x') >= overlay.data('previous-mouse-pos-x')) {
-                left = overlay.data('mouse-pos-x');
-            }*/
 
             overlay.data('actual-height', trueHeight);
             overlay.data('actual-width', trueWidth);
