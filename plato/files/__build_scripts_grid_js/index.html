@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">53.96</p>
+      <p class="stat">54.36</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2663</p>
+      <p class="stat">2605</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">200.02</p>
+      <p class="stat">198.06</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">58.21</p>
+      <p class="stat">56.74</p>
     </div>
   </div>
 </div>
@@ -809,13 +809,10 @@
                     overlay.css(&#039;top&#039;, event.pageY).css(&#039;left&#039;, event.pageX).css(&#039;width&#039;, 0).css(&#039;height&#039;, 0);
                     overlay.data(&#039;origin-y&#039;, event.pageY + contentDiv.scrollTop()).data(&#039;origin-x&#039;, event.pageX + contentDiv.scrollLeft()).data(&#039;mouse-pos-x&#039;, event.pageX).data(&#039;mouse-pos-y&#039;, event.pageY);
                     overlay.data(&#039;previous-top&#039;, event.pageY).data(&#039;previous-left&#039;, event.pageX);
-                    overlay.data(&#039;event-type&#039;, &#039;mouse&#039;);
                     overlay.data(&#039;previous-bottom&#039;, event.pageY).data(&#039;previous-right&#039;, event.pageX);
-                    overlay.data(&#039;previous-mouse-pos-y&#039;, event.pageY).data(&#039;previous-mouse-pos-x&#039;, event.pageX);
                     overlay.data(&#039;origin-scroll_top&#039;, contentDiv.scrollTop()).data(&#039;origin-scroll_left&#039;, contentDiv.scrollLeft());
                     overlay.data(&#039;last-scroll_top_pos&#039;, contentDiv.scrollTop()).data(&#039;last-scroll_left_pos&#039;, contentDiv.scrollLeft());
-                    overlay.data(&#039;actual-height&#039;, 0).data(&#039;actual-width&#039;, 0).data(&#039;last-scroll_top_dir&#039;, null).data(&#039;last-scroll_left_dir&#039;, null);
-                    overlay.data(&#039;previous-v-dir&#039;, 0);
+                    overlay.data(&#039;actual-height&#039;, 0).data(&#039;actual-width&#039;, 0).data(&#039;event-type&#039;, &#039;mouse&#039;);
 
                     $(document).one(&#039;mouseup&#039;, function mouseUpDragCallback() {
                         $(&#039;.selected&#039;).each(function iterateSelectedItemsCallback(idx, elem) {
@@ -855,10 +852,10 @@
                 ctBottom = ctTop + contentDiv.height(),
                 ctRight = ctLeft + contentDiv.width(),
                 clientX = overlay.data(&#039;mouse-pos-x&#039;) &lt; ctLeft ? ctLeft : overlay.data(&#039;mouse-pos-x&#039;),
-                clientY = overlay.data(&#039;mouse-pos-y&#039;) &lt; ctTop ? ctTop: overlay.data(&#039;mouse-pos-y&#039;);
+                clientY = overlay.data(&#039;mouse-pos-y&#039;) &lt; ctTop ? ctTop: overlay.data(&#039;mouse-pos-y&#039;),
+                ctScrollTop = contentDiv.scrollTop(),
+                ctScrollLeft = contentDiv.scrollLeft();
             window.getSelection().removeAllRanges();
-            var vScrollDir = 0,
-                hScrollDir = 0;
 
             var originTop = overlay.data(&#039;previous-top&#039;),
                 originLeft = overlay.data(&#039;previous-left&#039;),
@@ -868,188 +865,133 @@
                 left = originLeft &gt;= clientX ? clientX : originLeft,
                 bottom = originBottom &lt; clientY ? clientY : originBottom,
                 right = originRight &lt; clientX ? clientX : originRight,
-                displayHeight, displayWidth,
-                trueHeight, trueWidth, adjustedScrollTop;
+                trueHeight;
             if (bottom &gt; ctBottom) bottom = ctBottom;
             if (right &gt; ctRight) right = ctRight;
 
-            if (contentDiv.scrollTop() !== overlay.data(&#039;last-scroll_top_pos&#039;)) {
-                vScrollDir = contentDiv.scrollTop() &gt; overlay.data(&#039;last-scroll_top_pos&#039;) ? 1 : -1;
-            }
+            var dimObj = {};
+            dimObj.eventType = overlay.data(&#039;event-type&#039;);
+            dimObj.overlay = {};
+            dimObj.overlay.smallDim = top;
+            dimObj.overlay.largeDim = bottom;
+            dimObj.overlay.origin = overlay.data(&#039;origin-y&#039;);
+            dimObj.overlay.mousePosition = overlay.data(&#039;mouse-pos-y&#039;);
+            dimObj.container = {};
+            dimObj.container.smallDim = ctTop;
+            dimObj.container.largeDim = ctBottom;
+            dimObj.container.scrollPos = ctScrollTop;
+            dimObj.container.scrollLength = contentDiv[0].scrollHeight;
+            dimObj.container.clientLength = contentDiv[0].clientHeight;
 
-            if (contentDiv.scrollLeft() !== overlay.data(&#039;origin-scroll_left&#039;)) {
-                hScrollDir = contentDiv.scrollLeft() &gt; overlay.data(&#039;origin-scroll_left&#039;) ? 1 : -1;
-            }
+            var dims = determineOverlayDimensions(dimObj);
+            trueHeight = dims.trueSize;
+            ctScrollTop = dims.scrollPos;
+            contentDiv.scrollTop(dims.scrollPos);
+            top = dims.smallDim;
+            bottom = dims.largeDim;
 
-            if (overlay.data(&#039;event-type&#039;) === &#039;scroll&#039;) {
-                if (overlay.data(&#039;origin-y&#039;) &lt; ctTop + contentDiv.scrollTop()) {
-                    if (overlay.data(&#039;mouse-pos-y&#039;) - 20 &lt;= ctTop &amp;&amp; contentDiv.scrollTop() &gt; 0) {
-                        var ab = top + 25;
-                        var ast = overlay.data(&#039;mouse-pos-y&#039;) - ab;
-                        overlay.data(&#039;actual-height&#039;, (overlay.data(&#039;actual-height&#039;) - ab - bottom));
-                        contentDiv.scrollTop(contentDiv.scrollTop() + ast);
-                        bottom = ab;
-                    }
-                    else {
-                        top = ctTop;
-                        bottom = overlay.data(&#039;mouse-pos-y&#039;) &gt; ctBottom ? ctBottom : overlay.data(&#039;mouse-pos-y&#039;);
-                    }
-                    trueHeight = bottom + contentDiv.scrollTop() - overlay.data(&#039;origin-y&#039;);
-                }
-                else if (overlay.data(&#039;origin-y&#039;) &gt; ctBottom + contentDiv.scrollTop()) {
-                    if (overlay.data(&#039;mouse-pos-y&#039;) + 20 &gt;= ctBottom &amp;&amp; contentDiv.scrollTop() &lt; contentDiv[0].scrollHeight - contentDiv[0].clientHeight) {
-                        var at = ctBottom - 25;
-                        var st = at - overlay.data(&#039;mouse-pos-y&#039;);
-                        contentDiv.scrollTop(contentDiv.scrollTop() - st);
-                        overlay.data(&#039;actual-height&#039;, (overlay.data(&#039;actual-height&#039;) - at - top));
-                        top = at;
-                    }
-                    else {
-                        top = overlay.data(&#039;mouse-pos-y&#039;) &lt; ctTop ? ctTop : overlay.data(&#039;mouse-pos-y&#039;);
-                        bottom = ctBottom;
-                    }
-                    trueHeight = overlay.data(&#039;origin-y&#039;) - top - contentDiv.scrollTop();
-                }
-                else {
-                    if (overlay.data(&#039;origin-y&#039;) &lt; (overlay.data(&#039;mouse-pos-y&#039;) + contentDiv.scrollTop())) {
-                        top = overlay.data(&#039;origin-y&#039;) - contentDiv.scrollTop();
-                        bottom = overlay.data(&#039;mouse-pos-y&#039;) &gt; ctBottom ? ctBottom : overlay.data(&#039;mouse-pos-y&#039;);
-                    }
-                    else {
-                        top = overlay.data(&#039;mouse-pos-y&#039;) &lt; ctTop ? ctTop : overlay.data(&#039;mouse-pos-y&#039;);
-                        bottom = overlay.data(&#039;origin-y&#039;) - contentDiv.scrollTop();
-                    }
-                    trueHeight = bottom - top;
-                }
-            }
-            else {
-                if (overlay.data(&#039;origin-y&#039;) &gt; (ctTop + contentDiv.scrollTop()) &amp;&amp; overlay.data(&#039;origin-y&#039;) &lt; (ctBottom + contentDiv.scrollTop())) {
-                    var minVal = Math.min((overlay.data(&#039;origin-y&#039;) - contentDiv.scrollTop()), overlay.data(&#039;mouse-pos-y&#039;));
-                    var maxVal = minVal === (overlay.data(&#039;origin-y&#039;) - contentDiv.scrollTop()) ? overlay.data(&#039;mouse-pos-y&#039;) : (overlay.data(&#039;origin-y&#039;) - contentDiv.scrollTop());
-                    top = minVal &lt; ctTop ? ctTop : minVal;
-                    bottom = maxVal &gt; ctBottom ? ctBottom : maxVal;
-                    trueHeight = bottom - top;
-                }
-                else if (overlay.data(&#039;origin-y&#039;) &lt;= ctTop + contentDiv.scrollTop()) {
-                    top = ctTop;
-                    if (overlay.data(&#039;mouse-pos-y&#039;) - 20 &lt;= ctTop &amp;&amp; contentDiv.scrollTop() &gt; 0) {
-                        var adjustedBottom = top + 25;
-                        adjustedScrollTop = overlay.data(&#039;mouse-pos-y&#039;) - adjustedBottom;
-                        overlay.data(&#039;actual-height&#039;, (overlay.data(&#039;actual-height&#039;) - adjustedBottom - bottom));
-                        contentDiv.scrollTop(contentDiv.scrollTop() + adjustedScrollTop);
-                        bottom = adjustedBottom;
-                    }
-                    else
-                        bottom = overlay.data(&#039;mouse-pos-y&#039;) &gt; ctBottom ? ctBottom : overlay.data(&#039;mouse-pos-y&#039;);
-                    trueHeight = bottom + contentDiv.scrollTop() - overlay.data(&#039;origin-y&#039;);
-                }
-                else {
-                    bottom = ctBottom;
-                    if (overlay.data(&#039;mouse-pos-y&#039;) + 20 &gt;= ctBottom &amp;&amp; contentDiv.scrollTop() &lt; contentDiv[0].scrollHeight - contentDiv[0].clientHeight) {
-                        var adjustedTop = bottom - 25;
-                        adjustedScrollTop = adjustedTop - overlay.data(&#039;mouse-pos-y&#039;);
-                        contentDiv.scrollTop(contentDiv.scrollTop() - adjustedScrollTop);
-                        overlay.data(&#039;actual-height&#039;, (overlay.data(&#039;actual-height&#039;) - adjustedTop - top));
-                        top = adjustedTop;
-                    }
-                    else
-                        top = overlay.data(&#039;mouse-pos-y&#039;) &lt; ctTop ? ctTop : overlay.data(&#039;mouse-pos-y&#039;);
-                    trueHeight = overlay.data(&#039;origin-y&#039;) - top - contentDiv.scrollTop();
-                }
-            }
-            console.log(&#039;TrueHeight: &#039; + overlay.data(&#039;actual-height&#039;));
+            dimObj.overlay.smallDim = left;
+            dimObj.overlay.largeDim = right;
+            dimObj.overlay.origin = overlay.data(&#039;origin-x&#039;);
+            dimObj.overlay.mousePosition = overlay.data(&#039;mouse-pos-x&#039;);
+            dimObj.container.smallDim = ctLeft;
+            dimObj.container.largeDim = ctRight;
+            dimObj.container.scrollPos = ctScrollLeft;
+            dimObj.container.scrollLength = contentDiv[0].scrollWidth;
+            dimObj.container.clientLength = contentDiv[0].clientWidth;
 
-            if (overlay.data(&#039;event-type&#039;) === &#039;scroll&#039;) {
-                if (overlay.data(&#039;origin-x&#039;) &lt; ctLeft + contentDiv.scrollLeft()) {
-                    if (overlay.data(&#039;mouse-pos-x&#039;) - 20 &lt;= ctLeft &amp;&amp; contentDiv.scrollLeft() &gt; 0) {
-                        var al = left + 25;
-                        var asl = overlay.data(&#039;mouse-pos-x&#039;) - al;
-                        contentDiv.scrollTop(contentDiv.scrollTop() + asl);
-                        bottom = al;
-                    }
-                    else {
-                        left = ctLeft;
-                        right = overlay.data(&#039;mouse-pos-x&#039;) &gt; ctRight ? ctRight : overlay.data(&#039;mouse-pos-x&#039;);
-                    }
-                    trueWidth = right + contentDiv.scrollLeft() - overlay.data(&#039;origin-x&#039;);
-                }
-                else if (overlay.data(&#039;origin-x&#039;) &gt; ctRight + contentDiv.scrollLeft()) {
-                    if (overlay.data(&#039;mouse-pos-x&#039;) + 20 &gt;= ctRight &amp;&amp; contentDiv.scrollLeft() &lt; contentDiv[0].scrollWidth - contentDiv[0].clientWidth) {
-                        var adjustedLeft = ctRight - 25;
-                        var scrollLeft = adjustedLeft - overlay.data(&#039;mouse-pos-x&#039;);
-                        contentDiv.scrollLeft(contentDiv.scrollLeft() - scrollLeft);
-                        left = adjustedLeft;
-                    }
-                    else {
-                        left = overlay.data(&#039;mouse-pos-x&#039;) &lt; ctLeft ? ctLeft : overlay.data(&#039;mouse-pos-x&#039;);
-                        right = ctRight;
-                    }
-                    trueWidth = overlay.data(&#039;origin-x&#039;) - left - contentDiv.scrollLeft();
-                }
-                else {
-                    if (overlay.data(&#039;origin-x&#039;) &lt; (overlay.data(&#039;mouse-pos-x&#039;) + contentDiv.scrollLeft())) {
-                        left = overlay.data(&#039;origin-x&#039;) - contentDiv.scrollLeft();
-                        right = overlay.data(&#039;mouse-pos-x&#039;) &gt; ctRight ? ctRight : overlay.data(&#039;mouse-pos-x&#039;);
-                    }
-                    else {
-                        left = overlay.data(&#039;mouse-pos-x&#039;) &lt; ctLeft ? ctLeft : overlay.data(&#039;mouse-pos-x&#039;);
-                        right = overlay.data(&#039;origin-x&#039;) - contentDiv.scrollLeft();
-                    }
-                    trueWidth = right - left;
-                }
-            }
-            else {
-                if (overlay.data(&#039;origin-x&#039;) &gt; (ctLeft + contentDiv.scrollLeft()) &amp;&amp; overlay.data(&#039;origin-x&#039;) &lt; (ctBottom + contentDiv.scrollTop())) {
-                    var minLeftVal = Math.min((overlay.data(&#039;origin-x&#039;) - contentDiv.scrollLeft()), overlay.data(&#039;mouse-pos-x&#039;));
-                    var maxRightVal = minLeftVal === (overlay.data(&#039;origin-x&#039;) - contentDiv.scrollLeft()) ? overlay.data(&#039;mouse-pos-x&#039;) : (overlay.data(&#039;origin-x&#039;) - contentDiv.scrollLeft());
-                    left = minLeftVal &lt; ctLeft ? ctLeft : minLeftVal;
-                    right = maxRightVal &gt; ctRight ? ctRight : maxRightVal;
-                    trueWidth = right - left;
-                }
-                else if (overlay.data(&#039;origin-x&#039;) &lt;= ctLeft + contentDiv.scrollLeft()) {
-                    left = ctLeft;
-                    if (overlay.data(&#039;mouse-pos-x&#039;) - 20 &lt;= ctLeft &amp;&amp; contentDiv.scrollLeft() &gt; 0) {
-                        var ar = left + 25;
-                        var adjustedScrollLeft = overlay.data(&#039;mouse-pos-x&#039;) - ar;
-                        contentDiv.scrollLeft(contentDiv.scrollLeft() + adjustedScrollLeft);
-                        right = ar;
-                    }
-                    else
-                        right = overlay.data(&#039;mouse-pos-x&#039;) &gt; ctRight ? ctRight : overlay.data(&#039;mouse-pos-x&#039;);
-                    trueWidth = right + contentDiv.scrollLeft() - overlay.data(&#039;origin-x&#039;);
-                }
-                else {
-                    right = ctRight;
-                    if (overlay.data(&#039;mouse-pos-x&#039;) + 20 &gt;= ctRight &amp;&amp; contentDiv.scrollLeft() &lt; contentDiv[0].scrollWidth - contentDiv[0].clientWidth) {
-                        var al2 = bottom - 25;
-                        adjustedScrollTop = al2 - overlay.data(&#039;mouse-pos-x&#039;);
-                        contentDiv.scrollLeft(contentDiv.scrollLeft() - adjustedScrollTop);
-                        left = al2;
-                    }
-                    else
-                        left = overlay.data(&#039;mouse-pos-x&#039;) &lt; ctLeft ? ctLeft : overlay.data(&#039;mouse-pos-x&#039;);
-                    trueWidth = overlay.data(&#039;origin-x&#039;) - left - contentDiv.scrollLeft();
-                }
-            }
+            dims = determineOverlayDimensions(dimObj);
+            contentDiv.scrollLeft(dims.scrollPos);
 
-            overlay.data(&#039;actual-height&#039;, trueHeight);
-            overlay.data(&#039;actual-width&#039;, trueWidth);
-
-            displayHeight = bottom - top;
-            displayWidth = right - left;
-
-            if (overlay.data(&#039;mouse-pos-y&#039;) &gt; overlay.data(&#039;previous-mouse-pos-y&#039;) || contentDiv.scrollTop() &gt; overlay.data(&#039;last-scroll_top_pos&#039;))
-                overlay.data(&#039;previous-v-dir&#039;, 1);
-            else if (overlay.data(&#039;mouse-pos-y&#039;) &lt; overlay.data(&#039;previous-mouse-pos-y&#039;) || contentDiv.scrollTop() &lt; overlay.data(&#039;last-scroll_top_pos&#039;))
-                overlay.data(&#039;previous-v-dir&#039;, -1);
-            else overlay.data(&#039;previous-v-dir&#039;, 0);
-
-            overlay.css(&#039;top&#039;, top).css(&#039;left&#039;, left).css(&#039;height&#039;, displayHeight).css(&#039;width&#039;, displayWidth);
-            overlay.data(&#039;previous-top&#039;, top).data(&#039;previous-left&#039;, left).data(&#039;previous-bottom&#039;, bottom).data(&#039;previous-right&#039;, right);
-            overlay.data(&#039;previous-mouse-pos-y&#039;, overlay.data(&#039;mouse-pos-y&#039;)).data(&#039;previous-mouse-pos-x&#039;, overlay.data(&#039;mouse-pos-x&#039;));
-            overlay.data(&#039;last-scroll_top_pos&#039;, contentDiv.scrollTop()).data(&#039;last-scroll_top_dir&#039;, vScrollDir);
-            overlay.data(&#039;last-scroll_left_pos&#039;, contentDiv.scrollLeft()).data(&#039;last-scroll_left_dir&#039;, hScrollDir);
+            overlay.css(&#039;top&#039;, top).css(&#039;left&#039;, dims.smallDim).css(&#039;height&#039;, (bottom - top)).css(&#039;width&#039;, (dims.largeDim - dims.smallDim));
+            overlay.data(&#039;actual-height&#039;, trueHeight).data(&#039;actual-width&#039;, dims.trueSize);
+            overlay.data(&#039;previous-top&#039;, top).data(&#039;previous-left&#039;, dims.smallDim).data(&#039;previous-bottom&#039;, bottom).data(&#039;previous-right&#039;, dims.largeDim);
+            overlay.data(&#039;last-scroll_top_pos&#039;, ctScrollTop).data(&#039;last-scroll_left_pos&#039;, dims.scrollPos);
         }
+    }
+
+    function determineOverlayDimensions(context) {
+        var locAdjustment, scrollAdjustment, smallDim, largeDim,
+            trueSize,
+            scrollPos = context.container.scrollPos;
+        if (context.eventType === &#039;scroll&#039;) {
+            if (context.overlay.origin &lt; context.container.smallDim + context.container.scrollPos) {
+                if (context.overlay.mousePosition - 20 &lt;= context.container.smallDim &amp;&amp; context.container.scrollPos &gt; 0) {
+                    locAdjustment = context.overlay.smallDim + 25;
+                    scrollAdjustment = context.overlay.mousePosition - locAdjustment;
+                    scrollPos = context.container.scrollPos + scrollAdjustment;
+                    largeDim = locAdjustment;
+                    smallDim = context.overlay.smallDim;
+                }
+                else {
+                    smallDim = context.container.smallDim;
+                    largeDim = context.overlay.mousePosition &gt; context.container.largeDim ? context.container.largeDim : context.overlay.mousePosition;
+                }
+                trueSize = largeDim + scrollPos - context.overlay.origin;
+            }
+            else if (context.overlay.origin &gt; context.container.largeDim + context.container.scrollPos) {
+                if (context.overlay.mousePosition + 20 &gt;= context.container.largeDim &amp;&amp; context.container.scrollPos &lt; context.container.scrollLength - context.container.clientLength) {
+                    locAdjustment = context.container.largeDim - 25;
+                    scrollAdjustment = locAdjustment - context.overlay.mousePosition;
+                    scrollPos = context.container.scrollPos - scrollAdjustment;
+                    smallDim = locAdjustment;
+                    largeDim = context.overlay.largeDim;
+                }
+                else {
+                    smallDim = context.overlay.mousePosition &lt; context.container.smallDim ? context.container.smallDim : context.overlay.mousePosition;
+                    largeDim = context.container.largeDim;
+                }
+                trueSize = context.overlay.origin - smallDim - scrollPos;
+            }
+            else {
+                if (context.overlay.origin &lt; context.overlay.mousePosition + context.container.scrollPos) {
+                    smallDim = context.overlay.origin - context.container.scrollPos;
+                    largeDim = context.overlay.mousePosition &gt; context.container.largeDim ? context.container.largeDim : context.overlay.mousePosition;
+                }
+                else {
+                    smallDim = context.overlay.mousePosition &lt; context.container.smallDim ? context.container.smallDim : context.overlay.mousePosition;
+                    largeDim = context.overlay.origin - context.container.scrollPos;
+                }
+                trueSize = largeDim - smallDim;
+            }
+        }
+        else {
+            if (context.overlay.origin &gt; (context.container.smallDim + context.container.scrollPos) &amp;&amp; context.overlay.origin &lt; (context.container.largeDim + context.container.scrollPos)) {
+                var minVal = Math.min((context.overlay.origin - context.container.scrollPos), context.overlay.mousePosition);
+                var maxVal = minVal === (context.overlay.origin - context.container.scrollPos) ? context.overlay.mousePosition : (context.overlay.origin - context.container.scrollPos);
+                smallDim = minVal &lt; context.container.smallDim ? context.container.smallDim : minVal;
+                largeDim = maxVal &gt; context.container.largeDim ? context.container.largeDim : maxVal;
+                trueSize = largeDim - smallDim;
+            }
+            else if (context.overlay.origin &lt;= context.container.smallDim + context.container.scrollPos) {
+                smallDim = context.container.smallDim;
+                if (context.overlay.mousePosition - 20 &lt;= context.container.smallDim &amp;&amp; context.container.scrollPos &gt; 0) {
+                    locAdjustment = smallDim + 25;
+                    scrollAdjustment = context.overlay.mousePosition - locAdjustment;
+                    scrollPos = context.container.scrollPos + scrollAdjustment;
+                    largeDim = locAdjustment;
+                }
+                else largeDim = context.overlay.mousePosition &gt; context.container.largeDim ? context.container.largeDim : context.overlay.mousePosition;
+                trueSize = largeDim + scrollPos - context.overlay.origin;
+            }
+            else {
+                largeDim = context.container.largeDim;
+                if (context.overlay.mousePosition + 20 &gt;= context.container.largeDim &amp;&amp; context.container.scrollPos &lt; context.container.scrollLength - context.container.clientLength) {
+                    locAdjustment = largeDim - 25;
+                    scrollAdjustment = locAdjustment - context.overlay.mousePosition;
+                    scrollPos = context.container.scrollPos - scrollAdjustment;
+                    smallDim = locAdjustment;
+                }
+                else smallDim = context.overlay.mousePosition &lt; context.container.smallDim ? context.container.smallDim : context.overlay.mousePosition;
+                trueSize = context.overlay.origin - smallDim - context.container.scrollPos;
+            }
+        }
+        return {
+            trueSize: trueSize,
+            smallDim: smallDim || context.overlay.smallDim,
+            largeDim: largeDim || context.overlay.largeDim,
+            scrollPos: scrollPos || context.container.scrollPos
+        };
     }
 
     function selectHighlighted(overlay, gridId) {

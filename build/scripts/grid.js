@@ -718,13 +718,10 @@ var grid = (function _grid($) {
                     overlay.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
                     overlay.data('origin-y', event.pageY + contentDiv.scrollTop()).data('origin-x', event.pageX + contentDiv.scrollLeft()).data('mouse-pos-x', event.pageX).data('mouse-pos-y', event.pageY);
                     overlay.data('previous-top', event.pageY).data('previous-left', event.pageX);
-                    overlay.data('event-type', 'mouse');
                     overlay.data('previous-bottom', event.pageY).data('previous-right', event.pageX);
-                    overlay.data('previous-mouse-pos-y', event.pageY).data('previous-mouse-pos-x', event.pageX);
                     overlay.data('origin-scroll_top', contentDiv.scrollTop()).data('origin-scroll_left', contentDiv.scrollLeft());
                     overlay.data('last-scroll_top_pos', contentDiv.scrollTop()).data('last-scroll_left_pos', contentDiv.scrollLeft());
-                    overlay.data('actual-height', 0).data('actual-width', 0).data('last-scroll_top_dir', null).data('last-scroll_left_dir', null);
-                    overlay.data('previous-v-dir', 0);
+                    overlay.data('actual-height', 0).data('actual-width', 0).data('event-type', 'mouse');
 
                     $(document).one('mouseup', function mouseUpDragCallback() {
                         $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
@@ -764,10 +761,10 @@ var grid = (function _grid($) {
                 ctBottom = ctTop + contentDiv.height(),
                 ctRight = ctLeft + contentDiv.width(),
                 clientX = overlay.data('mouse-pos-x') < ctLeft ? ctLeft : overlay.data('mouse-pos-x'),
-                clientY = overlay.data('mouse-pos-y') < ctTop ? ctTop: overlay.data('mouse-pos-y');
+                clientY = overlay.data('mouse-pos-y') < ctTop ? ctTop: overlay.data('mouse-pos-y'),
+                ctScrollTop = contentDiv.scrollTop(),
+                ctScrollLeft = contentDiv.scrollLeft();
             window.getSelection().removeAllRanges();
-            var vScrollDir = 0,
-                hScrollDir = 0;
 
             var originTop = overlay.data('previous-top'),
                 originLeft = overlay.data('previous-left'),
@@ -777,188 +774,133 @@ var grid = (function _grid($) {
                 left = originLeft >= clientX ? clientX : originLeft,
                 bottom = originBottom < clientY ? clientY : originBottom,
                 right = originRight < clientX ? clientX : originRight,
-                displayHeight, displayWidth,
-                trueHeight, trueWidth, adjustedScrollTop;
+                trueHeight;
             if (bottom > ctBottom) bottom = ctBottom;
             if (right > ctRight) right = ctRight;
 
-            if (contentDiv.scrollTop() !== overlay.data('last-scroll_top_pos')) {
-                vScrollDir = contentDiv.scrollTop() > overlay.data('last-scroll_top_pos') ? 1 : -1;
-            }
+            var dimObj = {};
+            dimObj.eventType = overlay.data('event-type');
+            dimObj.overlay = {};
+            dimObj.overlay.smallDim = top;
+            dimObj.overlay.largeDim = bottom;
+            dimObj.overlay.origin = overlay.data('origin-y');
+            dimObj.overlay.mousePosition = overlay.data('mouse-pos-y');
+            dimObj.container = {};
+            dimObj.container.smallDim = ctTop;
+            dimObj.container.largeDim = ctBottom;
+            dimObj.container.scrollPos = ctScrollTop;
+            dimObj.container.scrollLength = contentDiv[0].scrollHeight;
+            dimObj.container.clientLength = contentDiv[0].clientHeight;
 
-            if (contentDiv.scrollLeft() !== overlay.data('origin-scroll_left')) {
-                hScrollDir = contentDiv.scrollLeft() > overlay.data('origin-scroll_left') ? 1 : -1;
-            }
+            var dims = determineOverlayDimensions(dimObj);
+            trueHeight = dims.trueSize;
+            ctScrollTop = dims.scrollPos;
+            contentDiv.scrollTop(dims.scrollPos);
+            top = dims.smallDim;
+            bottom = dims.largeDim;
 
-            if (overlay.data('event-type') === 'scroll') {
-                if (overlay.data('origin-y') < ctTop + contentDiv.scrollTop()) {
-                    if (overlay.data('mouse-pos-y') - 20 <= ctTop && contentDiv.scrollTop() > 0) {
-                        var ab = top + 25;
-                        var ast = overlay.data('mouse-pos-y') - ab;
-                        overlay.data('actual-height', (overlay.data('actual-height') - ab - bottom));
-                        contentDiv.scrollTop(contentDiv.scrollTop() + ast);
-                        bottom = ab;
-                    }
-                    else {
-                        top = ctTop;
-                        bottom = overlay.data('mouse-pos-y') > ctBottom ? ctBottom : overlay.data('mouse-pos-y');
-                    }
-                    trueHeight = bottom + contentDiv.scrollTop() - overlay.data('origin-y');
-                }
-                else if (overlay.data('origin-y') > ctBottom + contentDiv.scrollTop()) {
-                    if (overlay.data('mouse-pos-y') + 20 >= ctBottom && contentDiv.scrollTop() < contentDiv[0].scrollHeight - contentDiv[0].clientHeight) {
-                        var at = ctBottom - 25;
-                        var st = at - overlay.data('mouse-pos-y');
-                        contentDiv.scrollTop(contentDiv.scrollTop() - st);
-                        overlay.data('actual-height', (overlay.data('actual-height') - at - top));
-                        top = at;
-                    }
-                    else {
-                        top = overlay.data('mouse-pos-y') < ctTop ? ctTop : overlay.data('mouse-pos-y');
-                        bottom = ctBottom;
-                    }
-                    trueHeight = overlay.data('origin-y') - top - contentDiv.scrollTop();
-                }
-                else {
-                    if (overlay.data('origin-y') < (overlay.data('mouse-pos-y') + contentDiv.scrollTop())) {
-                        top = overlay.data('origin-y') - contentDiv.scrollTop();
-                        bottom = overlay.data('mouse-pos-y') > ctBottom ? ctBottom : overlay.data('mouse-pos-y');
-                    }
-                    else {
-                        top = overlay.data('mouse-pos-y') < ctTop ? ctTop : overlay.data('mouse-pos-y');
-                        bottom = overlay.data('origin-y') - contentDiv.scrollTop();
-                    }
-                    trueHeight = bottom - top;
-                }
-            }
-            else {
-                if (overlay.data('origin-y') > (ctTop + contentDiv.scrollTop()) && overlay.data('origin-y') < (ctBottom + contentDiv.scrollTop())) {
-                    var minVal = Math.min((overlay.data('origin-y') - contentDiv.scrollTop()), overlay.data('mouse-pos-y'));
-                    var maxVal = minVal === (overlay.data('origin-y') - contentDiv.scrollTop()) ? overlay.data('mouse-pos-y') : (overlay.data('origin-y') - contentDiv.scrollTop());
-                    top = minVal < ctTop ? ctTop : minVal;
-                    bottom = maxVal > ctBottom ? ctBottom : maxVal;
-                    trueHeight = bottom - top;
-                }
-                else if (overlay.data('origin-y') <= ctTop + contentDiv.scrollTop()) {
-                    top = ctTop;
-                    if (overlay.data('mouse-pos-y') - 20 <= ctTop && contentDiv.scrollTop() > 0) {
-                        var adjustedBottom = top + 25;
-                        adjustedScrollTop = overlay.data('mouse-pos-y') - adjustedBottom;
-                        overlay.data('actual-height', (overlay.data('actual-height') - adjustedBottom - bottom));
-                        contentDiv.scrollTop(contentDiv.scrollTop() + adjustedScrollTop);
-                        bottom = adjustedBottom;
-                    }
-                    else
-                        bottom = overlay.data('mouse-pos-y') > ctBottom ? ctBottom : overlay.data('mouse-pos-y');
-                    trueHeight = bottom + contentDiv.scrollTop() - overlay.data('origin-y');
-                }
-                else {
-                    bottom = ctBottom;
-                    if (overlay.data('mouse-pos-y') + 20 >= ctBottom && contentDiv.scrollTop() < contentDiv[0].scrollHeight - contentDiv[0].clientHeight) {
-                        var adjustedTop = bottom - 25;
-                        adjustedScrollTop = adjustedTop - overlay.data('mouse-pos-y');
-                        contentDiv.scrollTop(contentDiv.scrollTop() - adjustedScrollTop);
-                        overlay.data('actual-height', (overlay.data('actual-height') - adjustedTop - top));
-                        top = adjustedTop;
-                    }
-                    else
-                        top = overlay.data('mouse-pos-y') < ctTop ? ctTop : overlay.data('mouse-pos-y');
-                    trueHeight = overlay.data('origin-y') - top - contentDiv.scrollTop();
-                }
-            }
-            console.log('TrueHeight: ' + overlay.data('actual-height'));
+            dimObj.overlay.smallDim = left;
+            dimObj.overlay.largeDim = right;
+            dimObj.overlay.origin = overlay.data('origin-x');
+            dimObj.overlay.mousePosition = overlay.data('mouse-pos-x');
+            dimObj.container.smallDim = ctLeft;
+            dimObj.container.largeDim = ctRight;
+            dimObj.container.scrollPos = ctScrollLeft;
+            dimObj.container.scrollLength = contentDiv[0].scrollWidth;
+            dimObj.container.clientLength = contentDiv[0].clientWidth;
 
-            if (overlay.data('event-type') === 'scroll') {
-                if (overlay.data('origin-x') < ctLeft + contentDiv.scrollLeft()) {
-                    if (overlay.data('mouse-pos-x') - 20 <= ctLeft && contentDiv.scrollLeft() > 0) {
-                        var al = left + 25;
-                        var asl = overlay.data('mouse-pos-x') - al;
-                        contentDiv.scrollTop(contentDiv.scrollTop() + asl);
-                        bottom = al;
-                    }
-                    else {
-                        left = ctLeft;
-                        right = overlay.data('mouse-pos-x') > ctRight ? ctRight : overlay.data('mouse-pos-x');
-                    }
-                    trueWidth = right + contentDiv.scrollLeft() - overlay.data('origin-x');
-                }
-                else if (overlay.data('origin-x') > ctRight + contentDiv.scrollLeft()) {
-                    if (overlay.data('mouse-pos-x') + 20 >= ctRight && contentDiv.scrollLeft() < contentDiv[0].scrollWidth - contentDiv[0].clientWidth) {
-                        var adjustedLeft = ctRight - 25;
-                        var scrollLeft = adjustedLeft - overlay.data('mouse-pos-x');
-                        contentDiv.scrollLeft(contentDiv.scrollLeft() - scrollLeft);
-                        left = adjustedLeft;
-                    }
-                    else {
-                        left = overlay.data('mouse-pos-x') < ctLeft ? ctLeft : overlay.data('mouse-pos-x');
-                        right = ctRight;
-                    }
-                    trueWidth = overlay.data('origin-x') - left - contentDiv.scrollLeft();
-                }
-                else {
-                    if (overlay.data('origin-x') < (overlay.data('mouse-pos-x') + contentDiv.scrollLeft())) {
-                        left = overlay.data('origin-x') - contentDiv.scrollLeft();
-                        right = overlay.data('mouse-pos-x') > ctRight ? ctRight : overlay.data('mouse-pos-x');
-                    }
-                    else {
-                        left = overlay.data('mouse-pos-x') < ctLeft ? ctLeft : overlay.data('mouse-pos-x');
-                        right = overlay.data('origin-x') - contentDiv.scrollLeft();
-                    }
-                    trueWidth = right - left;
-                }
-            }
-            else {
-                if (overlay.data('origin-x') > (ctLeft + contentDiv.scrollLeft()) && overlay.data('origin-x') < (ctBottom + contentDiv.scrollTop())) {
-                    var minLeftVal = Math.min((overlay.data('origin-x') - contentDiv.scrollLeft()), overlay.data('mouse-pos-x'));
-                    var maxRightVal = minLeftVal === (overlay.data('origin-x') - contentDiv.scrollLeft()) ? overlay.data('mouse-pos-x') : (overlay.data('origin-x') - contentDiv.scrollLeft());
-                    left = minLeftVal < ctLeft ? ctLeft : minLeftVal;
-                    right = maxRightVal > ctRight ? ctRight : maxRightVal;
-                    trueWidth = right - left;
-                }
-                else if (overlay.data('origin-x') <= ctLeft + contentDiv.scrollLeft()) {
-                    left = ctLeft;
-                    if (overlay.data('mouse-pos-x') - 20 <= ctLeft && contentDiv.scrollLeft() > 0) {
-                        var ar = left + 25;
-                        var adjustedScrollLeft = overlay.data('mouse-pos-x') - ar;
-                        contentDiv.scrollLeft(contentDiv.scrollLeft() + adjustedScrollLeft);
-                        right = ar;
-                    }
-                    else
-                        right = overlay.data('mouse-pos-x') > ctRight ? ctRight : overlay.data('mouse-pos-x');
-                    trueWidth = right + contentDiv.scrollLeft() - overlay.data('origin-x');
-                }
-                else {
-                    right = ctRight;
-                    if (overlay.data('mouse-pos-x') + 20 >= ctRight && contentDiv.scrollLeft() < contentDiv[0].scrollWidth - contentDiv[0].clientWidth) {
-                        var al2 = bottom - 25;
-                        adjustedScrollTop = al2 - overlay.data('mouse-pos-x');
-                        contentDiv.scrollLeft(contentDiv.scrollLeft() - adjustedScrollTop);
-                        left = al2;
-                    }
-                    else
-                        left = overlay.data('mouse-pos-x') < ctLeft ? ctLeft : overlay.data('mouse-pos-x');
-                    trueWidth = overlay.data('origin-x') - left - contentDiv.scrollLeft();
-                }
-            }
+            dims = determineOverlayDimensions(dimObj);
+            contentDiv.scrollLeft(dims.scrollPos);
 
-            overlay.data('actual-height', trueHeight);
-            overlay.data('actual-width', trueWidth);
-
-            displayHeight = bottom - top;
-            displayWidth = right - left;
-
-            if (overlay.data('mouse-pos-y') > overlay.data('previous-mouse-pos-y') || contentDiv.scrollTop() > overlay.data('last-scroll_top_pos'))
-                overlay.data('previous-v-dir', 1);
-            else if (overlay.data('mouse-pos-y') < overlay.data('previous-mouse-pos-y') || contentDiv.scrollTop() < overlay.data('last-scroll_top_pos'))
-                overlay.data('previous-v-dir', -1);
-            else overlay.data('previous-v-dir', 0);
-
-            overlay.css('top', top).css('left', left).css('height', displayHeight).css('width', displayWidth);
-            overlay.data('previous-top', top).data('previous-left', left).data('previous-bottom', bottom).data('previous-right', right);
-            overlay.data('previous-mouse-pos-y', overlay.data('mouse-pos-y')).data('previous-mouse-pos-x', overlay.data('mouse-pos-x'));
-            overlay.data('last-scroll_top_pos', contentDiv.scrollTop()).data('last-scroll_top_dir', vScrollDir);
-            overlay.data('last-scroll_left_pos', contentDiv.scrollLeft()).data('last-scroll_left_dir', hScrollDir);
+            overlay.css('top', top).css('left', dims.smallDim).css('height', (bottom - top)).css('width', (dims.largeDim - dims.smallDim));
+            overlay.data('actual-height', trueHeight).data('actual-width', dims.trueSize);
+            overlay.data('previous-top', top).data('previous-left', dims.smallDim).data('previous-bottom', bottom).data('previous-right', dims.largeDim);
+            overlay.data('last-scroll_top_pos', ctScrollTop).data('last-scroll_left_pos', dims.scrollPos);
         }
+    }
+
+    function determineOverlayDimensions(context) {
+        var locAdjustment, scrollAdjustment, smallDim, largeDim,
+            trueSize,
+            scrollPos = context.container.scrollPos;
+        if (context.eventType === 'scroll') {
+            if (context.overlay.origin < context.container.smallDim + context.container.scrollPos) {
+                if (context.overlay.mousePosition - 20 <= context.container.smallDim && context.container.scrollPos > 0) {
+                    locAdjustment = context.overlay.smallDim + 25;
+                    scrollAdjustment = context.overlay.mousePosition - locAdjustment;
+                    scrollPos = context.container.scrollPos + scrollAdjustment;
+                    largeDim = locAdjustment;
+                    smallDim = context.overlay.smallDim;
+                }
+                else {
+                    smallDim = context.container.smallDim;
+                    largeDim = context.overlay.mousePosition > context.container.largeDim ? context.container.largeDim : context.overlay.mousePosition;
+                }
+                trueSize = largeDim + scrollPos - context.overlay.origin;
+            }
+            else if (context.overlay.origin > context.container.largeDim + context.container.scrollPos) {
+                if (context.overlay.mousePosition + 20 >= context.container.largeDim && context.container.scrollPos < context.container.scrollLength - context.container.clientLength) {
+                    locAdjustment = context.container.largeDim - 25;
+                    scrollAdjustment = locAdjustment - context.overlay.mousePosition;
+                    scrollPos = context.container.scrollPos - scrollAdjustment;
+                    smallDim = locAdjustment;
+                    largeDim = context.overlay.largeDim;
+                }
+                else {
+                    smallDim = context.overlay.mousePosition < context.container.smallDim ? context.container.smallDim : context.overlay.mousePosition;
+                    largeDim = context.container.largeDim;
+                }
+                trueSize = context.overlay.origin - smallDim - scrollPos;
+            }
+            else {
+                if (context.overlay.origin < context.overlay.mousePosition + context.container.scrollPos) {
+                    smallDim = context.overlay.origin - context.container.scrollPos;
+                    largeDim = context.overlay.mousePosition > context.container.largeDim ? context.container.largeDim : context.overlay.mousePosition;
+                }
+                else {
+                    smallDim = context.overlay.mousePosition < context.container.smallDim ? context.container.smallDim : context.overlay.mousePosition;
+                    largeDim = context.overlay.origin - context.container.scrollPos;
+                }
+                trueSize = largeDim - smallDim;
+            }
+        }
+        else {
+            if (context.overlay.origin > (context.container.smallDim + context.container.scrollPos) && context.overlay.origin < (context.container.largeDim + context.container.scrollPos)) {
+                var minVal = Math.min((context.overlay.origin - context.container.scrollPos), context.overlay.mousePosition);
+                var maxVal = minVal === (context.overlay.origin - context.container.scrollPos) ? context.overlay.mousePosition : (context.overlay.origin - context.container.scrollPos);
+                smallDim = minVal < context.container.smallDim ? context.container.smallDim : minVal;
+                largeDim = maxVal > context.container.largeDim ? context.container.largeDim : maxVal;
+                trueSize = largeDim - smallDim;
+            }
+            else if (context.overlay.origin <= context.container.smallDim + context.container.scrollPos) {
+                smallDim = context.container.smallDim;
+                if (context.overlay.mousePosition - 20 <= context.container.smallDim && context.container.scrollPos > 0) {
+                    locAdjustment = smallDim + 25;
+                    scrollAdjustment = context.overlay.mousePosition - locAdjustment;
+                    scrollPos = context.container.scrollPos + scrollAdjustment;
+                    largeDim = locAdjustment;
+                }
+                else largeDim = context.overlay.mousePosition > context.container.largeDim ? context.container.largeDim : context.overlay.mousePosition;
+                trueSize = largeDim + scrollPos - context.overlay.origin;
+            }
+            else {
+                largeDim = context.container.largeDim;
+                if (context.overlay.mousePosition + 20 >= context.container.largeDim && context.container.scrollPos < context.container.scrollLength - context.container.clientLength) {
+                    locAdjustment = largeDim - 25;
+                    scrollAdjustment = locAdjustment - context.overlay.mousePosition;
+                    scrollPos = context.container.scrollPos - scrollAdjustment;
+                    smallDim = locAdjustment;
+                }
+                else smallDim = context.overlay.mousePosition < context.container.smallDim ? context.container.smallDim : context.overlay.mousePosition;
+                trueSize = context.overlay.origin - smallDim - context.container.scrollPos;
+            }
+        }
+        return {
+            trueSize: trueSize,
+            smallDim: smallDim || context.overlay.smallDim,
+            largeDim: largeDim || context.overlay.largeDim,
+            scrollPos: scrollPos || context.container.scrollPos
+        };
     }
 
     function selectHighlighted(overlay, gridId) {
