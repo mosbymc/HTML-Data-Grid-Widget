@@ -82,13 +82,13 @@
  - Fix selectable cells to compare values based on type - DONE
  - Add handler for mounsedown/mouseup event to highlight multiple cells/rows - DONE
  - Fix the 'selecting' status - DONE
+ - Make the overlay unable to visually extend beyond the containing div but track the actual dimensions - DONE
+ - Work on selecting rows/cells when user scrolls up/down and then changes mouse/scroll direction. - DONE
+ - Add grid instance functions that get/set selected grid rows/cells - DONE
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
- - Update grid instance functions that return selected cells/rows based on new select functionality
- - Make the select overlay unable to visually grow larger than the containing table but track the total height/width based on the scrollTop/scrollLeft
- - Work on selecting rows/cells when user scrolls up/down and then changes mouse/scroll direction.
  */
 /*exported grid*/
 /**
@@ -191,6 +191,48 @@ var grid = (function _grid($) {
                 }
             });
 
+        Object.defineProperty(
+            gridElem[0].grid,
+            'selected',
+            {
+                /**
+                 * Returns the collection of selected grid items (row or columns) as an array.
+                 * @returns {NodeList} - The collection of selected grid items
+                 */
+                get: function _getSelectedItems() {
+                    return document.getElementsByClassName('selected');
+                },
+                /**
+                 * Sets the selected row and/or columns of the grid.
+                 * @param {Array} itemArray - Ay array of objects that have a zero-based 'rowIndex' property to indicate which row is to be selected.
+                 * Optionally each object may have a zero-based 'columnIndex' property that indicates which column of the row to select.
+                 */
+                set: function _setSelectedItems(itemArray) {
+                    if (!itemArray || itemArray.constructor !== Array) return;
+                    for (var i = 0; i < itemArray.length; i++) {
+                        if (typeof itemArray[i].rowIndex !== 'number') continue;
+                        var row = gridElem.find('.grid-content-div').find('tbody').children('tr:nth-child(' + (itemArray[i].rowIndex + 1) + ')');
+                        if (typeof itemArray[i].columnIndex === 'number') {
+                            row.children('td:nth-child(' + (itemArray[i].columnIndex + 1) + ')').addClass('selected');
+                        }
+                        else
+                            row.addClass('selected');
+                    }
+                }
+            }
+        );
+
+        Object.defineProperty(
+            gridElem[0].grid,
+            'selectedData',
+            {
+                get: function _getSelectedGridItemData() {
+
+                }
+            }
+        );
+
+        //TODO: consider renaming these functions so that they return the row/column of the active cell
         Object.defineProperty(
             gridElem[0].grid,
             'selectedRow',

@@ -69,6 +69,38 @@ var grid = (function _grid($) {
 
         Object.defineProperty(
             gridElem[0].grid,
+            'selected',
+            {
+                get: function _getSelectedItems() {
+                    return document.getElementsByClassName('selected');
+                },
+                set: function _setSelectedItems(itemArray) {
+                    if (!itemArray || itemArray.constructor !== Array) return;
+                    for (var i = 0; i < itemArray.length; i++) {
+                        if (typeof itemArray[i].rowIndex !== 'number') continue;
+                        var row = gridElem.find('.grid-content-div').find('tbody').children('tr:nth-child(' + (itemArray[i].rowIndex + 1) + ')');
+                        if (typeof itemArray[i].columnIndex === 'number') {
+                            row.children('td:nth-child(' + (itemArray[i].columnIndex + 1) + ')').addClass('selected');
+                        }
+                        else
+                            row.addClass('selected');
+                    }
+                }
+            }
+        );
+
+        Object.defineProperty(
+            gridElem[0].grid,
+            'selectedData',
+            {
+                get: function _getSelectedGridItemData() {
+
+                }
+            }
+        );
+
+        Object.defineProperty(
+            gridElem[0].grid,
             'selectedRow',
             {
                 get: function _getSelectedRow() {

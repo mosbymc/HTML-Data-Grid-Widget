@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">54.37</p>
+      <p class="stat">54.52</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2605</p>
+      <p class="stat">2637</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">199.14</p>
+      <p class="stat">199.18</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">56.76</p>
+      <p class="stat">57.27</p>
     </div>
   </div>
 </div>
@@ -157,6 +157,38 @@
                     return cell.val();
                 }
             });
+
+        Object.defineProperty(
+            gridElem[0].grid,
+            &#039;selected&#039;,
+            {
+                get: function _getSelectedItems() {
+                    return document.getElementsByClassName(&#039;selected&#039;);
+                },
+                set: function _setSelectedItems(itemArray) {
+                    if (!itemArray || itemArray.constructor !== Array) return;
+                    for (var i = 0; i &lt; itemArray.length; i++) {
+                        if (typeof itemArray[i].rowIndex !== &#039;number&#039;) continue;
+                        var row = gridElem.find(&#039;.grid-content-div&#039;).find(&#039;tbody&#039;).children(&#039;tr:nth-child(&#039; + (itemArray[i].rowIndex + 1) + &#039;)&#039;);
+                        if (typeof itemArray[i].columnIndex === &#039;number&#039;) {
+                            row.children(&#039;td:nth-child(&#039; + (itemArray[i].columnIndex + 1) + &#039;)&#039;).addClass(&#039;selected&#039;);
+                        }
+                        else
+                            row.addClass(&#039;selected&#039;);
+                    }
+                }
+            }
+        );
+
+        Object.defineProperty(
+            gridElem[0].grid,
+            &#039;selectedData&#039;,
+            {
+                get: function _getSelectedGridItemData() {
+
+                }
+            }
+        );
 
         Object.defineProperty(
             gridElem[0].grid,
