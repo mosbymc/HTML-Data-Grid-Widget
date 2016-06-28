@@ -756,27 +756,27 @@ var grid = (function _grid($) {
         }
 
         function setOverlayDimensions(contentDiv, overlay) {
-            var ctTop = contentDiv.offset().top,
-                ctLeft = contentDiv.offset().left,
-                ctBottom = ctTop + contentDiv.height(),
-                ctRight = ctLeft + contentDiv.width(),
-                clientX = overlay.data('mouse-pos-x') < ctLeft ? ctLeft : overlay.data('mouse-pos-x'),
-                clientY = overlay.data('mouse-pos-y') < ctTop ? ctTop: overlay.data('mouse-pos-y'),
-                ctScrollTop = contentDiv.scrollTop(),
-                ctScrollLeft = contentDiv.scrollLeft();
             window.getSelection().removeAllRanges();
 
-            var originTop = overlay.data('previous-top'),
-                originLeft = overlay.data('previous-left'),
-                originBottom = overlay.data('previous-bottom'),
-                originRight = overlay.data('previous-right'),
-                top = originTop >= clientY ? clientY : originTop,
-                left = originLeft >= clientX ? clientX : originLeft,
-                bottom = originBottom < clientY ? clientY : originBottom,
-                right = originRight < clientX ? clientX : originRight,
+            var contentOffset = contentDiv.offset(),
+                ctHeight = contentDiv[0].clientHeight,
+                ctWidth = contentDiv[0].clientWidth,
+                ctTop = contentOffset.top,
+                ctLeft = contentOffset.left,
+                ctBottom = ctTop + ctHeight,
+                ctRight = ctLeft + ctWidth,
+                ctScrollTop = contentDiv.scrollTop(),
+                ctScrollLeft = contentDiv.scrollLeft(),
+                top = Math.min(overlay.data('mouse-pos-y'), ctTop, overlay.data('previous-top')),
+                left = Math.min(overlay.data('mouse-pos-x'), ctLeft, overlay.data('previous-left')),
+                bottom = Math.max(top, overlay.data('previous-bottom')),
+                right = Math.max(left, overlay.data('previous-right')),
                 trueHeight;
-            if (bottom > ctBottom) bottom = ctBottom;
-            if (right > ctRight) right = ctRight;
+
+            if ((top === overlay.data('previous-top') || top < ctTop) && (bottom === overlay.data('previous-bottom') || bottom > ctBottom) &&
+                (left === overlay.data('previous-left') || left < ctLeft) && (right === overlay.data('previous-right') || right > ctRight) &&
+                ctScrollTop === overlay.data('last-scroll_top_pos') && ctScrollLeft === overlay.data('last-scroll_left_pos'))
+                return;
 
             var dimObj = {};
             dimObj.eventType = overlay.data('event-type');
@@ -790,7 +790,7 @@ var grid = (function _grid($) {
             dimObj.container.largeDim = ctBottom;
             dimObj.container.scrollPos = ctScrollTop;
             dimObj.container.scrollLength = contentDiv[0].scrollHeight;
-            dimObj.container.clientLength = contentDiv[0].clientHeight;
+            dimObj.container.clientLength = ctHeight;
 
             var dims = determineOverlayDimensions(dimObj);
             trueHeight = dims.trueSize;
@@ -807,7 +807,7 @@ var grid = (function _grid($) {
             dimObj.container.largeDim = ctRight;
             dimObj.container.scrollPos = ctScrollLeft;
             dimObj.container.scrollLength = contentDiv[0].scrollWidth;
-            dimObj.container.clientLength = contentDiv[0].clientWidth;
+            dimObj.container.clientLength = ctWidth;
 
             dims = determineOverlayDimensions(dimObj);
             contentDiv.scrollLeft(dims.scrollPos);

@@ -44,7 +44,7 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">54.36</p>
+      <p class="stat">54.37</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">198.06</p>
+      <p class="stat">199.14</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">56.74</p>
+      <p class="stat">56.76</p>
     </div>
   </div>
 </div>
@@ -847,27 +847,27 @@
         }
 
         function setOverlayDimensions(contentDiv, overlay) {
-            var ctTop = contentDiv.offset().top,
-                ctLeft = contentDiv.offset().left,
-                ctBottom = ctTop + contentDiv.height(),
-                ctRight = ctLeft + contentDiv.width(),
-                clientX = overlay.data(&#039;mouse-pos-x&#039;) &lt; ctLeft ? ctLeft : overlay.data(&#039;mouse-pos-x&#039;),
-                clientY = overlay.data(&#039;mouse-pos-y&#039;) &lt; ctTop ? ctTop: overlay.data(&#039;mouse-pos-y&#039;),
-                ctScrollTop = contentDiv.scrollTop(),
-                ctScrollLeft = contentDiv.scrollLeft();
             window.getSelection().removeAllRanges();
 
-            var originTop = overlay.data(&#039;previous-top&#039;),
-                originLeft = overlay.data(&#039;previous-left&#039;),
-                originBottom = overlay.data(&#039;previous-bottom&#039;),
-                originRight = overlay.data(&#039;previous-right&#039;),
-                top = originTop &gt;= clientY ? clientY : originTop,
-                left = originLeft &gt;= clientX ? clientX : originLeft,
-                bottom = originBottom &lt; clientY ? clientY : originBottom,
-                right = originRight &lt; clientX ? clientX : originRight,
+            var contentOffset = contentDiv.offset(),
+                ctHeight = contentDiv[0].clientHeight,
+                ctWidth = contentDiv[0].clientWidth,
+                ctTop = contentOffset.top,
+                ctLeft = contentOffset.left,
+                ctBottom = ctTop + ctHeight,
+                ctRight = ctLeft + ctWidth,
+                ctScrollTop = contentDiv.scrollTop(),
+                ctScrollLeft = contentDiv.scrollLeft(),
+                top = Math.min(overlay.data(&#039;mouse-pos-y&#039;), ctTop, overlay.data(&#039;previous-top&#039;)),
+                left = Math.min(overlay.data(&#039;mouse-pos-x&#039;), ctLeft, overlay.data(&#039;previous-left&#039;)),
+                bottom = Math.max(top, overlay.data(&#039;previous-bottom&#039;)),
+                right = Math.max(left, overlay.data(&#039;previous-right&#039;)),
                 trueHeight;
-            if (bottom &gt; ctBottom) bottom = ctBottom;
-            if (right &gt; ctRight) right = ctRight;
+
+            if ((top === overlay.data(&#039;previous-top&#039;) || top &lt; ctTop) &amp;&amp; (bottom === overlay.data(&#039;previous-bottom&#039;) || bottom &gt; ctBottom) &amp;&amp;
+                (left === overlay.data(&#039;previous-left&#039;) || left &lt; ctLeft) &amp;&amp; (right === overlay.data(&#039;previous-right&#039;) || right &gt; ctRight) &amp;&amp;
+                ctScrollTop === overlay.data(&#039;last-scroll_top_pos&#039;) &amp;&amp; ctScrollLeft === overlay.data(&#039;last-scroll_left_pos&#039;))
+                return;
 
             var dimObj = {};
             dimObj.eventType = overlay.data(&#039;event-type&#039;);
@@ -881,7 +881,7 @@
             dimObj.container.largeDim = ctBottom;
             dimObj.container.scrollPos = ctScrollTop;
             dimObj.container.scrollLength = contentDiv[0].scrollHeight;
-            dimObj.container.clientLength = contentDiv[0].clientHeight;
+            dimObj.container.clientLength = ctHeight;
 
             var dims = determineOverlayDimensions(dimObj);
             trueHeight = dims.trueSize;
@@ -898,7 +898,7 @@
             dimObj.container.largeDim = ctRight;
             dimObj.container.scrollPos = ctScrollLeft;
             dimObj.container.scrollLength = contentDiv[0].scrollWidth;
-            dimObj.container.clientLength = contentDiv[0].clientWidth;
+            dimObj.container.clientLength = ctWidth;
 
             dims = determineOverlayDimensions(dimObj);
             contentDiv.scrollLeft(dims.scrollPos);
