@@ -6,6 +6,7 @@ var gridData = {
     groupable: true,
     filterable: true,
     pagingOptions: [25, 50, 100],
+    selectable: 'multi-row',
     //pageSize: 50,
     summaryRow: {
         Service: {

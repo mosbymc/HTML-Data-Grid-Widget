@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">54.52</p>
+      <p class="stat">54.51</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2637</p>
+      <p class="stat">2634</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">199.18</p>
+      <p class="stat">200.81</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">57.27</p>
+      <p class="stat">57.67</p>
     </div>
   </div>
 </div>
@@ -152,10 +152,13 @@
                     var cell = gridElem.find(&#039;.active-cell&#039;);
                     if (!cell.length)
                         return null;
+                    var field = cell.parents(&#039;td&#039;).data(&#039;field&#039;);
+                    var colIndex = cell.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-header-wrapper&#039;).find(&#039;.grid-headerRow&#039;).children(&#039;[data-field=&quot;&#039; + field + &#039;&quot;]&#039;).data(&#039;index&#039;);
                     if (cell[0].type === &#039;checkbox&#039;)
-                        return cell[0].checked;
-                    return cell.val();
-                }
+                        return { data: cell[0].checked, row: cell.parents(&#039;tr&#039;).index(), column: colIndex, field: field };
+                    return { data: cell.val(), row: cell.parents(&#039;tr&#039;).index(), column: colIndex, field: field, cell: cell.parents(&#039;td&#039;)[0] };
+                },
+                configurable: false
             });
 
         Object.defineProperty(
@@ -163,7 +166,11 @@
             &#039;selected&#039;,
             {
                 get: function _getSelectedItems() {
-                    return document.getElementsByClassName(&#039;selected&#039;);
+                    var selectedItems = [];
+                    gridElem.find(&#039;.selected&#039;).each(function iteratedSelectedGridItems(idx, val) {
+                        selectedItems.push(val);
+                    });
+                    return selectedItems;
                 },
                 set: function _setSelectedItems(itemArray) {
                     if (!itemArray || itemArray.constructor !== Array) return;
@@ -176,7 +183,8 @@
                         else
                             row.addClass(&#039;selected&#039;);
                     }
-                }
+                },
+                configurable: false
             }
         );
 
@@ -185,36 +193,25 @@
             &#039;selectedData&#039;,
             {
                 get: function _getSelectedGridItemData() {
-
-                }
+                    var data = [];
+                    gridElem.find(&#039;.selected&#039;).each(function getSelectedElementData(index, value) {
+                        var item = $(value);
+                        if (value.tagName.toLowerCase() === &#039;tr&#039;) {
+                            var rowIndex = item.index();
+                            $(value).children().each(function iterateTableCells(idx, val) {
+                                var cell = $(val);
+                                data.push({ rowIndex: rowIndex, columnIndex: cell.index(), data: cell.text(), field: cell.data(&#039;field&#039;) });
+                            });
+                        }
+                        else {
+                            data.push({ rowIndex: item.parents(&#039;tr&#039;).index(), columnIndex: item.index(), data: item.text(), field: item.data(&#039;field&#039;) });
+                        }
+                    });
+                    return data;
+                },
+                configurable: false
             }
         );
-
-        Object.defineProperty(
-            gridElem[0].grid,
-            &#039;selectedRow&#039;,
-            {
-                get: function _getSelectedRow() {
-                    var cell = gridElem.find(&#039;.active-cell&#039;);
-                    if (!cell.length)
-                        return null;
-                    return cell.parents(&#039;tr&#039;).index();
-                }
-            });
-
-        Object.defineProperty(
-            gridElem[0].grid,
-            &#039;selectedColumn&#039;,
-            {
-                get: function selectedColumn() {
-                    var cell = gridElem.find(&#039;.active-cell&#039;);
-                    if (!cell.length)
-                        return null;
-                    var field = cell.parents(&#039;td&#039;).data(&#039;field&#039;);
-                    var colIndex = cell.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-header-wrapper&#039;).find(&#039;.grid-headerRow&#039;).children(&#039;[data-field=&quot;&#039; + field + &#039;&quot;]&#039;).data(&#039;index&#039;);
-                    return { field: field, columnIndex: colIndex };
-                }
-            });
 
         Object.defineProperties(
             gridElem[0].grid, {

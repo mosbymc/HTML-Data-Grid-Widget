@@ -89,6 +89,7 @@
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
+ - Update unit tests for new/altered grid instance functionality
  */
 /*exported grid*/
 /**
@@ -172,23 +173,26 @@ var grid = (function _grid($) {
             'activeCellData',
             {
                 /**
-                 * Returns the data from whichever grid cell is active
+                 * Returns the DOM element for the current active cell in the grid and metadata about the cell
                  * @method activeCellData
                  * @for Grid DOM element
                  * @protected
                  * @readonly
-                 * @default grid cell's .text() value
                  * @type string
-                 * @returns {string|null} - cell data
+                 * @returns {object|null} - An object containing the active cell's current value, row index, column index,
+                 * column field, and the DOM element itself
                  */
                 get: function _getActiveCellData() {
                     var cell = gridElem.find('.active-cell');
                     if (!cell.length)
                         return null;
+                    var field = cell.parents('td').data('field');
+                    var colIndex = cell.parents('.grid-wrapper').find('.grid-header-wrapper').find('.grid-headerRow').children('[data-field="' + field + '"]').data('index');
                     if (cell[0].type === 'checkbox')
-                        return cell[0].checked;
-                    return cell.val();
-                }
+                        return { data: cell[0].checked, row: cell.parents('tr').index(), column: colIndex, field: field };
+                    return { data: cell.val(), row: cell.parents('tr').index(), column: colIndex, field: field, cell: cell.parents('td')[0] };
+                },
+                configurable: false
             });
 
         Object.defineProperty(
@@ -197,10 +201,14 @@ var grid = (function _grid($) {
             {
                 /**
                  * Returns the collection of selected grid items (row or columns) as an array.
-                 * @returns {NodeList} - The collection of selected grid items
+                 * @returns {Array} - The collection of selected grid items
                  */
                 get: function _getSelectedItems() {
-                    return document.getElementsByClassName('selected');
+                    var selectedItems = [];
+                    gridElem.find('.selected').each(function iteratedSelectedGridItems(idx, val) {
+                        selectedItems.push(val);
+                    });
+                    return selectedItems;
                 },
                 /**
                  * Sets the selected row and/or columns of the grid.
@@ -218,7 +226,8 @@ var grid = (function _grid($) {
                         else
                             row.addClass('selected');
                     }
-                }
+                },
+                configurable: false
             }
         );
 
@@ -226,59 +235,29 @@ var grid = (function _grid($) {
             gridElem[0].grid,
             'selectedData',
             {
+                /**
+                 * Returns metadata about each selected item in the grid.
+                 */
                 get: function _getSelectedGridItemData() {
-
-                }
+                    var data = [];
+                    gridElem.find('.selected').each(function getSelectedElementData(index, value) {
+                        var item = $(value);
+                        if (value.tagName.toLowerCase() === 'tr') {
+                            var rowIndex = item.index();
+                            $(value).children().each(function iterateTableCells(idx, val) {
+                                var cell = $(val);
+                                data.push({ rowIndex: rowIndex, columnIndex: cell.index(), data: cell.text(), field: cell.data('field') });
+                            });
+                        }
+                        else {
+                            data.push({ rowIndex: item.parents('tr').index(), columnIndex: item.index(), data: item.text(), field: item.data('field') });
+                        }
+                    });
+                    return data;
+                },
+                configurable: false
             }
         );
-
-        //TODO: consider renaming these functions so that they return the row/column of the active cell
-        Object.defineProperty(
-            gridElem[0].grid,
-            'selectedRow',
-            {
-                /**
-                 * Returns the row index from whichever grid cell is active
-                 * @method selectedRow
-                 * @for Grid DOM element
-                 * @protected
-                 * @readonly
-                 * @default Active cell's row index
-                 * @type integer
-                 * @returns {integer} - cell row index
-                 */
-                get: function _getSelectedRow() {
-                    var cell = gridElem.find('.active-cell');
-                    if (!cell.length)
-                        return null;
-                    return cell.parents('tr').index();
-                }
-            });
-
-        Object.defineProperty(
-            gridElem[0].grid,
-            'selectedColumn',
-            {
-                /**
-                 * Returns the selected column and column index of whichever
-                 * cell is currently active
-                 * @method _getSelectedColumn
-                 * @for Grid DOM element
-                 * @protected
-                 * @readonly
-                 * @default { field: 'field name', columnIndex: 'column index' }
-                 * @type object
-                 * @returns {Object|null} - {field: 'grid column name', columnIndex: 'column index'}
-                 */
-                get: function selectedColumn() {
-                    var cell = gridElem.find('.active-cell');
-                    if (!cell.length)
-                        return null;
-                    var field = cell.parents('td').data('field');
-                    var colIndex = cell.parents('.grid-wrapper').find('.grid-header-wrapper').find('.grid-headerRow').children('[data-field="' + field + '"]').data('index');
-                    return { field: field, columnIndex: colIndex };
-                }
-            });
 
         Object.defineProperties(
             gridElem[0].grid, {

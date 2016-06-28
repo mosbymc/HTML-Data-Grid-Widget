@@ -6,11 +6,18 @@
  //
  */
 
+var grid1 = '#grid1',
+    grid2 = '#grid2',
+    contentDiv = '.grid-content-div',
+    gridWrapper = '.grid-wrapper',
+    gridHeaderWrapper = '.grid-header-wrapper',
+    gridHeaderRow = '.grid-headerRow';
+
 //Tests based around successful grid creation
 QUnit.module('Grid API tests', {
     beforeEach: function() {
-        var tmp1 = $("#grid1")[0];
-        var tmp2 = $("#grid2")[0];
+        var tmp1 = $(grid1)[0];
+        var tmp2 = $(grid2)[0];
         if (tmp1.grid)
             tmp1.grid.destroy();
         if (tmp2.grid)
@@ -22,8 +29,8 @@ QUnit.module('Grid API tests', {
 
 QUnit.test('Closure should prevent cross-contamination', function gridApiTestsCallbask(assert) {
     var evt = "cellEditChange",
-        gridApi1 = $('#grid1')[0].grid,
-        gridApi2 = $('#grid2')[0].grid;
+        gridApi1 = $(grid1)[0].grid,
+        gridApi2 = $(grid2)[0].grid;
 
     var eventHandler = function(){};
     gridApi1.bindEvents(evt, eventHandler);
@@ -58,36 +65,42 @@ QUnit.test('Closure should prevent cross-contamination', function gridApiTestsCa
     assert.ok(currentGridData2.length, 'Full grid data was returned from grid2\'s API');
     assert.notDeepEqual(currentGridData1, currentGridData2, 'grid1 and grid2 have different grid data');
 
-    $('#grid1').find('.grid-content-div').find('table').find('tr').find('td').first()[0].click();
+    $(grid1).find(contentDiv).find('table').find('tr').find('td').first()[0].click();
     var cellVal1 = gridApi1.activeCellData;
-    var cell1 = $('#grid1').find('.grid-content-div').find('table').find('tr').find('td').first()[0];
-    var colIndex1 = $(cell1).parents(".grid-wrapper").find(".grid-header-wrapper").find(".grid-headerRow").children("[data-field='" + $(cell1).data("field") + "']").data("index");
+    var cell1 = $(grid1).find(contentDiv).find('table').find('tr').find('td').first()[0];
+    var colIndex1 = $(cell1).parents(gridWrapper).find(gridHeaderWrapper).find(gridHeaderRow).children("[data-field='" + $(cell1).data("field") + "']").data("index");
+    var selected = gridApi2.selected;
+    var selectedData = gridApi2.selectedData;
 
     assert.ok(gridApi2.activeCellData === null, 'null was returned from activeCellData call to grid2\'s API when grid1 is clicked');
-    assert.ok(gridApi2.selectedRow === null, 'null was returned from selectedRow call to grid2\'s API when grid1 is clicked');
-    assert.ok(gridApi2.selectedColumn === null, 'null was returned from selectedColumn call to grid2\'s API when grid1 is clicked');
-    assert.ok(cellVal1 === 'New Brakes', 'New Brakes was returned when the first row\'s first column in grid1 when grid1 was clicked');
+    assert.ok(!selected.length, 'an empty array was returned from selected call to grid2\'s API when grid1 is clicked');
+    assert.ok(!selectedData.length, 'an empty array was returned from selectedData call to grid2\'s API when grid1 is clicked');
+    assert.deepEqual(cellVal1, { data: 'New Brakes', row: 0, column: 0, field: 'Service', cell: cell1 }, 'expected object values were returned from selected row');
     assert.ok(gridApi1.selectedRow === 0, 'The selected cell\'s parent row index in grid1 was returned');
     assert.deepEqual(gridApi1.selectedColumn, { field: $(cell1).data("field"), columnIndex: colIndex1 }, 'The selected column data was returned when grid1 was clicked');
 
     $(document).trigger('click');
-    $('#grid2').find('.grid-content-div').find('table').find('tr').find('td').first()[0].click();
+    $(grid2).find(contentDiv).find('table').find('tr').find('td').first()[0].click();
     var cellVal2 = gridApi2.activeCellData;
-    var cell2 = $('#grid2').find('.grid-content-div').find('table').find('tr').find('td').first()[0];
-    var colIndex2 = $(cell2).parents(".grid-wrapper").find(".grid-header-wrapper").find(".grid-headerRow").children("[data-field='" + $(cell2).data("field") + "']").data("index");
+    selected = gridApi1.selected;
+    selectedData = gridApi1.selectedData;
 
     assert.ok(gridApi1.activeCellData === null, 'null was returned from activeCellData call to grid1\'s API when grid2 is clicked');
-    assert.ok(gridApi1.selectedRow === null, 'null was returned from selectedRow call to grid1\'s API when grid2 is clicked');
-    assert.ok(gridApi1.selectedColumn === null, 'null was returned from selectedColumn call to grid1\'s API when grid2 is clicked');
+    assert.ok(!selected.length, 'an empty array was returned from selected call to grid1\'s API when grid2 is clicked');
+    assert.ok(!selectedData.length, 'an empty array was returned from selectedData call to grid1\'s API when grid2 is clicked');
     assert.ok(cellVal2 === 'Old Brakes', 'Old Brakes was returned when the first row\'s first column in grid2 when grid2 was clicked');
-    assert.ok(gridApi2.selectedRow === 0, 'The selected cell\'s parent row index in grid2 was returned');
-    assert.deepEqual(gridApi2.selectedColumn, { field: $(cell2).data("field"), columnIndex: colIndex2 }, 'The selected column data was returned when grid2 was clicked');
+
+    selected = gridApi2.selected;
+    selectedData = gridApi2.selectedData;
+    var cell = $(grid2).find(contentDiv).find('table').find('tr').find('td').first()[0];
+    assert.ok(~selected[0].className.indexOf('selected'), 'The selected cell\'s parent row index in grid2 was returned');
+    assert.deepEqual(selectedData[0], { rowIndex: $(cell).parents('tr').index(), columnIndex: $(cell).index(), data: $(cell).text(), field: $(cell).data('field') }, 'expected object values were returned from selected row');
 });
 
 QUnit.module('Grid API Tests: updateCellData', {
     beforeEach: function() {
-        var tmp1 = $("#grid1")[0];
-        var tmp2 = $("#grid2")[0];
+        var tmp1 = $(grid1)[0];
+        var tmp2 = $(grid2)[0];
         if (tmp1.grid)
             tmp1.grid.destroy();
         if (tmp2.grid)
@@ -98,11 +111,11 @@ QUnit.module('Grid API Tests: updateCellData', {
 });
 
 QUnit.test('Closure should prevent cell updates across grids', function cellUpdateTestCallback(assert) {
-    var gridApi1 = $('#grid1')[0].grid,
-        gridApi2 = $('#grid2')[0].grid;
+    var gridApi1 = $(grid1)[0].grid,
+        gridApi2 = $(grid2)[0].grid;
 
-    var dataCell1 = $('#grid1').find('.grid-content-div').find('table').find('tr').first().children('td')[0],
-        dataCell2 = $('#grid2').find('.grid-content-div').find('table').find('tr').first().children('td')[0],
+    var dataCell1 = $(grid1).find(contentDiv).find('table').find('tr').first().children('td')[0],
+        dataCell2 = $(grid2).find(contentDiv).find('table').find('tr').first().children('td')[0],
         initialGridValue1 = dataCell1.outerText,
         initialGridValue2 = dataCell2.outerText,
         initialDataValue1 = gridApi1.getCurrentDataSourceData(0)[0]["Service"],
@@ -110,8 +123,8 @@ QUnit.test('Closure should prevent cell updates across grids', function cellUpda
 
     gridApi1.updateCellData({index: 0, field: "Service", value: "Old Brakes"}, true /*setAsDirty*/);
 
-    var currentGridValue1 = $('#grid1').find('.grid-content-div').find('table').find('tr').first().children('td')[0].outerText,
-        currentGridValue2 = $('#grid2').find('.grid-content-div').find('table').find('tr').first().children('td')[0].outerText,
+    var currentGridValue1 = $(grid1).find(contentDiv).find('table').find('tr').first().children('td')[0].outerText,
+        currentGridValue2 = $(grid2).find(contentDiv).find('table').find('tr').first().children('td')[0].outerText,
         currentDataValue1 = gridApi1.getCurrentDataSourceData(0)[0]["Service"],
         currentDataValue2 = gridApi2.getCurrentDataSourceData(0)[0]["Service"];
 
@@ -122,16 +135,16 @@ QUnit.test('Closure should prevent cell updates across grids', function cellUpda
     assert.ok($(dataCell1).children('span').hasClass('dirty'), "Grid cell1 is dirty");
     assert.ok(!$(dataCell2).children('span').hasClass('dirty'), "Grid cell2 is not dirty");
 
-    var dataCell1 = $('#grid1').find('.grid-content-div').find('table').find('tr').first().children('td')[0],
-        initialGridValue1 = dataCell1.outerText,
-        initialDataValue1 = gridApi1.getCurrentDataSourceData(0)[0]["Service"];
+    dataCell1 = $(grid1).find(contentDiv).find('table').find('tr').first().children('td')[0];
+    initialGridValue1 = dataCell1.outerText;
+    initialDataValue1 = gridApi1.getCurrentDataSourceData(0)[0]["Service"];
 
     gridApi2.updateCellData({index: 0, field: "Service", value: "Older Brakes"}, true /*setAsDirty*/);
 
-    var currentGridValue1 = $('#grid1').find('.grid-content-div').find('table').find('tr').first().children('td')[0].outerText,
-        currentGridValue2 = $('#grid2').find('.grid-content-div').find('table').find('tr').first().children('td')[0].outerText,
-        currentDataValue1 = gridApi1.getCurrentDataSourceData(0)[0]["Service"],
-        currentDataValue2 = gridApi2.getCurrentDataSourceData(0)[0]["Service"];
+    currentGridValue1 = $(grid1).find(contentDiv).find('table').find('tr').first().children('td')[0].outerText;
+    currentGridValue2 = $(grid2).find(contentDiv).find('table').find('tr').first().children('td')[0].outerText;
+    currentDataValue1 = gridApi1.getCurrentDataSourceData(0)[0]["Service"];
+    currentDataValue2 = gridApi2.getCurrentDataSourceData(0)[0]["Service"];
 
     assert.ok(initialGridValue1 === currentGridValue1, 'Previous UI value: ' + initialGridValue1 + " equals the current UI value: " + currentGridValue1 + ' after call to gridApi2 updateCellData');
     assert.ok(initialGridValue2 !== currentGridValue2, 'Previous UI value: ' + initialGridValue2 + ' does not equal the current UI value: ' + currentGridValue2 + ' after call to gridApi2 updateCellData');
@@ -139,23 +152,20 @@ QUnit.test('Closure should prevent cell updates across grids', function cellUpda
     assert.ok(initialDataValue2 !== currentDataValue2, initialDataValue2 + " does not equal " + currentDataValue2);
     assert.ok($(dataCell2).children('span').hasClass('dirty'), "Grid cell2 is not dirty");
 
-
-
-
-    var row1 = $('#grid1').find('.grid-content-div').find('table').find('tr')[4],
-        row2 = $('#grid2').find('.grid-content-div').find('table').find('tr')[4],
-        dataCell1 = $(row1).children('td')[4],
+    var row1 = $(grid1).find(contentDiv).find('table').find('tr')[4],
+        row2 = $(grid2).find(contentDiv).find('table').find('tr')[4],
         dataCell1_1 = $(row1).children('td')[5],
-        dataCell2 = $(row2).children('td')[4],
         dataCell2_2 = $(row2).children('td')[5];
+    dataCell1 = $(row1).children('td')[4];
+    dataCell2 = $(row2).children('td')[4];
 
-    var initialGridValue1 = dataCell1.outerText,
-        initialDataValue1 = gridApi1.getCurrentDataSourceData(4)[0]["Billed"],
-        initialGridValue1_1 = dataCell2.outerText,
-        initialDataValue1_1 = gridApi1.getCurrentDataSourceData(4)[0]["Markup"],
-        initialGridValue2 = dataCell1.outerText,
-        initialDataValue2 = gridApi2.getCurrentDataSourceData(4)[0]["Billed"],
-        initialGridValue2_2 = dataCell2.outerText,
+    initialGridValue1 = dataCell1.outerText;
+    initialDataValue1 = gridApi1.getCurrentDataSourceData(4)[0]["Billed"];
+    var initialGridValue1_1 = dataCell2.outerText,
+        initialDataValue1_1 = gridApi1.getCurrentDataSourceData(4)[0]["Markup"];
+    initialGridValue2 = dataCell1.outerText;
+    initialDataValue2 = gridApi2.getCurrentDataSourceData(4)[0]["Billed"];
+    var initialGridValue2_2 = dataCell2.outerText,
         initialDataValue2_2 = gridApi2.getCurrentDataSourceData(4)[0]["Markup"];
 
     gridApi1.updateCellData([
@@ -163,14 +173,14 @@ QUnit.test('Closure should prevent cell updates across grids', function cellUpda
             {index: 4, field: "Markup", value: 533.86}],
         false /*setAsDirty*/);
 
-    var currentGridValue1 = $(row1).children('td')[4].outerText,
-        currentDataValue1 = gridApi1.getCurrentDataSourceData(4)[0]["Billed"],
-        currentGridValue1_1 = $(row1).children('td')[5].outerText;
-    currentDataValue1_1 = gridApi1.getCurrentDataSourceData(4)[0]["Markup"],
-        currentGridValue2 = $(row2).children('td')[4].outerText,
-        currentDataValue2 = gridApi2.getCurrentDataSourceData(4)[0]["Billed"],
-        currentGridValue2_2 = $(row2).children('td')[5].outerText;
-    currentDataValue2_2 = gridApi2.getCurrentDataSourceData(4)[0]["Markup"];
+    currentGridValue1 = $(row1).children('td')[4].outerText;
+    currentDataValue1 = gridApi1.getCurrentDataSourceData(4)[0]["Billed"];
+    var currentGridValue1_1 = $(row1).children('td')[5].outerText,
+        currentDataValue1_1 = gridApi1.getCurrentDataSourceData(4)[0]["Markup"];
+    currentGridValue2 = $(row2).children('td')[4].outerText;
+    currentDataValue2 = gridApi2.getCurrentDataSourceData(4)[0]["Billed"];
+    var currentGridValue2_2 = $(row2).children('td')[5].outerText,
+        currentDataValue2_2 = gridApi2.getCurrentDataSourceData(4)[0]["Markup"];
 
     assert.notEqual(initialGridValue1, currentGridValue1, initialGridValue1 + " does not equal " + currentGridValue1);
     assert.notEqual(initialDataValue1, currentDataValue1, initialDataValue1 + " does not equal " + currentDataValue1);
@@ -183,8 +193,8 @@ QUnit.test('Closure should prevent cell updates across grids', function cellUpda
 
 QUnit.module('Grid API Tests: updateRowData', {
     beforeEach: function() {
-        var tmp1 = $("#grid1")[0];
-        var tmp2 = $("#grid2")[0];
+        var tmp1 = $(grid1)[0];
+        var tmp2 = $(grid2)[0];
         if (tmp1.grid)
             tmp1.grid.destroy();
         if (tmp2.grid)
@@ -195,8 +205,8 @@ QUnit.module('Grid API Tests: updateRowData', {
 });
 
 QUnit.test('Closure should prevent row updates across grids', function rowUpdateTestCallback(assert) {
-    var gridApi1 = $('#grid1')[0].grid,
-        gridApi2 = $('#grid2')[0].grid;
+    var gridApi1 = $(grid1)[0].grid,
+        gridApi2 = $(grid2)[0].grid;
 
     var dataSourceModel1 = gridApi1.getCurrentDataSourceData(5),
         dataSourceModel2 = gridApi2.getCurrentDataSourceData(5),
@@ -231,8 +241,8 @@ QUnit.test('Closure should prevent row updates across grids', function rowUpdate
 
 QUnit.module('Grid API Tests: updatePageData', {
     beforeEach: function() {
-        var tmp1 = $("#grid1")[0];
-        var tmp2 = $("#grid2")[0];
+        var tmp1 = $(grid1)[0];
+        var tmp2 = $(grid2)[0];
         if (tmp1.grid)
             tmp1.grid.destroy();
         if (tmp2.grid)
@@ -243,8 +253,8 @@ QUnit.module('Grid API Tests: updatePageData', {
 });
 
 QUnit.test('Closure should prevent page updates across grids', function pageUpdateTestsCallback(assert) {
-    var gridApi1 = $('#grid1')[0].grid,
-        gridApi2 = $('#grid2')[0].grid;
+    var gridApi1 = $(grid1)[0].grid,
+        gridApi2 = $(grid2)[0].grid;
 
     var dataSource1 = gridApi1.getCurrentDataSourceData(),
         dataSource2 = gridApi2.getCurrentDataSourceData(),

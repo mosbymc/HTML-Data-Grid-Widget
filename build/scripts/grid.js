@@ -61,10 +61,13 @@ var grid = (function _grid($) {
                     var cell = gridElem.find('.active-cell');
                     if (!cell.length)
                         return null;
+                    var field = cell.parents('td').data('field');
+                    var colIndex = cell.parents('.grid-wrapper').find('.grid-header-wrapper').find('.grid-headerRow').children('[data-field="' + field + '"]').data('index');
                     if (cell[0].type === 'checkbox')
-                        return cell[0].checked;
-                    return cell.val();
-                }
+                        return { data: cell[0].checked, row: cell.parents('tr').index(), column: colIndex, field: field };
+                    return { data: cell.val(), row: cell.parents('tr').index(), column: colIndex, field: field, cell: cell.parents('td')[0] };
+                },
+                configurable: false
             });
 
         Object.defineProperty(
@@ -72,7 +75,11 @@ var grid = (function _grid($) {
             'selected',
             {
                 get: function _getSelectedItems() {
-                    return document.getElementsByClassName('selected');
+                    var selectedItems = [];
+                    gridElem.find('.selected').each(function iteratedSelectedGridItems(idx, val) {
+                        selectedItems.push(val);
+                    });
+                    return selectedItems;
                 },
                 set: function _setSelectedItems(itemArray) {
                     if (!itemArray || itemArray.constructor !== Array) return;
@@ -85,7 +92,8 @@ var grid = (function _grid($) {
                         else
                             row.addClass('selected');
                     }
-                }
+                },
+                configurable: false
             }
         );
 
@@ -94,36 +102,25 @@ var grid = (function _grid($) {
             'selectedData',
             {
                 get: function _getSelectedGridItemData() {
-
-                }
+                    var data = [];
+                    gridElem.find('.selected').each(function getSelectedElementData(index, value) {
+                        var item = $(value);
+                        if (value.tagName.toLowerCase() === 'tr') {
+                            var rowIndex = item.index();
+                            $(value).children().each(function iterateTableCells(idx, val) {
+                                var cell = $(val);
+                                data.push({ rowIndex: rowIndex, columnIndex: cell.index(), data: cell.text(), field: cell.data('field') });
+                            });
+                        }
+                        else {
+                            data.push({ rowIndex: item.parents('tr').index(), columnIndex: item.index(), data: item.text(), field: item.data('field') });
+                        }
+                    });
+                    return data;
+                },
+                configurable: false
             }
         );
-
-        Object.defineProperty(
-            gridElem[0].grid,
-            'selectedRow',
-            {
-                get: function _getSelectedRow() {
-                    var cell = gridElem.find('.active-cell');
-                    if (!cell.length)
-                        return null;
-                    return cell.parents('tr').index();
-                }
-            });
-
-        Object.defineProperty(
-            gridElem[0].grid,
-            'selectedColumn',
-            {
-                get: function selectedColumn() {
-                    var cell = gridElem.find('.active-cell');
-                    if (!cell.length)
-                        return null;
-                    var field = cell.parents('td').data('field');
-                    var colIndex = cell.parents('.grid-wrapper').find('.grid-header-wrapper').find('.grid-headerRow').children('[data-field="' + field + '"]').data('index');
-                    return { field: field, columnIndex: colIndex };
-                }
-            });
 
         Object.defineProperties(
             gridElem[0].grid, {

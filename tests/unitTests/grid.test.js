@@ -21,14 +21,15 @@ QUnit.module('Successful grid creation tests', {
 
 //Is there at least one table element inside the div that was used for the grid?
 QUnit.test('Grid creation should succeed', function gridCreationTests(assert) {
-    var gridElem = $(qunitFixture);
-    var gridApi = gridElem[0].grid;
-    var keys = Object.getOwnPropertyNames(gridElem[0].grid);
+    var gridElem = $(qunitFixture),
+        gridApi = gridElem[0].grid,
+        keys = Object.getOwnPropertyNames(gridElem[0].grid),
+        i;
 
     assert.ok(gridElem.find('table').length, "Grid was created!");
     assert.ok(typeof gridElem[0].grid === 'object', 'Grid API object created');
 
-    for (var i = 0; i < keys.length; i++) {
+    for (i = 0; i < keys.length; i++) {
         var tmp = typeof gridElem[0].grid[keys[i]];
         assert.ok(tmp === 'object' || tmp === 'function', 'Grid API - ' + keys[i] + ' object created');
     }
@@ -38,8 +39,8 @@ QUnit.test('Grid creation should succeed', function gridCreationTests(assert) {
     assert.ok(typeof gridApi.bindEvents == 'function', "gridApi.bindEvents is a function");
     assert.ok(typeof gridApi.unbindEvents == 'function', 'gridApi.unbindEvents is a function');
     assert.ok(typeof gridApi.destroy === 'function', "gridApi.destroy is a function");
-    assert.ok(gridApi.selectedColumn === null, "gridApi.selectedColumn exists and is null when nothing is selected");
-    assert.ok(gridApi.selectedRow === null, "gridApi.selectedRow exists and is null when nothing is selected");
+    assert.ok(typeof gridApi.selected === 'object', "gridApi.selected exists and is null when nothing is selected");
+    assert.ok(typeof gridApi.selectedData === 'object', "gridApi.selectedData exists and is null when nothing is selected");
     assert.ok(typeof gridApi.updateCellData == 'function', "gridApi.updateCellData is a function");
     assert.ok(typeof gridApi.updatePageData == 'function', "gridApi.updatePageData is a function");
     assert.ok(typeof gridApi.updateRowData == 'function', "gridApi.updateRowData is a function");
@@ -53,8 +54,8 @@ QUnit.test('Grid creation should succeed', function gridCreationTests(assert) {
     var refHolder = {};
     var props = Object.getOwnPropertyNames(gridApi);
 
-    for (var i = 0; i < props.length; i++) {
-        if (props[i] === 'activeCellData' || props[i] === 'selectedRow' || props[i] === 'selectedColumn')
+    for (i = 0; i < props.length; i++) {
+        if (props[i] === 'activeCellData' || props[i] === 'selected' || props[i] === 'selectedData')
             continue;
         refHolder[props[i]] = gridApi[props[i]];
         gridApi[props[i]] = undefined;
@@ -80,9 +81,10 @@ QUnit.module('Grid API Tests', {
 
 //Is the handler for the 'cellEditChange' event successfully bound?
 QUnit.test('General grid API tests', function gridEventTests(assert) {
-    var evt = "cellEditChange";
-    var noop = function(){};
-    var gridApi = $(qunitFixture)[0].grid;
+    var evt = "cellEditChange",
+        noop = function(){},
+        gridApi = $(qunitFixture)[0].grid,
+        i;
     gridApi.bindEvents(evt, noop);
     var eventListeners = gridApi.getHandledEvents();
     assert.ok(~eventListeners[0].indexOf(evt), "An event handler for 'cellEditChange' was attached to the grid");
@@ -139,13 +141,13 @@ QUnit.test('General grid API tests', function gridEventTests(assert) {
     var evts = gridApi.getAvailableEvents();
     assert.deepEqual(evts, events, "Available events are returned correctly");
 
-    for (var i = 0; i < events.length; i++) {
+    for (i = 0; i < events.length; i++) {
         gridApi.bindEvents(events[i], function(){});
     }
 
     var handledEvents = gridApi.getHandledEvents();
 
-    for (var i = 0; i < handledEvents.length; i++) {
+    for (i = 0; i < handledEvents.length; i++) {
         assert.ok(handledEvents[i] === events[i], 'Event listener for \'' + events[i] + '\' found');
     }
 
@@ -154,7 +156,7 @@ QUnit.test('General grid API tests', function gridEventTests(assert) {
 
     assert.notOk(handledEvents.length, 'No event handlers returned after call to remove all');
 
-    for (var i = 0; i < events.length; i++) {
+    for (i = 0; i < events.length; i++) {
         assert.ok(!~handledEvents.indexOf(events[i]), 'Event listener for \'' + events[i] + '\' found');
     }
 
@@ -192,17 +194,21 @@ QUnit.test('General grid API tests', function gridEventTests(assert) {
     currentGridData = gridApi.getCurrentPageData(2);
     assert.ok(currentGridData.length === 1, 'One grid data model was returned');
 
+    var selected = gridApi.selected;
+    var selectedData = gridApi.selectedData;
+
     assert.ok(gridApi.activeCellData === null, 'null was returned when no active cell');
-    assert.ok(gridApi.selectedRow === null, 'null was returned when no active cell');
-    assert.ok(gridApi.selectedColumn === null, 'null was returned when no active cell');
+    assert.ok(!selected.length, 'an empty array was returned when no selected item(s)');
+    assert.ok(!selectedData.length, 'an empty array was returned when no selected item(s)');
 
     $(qunitFixture).find(contentDiv).find('table').find('tr').find('td').first()[0].click();
     var cellVal = gridApi.activeCellData;
-    assert.ok(gridApi.activeCellData === 'New Brakes', 'New Brakes was returned when the first rows first column was clicked');
-    assert.ok(gridApi.selectedRow === 0, 'The selected cell\'s parent row index was returned');
     var cell = $(qunitFixture).find(contentDiv).find('table').find('tr').find('td').first()[0];
-    var colIndex = $(cell).parents(".grid-wrapper").find(".grid-header-wrapper").find(".grid-headerRow").children("[data-field='" + $(cell).data("field") + "']").data("index");
-    assert.deepEqual(gridApi.selectedColumn, { field: $(cell).data("field"), columnIndex: colIndex }, 'null was returned when no active cell');
+    selected = gridApi.selected;
+    selectedData = gridApi.selectedData;
+    assert.deepEqual(cellVal, { data: 'New Brakes', row: 0, column: 0, field: 'Service', cell: cell }, 'expected object values were returned from selected row');
+    assert.ok(~selected[0].className.indexOf('selected'), 'The selected cell\'s parent row index was returned');
+    assert.deepEqual(selectedData[0], { rowIndex: $(cell).parents('tr').index(), columnIndex: $(cell).index(), data: $(cell).text(), field: $(cell).data('field') }, 'expected object values were returned from selected row');
 });
 
 QUnit.module('Grid API Tests: updateCellData', {
