@@ -75,9 +75,13 @@ QUnit.test('Closure should prevent cross-contamination', function gridApiTestsCa
     assert.ok(gridApi2.activeCellData === null, 'null was returned from activeCellData call to grid2\'s API when grid1 is clicked');
     assert.ok(!selected.length, 'an empty array was returned from selected call to grid2\'s API when grid1 is clicked');
     assert.ok(!selectedData.length, 'an empty array was returned from selectedData call to grid2\'s API when grid1 is clicked');
+
+    selected = gridApi1.selected;
+    selectedData = gridApi1.selectedData;
+
     assert.deepEqual(cellVal1, { data: 'New Brakes', row: 0, column: 0, field: 'Service', cell: cell1 }, 'expected object values were returned from selected row');
-    assert.ok(gridApi1.selectedRow === 0, 'The selected cell\'s parent row index in grid1 was returned');
-    assert.deepEqual(gridApi1.selectedColumn, { field: $(cell1).data("field"), columnIndex: colIndex1 }, 'The selected column data was returned when grid1 was clicked');
+    assert.ok(~selected[0].className.indexOf('selected'), 'The selected cell\'s parent row index was returned');
+    assert.deepEqual(selectedData[0], { rowIndex: $(cell1).parents('tr').index(), columnIndex: $(cell1).index(), data: $(cell1).text(), field: $(cell1).data('field') }, 'expected object values were returned from selected row');
 
     $(document).trigger('click');
     $(grid2).find(contentDiv).find('table').find('tr').find('td').first()[0].click();
