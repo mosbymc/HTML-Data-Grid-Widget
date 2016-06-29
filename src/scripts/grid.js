@@ -122,6 +122,8 @@ var grid = (function _grid($) {
             }
         );
 
+
+
         Object.defineProperties(
             gridElem[0].grid, {
                 'bindEvents': {
@@ -364,6 +366,15 @@ var grid = (function _grid($) {
                                 child.remove();
                             }
                         }
+                    },
+                    writable: false,
+                    configurable: false
+                },
+                'removeSelection': {
+                    value: function _removeSelection() {
+                        gridElem.find('.selected').each(function removeSelectedClass(idx, val) {
+                            $(val).removeClass('selected');
+                        });
                     },
                     writable: false,
                     configurable: false

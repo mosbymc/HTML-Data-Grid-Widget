@@ -85,11 +85,11 @@
  - Make the overlay unable to visually extend beyond the containing div but track the actual dimensions - DONE
  - Work on selecting rows/cells when user scrolls up/down and then changes mouse/scroll direction. - DONE
  - Add grid instance functions that get/set selected grid rows/cells - DONE
+ - Update unit tests for new/altered grid instance functionality - DONE
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
- - Update unit tests for new/altered grid instance functionality
  */
 /*exported grid*/
 /**
@@ -258,6 +258,8 @@ var grid = (function _grid($) {
                 configurable: false
             }
         );
+
+
 
         Object.defineProperties(
             gridElem[0].grid, {
@@ -604,6 +606,18 @@ var grid = (function _grid($) {
                                 child.remove();
                             }
                         }
+                    },
+                    writable: false,
+                    configurable: false
+                },
+                'removeSelection': {
+                    /**
+                     * Removes all selected grid items
+                     */
+                    value: function _removeSelection() {
+                        gridElem.find('.selected').each(function removeSelectedClass(idx, val) {
+                            $(val).removeClass('selected');
+                        });
                     },
                     writable: false,
                     configurable: false
