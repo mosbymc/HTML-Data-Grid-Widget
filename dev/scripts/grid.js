@@ -86,6 +86,7 @@
  - Work on selecting rows/cells when user scrolls up/down and then changes mouse/scroll direction. - DONE
  - Add grid instance functions that get/set selected grid rows/cells - DONE
  - Update unit tests for new/altered grid instance functionality - DONE
+ - Add grid-to-csv export functionality - should work with grid selection
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Add integration tests if possible
  - Add type checking - passed in grid data
