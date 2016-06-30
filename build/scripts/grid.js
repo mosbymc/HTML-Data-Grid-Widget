@@ -53,6 +53,17 @@ var grid = (function _grid($) {
     }
 
     function createGridInstanceMethods(gridElem, gridId) {
+
+        Object.defineProperty(
+            gridElem[0].grid,
+            'export',
+            {
+                value: function _export() {
+                    exportDataAsExcelFile(gridElem.find('.grid-content-div').find('table').html());
+                }
+            }
+        );
+
         Object.defineProperty(
             gridElem[0].grid,
             'activeCellData',
@@ -2357,6 +2368,30 @@ var grid = (function _grid($) {
             default:
                 return val1.toString() === val2.toString();
         }
+    }
+
+    function exportDataAsExcelFile(table) {
+        var excel = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>";
+        excel += "<head>";
+        excel += '<meta http-equiv="Content-type" content="text/html;" />';
+        excel += "</head>";
+        excel += "<body>";
+        excel += table.replace(/"/g, '\'');
+        excel += "</body>";
+        excel += "</html>";
+
+        var uri = "data:application/vnd.ms-excel;base64,";
+        var ctx = { worksheet: 'test', table: table };
+
+        return window.open((uri + base64(format(excel, ctx))));
+    }
+
+    function base64(s) {
+        return window.btoa(decodeURIComponent(encodeURIComponent(s)));
+    }
+
+    function format(s, c) {
+        return s.replace(/{(\w+)}/g, function (m, p) { return c[p]; });
     }
 
     dataTypes = {
