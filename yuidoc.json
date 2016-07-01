@@ -3,6 +3,7 @@
   "description": "An HTML grid widget",
   "options": {
     "outdir": "./yuidoc",
-    "paths": "./src/scripts/grid.js"
+    "paths": "./src/scripts/grid.js",
+    "linkNatives": true
   }
 }

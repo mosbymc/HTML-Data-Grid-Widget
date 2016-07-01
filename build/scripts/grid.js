@@ -2386,6 +2386,8 @@ var grid = (function _grid($) {
         return window.open((uri + base64(format(excel, ctx))));
     }
 
+
+
     function base64(s) {
         return window.btoa(decodeURIComponent(encodeURIComponent(s)));
     }

@@ -20,7 +20,7 @@ gulp.task('plato', function(done) {
 gulp.task('yuidoc', ['clean-yuidoc'], function() {
     return gulp.src([config.gridJs])
         .pipe(_.yuidoc())
-        .pipe(gulp.dest('./yuidoc'));
+        .pipe(gulp.dest('./yuidoc/classes'));
 });
 
 gulp.task('clean-yuidoc', function(done) {

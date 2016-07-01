@@ -10,6 +10,7 @@ app.use(bodyParser.json());
 app.use('/dev', express.static('dev'));
 app.use('/build', express.static('build'));
 app.use('/src/scripts', express.static('src/scripts'));
+app.use('/docs', express.static('yuidoc'));
 
 require('./routes')(router);
 app.use('/', router);

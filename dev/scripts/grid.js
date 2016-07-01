@@ -2919,6 +2919,18 @@ var grid = (function _grid($) {
 
     //TODO: basic functionality is here, but need to parse table first, or use dataSource to create new table for export.
     function exportDataAsExcelFile(table) {
+        /*
+            1) Get values from dropdown/checkbox/whatever to determine how much data to export
+            2) Based on values,
+                - if this is a client-side grid
+                    - Get the 'alteredData' and take what is needed to export
+                - Otherwise,
+                    - if I have all the data needed for export here, take what is needed
+                    - or make a call to server to get all the data that is needed
+            3) Using the data, create a structure that can be downloaded as an excel file
+
+            Note: Need to support filterable columns, grouped columns, etc; at least eventually
+         */
         var excel = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>";
         excel += "<head>";
         excel += '<meta http-equiv="Content-type" content="text/html;" />';
@@ -2933,6 +2945,12 @@ var grid = (function _grid($) {
 
         return window.open((uri + base64(format(excel, ctx))));
     }
+
+    /*function determineGridDataToExport() {
+
+    }*/
+
+    //function
 
     function base64(s) {
         return window.btoa(decodeURIComponent(encodeURIComponent(s)));
