@@ -2371,7 +2371,8 @@ var grid = (function _grid($) {
     }
 
     function exportDataAsExcelFile(table) {
-        var excel = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>";
+
+                var excel = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>";
         excel += "<head>";
         excel += '<meta http-equiv="Content-type" content="text/html;" />';
         excel += "</head>";
