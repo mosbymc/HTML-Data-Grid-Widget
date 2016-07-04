@@ -799,7 +799,7 @@ var grid = (function _grid($) {
                 createCellEditSaveDiv(gridData, gridElem);
             }
 
-            if (gridData.columns[col].editable || gridData.columns[col].selectable)
+            if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable)
                 createCellEditSaveDiv(gridData, gridElem);
 
             $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
@@ -1711,7 +1711,7 @@ var grid = (function _grid($) {
     /**
      * Creates the toolbar div used for saving and deleting changes as well as grouping the grid's
      * data by selected columns
-     * @param {Array} gridData - The collection of data displayed in the grid
+     * @param {object} gridData - The collection of data displayed in the grid
      * @param {object} gridElem - The DOM element used for the grid widget
      */
     function createCellEditSaveDiv(gridData, gridElem) {
@@ -1719,6 +1719,15 @@ var grid = (function _grid($) {
         if ($('#grid_' + id + '_toolbar').length) return;	//if the toolbar has already been created, don't create it again.
 
         var saveBar = $('<div id="grid_' + id + '_toolbar" class="toolbar clearfix" data-grid_id="' + id + '"></div>').prependTo(gridElem);
+
+        if (gridData.excelExport) {
+            var menuLink = $('<a href="#"></a>');
+            menuLink.append('<span class="menuSpan"></span>');
+            saveBar.append(menuLink);
+            attachMenuClickHandler(menuLink, id);
+        }
+
+
         var saveAnchor = $('<a href="#" class="toolbarAnchor saveToolbar"></a>').appendTo(saveBar);
         saveAnchor.append('<span class="toolbarSpan saveToolbarSpan"></span>Save Changes');
 
@@ -1806,6 +1815,43 @@ var grid = (function _grid($) {
             columnsList.on('change', groupByHandler);
             dirList.on('change', groupByHandler);
         }
+    }
+
+    function attachMenuClickHandler(menuAnchor, gridId) {
+        menuAnchor.on('click', function menuAnchorClickHandler(e) {
+            e.stopPropagation();	//stop event bubbling so that the click won't bubble to document click handler
+            e.preventDefault();
+            var grid = menuAnchor.parents('.grid-wrapper'),
+                menu = grid.find('#menu_id_' + gridId),
+                newMenu;
+
+            if (!menu.length) {
+                //TODO: this needs to eventually be pushed into its own function and check all grid config options to display in the menu
+                newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu"></div>');
+                storage.grids[gridId].grid.append(newMenu);
+                $(document).on('click', function hideMenuHandler(e) {
+                    if (!$(e.target).hasClass('grid_menu')) {
+                        if ($(e.target).parents('.grid_menu').length < 1) {
+                            $('.grid_menu').addClass('hiddenMenu');
+                        }
+                    }
+                });
+            }
+            else {
+                newMenu = menu;
+                newMenu.removeClass('hiddenMenu');
+            }
+
+            var menuAnchorOffset = menuAnchor.offset();
+            newMenu.css('top', (menuAnchorOffset.top - $(window).scrollTop()));
+            newMenu.css('left', (menuAnchorOffset.left - $(window).scrollLeft()));
+        });
+        /*var exportSelect = $('<select class="input size-selector"></select>');
+        exportSelect.append('<option value="current_page">Current page to Excel</select>').append('<option value="all_pages">All pages to Excel</option>');
+        if (gridData.selectable)
+            exportSelect.append('<option value="selection">Selection to Excel</option>');
+        var exportSpan = $('<span></span>').append('<button id="excel_grid_id_' + id + '">Export</button>');
+        gridFooter.append(exportSpan).append(exportSelect);*/
     }
 
     /**
@@ -2931,7 +2977,7 @@ var grid = (function _grid($) {
 
             Note: Need to support filterable columns, grouped columns, etc; at least eventually
          */
-        
+
         var excel = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>";
         excel += "<head>";
         excel += '<meta http-equiv="Content-type" content="text/html;" />';

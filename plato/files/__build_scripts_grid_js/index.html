@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">54.91</p>
+      <p class="stat">55.02</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2683</p>
+      <p class="stat">2722</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">196.77</p>
+      <p class="stat">196.04</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">58.44</p>
+      <p class="stat">59.16</p>
     </div>
   </div>
 </div>
@@ -614,7 +614,7 @@
                 createCellEditSaveDiv(gridData, gridElem);
             }
 
-            if (gridData.columns[col].editable || gridData.columns[col].selectable)
+            if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable)
                 createCellEditSaveDiv(gridData, gridElem);
 
             $(&#039;&lt;a class=&quot;header-anchor&quot; href=&quot;#&quot;&gt;&lt;/a&gt;&#039;).appendTo(th).text(text);
@@ -1405,6 +1405,15 @@
         if ($(&#039;#grid_&#039; + id + &#039;_toolbar&#039;).length) return;	
 
         var saveBar = $(&#039;&lt;div id=&quot;grid_&#039; + id + &#039;_toolbar&quot; class=&quot;toolbar clearfix&quot; data-grid_id=&quot;&#039; + id + &#039;&quot;&gt;&lt;/div&gt;&#039;).prependTo(gridElem);
+
+        if (gridData.excelExport) {
+            var menuLink = $(&#039;&lt;a href=&quot;#&quot;&gt;&lt;/a&gt;&#039;);
+            menuLink.append(&#039;&lt;span class=&quot;menuSpan&quot;&gt;&lt;/span&gt;&#039;);
+            saveBar.append(menuLink);
+            attachMenuClickHandler(menuLink, id);
+        }
+
+
         var saveAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;toolbarAnchor saveToolbar&quot;&gt;&lt;/a&gt;&#039;).appendTo(saveBar);
         saveAnchor.append(&#039;&lt;span class=&quot;toolbarSpan saveToolbarSpan&quot;&gt;&lt;/span&gt;Save Changes&#039;);
 
@@ -1492,6 +1501,36 @@
             columnsList.on(&#039;change&#039;, groupByHandler);
             dirList.on(&#039;change&#039;, groupByHandler);
         }
+    }
+
+    function attachMenuClickHandler(menuAnchor, gridId) {
+        menuAnchor.on(&#039;click&#039;, function menuAnchorClickHandler(e) {
+            e.stopPropagation();	
+            e.preventDefault();
+            var grid = menuAnchor.parents(&#039;.grid-wrapper&#039;),
+                menu = grid.find(&#039;#menu_id_&#039; + gridId),
+                newMenu;
+
+            if (!menu.length) {
+                newMenu = $(&#039;&lt;div id=&quot;menu_model_grid_id_&#039; + gridId + &#039;&quot; class=&quot;grid_menu&quot;&gt;&lt;/div&gt;&#039;);
+                storage.grids[gridId].grid.append(newMenu);
+                $(document).on(&#039;click&#039;, function hideMenuHandler(e) {
+                    if (!$(e.target).hasClass(&#039;grid_menu&#039;)) {
+                        if ($(e.target).parents(&#039;.grid_menu&#039;).length &lt; 1) {
+                            $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
+                        }
+                    }
+                });
+            }
+            else {
+                newMenu = menu;
+                newMenu.removeClass(&#039;hiddenMenu&#039;);
+            }
+
+            var menuAnchorOffset = menuAnchor.offset();
+            newMenu.css(&#039;top&#039;, (menuAnchorOffset.top - $(window).scrollTop()));
+            newMenu.css(&#039;left&#039;, (menuAnchorOffset.left - $(window).scrollLeft()));
+        });
     }
 
     function groupByHandler() {
@@ -2463,7 +2502,7 @@
 
     function exportDataAsExcelFile(table) {
 
-                var excel = &quot;&lt;html xmlns:o=&#039;urn:schemas-microsoft-com:office:office&#039; xmlns:x=&#039;urn:schemas-microsoft-com:office:excel&#039; xmlns=&#039;http://www.w3.org/TR/REC-html40&#039;&gt;&quot;;
+        var excel = &quot;&lt;html xmlns:o=&#039;urn:schemas-microsoft-com:office:office&#039; xmlns:x=&#039;urn:schemas-microsoft-com:office:excel&#039; xmlns=&#039;http://www.w3.org/TR/REC-html40&#039;&gt;&quot;;
         excel += &quot;&lt;head&gt;&quot;;
         excel += &#039;&lt;meta http-equiv=&quot;Content-type&quot; content=&quot;text/html;&quot; /&gt;&#039;;
         excel += &quot;&lt;/head&gt;&quot;;

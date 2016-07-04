@@ -523,7 +523,7 @@ var grid = (function _grid($) {
                 createCellEditSaveDiv(gridData, gridElem);
             }
 
-            if (gridData.columns[col].editable || gridData.columns[col].selectable)
+            if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable)
                 createCellEditSaveDiv(gridData, gridElem);
 
             $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
@@ -1314,6 +1314,15 @@ var grid = (function _grid($) {
         if ($('#grid_' + id + '_toolbar').length) return;	
 
         var saveBar = $('<div id="grid_' + id + '_toolbar" class="toolbar clearfix" data-grid_id="' + id + '"></div>').prependTo(gridElem);
+
+        if (gridData.excelExport) {
+            var menuLink = $('<a href="#"></a>');
+            menuLink.append('<span class="menuSpan"></span>');
+            saveBar.append(menuLink);
+            attachMenuClickHandler(menuLink, id);
+        }
+
+
         var saveAnchor = $('<a href="#" class="toolbarAnchor saveToolbar"></a>').appendTo(saveBar);
         saveAnchor.append('<span class="toolbarSpan saveToolbarSpan"></span>Save Changes');
 
@@ -1401,6 +1410,36 @@ var grid = (function _grid($) {
             columnsList.on('change', groupByHandler);
             dirList.on('change', groupByHandler);
         }
+    }
+
+    function attachMenuClickHandler(menuAnchor, gridId) {
+        menuAnchor.on('click', function menuAnchorClickHandler(e) {
+            e.stopPropagation();	
+            e.preventDefault();
+            var grid = menuAnchor.parents('.grid-wrapper'),
+                menu = grid.find('#menu_id_' + gridId),
+                newMenu;
+
+            if (!menu.length) {
+                newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu"></div>');
+                storage.grids[gridId].grid.append(newMenu);
+                $(document).on('click', function hideMenuHandler(e) {
+                    if (!$(e.target).hasClass('grid_menu')) {
+                        if ($(e.target).parents('.grid_menu').length < 1) {
+                            $('.grid_menu').addClass('hiddenMenu');
+                        }
+                    }
+                });
+            }
+            else {
+                newMenu = menu;
+                newMenu.removeClass('hiddenMenu');
+            }
+
+            var menuAnchorOffset = menuAnchor.offset();
+            newMenu.css('top', (menuAnchorOffset.top - $(window).scrollTop()));
+            newMenu.css('left', (menuAnchorOffset.left - $(window).scrollLeft()));
+        });
     }
 
     function groupByHandler() {
@@ -2372,7 +2411,7 @@ var grid = (function _grid($) {
 
     function exportDataAsExcelFile(table) {
 
-                var excel = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>";
+        var excel = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>";
         excel += "<head>";
         excel += '<meta http-equiv="Content-type" content="text/html;" />';
         excel += "</head>";

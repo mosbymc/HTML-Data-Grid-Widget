@@ -7,6 +7,7 @@ var gridData = {
     groupable: true,
     filterable: true,
     selectable: 'multi-row',
+    excelExport: true,
     pagingOptions: [25, 50, 100],
     //pageSize: 50,
     summaryRow: {
