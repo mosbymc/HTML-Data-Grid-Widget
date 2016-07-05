@@ -843,16 +843,38 @@ input {
 }
 
 .grid_menu {
-  height: 200px;
-  width: 400px;
+  height: auto;
+  width: auto;
   position: fixed;
   border: 1px solid;
-  padding: 10px;
+  padding: 12px;
   background-color: @white;
   .font-settings;
-  line-height: 25.6000003814697px;
+  line-height: 16px;
+  font-size: 12px;
 }
 
 .hiddenMenu {
   display: none;
+}
+
+.menu-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.menu_item {
+  min-width: 150px;
+  &:hover {
+    background-color: #0aaaf1;
+  }
+}
+
+.menu_arrow {
+  margin-top: 3px;
+  float: right;
+  background: @black url('../images/arrowRight.svg') no-repeat;
+  width: 12px;
+  height: 12px;
 }

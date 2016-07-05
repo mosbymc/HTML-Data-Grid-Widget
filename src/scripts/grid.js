@@ -1423,7 +1423,10 @@ var grid = (function _grid($) {
             if (!menu.length) {
                 newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu"></div>');
                 var list = $('<ul class="menu-list"></ul>');
-                list.append('<li><a href="#">Export to Excel</a></li>');
+                var groupElement = $('<li class="menu_item"></li>');
+                var groupAnchor = $('<a href="#"><span class="excel_span">Export to Excel<span class="menu_arrow"/></span></a>');
+                groupElement.append(groupAnchor);
+                list.append(groupElement);
                 newMenu.append(list);
                 storage.grids[gridId].grid.append(newMenu);
                 $(document).on('click', function hideMenuHandler(e) {
