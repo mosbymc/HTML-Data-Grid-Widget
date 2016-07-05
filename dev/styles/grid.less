@@ -871,10 +871,33 @@ input {
   }
 }
 
+.menu_anchor {
+  text-decoration: none;
+  &:visited {
+    color: black;
+  }
+}
+
 .menu_arrow {
   margin-top: 3px;
   float: right;
   background: @black url('../images/arrowRight.svg') no-repeat;
   width: 12px;
   height: 12px;
+}
+
+.menu_item_options {
+  height: auto;
+  width: auto;
+  position: fixed;
+  border: 1px solid;
+  padding: 12px;
+  background-color: @white;
+  .font-settings;
+  line-height: 16px;
+  font-size: 12px;
+}
+
+.hidden_menu_item {
+  display: none;
 }

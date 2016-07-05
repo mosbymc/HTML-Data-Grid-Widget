@@ -1424,7 +1424,30 @@ var grid = (function _grid($) {
                 newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu"></div>');
                 var list = $('<ul class="menu-list"></ul>');
                 var groupElement = $('<li class="menu_item"></li>');
-                var groupAnchor = $('<a href="#"><span class="excel_span">Export to Excel<span class="menu_arrow"/></span></a>');
+                var groupAnchor = $('<a href="#" class="menu_anchor"><span class="excel_span">Export to Excel<span class="menu_arrow"/></span></a>');
+                groupElement.on('mouseover', function excelMenuItemHoverHandler() {
+                    var exportOptions = storage.grids[gridId].grid.find('#excel_grid_id_' + gridId);
+                    if (!exportOptions.length) {
+                        exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options"></div>');
+                        var exportList = $('<ul class="menu-list"></ul>');
+                        var gridPage = $('<a href="#" class="menu_anchor"><span class="excel_span">Current Page Data</a><br>');
+                        var gridSelection = $('<a href="#" class="menu_anchor"><span class="excel_span">Selected Grid Data</a>');
+                        var allData = $('<a href="#" class="menu_anchor"><span class="excel_span">All Page Data</a><br>');
+                        exportList.append(gridPage).append(allData).append(gridSelection);
+                        exportOptions.append(exportList);
+                        storage.grids[gridId].grid.append(exportOptions);
+                    }
+                    else
+                        exportOptions.removeClass('hidden_menu_item');
+
+                    var groupAnchorOffset = groupAnchor.offset(),
+                        newMenuOffset = newMenu.offset();
+                    exportOptions.css('top', (groupAnchorOffset.top - $(window).scrollTop()));
+                    exportOptions.css('left', (newMenuOffset.left + newMenu.outerWidth() - 1 - $(window).scrollLeft()));
+                });
+                groupElement.on('mouseout', function excelMenuItemHoverHandler() {
+                    storage.grids[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
+                });
                 groupElement.append(groupAnchor);
                 list.append(groupElement);
                 newMenu.append(list);

@@ -890,10 +890,34 @@ input {
 .menu_item:hover {
   background-color: #0aaaf1;
 }
+.menu_anchor {
+  text-decoration: none;
+}
+.menu_anchor:visited {
+  color: black;
+}
 .menu_arrow {
   margin-top: 3px;
   float: right;
   background: rgba(0, 0, 0, 0) url('../images/arrowRight.svg') no-repeat;
   width: 12px;
   height: 12px;
+}
+.menu_item_options {
+  height: auto;
+  width: auto;
+  position: fixed;
+  border: 1px solid;
+  padding: 12px;
+  background-color: #ffffff;
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-variant: normal;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 16px;
+  font-size: 12px;
+}
+.hidden_menu_item {
+  display: none;
 }

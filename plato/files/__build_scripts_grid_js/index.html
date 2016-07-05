@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">54.99</p>
+      <p class="stat">55.05</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2728</p>
+      <p class="stat">2751</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">195.39</p>
+      <p class="stat">194.17</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">59.31</p>
+      <p class="stat">60.02</p>
     </div>
   </div>
 </div>
@@ -1515,7 +1515,30 @@
                 newMenu = $(&#039;&lt;div id=&quot;menu_model_grid_id_&#039; + gridId + &#039;&quot; class=&quot;grid_menu&quot;&gt;&lt;/div&gt;&#039;);
                 var list = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
                 var groupElement = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;);
-                var groupAnchor = $(&#039;&lt;a href=&quot;#&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Export to Excel&lt;span class=&quot;menu_arrow&quot;/&gt;&lt;/span&gt;&lt;/a&gt;&#039;);
+                var groupAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_anchor&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Export to Excel&lt;span class=&quot;menu_arrow&quot;/&gt;&lt;/span&gt;&lt;/a&gt;&#039;);
+                groupElement.on(&#039;mouseover&#039;, function excelMenuItemHoverHandler() {
+                    var exportOptions = storage.grids[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId);
+                    if (!exportOptions.length) {
+                        exportOptions = $(&#039;&lt;div id=&quot;excel_grid_id_&#039; + gridId + &#039;&quot; class=&quot;menu_item_options&quot;&gt;&lt;/div&gt;&#039;);
+                        var exportList = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
+                        var gridPage = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_anchor&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Current Page Data&lt;/a&gt;&lt;br&gt;&#039;);
+                        var gridSelection = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_anchor&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Selected Grid Data&lt;/a&gt;&#039;);
+                        var allData = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_anchor&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;All Page Data&lt;/a&gt;&lt;br&gt;&#039;);
+                        exportList.append(gridPage).append(allData).append(gridSelection);
+                        exportOptions.append(exportList);
+                        storage.grids[gridId].grid.append(exportOptions);
+                    }
+                    else
+                        exportOptions.removeClass(&#039;hidden_menu_item&#039;);
+
+                    var groupAnchorOffset = groupAnchor.offset(),
+                        newMenuOffset = newMenu.offset();
+                    exportOptions.css(&#039;top&#039;, (groupAnchorOffset.top - $(window).scrollTop()));
+                    exportOptions.css(&#039;left&#039;, (newMenuOffset.left + newMenu.outerWidth() - 1 - $(window).scrollLeft()));
+                });
+                groupElement.on(&#039;mouseout&#039;, function excelMenuItemHoverHandler() {
+                    storage.grids[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId).addClass(&#039;hidden_menu_item&#039;);
+                });
                 groupElement.append(groupAnchor);
                 list.append(groupElement);
                 newMenu.append(list);
