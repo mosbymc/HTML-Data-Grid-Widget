@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.05</p>
+      <p class="stat">55.08</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2752</p>
+      <p class="stat">2765</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">193.95</p>
+      <p class="stat">194.63</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">60.08</p>
+      <p class="stat">60.57</p>
     </div>
   </div>
 </div>
@@ -1536,8 +1536,21 @@
                     exportOptions.css(&#039;top&#039;, (groupAnchorOffset.top - $(window).scrollTop()));
                     exportOptions.css(&#039;left&#039;, (newMenuOffset.left + newMenu.outerWidth() - 1 - $(window).scrollLeft()));
                 });
-                groupElement.on(&#039;mouseout&#039;, function excelMenuItemHoverHandler() {
-                    storage.grids[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId).addClass(&#039;hidden_menu_item&#039;);
+                groupElement.on(&#039;mouseout&#039;, function excelMenuItemHoverHandler(evt) {
+                    var excelOptions = $(&#039;#excel_grid_id_&#039; + gridId),
+                        excelOptionsOffset = excelOptions.offset();
+                    if (evt.pageX &gt;= excelOptionsOffset.left &amp;&amp; evt.pageX &lt;= (excelOptionsOffset.left + excelOptions.width()) &amp;&amp; evt.pageY &gt;= excelOptionsOffset.top &amp;&amp;
+                        evt.pageY &lt;= (excelOptionsOffset.top + excelOptions.height())) {
+                        excelOptions.one(&#039;mouseleave&#039;, function(e) {
+                            var groupElementOffset = groupElement.offset();
+                            if (e.pageX &gt;= groupElementOffset.left &amp;&amp; e.pageX &lt;= (groupElementOffset.left + groupElement.outerWidth()) &amp;&amp; e.pageY &gt;= groupElementOffset.top &amp;&amp;
+                                e.pageY &lt;= (groupElementOffset.top + groupElement.outerHeight())) return;
+                            storage.grids[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId).addClass(&#039;hidden_menu_item&#039;);
+                        });
+                    }
+                    else {
+                        storage.grids[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId).addClass(&#039;hidden_menu_item&#039;);
+                    }
                 });
                 groupElement.append(groupAnchor);
                 list.append(groupElement);

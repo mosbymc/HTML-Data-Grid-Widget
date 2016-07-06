@@ -1851,9 +1851,21 @@ var grid = (function _grid($) {
                     exportOptions.css('top', (groupAnchorOffset.top - $(window).scrollTop()));
                     exportOptions.css('left', (newMenuOffset.left + newMenu.outerWidth() - 1 - $(window).scrollLeft()));
                 });
-                groupElement.on('mouseout', function excelMenuItemHoverHandler() {
-                    //TODO: need to check to see if the menu_item_options is what the mouse moved to, or if it moved out of the menu altogether before hiding the div
-                    storage.grids[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
+                groupElement.on('mouseout', function excelMenuItemHoverHandler(evt) {
+                    var excelOptions = $('#excel_grid_id_' + gridId),
+                        excelOptionsOffset = excelOptions.offset();
+                    if (evt.pageX >= excelOptionsOffset.left && evt.pageX <= (excelOptionsOffset.left + excelOptions.width()) && evt.pageY >= excelOptionsOffset.top &&
+                        evt.pageY <= (excelOptionsOffset.top + excelOptions.height())) {
+                        excelOptions.one('mouseleave', function(e) {
+                            var groupElementOffset = groupElement.offset();
+                            if (e.pageX >= groupElementOffset.left && e.pageX <= (groupElementOffset.left + groupElement.outerWidth()) && e.pageY >= groupElementOffset.top &&
+                                e.pageY <= (groupElementOffset.top + groupElement.outerHeight())) return;
+                            storage.grids[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
+                        });
+                    }
+                    else {
+                        storage.grids[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
+                    }
                 });
                 groupElement.append(groupAnchor);
                 list.append(groupElement);
