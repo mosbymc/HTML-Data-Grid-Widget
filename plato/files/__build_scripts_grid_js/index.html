@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2751</p>
+      <p class="stat">2752</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">194.17</p>
+      <p class="stat">193.95</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">60.02</p>
+      <p class="stat">60.08</p>
     </div>
   </div>
 </div>
@@ -1521,9 +1521,9 @@
                     if (!exportOptions.length) {
                         exportOptions = $(&#039;&lt;div id=&quot;excel_grid_id_&#039; + gridId + &#039;&quot; class=&quot;menu_item_options&quot;&gt;&lt;/div&gt;&#039;);
                         var exportList = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
-                        var gridPage = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_anchor&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Current Page Data&lt;/a&gt;&lt;br&gt;&#039;);
-                        var gridSelection = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_anchor&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Selected Grid Data&lt;/a&gt;&#039;);
-                        var allData = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_anchor&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;All Page Data&lt;/a&gt;&lt;br&gt;&#039;);
+                        var gridPage = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_anchor&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Current Page Data&lt;/span&gt;&lt;/a&gt;&lt;br&gt;&#039;);
+                        var gridSelection = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_anchor&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Selected Grid Data&lt;/span&gt;&lt;/a&gt;&#039;);
+                        var allData = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_anchor&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;All Page Data&lt;/span&gt;&lt;/a&gt;&lt;br&gt;&#039;);
                         exportList.append(gridPage).append(allData).append(gridSelection);
                         exportOptions.append(exportList);
                         storage.grids[gridId].grid.append(exportOptions);
@@ -1544,8 +1544,9 @@
                 newMenu.append(list);
                 storage.grids[gridId].grid.append(newMenu);
                 $(document).on(&#039;click&#039;, function hideMenuHandler(e) {
-                    if (!$(e.target).hasClass(&#039;grid_menu&#039;)) {
-                        if ($(e.target).parents(&#039;.grid_menu&#039;).length &lt; 1) {
+                    var elem = $(e.target);
+                    if (!elem.hasClass(&#039;grid_menu&#039;) &amp;&amp; !elem.hasClass(&#039;menu_item_options&#039;)) {
+                        if (!elem.parents(&#039;.grid_menu&#039;).length &amp;&amp; !elem.parents(&#039;.menu_item_options&#039;).length) {
                             $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
                         }
                     }

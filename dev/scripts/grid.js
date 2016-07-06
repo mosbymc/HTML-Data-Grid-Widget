@@ -1836,9 +1836,9 @@ var grid = (function _grid($) {
                     if (!exportOptions.length) {
                         exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options"></div>');
                         var exportList = $('<ul class="menu-list"></ul>');
-                        var gridPage = $('<a href="#" class="menu_anchor"><span class="excel_span">Current Page Data</a><br>');
-                        var gridSelection = $('<a href="#" class="menu_anchor"><span class="excel_span">Selected Grid Data</a>');
-                        var allData = $('<a href="#" class="menu_anchor"><span class="excel_span">All Page Data</a><br>');
+                        var gridPage = $('<a href="#" class="menu_anchor"><span class="excel_span">Current Page Data</span></a><br>');
+                        var gridSelection = $('<a href="#" class="menu_anchor"><span class="excel_span">Selected Grid Data</span></a>');
+                        var allData = $('<a href="#" class="menu_anchor"><span class="excel_span">All Page Data</span></a><br>');
                         exportList.append(gridPage).append(allData).append(gridSelection);
                         exportOptions.append(exportList);
                         storage.grids[gridId].grid.append(exportOptions);
@@ -1852,6 +1852,7 @@ var grid = (function _grid($) {
                     exportOptions.css('left', (newMenuOffset.left + newMenu.outerWidth() - 1 - $(window).scrollLeft()));
                 });
                 groupElement.on('mouseout', function excelMenuItemHoverHandler() {
+                    //TODO: need to check to see if the menu_item_options is what the mouse moved to, or if it moved out of the menu altogether before hiding the div
                     storage.grids[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
                 });
                 groupElement.append(groupAnchor);
@@ -1859,8 +1860,9 @@ var grid = (function _grid($) {
                 newMenu.append(list);
                 storage.grids[gridId].grid.append(newMenu);
                 $(document).on('click', function hideMenuHandler(e) {
-                    if (!$(e.target).hasClass('grid_menu')) {
-                        if ($(e.target).parents('.grid_menu').length < 1) {
+                    var elem = $(e.target);
+                    if (!elem.hasClass('grid_menu') && !elem.hasClass('menu_item_options')) {
+                        if (!elem.parents('.grid_menu').length && !elem.parents('.menu_item_options').length) {
                             $('.grid_menu').addClass('hiddenMenu');
                         }
                     }
