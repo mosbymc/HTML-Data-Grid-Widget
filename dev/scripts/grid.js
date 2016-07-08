@@ -775,8 +775,7 @@ var grid = (function _grid($) {
         }
 
         for (var col in gridData.columns) {
-            if (typeof gridData.columns[col] !== 'object')
-                continue;
+            if (typeof gridData.columns[col] !== 'object') continue;
             $('<col/>').appendTo(colgroup);
             var text = gridData.columns[col].title || col;
             var th = $('<th id="' + col + '_grid_id_' + gridHeader.data('grid_header_id') + '" data-field="' + col + '" data-index="' + index + '" class=grid-header-cell></th>').appendTo(headerRow);
@@ -791,19 +790,14 @@ var grid = (function _grid($) {
                 th.prop('draggable', true);
                 setDragAndDropListeners(th);
             }
-            if (gridData.sortable === true && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable === true)) {
+            if (gridData.sortable === true && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable === true))
                 setSortableClickListener(th);
-            }
-            if (gridData.columns[col].filterable === true) {
-                setFilterableClickListener(th, gridData, col);
-                createCellEditSaveDiv(gridData, gridElem);
-            }
 
-            if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable)
-                createCellEditSaveDiv(gridData, gridElem);
+            if (gridData.columns[col].filterable === true) setFilterableClickListener(th, gridData, col);
+
+            if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createCellEditSaveDiv(gridData, gridElem);
 
             $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
-
             index++;
         }
         headerTable.css('width','');
@@ -1727,13 +1721,40 @@ var grid = (function _grid($) {
             attachMenuClickHandler(menuLink, id);
         }
 
-
         var saveAnchor = $('<a href="#" class="toolbarAnchor saveToolbar"></a>').appendTo(saveBar);
         saveAnchor.append('<span class="toolbarSpan saveToolbarSpan"></span>Save Changes');
 
         var deleteAnchor = $('<a href="#" class="toolbarAnchor deleteToolbar"></a>').appendTo(saveBar);
         deleteAnchor.append('<span class="toolbarSpan deleteToolbarSpan">Delete Changes</span>');
 
+        attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor);
+
+        if (gridData.groupable) {
+            var groupSpan = $('<span class="toolbarSpan group_span" style="float:right;"><span class="groupTextSpan" style="float:left;">Group By: </span></span>').appendTo(saveBar);
+            var columnsList = $('<select class="input select group_select" style="float:none; display: inline; width: auto;"></select>').appendTo(groupSpan);
+            var dirList = $('<select class="input select group_dir_select" style="display: inline; width: auto;"></span>').appendTo(groupSpan);
+            dirList.append('<option value="asc">Ascending</span>');
+            dirList.append('<option value="desc">Descending</span>');
+            columnsList.append('<option value="none">None</option>');
+            for (var col in gridData.columns) {
+                if (gridData.columns[col].groupable !== false) {
+                    var colTitle = gridData.columns[col].title || col;
+                    columnsList.append('<option value="' + col + '">' + colTitle + '</option>');
+                }
+            }
+            columnsList.on('change', groupByHandler);
+            dirList.on('change', groupByHandler);
+        }
+    }
+
+    /**
+     * Attaches the click handlers for the save and delete buttons on the toolbar for saving/deleting changes made to the grid data
+     * @param {integer} id - the identifier of the grid instance
+     * @param {object} gridElem - the grid DOM element
+     * @param {object} saveAnchor - the save button DOM element
+     * @param {object} deleteAnchor - the delete button DOM element
+     */
+    function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
         saveAnchor.on('click', function saveChangesHandler() {
             if (storage.grids[id].updating) return;
             var dirtyCells = [],
@@ -1798,23 +1819,6 @@ var grid = (function _grid($) {
                 }
             }
         });
-
-        if (gridData.groupable) {
-            var groupSpan = $('<span class="toolbarSpan group_span" style="float:right;"><span class="groupTextSpan" style="float:left;">Group By: </span></span>').appendTo(saveBar);
-            var columnsList = $('<select class="input select group_select" style="float:none; display: inline; width: auto;"></select>').appendTo(groupSpan);
-            var dirList = $('<select class="input select group_dir_select" style="display: inline; width: auto;"></span>').appendTo(groupSpan);
-            dirList.append('<option value="asc">Ascending</span>');
-            dirList.append('<option value="desc">Descending</span>');
-            columnsList.append('<option value="none">None</option>');
-            for (var col in gridData.columns) {
-                if (gridData.columns[col].groupable !== false) {
-                    var colTitle = gridData.columns[col].title || col;
-                    columnsList.append('<option value="' + col + '">' + colTitle + '</option>');
-                }
-            }
-            columnsList.on('change', groupByHandler);
-            dirList.on('change', groupByHandler);
-        }
     }
 
     function attachMenuClickHandler(menuAnchor, gridId) {

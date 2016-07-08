@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.08</p>
+      <p class="stat">55.14</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2765</p>
+      <p class="stat">2762</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">194.63</p>
+      <p class="stat">194.61</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">60.57</p>
+      <p class="stat">60.60</p>
     </div>
   </div>
 </div>
@@ -590,8 +590,7 @@
         }
 
         for (var col in gridData.columns) {
-            if (typeof gridData.columns[col] !== &#039;object&#039;)
-                continue;
+            if (typeof gridData.columns[col] !== &#039;object&#039;) continue;
             $(&#039;&lt;col/&gt;&#039;).appendTo(colgroup);
             var text = gridData.columns[col].title || col;
             var th = $(&#039;&lt;th id=&quot;&#039; + col + &#039;_grid_id_&#039; + gridHeader.data(&#039;grid_header_id&#039;) + &#039;&quot; data-field=&quot;&#039; + col + &#039;&quot; data-index=&quot;&#039; + index + &#039;&quot; class=grid-header-cell&gt;&lt;/th&gt;&#039;).appendTo(headerRow);
@@ -606,19 +605,14 @@
                 th.prop(&#039;draggable&#039;, true);
                 setDragAndDropListeners(th);
             }
-            if (gridData.sortable === true &amp;&amp; (typeof gridData.columns[col].sortable === &#039;undefined&#039; || gridData.columns[col].sortable === true)) {
+            if (gridData.sortable === true &amp;&amp; (typeof gridData.columns[col].sortable === &#039;undefined&#039; || gridData.columns[col].sortable === true))
                 setSortableClickListener(th);
-            }
-            if (gridData.columns[col].filterable === true) {
-                setFilterableClickListener(th, gridData, col);
-                createCellEditSaveDiv(gridData, gridElem);
-            }
 
-            if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable)
-                createCellEditSaveDiv(gridData, gridElem);
+            if (gridData.columns[col].filterable === true) setFilterableClickListener(th, gridData, col);
+
+            if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createCellEditSaveDiv(gridData, gridElem);
 
             $(&#039;&lt;a class=&quot;header-anchor&quot; href=&quot;#&quot;&gt;&lt;/a&gt;&#039;).appendTo(th).text(text);
-
             index++;
         }
         headerTable.css(&#039;width&#039;,&#039;&#039;);
@@ -1413,13 +1407,33 @@
             attachMenuClickHandler(menuLink, id);
         }
 
-
         var saveAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;toolbarAnchor saveToolbar&quot;&gt;&lt;/a&gt;&#039;).appendTo(saveBar);
         saveAnchor.append(&#039;&lt;span class=&quot;toolbarSpan saveToolbarSpan&quot;&gt;&lt;/span&gt;Save Changes&#039;);
 
         var deleteAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;toolbarAnchor deleteToolbar&quot;&gt;&lt;/a&gt;&#039;).appendTo(saveBar);
         deleteAnchor.append(&#039;&lt;span class=&quot;toolbarSpan deleteToolbarSpan&quot;&gt;Delete Changes&lt;/span&gt;&#039;);
 
+        attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor);
+
+        if (gridData.groupable) {
+            var groupSpan = $(&#039;&lt;span class=&quot;toolbarSpan group_span&quot; style=&quot;float:right;&quot;&gt;&lt;span class=&quot;groupTextSpan&quot; style=&quot;float:left;&quot;&gt;Group By: &lt;/span&gt;&lt;/span&gt;&#039;).appendTo(saveBar);
+            var columnsList = $(&#039;&lt;select class=&quot;input select group_select&quot; style=&quot;float:none; display: inline; width: auto;&quot;&gt;&lt;/select&gt;&#039;).appendTo(groupSpan);
+            var dirList = $(&#039;&lt;select class=&quot;input select group_dir_select&quot; style=&quot;display: inline; width: auto;&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupSpan);
+            dirList.append(&#039;&lt;option value=&quot;asc&quot;&gt;Ascending&lt;/span&gt;&#039;);
+            dirList.append(&#039;&lt;option value=&quot;desc&quot;&gt;Descending&lt;/span&gt;&#039;);
+            columnsList.append(&#039;&lt;option value=&quot;none&quot;&gt;None&lt;/option&gt;&#039;);
+            for (var col in gridData.columns) {
+                if (gridData.columns[col].groupable !== false) {
+                    var colTitle = gridData.columns[col].title || col;
+                    columnsList.append(&#039;&lt;option value=&quot;&#039; + col + &#039;&quot;&gt;&#039; + colTitle + &#039;&lt;/option&gt;&#039;);
+                }
+            }
+            columnsList.on(&#039;change&#039;, groupByHandler);
+            dirList.on(&#039;change&#039;, groupByHandler);
+        }
+    }
+
+    function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
         saveAnchor.on(&#039;click&#039;, function saveChangesHandler() {
             if (storage.grids[id].updating) return;
             var dirtyCells = [],
@@ -1484,23 +1498,6 @@
                 }
             }
         });
-
-        if (gridData.groupable) {
-            var groupSpan = $(&#039;&lt;span class=&quot;toolbarSpan group_span&quot; style=&quot;float:right;&quot;&gt;&lt;span class=&quot;groupTextSpan&quot; style=&quot;float:left;&quot;&gt;Group By: &lt;/span&gt;&lt;/span&gt;&#039;).appendTo(saveBar);
-            var columnsList = $(&#039;&lt;select class=&quot;input select group_select&quot; style=&quot;float:none; display: inline; width: auto;&quot;&gt;&lt;/select&gt;&#039;).appendTo(groupSpan);
-            var dirList = $(&#039;&lt;select class=&quot;input select group_dir_select&quot; style=&quot;display: inline; width: auto;&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupSpan);
-            dirList.append(&#039;&lt;option value=&quot;asc&quot;&gt;Ascending&lt;/span&gt;&#039;);
-            dirList.append(&#039;&lt;option value=&quot;desc&quot;&gt;Descending&lt;/span&gt;&#039;);
-            columnsList.append(&#039;&lt;option value=&quot;none&quot;&gt;None&lt;/option&gt;&#039;);
-            for (var col in gridData.columns) {
-                if (gridData.columns[col].groupable !== false) {
-                    var colTitle = gridData.columns[col].title || col;
-                    columnsList.append(&#039;&lt;option value=&quot;&#039; + col + &#039;&quot;&gt;&#039; + colTitle + &#039;&lt;/option&gt;&#039;);
-                }
-            }
-            columnsList.on(&#039;change&#039;, groupByHandler);
-            dirList.on(&#039;change&#039;, groupByHandler);
-        }
     }
 
     function attachMenuClickHandler(menuAnchor, gridId) {
