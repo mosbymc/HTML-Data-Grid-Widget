@@ -1827,6 +1827,7 @@ var grid = (function _grid($) {
             e.preventDefault();
             var grid = menuAnchor.parents('.grid-wrapper'),
                 menu = grid.find('#menu_id_' + gridId),
+                //menuOptions = ['excelExport'],
                 newMenu;
 
             if (!menu.length) {
@@ -1834,6 +1835,11 @@ var grid = (function _grid($) {
                 newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu"></div>');
                 var list = $('<ul class="menu-list"></ul>');
                 var groupElement = $('<li class="menu_item"></li>');
+                /*for (var i = 0; i < menuOptions.length; i++) {
+                    if (storage.grids[gridId][menuOptions[i]]) {
+
+                    }
+                }*/
                 var groupAnchor = $('<a href="#" class="menu_anchor"><span class="excel_span">Export to Excel<span class="menu_arrow"/></span></a>');
                 groupElement.on('mouseover', function excelMenuItemHoverHandler() {
                     var exportOptions = storage.grids[gridId].grid.find('#excel_grid_id_' + gridId);
