@@ -1427,10 +1427,17 @@ var grid = (function _grid($) {
                     if (!exportOptions.length) {
                         exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options"></div>');
                         var exportList = $('<ul class="menu-list"></ul>');
-                        var gridPage = $('<a href="#" class="menu_anchor"><span class="excel_span">Current Page Data</span></a><br>');
-                        var gridSelection = $('<a href="#" class="menu_anchor"><span class="excel_span">Selected Grid Data</span></a>');
-                        var allData = $('<a href="#" class="menu_anchor"><span class="excel_span">All Page Data</span></a><br>');
-                        exportList.append(gridPage).append(allData).append(gridSelection);
+                        var gridPage = $('<li><a href="#" class="menu_anchor"><span class="excel_span">Current Page Data</span></a></li>');
+                        var allData = $('<li><a href="#" class="menu_anchor"><span class="excel_span">All Page Data</span></a></li>');
+                        exportList.append(gridPage).append(allData);
+                        if (storage.grids[gridId].selectable) {
+                            var gridSelection = $('<li><a href="#" class="menu_anchor"><span class="excel_span">Selected Grid Data</span></a></li>');
+                            exportList.append(gridSelection);
+                        }
+                        var options = exportList.find('li');
+                        options.on('click', function excelExportItemClickHandler() {
+                            exportDataAsExcelFile(storage.grids[gridId].grid);
+                        });
                         exportOptions.append(exportList);
                         storage.grids[gridId].grid.append(exportOptions);
                     }

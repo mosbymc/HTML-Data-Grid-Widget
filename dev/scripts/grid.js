@@ -1827,7 +1827,7 @@ var grid = (function _grid($) {
             e.preventDefault();
             var grid = menuAnchor.parents('.grid-wrapper'),
                 menu = grid.find('#menu_id_' + gridId),
-                //menuOptions = ['excelExport'],
+                //menuOptions = ['excelExport'],  //TODO: change this to an object so click or mouseover action can be mapped to each option
                 newMenu;
 
             if (!menu.length) {
@@ -1837,7 +1837,7 @@ var grid = (function _grid($) {
                 var groupElement = $('<li class="menu_item"></li>');
                 /*for (var i = 0; i < menuOptions.length; i++) {
                     if (storage.grids[gridId][menuOptions[i]]) {
-
+                        var menuElement = $('<li class="menu_item"></li>');
                     }
                 }*/
                 var groupAnchor = $('<a href="#" class="menu_anchor"><span class="excel_span">Export to Excel<span class="menu_arrow"/></span></a>');
@@ -1846,10 +1846,19 @@ var grid = (function _grid($) {
                     if (!exportOptions.length) {
                         exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options"></div>');
                         var exportList = $('<ul class="menu-list"></ul>');
-                        var gridPage = $('<a href="#" class="menu_anchor"><span class="excel_span">Current Page Data</span></a><br>');
-                        var gridSelection = $('<a href="#" class="menu_anchor"><span class="excel_span">Selected Grid Data</span></a>');
-                        var allData = $('<a href="#" class="menu_anchor"><span class="excel_span">All Page Data</span></a><br>');
-                        exportList.append(gridPage).append(allData).append(gridSelection);
+                        var gridPage = $('<li><a href="#" class="menu_anchor"><span class="excel_span">Current Page Data</span></a></li>');
+                        var allData = $('<li><a href="#" class="menu_anchor"><span class="excel_span">All Page Data</span></a></li>');
+                        exportList.append(gridPage).append(allData);
+                        if (storage.grids[gridId].selectable) {
+                            var gridSelection = $('<li><a href="#" class="menu_anchor"><span class="excel_span">Selected Grid Data</span></a></li>');
+                            exportList.append(gridSelection);
+                        }
+                        var options = exportList.find('li');
+                        options.on('click', function excelExportItemClickHandler(/*e*/) {
+                            //TODO: Need to update the export data function to take the type of export as well (page, all, selection)
+                            //var type = $(e.currentTarget).find('span').text();
+                            exportDataAsExcelFile(storage.grids[gridId].grid);
+                        });
                         exportOptions.append(exportList);
                         storage.grids[gridId].grid.append(exportOptions);
                     }
