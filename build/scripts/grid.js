@@ -514,10 +514,15 @@ var grid = (function _grid($) {
                 th.prop('draggable', true);
                 setDragAndDropListeners(th);
             }
-            if (gridData.sortable === true && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable === true))
+            if (gridData.sortable === true && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable === true)) {
                 setSortableClickListener(th);
+                gridData.sortable = true;
+            }
 
-            if (gridData.columns[col].filterable === true) setFilterableClickListener(th, gridData, col);
+            if (gridData.columns[col].filterable === true) {
+                setFilterableClickListener(th, gridData, col);
+                gridData.filterable = true;
+            }
 
             if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createCellEditSaveDiv(gridData, gridElem);
 
@@ -690,8 +695,14 @@ var grid = (function _grid($) {
                 }
                 var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
                 td.text(text);
-                if (gridData.columns[columns[j]].editable) makeCellEditable(id, td);
-                else if (gridData.columns[columns[j]].selectable) makeCellSelectable(id, td);
+                if (gridData.columns[columns[j]].editable) {
+                    makeCellEditable(id, td);
+                    gridData.editable = true;
+                }
+                else if (gridData.columns[columns[j]].selectable) {
+                    makeCellSelectable(id, td);
+                    gridData.selectable = true;
+                }
             }
         }
 
@@ -1422,7 +1433,7 @@ var grid = (function _grid($) {
                 newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu"></div>');
                 var list = $('<ul class="menu-list"></ul>');
                 var saveMenuItems, excelMenuItem;
- saveMenuItems = createSaveDeleteMenuItems(gridId);
+                if (storage.grids[gridId].editable || storage.grids[gridId].selectable) saveMenuItems = createSaveDeleteMenuItems(gridId);
                 excelMenuItem = createExcelExportMenuItems(newMenu, gridId);
                 list.append(saveMenuItems).append(excelMenuItem);
                 newMenu.append(list);
@@ -1503,70 +1514,7 @@ var grid = (function _grid($) {
         var deleteMenuItem = $('<li class="menu_item"></li>');
         var deleteMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Delete Grid Changes</a>');
 
-        saveMenuItem.on('click', function saveGridChangesMenuHandler() {
-            if (storage.grids[gridId].updating) return;
-            var dirtyCells = [],
-                pageNum = storage.grids[gridId].pageNum, i;
-            storage.grids[gridId].grid.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
-                dirtyCells.push($(val).parents('td'));
-            });
-
-            if (dirtyCells.length) {
-                if (typeof storage.grids[gridId].dataSource.put !== 'function') {
-                    for (i = 0; i < dirtyCells.length; i++) {
-                        var index = dirtyCells[i].parents('tr').index();
-                        var field = dirtyCells[i].data('field');
-                        var origIndex = storage.grids[gridId].dataSource.data[index][field]._initialRowIndex;
-                        storage.grids[gridId].originalData[origIndex][field] = storage.grids[gridId].dataSource.data[index][field];
-                        dirtyCells[i].find('.dirty').remove();
-                    }
-                }
-                else {
-                    storage.grids[gridId].putRequest.eventType = 'save';
-                    storage.grids[gridId].putRequest.pageNum = pageNum;
-                    storage.grids[gridId].putRequest.models = [];
-                    var putRequestModels = storage.grids[gridId].putRequest.models;
-                    for (i = 0; i < dirtyCells.length; i++) {
-                        var tmpModel = cloneGridData(storage.grids[gridId].dataSource.data[dirtyCells[i].parents('tr').index()]);
-                        var tmpMap = tmpModel._initialRowIndex;
-                        var idx = existsInPutRequest(putRequestModels, tmpModel);
-                        if (~idx)
-                            putRequestModels[idx].dirtyFields.push(dirtyCells[i].data('field'));
-                        else
-                            putRequestModels.push({ cleanData: storage.grids[gridId].originalData[tmpMap], dirtyData: tmpModel, dirtyFields: [dirtyCells[i].data('field')] });
-                    }
-
-                    for (i = 0; i < putRequestModels.length; i++) {
-                        delete putRequestModels[i].dirtyData._initialRowIndex;
-                    }
-
-                    prepareGridDataUpdateRequest(gridId);
-                }
-            }
-        });
-
-        deleteMenuItem.on('click', function deleteGridChangesMenuHandler() {
-            if (storage.grids[gridId].updating) return;
-            var dirtyCells = [];
-            storage.grids[gridId].grid.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
-                dirtyCells.push($(val).parents('td'));
-            });
-
-            if (dirtyCells.length) {
-                for (var i = 0; i < dirtyCells.length; i++) {
-                    var field = dirtyCells[i].data('field');
-                    var index = dirtyCells[i].parents('tr').index();
-                    var pageNum = storage.grids[gridId].pageNum;
-                    var rowNum = storage.grids[gridId].pageSize;
-                    var addend = (pageNum-1)*rowNum;
-                    var cellVal = storage.grids[gridId].originalData[index][field] !== undefined ? storage.grids[gridId].originalData[index][field] : '';
-                    var text = getFormattedCellText(gridId, field, cellVal) || cellVal;
-                    dirtyCells[i].text(text);
-                    dirtyCells[i].find('.dirty').remove();
-                    storage.grids[gridId].dataSource.data[index][field] = storage.grids[gridId].originalData[index + addend][field];
-                }
-            }
-        });
+        attachSaveAndDeleteHandlers(gridId, storage.grids[gridId].grid, saveMenuItem, deleteMenuItem);
 
         saveMenuItem.append(saveMenuAnchor);
         deleteMenuItem.append(deleteMenuAnchor);

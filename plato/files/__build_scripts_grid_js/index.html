@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.27</p>
+      <p class="stat">55.24</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2853</p>
+      <p class="stat">2801</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">199.21</p>
+      <p class="stat">194.50</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">62.85</p>
+      <p class="stat">61.18</p>
     </div>
   </div>
 </div>
@@ -605,10 +605,15 @@
                 th.prop(&#039;draggable&#039;, true);
                 setDragAndDropListeners(th);
             }
-            if (gridData.sortable === true &amp;&amp; (typeof gridData.columns[col].sortable === &#039;undefined&#039; || gridData.columns[col].sortable === true))
+            if (gridData.sortable === true &amp;&amp; (typeof gridData.columns[col].sortable === &#039;undefined&#039; || gridData.columns[col].sortable === true)) {
                 setSortableClickListener(th);
+                gridData.sortable = true;
+            }
 
-            if (gridData.columns[col].filterable === true) setFilterableClickListener(th, gridData, col);
+            if (gridData.columns[col].filterable === true) {
+                setFilterableClickListener(th, gridData, col);
+                gridData.filterable = true;
+            }
 
             if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createCellEditSaveDiv(gridData, gridElem);
 
@@ -781,8 +786,14 @@
                 }
                 var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
                 td.text(text);
-                if (gridData.columns[columns[j]].editable) makeCellEditable(id, td);
-                else if (gridData.columns[columns[j]].selectable) makeCellSelectable(id, td);
+                if (gridData.columns[columns[j]].editable) {
+                    makeCellEditable(id, td);
+                    gridData.editable = true;
+                }
+                else if (gridData.columns[columns[j]].selectable) {
+                    makeCellSelectable(id, td);
+                    gridData.selectable = true;
+                }
             }
         }
 
@@ -1513,7 +1524,7 @@
                 newMenu = $(&#039;&lt;div id=&quot;menu_model_grid_id_&#039; + gridId + &#039;&quot; class=&quot;grid_menu&quot;&gt;&lt;/div&gt;&#039;);
                 var list = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
                 var saveMenuItems, excelMenuItem;
- saveMenuItems = createSaveDeleteMenuItems(gridId);
+                if (storage.grids[gridId].editable || storage.grids[gridId].selectable) saveMenuItems = createSaveDeleteMenuItems(gridId);
                 excelMenuItem = createExcelExportMenuItems(newMenu, gridId);
                 list.append(saveMenuItems).append(excelMenuItem);
                 newMenu.append(list);
@@ -1594,70 +1605,7 @@
         var deleteMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;);
         var deleteMenuAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Delete Grid Changes&lt;/a&gt;&#039;);
 
-        saveMenuItem.on(&#039;click&#039;, function saveGridChangesMenuHandler() {
-            if (storage.grids[gridId].updating) return;
-            var dirtyCells = [],
-                pageNum = storage.grids[gridId].pageNum, i;
-            storage.grids[gridId].grid.find(&#039;.dirty&#039;).each(function iterateDirtySpansCallback(idx, val) {
-                dirtyCells.push($(val).parents(&#039;td&#039;));
-            });
-
-            if (dirtyCells.length) {
-                if (typeof storage.grids[gridId].dataSource.put !== &#039;function&#039;) {
-                    for (i = 0; i &lt; dirtyCells.length; i++) {
-                        var index = dirtyCells[i].parents(&#039;tr&#039;).index();
-                        var field = dirtyCells[i].data(&#039;field&#039;);
-                        var origIndex = storage.grids[gridId].dataSource.data[index][field]._initialRowIndex;
-                        storage.grids[gridId].originalData[origIndex][field] = storage.grids[gridId].dataSource.data[index][field];
-                        dirtyCells[i].find(&#039;.dirty&#039;).remove();
-                    }
-                }
-                else {
-                    storage.grids[gridId].putRequest.eventType = &#039;save&#039;;
-                    storage.grids[gridId].putRequest.pageNum = pageNum;
-                    storage.grids[gridId].putRequest.models = [];
-                    var putRequestModels = storage.grids[gridId].putRequest.models;
-                    for (i = 0; i &lt; dirtyCells.length; i++) {
-                        var tmpModel = cloneGridData(storage.grids[gridId].dataSource.data[dirtyCells[i].parents(&#039;tr&#039;).index()]);
-                        var tmpMap = tmpModel._initialRowIndex;
-                        var idx = existsInPutRequest(putRequestModels, tmpModel);
-                        if (~idx)
-                            putRequestModels[idx].dirtyFields.push(dirtyCells[i].data(&#039;field&#039;));
-                        else
-                            putRequestModels.push({ cleanData: storage.grids[gridId].originalData[tmpMap], dirtyData: tmpModel, dirtyFields: [dirtyCells[i].data(&#039;field&#039;)] });
-                    }
-
-                    for (i = 0; i &lt; putRequestModels.length; i++) {
-                        delete putRequestModels[i].dirtyData._initialRowIndex;
-                    }
-
-                    prepareGridDataUpdateRequest(gridId);
-                }
-            }
-        });
-
-        deleteMenuItem.on(&#039;click&#039;, function deleteGridChangesMenuHandler() {
-            if (storage.grids[gridId].updating) return;
-            var dirtyCells = [];
-            storage.grids[gridId].grid.find(&#039;.dirty&#039;).each(function iterateDirtySpansCallback(idx, val) {
-                dirtyCells.push($(val).parents(&#039;td&#039;));
-            });
-
-            if (dirtyCells.length) {
-                for (var i = 0; i &lt; dirtyCells.length; i++) {
-                    var field = dirtyCells[i].data(&#039;field&#039;);
-                    var index = dirtyCells[i].parents(&#039;tr&#039;).index();
-                    var pageNum = storage.grids[gridId].pageNum;
-                    var rowNum = storage.grids[gridId].pageSize;
-                    var addend = (pageNum-1)*rowNum;
-                    var cellVal = storage.grids[gridId].originalData[index][field] !== undefined ? storage.grids[gridId].originalData[index][field] : &#039;&#039;;
-                    var text = getFormattedCellText(gridId, field, cellVal) || cellVal;
-                    dirtyCells[i].text(text);
-                    dirtyCells[i].find(&#039;.dirty&#039;).remove();
-                    storage.grids[gridId].dataSource.data[index][field] = storage.grids[gridId].originalData[index + addend][field];
-                }
-            }
-        });
+        attachSaveAndDeleteHandlers(gridId, storage.grids[gridId].grid, saveMenuItem, deleteMenuItem);
 
         saveMenuItem.append(saveMenuAnchor);
         deleteMenuItem.append(deleteMenuAnchor);
