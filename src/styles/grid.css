@@ -890,11 +890,14 @@ input {
 .menu_item:hover {
   background-color: #0aaaf1;
 }
-.menu_anchor {
+.menu_option {
   text-decoration: none;
 }
-.menu_anchor:visited {
+.menu_option:visited {
   color: black;
+}
+.menu_option:hover {
+  background-color: #0aaaf1;
 }
 .menu_arrow {
   margin-top: 3px;

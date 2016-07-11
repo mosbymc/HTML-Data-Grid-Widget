@@ -1409,6 +1409,7 @@ var grid = (function _grid($) {
         });
     }
 
+
     function attachMenuClickHandler(menuAnchor, gridId) {
         menuAnchor.on('click', function menuAnchorClickHandler(e) {
             e.stopPropagation();	
@@ -1421,17 +1422,17 @@ var grid = (function _grid($) {
                 newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu"></div>');
                 var list = $('<ul class="menu-list"></ul>');
                 var groupElement = $('<li class="menu_item"></li>');
-                var groupAnchor = $('<a href="#" class="menu_anchor"><span class="excel_span">Export to Excel<span class="menu_arrow"/></span></a>');
+                var groupAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Export to Excel<span class="menu_arrow"/></span></a>');
                 groupElement.on('mouseover', function excelMenuItemHoverHandler() {
                     var exportOptions = storage.grids[gridId].grid.find('#excel_grid_id_' + gridId);
                     if (!exportOptions.length) {
                         exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options"></div>');
                         var exportList = $('<ul class="menu-list"></ul>');
-                        var gridPage = $('<li><a href="#" class="menu_anchor"><span class="excel_span">Current Page Data</span></a></li>');
-                        var allData = $('<li><a href="#" class="menu_anchor"><span class="excel_span">All Page Data</span></a></li>');
+                        var gridPage = $('<li><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
+                        var allData = $('<li><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
                         exportList.append(gridPage).append(allData);
                         if (storage.grids[gridId].selectable) {
-                            var gridSelection = $('<li><a href="#" class="menu_anchor"><span class="excel_span">Selected Grid Data</span></a></li>');
+                            var gridSelection = $('<li><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
                             exportList.append(gridSelection);
                         }
                         var options = exportList.find('li');
