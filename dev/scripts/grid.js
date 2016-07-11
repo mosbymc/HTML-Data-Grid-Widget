@@ -1868,60 +1868,10 @@ var grid = (function _grid($) {
                 //TODO: this needs to eventually be pushed into its own function and check all grid config options to display in the menu
                 newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu"></div>');
                 var list = $('<ul class="menu-list"></ul>');
-                var groupElement = $('<li class="menu_item"></li>');
-                /*for (var i = 0; i < menuOptions.length; i++) {
-                    if (storage.grids[gridId][menuOptions[i]]) {
-                        var menuElement = $('<li class="menu_item"></li>');
-                    }
-                }*/
-                var groupAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Export to Excel<span class="menu_arrow"/></span></a>');
-                groupElement.on('mouseover', function excelMenuItemHoverHandler() {
-                    var exportOptions = storage.grids[gridId].grid.find('#excel_grid_id_' + gridId);
-                    if (!exportOptions.length) {
-                        exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options"></div>');
-                        var exportList = $('<ul class="menu-list"></ul>');
-                        var gridPage = $('<li><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
-                        var allData = $('<li><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
-                        exportList.append(gridPage).append(allData);
-                        if (storage.grids[gridId].selectable) {
-                            var gridSelection = $('<li><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
-                            exportList.append(gridSelection);
-                        }
-                        var options = exportList.find('li');
-                        options.on('click', function excelExportItemClickHandler(/*e*/) {
-                            //TODO: Need to update the export data function to take the type of export as well (page, all, selection)
-                            //var type = $(e.currentTarget).find('span').text();
-                            exportDataAsExcelFile(storage.grids[gridId].grid);
-                        });
-                        exportOptions.append(exportList);
-                        storage.grids[gridId].grid.append(exportOptions);
-                    }
-                    else
-                        exportOptions.removeClass('hidden_menu_item');
-
-                    var groupAnchorOffset = groupAnchor.offset(),
-                        newMenuOffset = newMenu.offset();
-                    exportOptions.css('top', (groupAnchorOffset.top - $(window).scrollTop()));
-                    exportOptions.css('left', (newMenuOffset.left + newMenu.outerWidth() - 1 - $(window).scrollLeft()));
-                });
-                groupElement.on('mouseout', function excelMenuItemHoverHandler(evt) {
-                    var excelOptions = $('#excel_grid_id_' + gridId),
-                        excelOptionsOffset = excelOptions.offset();
-                    if (evt.pageX >= excelOptionsOffset.left && evt.pageX <= (excelOptionsOffset.left + excelOptions.width()) && evt.pageY >= excelOptionsOffset.top &&
-                        evt.pageY <= (excelOptionsOffset.top + excelOptions.height())) {
-                        excelOptions.one('mouseleave', function(e) {
-                            var groupElementOffset = groupElement.offset();
-                            if (e.pageX >= groupElementOffset.left && e.pageX <= (groupElementOffset.left + groupElement.outerWidth()) && e.pageY >= groupElementOffset.top &&
-                                e.pageY <= (groupElementOffset.top + groupElement.outerHeight())) return;
-                            storage.grids[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
-                        });
-                    }
-                    else {
-                        storage.grids[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
-                    }
-                });
-                groupElement.append(groupAnchor);
-                list.append(groupElement);
+                var saveMenuItems, excelMenuItem;
+                /*if (storage.grids[gridId].editable)*/ saveMenuItems = createSaveDeleteMenuItems(gridId);
+                excelMenuItem = createExcelExportMenuItems(newMenu, gridId);
+                list.append(saveMenuItems).append(excelMenuItem);
                 newMenu.append(list);
                 storage.grids[gridId].grid.append(newMenu);
                 $(document).on('click', function hideMenuHandler(e) {
@@ -1942,6 +1892,134 @@ var grid = (function _grid($) {
             newMenu.css('top', (menuAnchorOffset.top - $(window).scrollTop()));
             newMenu.css('left', (menuAnchorOffset.left - $(window).scrollLeft()));
         });
+    }
+
+    function createExcelExportMenuItems(menu, gridId) {
+        var menuItem = $('<li class="menu_item"></li>');
+        var menuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Export to Excel<span class="menu_arrow"/></span></a>');
+        menuItem.on('mouseover', function excelMenuItemHoverHandler() {
+            var exportOptions = storage.grids[gridId].grid.find('#excel_grid_id_' + gridId);
+            if (!exportOptions.length) {
+                exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options"></div>');
+                var exportList = $('<ul class="menu-list"></ul>');
+                var gridPage = $('<li><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
+                var allData = $('<li><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
+                exportList.append(gridPage).append(allData);
+                if (storage.grids[gridId].selectable) {
+                    var gridSelection = $('<li><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
+                    exportList.append(gridSelection);
+                }
+                var options = exportList.find('li');
+                options.on('click', function excelExportItemClickHandler(/*e*/) {
+                    //TODO: Need to update the export data function to take the type of export as well (page, all, selection)
+                    //var type = $(e.currentTarget).find('span').text();
+                    exportDataAsExcelFile(storage.grids[gridId].grid);
+                });
+                exportOptions.append(exportList);
+                storage.grids[gridId].grid.append(exportOptions);
+            }
+            else
+                exportOptions.removeClass('hidden_menu_item');
+
+            var groupAnchorOffset = menuAnchor.offset(),
+                newMenuOffset = menu.offset();
+            exportOptions.css('top', (groupAnchorOffset.top - $(window).scrollTop()));
+            exportOptions.css('left', (newMenuOffset.left + menu.outerWidth() - 1 - $(window).scrollLeft()));
+        });
+        menuItem.on('mouseout', function excelMenuItemHoverHandler(evt) {
+            var excelOptions = $('#excel_grid_id_' + gridId),
+                excelOptionsOffset = excelOptions.offset();
+            if (evt.pageX >= excelOptionsOffset.left && evt.pageX <= (excelOptionsOffset.left + excelOptions.width()) && evt.pageY >= excelOptionsOffset.top &&
+                evt.pageY <= (excelOptionsOffset.top + excelOptions.height())) {
+                excelOptions.one('mouseleave', function(e) {
+                    var groupElementOffset = menuItem.offset();
+                    if (e.pageX >= groupElementOffset.left && e.pageX <= (groupElementOffset.left + menuItem.outerWidth()) && e.pageY >= groupElementOffset.top &&
+                        e.pageY <= (groupElementOffset.top + menuItem.outerHeight())) return;
+                    storage.grids[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
+                });
+            }
+            else {
+                storage.grids[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
+            }
+        });
+        menuItem.append(menuAnchor);
+        return menuItem;
+    }
+
+    function createSaveDeleteMenuItems(gridId) {
+        var saveMenuItem = $('<li class="menu_item"></li>');
+        var saveMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Save Grid Changes</a>');
+        var deleteMenuItem = $('<li class="menu_item"></li>');
+        var deleteMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Delete Grid Changes</a>');
+
+        saveMenuItem.on('click', function saveGridChangesMenuHandler() {
+            if (storage.grids[gridId].updating) return;
+            var dirtyCells = [],
+                pageNum = storage.grids[gridId].pageNum, i;
+            storage.grids[gridId].grid.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
+                dirtyCells.push($(val).parents('td'));
+            });
+
+            if (dirtyCells.length) {
+                if (typeof storage.grids[gridId].dataSource.put !== 'function') {
+                    for (i = 0; i < dirtyCells.length; i++) {
+                        var index = dirtyCells[i].parents('tr').index();
+                        var field = dirtyCells[i].data('field');
+                        var origIndex = storage.grids[gridId].dataSource.data[index][field]._initialRowIndex;
+                        storage.grids[gridId].originalData[origIndex][field] = storage.grids[gridId].dataSource.data[index][field];
+                        dirtyCells[i].find('.dirty').remove();
+                    }
+                }
+                else {
+                    storage.grids[gridId].putRequest.eventType = 'save';
+                    storage.grids[gridId].putRequest.pageNum = pageNum;
+                    storage.grids[gridId].putRequest.models = [];
+                    var putRequestModels = storage.grids[gridId].putRequest.models;
+                    for (i = 0; i < dirtyCells.length; i++) {
+                        var tmpModel = cloneGridData(storage.grids[gridId].dataSource.data[dirtyCells[i].parents('tr').index()]);
+                        var tmpMap = tmpModel._initialRowIndex;
+                        var idx = existsInPutRequest(putRequestModels, tmpModel);
+                        if (~idx)
+                            putRequestModels[idx].dirtyFields.push(dirtyCells[i].data('field'));
+                        else
+                            putRequestModels.push({ cleanData: storage.grids[gridId].originalData[tmpMap], dirtyData: tmpModel, dirtyFields: [dirtyCells[i].data('field')] });
+                    }
+
+                    for (i = 0; i < putRequestModels.length; i++) {
+                        delete putRequestModels[i].dirtyData._initialRowIndex;
+                    }
+
+                    prepareGridDataUpdateRequest(gridId);
+                }
+            }
+        });
+
+        deleteMenuItem.on('click', function deleteGridChangesMenuHandler() {
+            if (storage.grids[gridId].updating) return;
+            var dirtyCells = [];
+            storage.grids[gridId].grid.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
+                dirtyCells.push($(val).parents('td'));
+            });
+
+            if (dirtyCells.length) {
+                for (var i = 0; i < dirtyCells.length; i++) {
+                    var field = dirtyCells[i].data('field');
+                    var index = dirtyCells[i].parents('tr').index();
+                    var pageNum = storage.grids[gridId].pageNum;
+                    var rowNum = storage.grids[gridId].pageSize;
+                    var addend = (pageNum-1)*rowNum;
+                    var cellVal = storage.grids[gridId].originalData[index][field] !== undefined ? storage.grids[gridId].originalData[index][field] : '';
+                    var text = getFormattedCellText(gridId, field, cellVal) || cellVal;
+                    dirtyCells[i].text(text);
+                    dirtyCells[i].find('.dirty').remove();
+                    storage.grids[gridId].dataSource.data[index][field] = storage.grids[gridId].originalData[index + addend][field];
+                }
+            }
+        });
+
+        saveMenuItem.append(saveMenuAnchor);
+        deleteMenuItem.append(deleteMenuAnchor);
+        return [saveMenuItem, deleteMenuItem];
     }
 
     /**

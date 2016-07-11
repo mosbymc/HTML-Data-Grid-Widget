@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.19</p>
+      <p class="stat">55.27</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2770</p>
+      <p class="stat">2853</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">194.65</p>
+      <p class="stat">199.21</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">60.73</p>
+      <p class="stat">62.85</p>
     </div>
   </div>
 </div>
@@ -1512,53 +1512,10 @@
             if (!menu.length) {
                 newMenu = $(&#039;&lt;div id=&quot;menu_model_grid_id_&#039; + gridId + &#039;&quot; class=&quot;grid_menu&quot;&gt;&lt;/div&gt;&#039;);
                 var list = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
-                var groupElement = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;);
-                var groupAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Export to Excel&lt;span class=&quot;menu_arrow&quot;/&gt;&lt;/span&gt;&lt;/a&gt;&#039;);
-                groupElement.on(&#039;mouseover&#039;, function excelMenuItemHoverHandler() {
-                    var exportOptions = storage.grids[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId);
-                    if (!exportOptions.length) {
-                        exportOptions = $(&#039;&lt;div id=&quot;excel_grid_id_&#039; + gridId + &#039;&quot; class=&quot;menu_item_options&quot;&gt;&lt;/div&gt;&#039;);
-                        var exportList = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
-                        var gridPage = $(&#039;&lt;li&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Current Page Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
-                        var allData = $(&#039;&lt;li&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;All Page Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
-                        exportList.append(gridPage).append(allData);
-                        if (storage.grids[gridId].selectable) {
-                            var gridSelection = $(&#039;&lt;li&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Selected Grid Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
-                            exportList.append(gridSelection);
-                        }
-                        var options = exportList.find(&#039;li&#039;);
-                        options.on(&#039;click&#039;, function excelExportItemClickHandler() {
-                            exportDataAsExcelFile(storage.grids[gridId].grid);
-                        });
-                        exportOptions.append(exportList);
-                        storage.grids[gridId].grid.append(exportOptions);
-                    }
-                    else
-                        exportOptions.removeClass(&#039;hidden_menu_item&#039;);
-
-                    var groupAnchorOffset = groupAnchor.offset(),
-                        newMenuOffset = newMenu.offset();
-                    exportOptions.css(&#039;top&#039;, (groupAnchorOffset.top - $(window).scrollTop()));
-                    exportOptions.css(&#039;left&#039;, (newMenuOffset.left + newMenu.outerWidth() - 1 - $(window).scrollLeft()));
-                });
-                groupElement.on(&#039;mouseout&#039;, function excelMenuItemHoverHandler(evt) {
-                    var excelOptions = $(&#039;#excel_grid_id_&#039; + gridId),
-                        excelOptionsOffset = excelOptions.offset();
-                    if (evt.pageX &gt;= excelOptionsOffset.left &amp;&amp; evt.pageX &lt;= (excelOptionsOffset.left + excelOptions.width()) &amp;&amp; evt.pageY &gt;= excelOptionsOffset.top &amp;&amp;
-                        evt.pageY &lt;= (excelOptionsOffset.top + excelOptions.height())) {
-                        excelOptions.one(&#039;mouseleave&#039;, function(e) {
-                            var groupElementOffset = groupElement.offset();
-                            if (e.pageX &gt;= groupElementOffset.left &amp;&amp; e.pageX &lt;= (groupElementOffset.left + groupElement.outerWidth()) &amp;&amp; e.pageY &gt;= groupElementOffset.top &amp;&amp;
-                                e.pageY &lt;= (groupElementOffset.top + groupElement.outerHeight())) return;
-                            storage.grids[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId).addClass(&#039;hidden_menu_item&#039;);
-                        });
-                    }
-                    else {
-                        storage.grids[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId).addClass(&#039;hidden_menu_item&#039;);
-                    }
-                });
-                groupElement.append(groupAnchor);
-                list.append(groupElement);
+                var saveMenuItems, excelMenuItem;
+ saveMenuItems = createSaveDeleteMenuItems(gridId);
+                excelMenuItem = createExcelExportMenuItems(newMenu, gridId);
+                list.append(saveMenuItems).append(excelMenuItem);
                 newMenu.append(list);
                 storage.grids[gridId].grid.append(newMenu);
                 $(document).on(&#039;click&#039;, function hideMenuHandler(e) {
@@ -1579,6 +1536,132 @@
             newMenu.css(&#039;top&#039;, (menuAnchorOffset.top - $(window).scrollTop()));
             newMenu.css(&#039;left&#039;, (menuAnchorOffset.left - $(window).scrollLeft()));
         });
+    }
+
+    function createExcelExportMenuItems(menu, gridId) {
+        var menuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;);
+        var menuAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Export to Excel&lt;span class=&quot;menu_arrow&quot;/&gt;&lt;/span&gt;&lt;/a&gt;&#039;);
+        menuItem.on(&#039;mouseover&#039;, function excelMenuItemHoverHandler() {
+            var exportOptions = storage.grids[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId);
+            if (!exportOptions.length) {
+                exportOptions = $(&#039;&lt;div id=&quot;excel_grid_id_&#039; + gridId + &#039;&quot; class=&quot;menu_item_options&quot;&gt;&lt;/div&gt;&#039;);
+                var exportList = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
+                var gridPage = $(&#039;&lt;li&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Current Page Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
+                var allData = $(&#039;&lt;li&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;All Page Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
+                exportList.append(gridPage).append(allData);
+                if (storage.grids[gridId].selectable) {
+                    var gridSelection = $(&#039;&lt;li&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Selected Grid Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
+                    exportList.append(gridSelection);
+                }
+                var options = exportList.find(&#039;li&#039;);
+                options.on(&#039;click&#039;, function excelExportItemClickHandler() {
+                    exportDataAsExcelFile(storage.grids[gridId].grid);
+                });
+                exportOptions.append(exportList);
+                storage.grids[gridId].grid.append(exportOptions);
+            }
+            else
+                exportOptions.removeClass(&#039;hidden_menu_item&#039;);
+
+            var groupAnchorOffset = menuAnchor.offset(),
+                newMenuOffset = menu.offset();
+            exportOptions.css(&#039;top&#039;, (groupAnchorOffset.top - $(window).scrollTop()));
+            exportOptions.css(&#039;left&#039;, (newMenuOffset.left + menu.outerWidth() - 1 - $(window).scrollLeft()));
+        });
+        menuItem.on(&#039;mouseout&#039;, function excelMenuItemHoverHandler(evt) {
+            var excelOptions = $(&#039;#excel_grid_id_&#039; + gridId),
+                excelOptionsOffset = excelOptions.offset();
+            if (evt.pageX &gt;= excelOptionsOffset.left &amp;&amp; evt.pageX &lt;= (excelOptionsOffset.left + excelOptions.width()) &amp;&amp; evt.pageY &gt;= excelOptionsOffset.top &amp;&amp;
+                evt.pageY &lt;= (excelOptionsOffset.top + excelOptions.height())) {
+                excelOptions.one(&#039;mouseleave&#039;, function(e) {
+                    var groupElementOffset = menuItem.offset();
+                    if (e.pageX &gt;= groupElementOffset.left &amp;&amp; e.pageX &lt;= (groupElementOffset.left + menuItem.outerWidth()) &amp;&amp; e.pageY &gt;= groupElementOffset.top &amp;&amp;
+                        e.pageY &lt;= (groupElementOffset.top + menuItem.outerHeight())) return;
+                    storage.grids[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId).addClass(&#039;hidden_menu_item&#039;);
+                });
+            }
+            else {
+                storage.grids[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId).addClass(&#039;hidden_menu_item&#039;);
+            }
+        });
+        menuItem.append(menuAnchor);
+        return menuItem;
+    }
+
+    function createSaveDeleteMenuItems(gridId) {
+        var saveMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;);
+        var saveMenuAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Save Grid Changes&lt;/a&gt;&#039;);
+        var deleteMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;);
+        var deleteMenuAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Delete Grid Changes&lt;/a&gt;&#039;);
+
+        saveMenuItem.on(&#039;click&#039;, function saveGridChangesMenuHandler() {
+            if (storage.grids[gridId].updating) return;
+            var dirtyCells = [],
+                pageNum = storage.grids[gridId].pageNum, i;
+            storage.grids[gridId].grid.find(&#039;.dirty&#039;).each(function iterateDirtySpansCallback(idx, val) {
+                dirtyCells.push($(val).parents(&#039;td&#039;));
+            });
+
+            if (dirtyCells.length) {
+                if (typeof storage.grids[gridId].dataSource.put !== &#039;function&#039;) {
+                    for (i = 0; i &lt; dirtyCells.length; i++) {
+                        var index = dirtyCells[i].parents(&#039;tr&#039;).index();
+                        var field = dirtyCells[i].data(&#039;field&#039;);
+                        var origIndex = storage.grids[gridId].dataSource.data[index][field]._initialRowIndex;
+                        storage.grids[gridId].originalData[origIndex][field] = storage.grids[gridId].dataSource.data[index][field];
+                        dirtyCells[i].find(&#039;.dirty&#039;).remove();
+                    }
+                }
+                else {
+                    storage.grids[gridId].putRequest.eventType = &#039;save&#039;;
+                    storage.grids[gridId].putRequest.pageNum = pageNum;
+                    storage.grids[gridId].putRequest.models = [];
+                    var putRequestModels = storage.grids[gridId].putRequest.models;
+                    for (i = 0; i &lt; dirtyCells.length; i++) {
+                        var tmpModel = cloneGridData(storage.grids[gridId].dataSource.data[dirtyCells[i].parents(&#039;tr&#039;).index()]);
+                        var tmpMap = tmpModel._initialRowIndex;
+                        var idx = existsInPutRequest(putRequestModels, tmpModel);
+                        if (~idx)
+                            putRequestModels[idx].dirtyFields.push(dirtyCells[i].data(&#039;field&#039;));
+                        else
+                            putRequestModels.push({ cleanData: storage.grids[gridId].originalData[tmpMap], dirtyData: tmpModel, dirtyFields: [dirtyCells[i].data(&#039;field&#039;)] });
+                    }
+
+                    for (i = 0; i &lt; putRequestModels.length; i++) {
+                        delete putRequestModels[i].dirtyData._initialRowIndex;
+                    }
+
+                    prepareGridDataUpdateRequest(gridId);
+                }
+            }
+        });
+
+        deleteMenuItem.on(&#039;click&#039;, function deleteGridChangesMenuHandler() {
+            if (storage.grids[gridId].updating) return;
+            var dirtyCells = [];
+            storage.grids[gridId].grid.find(&#039;.dirty&#039;).each(function iterateDirtySpansCallback(idx, val) {
+                dirtyCells.push($(val).parents(&#039;td&#039;));
+            });
+
+            if (dirtyCells.length) {
+                for (var i = 0; i &lt; dirtyCells.length; i++) {
+                    var field = dirtyCells[i].data(&#039;field&#039;);
+                    var index = dirtyCells[i].parents(&#039;tr&#039;).index();
+                    var pageNum = storage.grids[gridId].pageNum;
+                    var rowNum = storage.grids[gridId].pageSize;
+                    var addend = (pageNum-1)*rowNum;
+                    var cellVal = storage.grids[gridId].originalData[index][field] !== undefined ? storage.grids[gridId].originalData[index][field] : &#039;&#039;;
+                    var text = getFormattedCellText(gridId, field, cellVal) || cellVal;
+                    dirtyCells[i].text(text);
+                    dirtyCells[i].find(&#039;.dirty&#039;).remove();
+                    storage.grids[gridId].dataSource.data[index][field] = storage.grids[gridId].originalData[index + addend][field];
+                }
+            }
+        });
+
+        saveMenuItem.append(saveMenuAnchor);
+        deleteMenuItem.append(deleteMenuAnchor);
+        return [saveMenuItem, deleteMenuItem];
     }
 
     function groupByHandler() {
