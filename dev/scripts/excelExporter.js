@@ -1,107 +1,197 @@
-/**
- * A module used for creating an excel xml-based file. Returns the primary creation object
- * after calling the 'createExcelRoot' function. Also exposes some static methods that
- * any instance of the creation object.
- * @type {{createExcelRoot}}
- */
 var excelExporter = (function _excelExporter() {
-    /**
-     * Creates, initializes, and returns an instance of the 'exporter' object
-     * @returns {exporter} - Returns an instance of the xml table creation object
-     */
-    function createExcelRoot() {
-        return Object.create(exporter).init();
-    }
-    var exporter = {
-        /**
-         * Initializes the xml file by creating the root node.
-         * @returns {exporter} - Returns 'this' for chaining
-         */
-        init: function _init() {
-            if (this === excelExporter || this.root) return null;
-
-            this.root = document.createElement('workbook');
-            this.root.setAttribute('urn', 'schemas-microsoft-com:office:spreadsheet');
-            this.root.setAttribute('xmlns:o', 'urn:schemas-microsoft-com:office:office');
-            this.root.setAttribute('xmlns:x', 'urn:schemas-microsoft-com:office:excel');
-            this.root.setAttribute('xmlns:ss', 'urn:schemas-microsoft-com:office:spreadsheet');
-            this.root.setAttribute('xmlns:html', 'http://www.w3.org/TR/REC-html40');
+    var xmlNode = {
+        isRoot: false,
+        children: [],
+        createXmlNode: function _createXmlNode(props) {
+            this.textValue = props.textValue || null;
+            this.attributes = props.attributes || [];
+            this.nodeType = props.nodeType;
+            this.children = [];
+            this.isRoot = props.isRoot || false;
             return this;
         },
-        /**
-         * Creates the actual xml table structure based on the columns and data passed in. May be call
-         * before or after the workbookStyles function.
-         * @param {string} wsName - The name for the excel worksheet
-         * @param {object} columns - A javascript object containing metadata about the columns of the worksheet
-         * @param {Array} data - An array of JSON data to be displayed in each cell of the excel worksheet
-         * @returns {exporter} - Returns 'this' for chaining
-         */
-        createWorkSheet: function _createWorkSheet(wsName, columns, data) {
-            if ((typeof wsName !== 'string' && !!wsName) || !columns || typeof columns !== 'object' || !data || !data.length || !this.root) return this;
-
-            var workSheetName = wsName || 'sheet1',
-                workSheet = document.createElement('worksheet');
-            workSheet.setAttribute('ss:Name', workSheetName);
-            var table = document.createElement('table'),
-                headerRow = document.createElement('row'),
-                col, header, headerData, tableRow, rowCell, rowData;
-
-            for (var column in columns) {
-                col = document.createElement('column');
-                col.setAttribute('ss:Width', columns[column]);
-                table.appendChild(col);
-
-                header = document.createElement('cell');
-                headerData = document.createElement('data');
-                headerData.setAttribute('ss:Type', 'string');
-                headerData.text = column;
-                header.appendChild(headerData);
-                headerRow.appendChild(header);
-            }
-            table.appendChild(headerRow);
-
-            for (var row in data) {
-                tableRow = document.createElement('row');
-                rowCell = document.createElement('cell');
-                for (var item in data[row]) {
-                    rowData = document.createElement('data');
-                    rowData.setAttribute('ss:Type', getCellType(data[row][item]));
-                    rowData.text = data[row][item];
-                    rowCell.appendChild(rowData);
-                    tableRow.appendChild(rowCell);
-                }
-                table.appendChild(tableRow);
-            }
-
-            this.xml = table;
+        addAttributes: function _addAttributes(attrs) {
+            this.attributes = this.attributes.concat(attrs);
             return this;
         },
-        /**
-         * Creates the styles for an Excel xml file based on the styles passed in.
-         * @param {object} styles - A collection of style definitions in object form to be applied to the Excel worksheet
-         * @returns {exporter} - Returns 'this' for chaining
-         */
-        addWorksheetStyles: function _addWorksheetStyles(styles) {
-            if (!styles || !styles.length || !this.root) return this;
-            var stylesNode = document.createElement('styles'),
-                styleNode;
-            for (var style in styles) {
-                styleNode = document.createElement('style');
-                for (var item in style) {
-                    var tmp = document.createElement(item);
-                    for (var attribute in item) {
-                        tmp.setAttribute(attribute, item[attribute]);
-                    }
-                    styleNode.appendChild(tmp);
+        createChild: function _createChild(props) {
+            this.addChild(this.createXmlNode(props));
+            return this;
+        },
+        createChildReturnChild: function _createChildReturnChild(props) {
+            var child = this.createXmlNode(props);
+            this.children.push(child);
+            return child;
+        },
+        addChild: function _addChild(childNode) {
+            if (!xmlNode.isPrototypeOf(childNode)) return this;
+            this.children.push(childNode);
+            return this;
+        },
+        setValue: function _setTextValue(val) {
+            this.textValue = val;
+            return this;
+        },
+        toString: function _toString() {
+            var string = '';
+            if (this.isRoot)
+                string = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+            string += "<" + this.name;
+            for(var attr in this.attributes) {
+                if(this.attributes.hasOwnProperty(attr)) {
+                    string = string + " " + attr + "=\""+ escape(this.attributes[attr])+"\"";
                 }
             }
-            stylesNode.appendChild(styleNode);
-            var xml = this.root;
-            xml.appendChild(stylesNode);
-            this.xml = xml;
-            return this;
+
+            var childContent = "";
+            for(var i = 0, l = this.children.length; i < l; i++) {
+                childContent += this.children[i].toString();
+            }
+
+            if (childContent) string +=  ">" + childContent + "</" + this.name + ">";
+            else string += "/>";
+
+            return string;
         }
     };
+
+    function createWorkBook() {
+        return Object.create(workbook).init();
+    }
+
+    var workbook = Object.create(xmlNode, {
+        init: function _init() {
+            this.createXmlNode({
+                nodeType: 'workbook',
+                isRoot: true,
+                attributes: [
+                    {
+                        'xmlns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+                    },
+                    {
+                        'xmlns:r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+                    },
+                    {
+                        'xmlns:mc': 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+                    },
+                    {
+                        'mc:Ignorable': 'x15'
+                    },
+                    {
+                        'xmlns:x15': 'http://schemas.microsoft.com/office/spreadsheetml/2010/11/main'
+                    }
+                ]
+            });
+
+            this.createChild({
+                nodeType: 'workbookPr',
+                attributes: [
+                    {
+                        defaultThemeVersion: '153222'
+                    }
+                ]
+            });
+            return this;
+        },
+        createWorkSheet: function _createWorkSheet(data, columns, name) {
+            if (!data || data.constructor !== Array) return this;
+            var sheetId = generateId(),
+                rId = generateId('rId'),
+                workSheetName = name || 'worksheet' + sheetId;
+            this.workSheets.push(Object.create(workSheet).init(data, columns, workSheetName));
+            this.createChildReturnChild({
+                nodeType: 'sheets'
+            }).createChild({
+                nodeType: 'sheet',
+                attributes: [
+                    {
+                        'name': name
+                    },
+                    {
+                        'sheetId': sheetId
+                    },
+                    {
+                        'r:id': rId
+                    }
+                ]
+            });
+            return this;
+        },
+        createStyleSheet: function _createStyleSheet(styles) {
+            this.styleSheets.push(Object.create(styleSheet).init(styles));
+            return this;
+        },
+        createTable: function _createTable(table) {
+            this.tables.push(Object.create(table).init());
+            return this;
+        },
+        createRelation: function _createRelation(relation) {
+            this.relations.push(Object.create(relation).init());
+            return this;
+        },
+        workSheets: [],
+        styleSheets: [],
+        tables: [],
+        relations: []
+    });
+
+    var workSheet = Object.create(xmlNode, {
+        init: function _init(data, columns, wsName) {
+            this.createXmlNode({
+                nodeType: 'worksheet',
+                isRoot: true,
+                attributes: [
+                    {
+                        'xmlns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+                    },
+                    {
+                        'xmlns:r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+                    },
+                    {
+                        'xmlns:mc': 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+                    },
+                    {
+                        'mc:Ignorable': 'x14ac'
+                    },
+                    {
+                        'xmlns:x14ac': 'http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac'
+                    }
+                ]
+            });
+
+            if (!columns) {
+                columns = [];
+                for (var item in data[0]) {
+                    columns.push(item);
+                }
+            }
+            this.data = data;
+            this.columns = columns;
+            this.name = wsName;
+        },
+        data: [],
+        columns: [],
+        relations: [],
+        rowStyles: [],
+        name: ''
+    });
+
+    var styleSheet = Object.create(xmlNode, {
+        id: '',
+        width: 0,
+        height: 0,
+        font: {
+            size: '',
+            name: ''
+        },
+        border: {
+            left: '',
+            right: '',
+            top: '',
+            bottom: '',
+            diagonal: ''
+        }
+    });
 
     //==================================================================================//
     //=======================          Helper Functions          =======================//
@@ -128,7 +218,41 @@ var excelExporter = (function _excelExporter() {
         }
     }
 
+    function escape(string) {
+        // Reset `lastIndex` because in IE < 9 `String#replace` does not.
+        string = baseToString(string);
+        //var reUnescapedHtml = /[&<>"'`]/g;
+        var reHasUnescapedHtml = new RegExp('[&<>"\'`]');
+        return (string && reHasUnescapedHtml.test(string))
+            ? string.replace(/[&<>"'`]/g, escapeHtmlChar)
+            : string;
+    }
+
+    function baseToString(value) {
+        return value == null ? '' : (value + '');
+    }
+
+    function escapeHtmlChar(chr) {
+        return htmlEscapes[chr];
+    }
+
+    var htmlEscapes = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+        '`': '&#96;'
+    };
+
+    var generateId = (function guid(seed) {
+        return function _generateId(value) {
+            var prefix = value || '';
+            return prefix + (seed++).toString();
+        };
+    })(1);
+
     return {
-        createExcelRoot: createExcelRoot
+        createWorkBook: createWorkBook
     }
 })();
