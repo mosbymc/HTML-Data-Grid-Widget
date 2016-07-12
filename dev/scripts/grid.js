@@ -3080,7 +3080,7 @@ var grid = (function _grid($) {
     }
 
     //TODO: basic functionality is here, but need to parse table first, or use dataSource to create new table for export.
-    function exportDataAsExcelFile(table) {
+    function exportDataAsExcelFile(data) {
         /*
             1) Get values from dropdown/checkbox/whatever to determine how much data to export
             2) Based on values,
@@ -3094,7 +3094,13 @@ var grid = (function _grid($) {
             Note: Need to support filterable columns, grouped columns, etc; at least eventually
          */
 
-        var excel = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>";
+        if (excelExporter && typeof excelExporter.createExcelRoot === 'function') {
+            var excelCreator = excelExporter.createExcelRoot().addWorksheetStyles({}).createWorkSheet('', {}, data);
+            //TODO: remove this statement and actual use the excelCreator; this is only in here to get JsHint to stop yelling temporarily
+            window.face = excelCreator.xml;
+        }
+
+        /*var excel = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>";
         excel += "<head>";
         excel += '<meta http-equiv="Content-type" content="text/html;" />';
         excel += "</head>";
@@ -3106,7 +3112,7 @@ var grid = (function _grid($) {
         var uri = "data:application/vnd.ms-excel;base64,";
         var ctx = { worksheet: 'test', table: table };
 
-        return window.open((uri + base64(format(excel, ctx))));
+        return window.open((uri + base64(format(excel, ctx))));*/
     }
 
     /*function determineGridDataToExport() {
@@ -3115,13 +3121,13 @@ var grid = (function _grid($) {
 
     //function
 
-    function base64(s) {
+    /*function base64(s) {
         return window.btoa(decodeURIComponent(encodeURIComponent(s)));
-    }
+    }*/
 
-    function format(s, c) {
+    /*function format(s, c) {
         return s.replace(/{(\w+)}/g, function (m, p) { return c[p]; });
-    }
+    }*/
 
     dataTypes = {
         number: '^-?(?:[1-9]{1}[0-9]{0,2}(?:,[0-9]{3})*(?:\\.[0-9]+)?|[1-9]{1}[0-9]{0,}(?:\\.[0-9]+)?|0(?:\\.[0-9]+)?|(?:\\.[0-9]+)?)$',

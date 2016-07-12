@@ -2488,32 +2488,18 @@ var grid = (function _grid($) {
         }
     }
 
-    function exportDataAsExcelFile(table) {
+    function exportDataAsExcelFile(data) {
 
-        var excel = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>";
-        excel += "<head>";
-        excel += '<meta http-equiv="Content-type" content="text/html;" />';
-        excel += "</head>";
-        excel += "<body>";
-        excel += table.replace(/"/g, '\'');
-        excel += "</body>";
-        excel += "</html>";
+        if (excelExporter && typeof excelExporter.createExcelRoot === 'function') {
+            var excelCreator = excelExporter.createExcelRoot().addWorksheetStyles({}).createWorkSheet('', {}, data);
+            window.face = excelCreator.xml;
+        }
 
-        var uri = "data:application/vnd.ms-excel;base64,";
-        var ctx = { worksheet: 'test', table: table };
-
-        return window.open((uri + base64(format(excel, ctx))));
     }
 
 
 
-    function base64(s) {
-        return window.btoa(decodeURIComponent(encodeURIComponent(s)));
-    }
 
-    function format(s, c) {
-        return s.replace(/{(\w+)}/g, function (m, p) { return c[p]; });
-    }
 
     dataTypes = {
         number: '^-?(?:[1-9]{1}[0-9]{0,2}(?:,[0-9]{3})*(?:\\.[0-9]+)?|[1-9]{1}[0-9]{0,}(?:\\.[0-9]+)?|0(?:\\.[0-9]+)?|(?:\\.[0-9]+)?)$',
