@@ -54,7 +54,7 @@ var excelExporter = (function _excelExporter() {
                 header = document.createElement('cell');
                 headerData = document.createElement('data');
                 headerData.setAttribute('ss:Type', 'string');
-                headerData.text(column);
+                headerData.text = column;
                 header.appendChild(headerData);
                 headerRow.appendChild(header);
             }
@@ -66,9 +66,9 @@ var excelExporter = (function _excelExporter() {
                 for (var item in data[row]) {
                     rowData = document.createElement('data');
                     rowData.setAttribute('ss:Type', getCellType(data[row][item]));
-                    rowData.text(data[row][item]);
+                    rowData.text = data[row][item];
                     rowCell.appendChild(rowData);
-                    tableRow.append(rowCell);
+                    tableRow.appendChild(rowCell);
                 }
                 table.appendChild(tableRow);
             }
