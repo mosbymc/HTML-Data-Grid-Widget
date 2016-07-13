@@ -1,7 +1,22 @@
 var excelExporter = (function _excelExporter() {
+    /**
+     * This is the base object to which all other excel object delegate for creating themselves, adding/creating child node, and toString()-ing themselves
+     * @type {Object}
+     */
     var xmlNode = {
+        /**
+         * Denotes weather this node is the root node of the file or not
+         */
         isRoot: false,
+        /**
+         * Contains a collection of child xmlNodes
+         */
         children: [],
+        /**
+         * Create a new xmlNode, setting base attributes
+         * @param {Object} props - A list of properties for the node
+         * @returns {xmlNode}
+         */
         createXmlNode: function _createXmlNode(props) {
             this.textValue = props.textValue || null;
             this.attributes = props.attributes || [];
@@ -10,28 +25,58 @@ var excelExporter = (function _excelExporter() {
             this.isRoot = props.isRoot || false;
             return this;
         },
+        /**
+         * Adds additional attributes to an xmlNode after its creation
+         * @param {Array} attrs - A collection of attributes to add to the node
+         * @returns {xmlNode}
+         */
         addAttributes: function _addAttributes(attrs) {
             this.attributes = this.attributes.concat(attrs);
             return this;
         },
+        /**
+         * Creates a child node of the current node and adds it to the list of children
+         * @param {Object} props - The list of properties for the child node
+         * @returns {xmlNode}
+         */
         createChild: function _createChild(props) {
             this.addChild(this.createXmlNode(props));
             return this;
         },
+        /**
+         * Creates a child node, but returns the child node instance rather than the instance that call this function.
+         * Used for chaining to create children of the child
+         * @param {Object} props - The list of properties for the child node
+         * @returns {xmlNode}
+         */
         createChildReturnChild: function _createChildReturnChild(props) {
             var child = this.createXmlNode(props);
             this.children.push(child);
             return child;
         },
+        /**
+         * Adds an xmlNode to the list of children
+         * @param {xmlNode} childNode - The node to be added as a child
+         * @returns {xmlNode}
+         */
         addChild: function _addChild(childNode) {
             if (!xmlNode.isPrototypeOf(childNode)) return this;
             this.children.push(childNode);
             return this;
         },
+        /**
+         * Sets the text value for the node
+         * @param {string} val - The text
+         * @returns {xmlNode}
+         */
         setValue: function _setTextValue(val) {
             this.textValue = val;
             return this;
         },
+        /**
+         * Creates an xml string representation of the current node and all its children
+         * @returns {string} - The product of the toString operation
+         */
         toString: function _toString() {
             var string = '';
             if (this.isRoot)
@@ -55,6 +100,10 @@ var excelExporter = (function _excelExporter() {
         }
     };
 
+    /**
+     * Creates a new workbook instance. From this all other excel types/files may be added (worksheet, table, stylesheet, etc.)
+     * @returns {workbook} - Returns an object that delegates to the workbook object which itself delegates to the xmlNode object.
+     */
     function createWorkBook() {
         return Object.create(workbook).init();
     }
@@ -170,13 +219,14 @@ var excelExporter = (function _excelExporter() {
             this.columns = columns;
             var tableHeight = data.length + 1;
 
-            var endPos = positionToLetterRef(tableHeight, columns.length);
+            var endPos = positionToLetterRef(tableHeight, columns.length),
+                ref = 'A1:' + endPos;
 
             this.createChild({
                 nodeType: 'dimension',
                 attributes: [
                     {
-                        'ref': 'A1:' + endPos
+                        'ref': ref
                     }
                 ]
             })
@@ -218,13 +268,91 @@ var excelExporter = (function _excelExporter() {
                 });
             }
 
+            this.tables.push(Object.create(table).init(columns, ref));
+
             //TODO: appears JS doesn't like anything primitives being assigned to a delegated object - figure out what needs to be done
             //this.sheetName = wsName;
         },
         data: [],
         columns: [],
+        tables: [],
         relations: [],
         rowStyles: []
+    });
+
+    /**
+     * Object used for creating and modifying excel tables
+     * @type {xmlNode}
+     */
+    var table = Object.create(xmlNode, {
+        /**
+         * This initializes the table object; creates initial nodes
+         * @param {Array} columns - A collection of columns to be displayed in the table
+         * @param {string} ref - A string detailing the top-left and bottom-right cells of the table
+         */
+        init: function _init(columns, ref) {
+            var id = generateId(),
+                tableId = 'Table' + id;
+            this.createXmlNode({
+                nodeType: 'table',
+                isRoot: true,
+                attributes: [
+                    {
+                        'xmlns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+                    },
+                    {
+                        'id': id
+                    },
+                    {
+                        'name': tableId
+                    },
+                    {
+                        'displayName': tableId
+                    },
+                    {
+                        'ref': ref
+                    }
+                ]
+            }).createChild({
+                nodeType: 'autoFilter',
+                attributes: [
+                    {
+                        'ref': ref
+                    }
+                ]
+            }).createChild({
+                nodeType: 'tableStyleInfo'
+            });
+
+            var tableCols = this.createChildReturnChild({
+                    nodeType: 'tableColumns',
+                    attributes: [
+                        {
+                            'count': columns.length
+                        }
+                    ]
+                });
+
+            for (var i = 0; i < columns.length; i++) {
+                var columnName = '';
+                if (typeof columns[i] === 'object') columnName = columns[i].displayName || columns[i].name;
+                else columnName = columns[i];
+
+                tableCols.createChild({
+                    nodeType: 'tableColumn',
+                    attributes: [
+                        {
+                            id: generateId()
+                        },
+                        {
+                            name: columnName
+                        }
+                    ]
+                });
+            }
+            this.columns.push(columns);
+        },
+        columns: []
     });
 
     var styleSheet = Object.create(xmlNode, {
