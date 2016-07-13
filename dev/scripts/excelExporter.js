@@ -98,20 +98,21 @@ var excelExporter = (function _excelExporter() {
             var sheetId = generateId(),
                 rId = generateId('rId'),
                 workSheetName = name || 'worksheet' + sheetId;
-            this.workSheets.push(Object.create(workSheet).init(data, columns, workSheetName));
+            this.workSheets.push(Object.create(workSheet).init(data, columns, workSheetName, sheetId, rId));
             this.createChildReturnChild({
                 nodeType: 'sheets'
-            }).createChild({
+            })
+            .createChild({
                 nodeType: 'sheet',
                 attributes: [
                     {
-                        'name': name
+                        name: 'sheet' + sheetId
                     },
                     {
-                        'sheetId': sheetId
+                        sheetId: sheetId
                     },
                     {
-                        'r:id': rId
+                        rId: rId
                     }
                 ]
             });
@@ -136,7 +137,7 @@ var excelExporter = (function _excelExporter() {
     });
 
     var workSheet = Object.create(xmlNode, {
-        init: function _init(data, columns, wsName) {
+        init: function _init(data, columns, wsName, sheetId, rId) {
             this.createXmlNode({
                 nodeType: 'worksheet',
                 isRoot: true,
@@ -167,19 +168,70 @@ var excelExporter = (function _excelExporter() {
             }
             this.data = data;
             this.columns = columns;
-            this.name = wsName;
+            var tableHeight = data.length + 1;
+
+            var endPos = positionToLetterRef(tableHeight, columns.length);
+
+            this.createChild({
+                nodeType: 'dimension',
+                attributes: [
+                    {
+                        'ref': 'A1:' + endPos
+                    }
+                ]
+            })
+            .createChildReturnChild({
+                nodeType: 'sheetViews'
+            }).createChild({
+                nodeType: 'sheetView',
+                attributes: [
+                    {
+                        'tabSelected': '1'
+                    },
+                    {
+                        'workbookViewId': '0'
+                    }
+                ]
+            });
+
+            this.createChild({
+                nodeType: 'sheetFormatPr',
+                attributes: [
+                    {
+                        defaultRowHeight: '15'
+                    }
+                ]
+            });
+
+            var colContainer = this.createChildReturnChild({
+                nodeType: 'cols'
+            });
+
+            for (var i = 0; i < columns.length; i++) {
+                var attrs = [];
+                if (columns[i].width)
+                    attrs.push({ width: columns[i].width });
+
+                colContainer.createChild({
+                    nodeType: 'col',
+                    attributes: attrs
+                });
+            }
+
+            //TODO: appears JS doesn't like anything primitives being assigned to a delegated object - figure out what needs to be done
+            //this.sheetName = wsName;
         },
         data: [],
         columns: [],
         relations: [],
-        rowStyles: [],
-        name: ''
+        rowStyles: []
     });
 
     var styleSheet = Object.create(xmlNode, {
-        id: '',
-        width: 0,
-        height: 0,
+        //id: '',
+        //width: 0,
+        //height: 0,
+        //TODO: see todo above - same problem
         font: {
             size: '',
             name: ''
@@ -244,6 +296,25 @@ var excelExporter = (function _excelExporter() {
         "'": '&#39;',
         '`': '&#96;'
     };
+
+    var LETTER_REFS = {};
+
+    function positionToLetterRef(pos1, pos2) {
+        var digit = 1, index, num = pos1, string = "", alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        if(LETTER_REFS[pos1]) {
+            return LETTER_REFS[pos1].concat(pos2);
+        }
+        while (num > 0) {
+            num -= Math.pow(26, digit -1);
+            index = num % Math.pow(26, digit);
+            num -= index;
+            index = index / Math.pow(26, digit - 1);
+            string = alphabet.charAt(index) + string;
+            digit += 1;
+        }
+        LETTER_REFS[pos1] = string;
+        return string.concat(pos2);
+    }
 
     var generateId = (function guid(seed) {
         return function _generateId(value) {
