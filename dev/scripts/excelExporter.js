@@ -19,7 +19,7 @@ var excelExporter = (function _excelExporter() {
          */
         createXmlNode: function _createXmlNode(props) {
             this.textValue = props.textValue || null;
-            this.attributes = props.attributes || [];
+            this.attributes = props.attributes || null;
             this.nodeType = props.nodeType;
             this.children = [];
             this.isRoot = props.isRoot || false;
@@ -31,7 +31,11 @@ var excelExporter = (function _excelExporter() {
          * @returns {xmlNode}
          */
         addAttributes: function _addAttributes(attrs) {
-            this.attributes = this.attributes.concat(attrs);
+            var newAttributes = this.attributes || {};
+            for (var attr in attrs) {
+                newAttributes[attr] = attrs[attr];
+            }
+            this.attributes = newAttributes;
             return this;
         },
         /**
@@ -83,9 +87,7 @@ var excelExporter = (function _excelExporter() {
                 string = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
             string += "<" + this.name;
             for(var attr in this.attributes) {
-                if(this.attributes.hasOwnProperty(attr)) {
-                    string = string + " " + attr + "=\""+ escape(this.attributes[attr])+"\"";
-                }
+                string = string + " " + attr + "=\""+ escape(this.attributes[attr])+"\"";
             }
 
             var childContent = "";
@@ -108,73 +110,80 @@ var excelExporter = (function _excelExporter() {
         return Object.create(workbook).init();
     }
 
+    /**
+     * This is the based excel object. All other excel objects are created though this object or its children.
+     * @type {xmlNode} - Delegates to xmlNode for base properties and methods
+     */
     var workbook = Object.create(xmlNode, {
+        /**
+         * Initializes a new instance of the workbook
+         * @returns {workbook}
+         */
         init: function _init() {
             this.createXmlNode({
                 nodeType: 'workbook',
                 isRoot: true,
-                attributes: [
-                    {
-                        'xmlns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
-                    },
-                    {
-                        'xmlns:r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
-                    },
-                    {
-                        'xmlns:mc': 'http://schemas.openxmlformats.org/markup-compatibility/2006'
-                    },
-                    {
-                        'mc:Ignorable': 'x15'
-                    },
-                    {
-                        'xmlns:x15': 'http://schemas.microsoft.com/office/spreadsheetml/2010/11/main'
-                    }
-                ]
+                attributes: {
+                    'xmlns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main',
+                    'xmlns:r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+                    'xmlns:mc': 'http://schemas.openxmlformats.org/markup-compatibility/2006',
+                    'mc:Ignorable': 'x15',
+                    'xmlns:x15': 'http://schemas.microsoft.com/office/spreadsheetml/2010/11/main'
+                }
             });
 
             this.createChild({
                 nodeType: 'workbookPr',
-                attributes: [
-                    {
-                        defaultThemeVersion: '153222'
-                    }
-                ]
+                attributes: {
+                    defaultThemeVersion: '153222'
+                }
             });
             return this;
         },
+        /**
+         * Creates and adds a new worksheet for the workbook
+         * @param {Array} data - The collection of data to be displayed in a table
+         * @param {Array} columns - The list of columns to display in the table
+         * @param {string} name - Ths name of the worksheet
+         * @returns {workbook}
+         */
         createWorkSheet: function _createWorkSheet(data, columns, name) {
             if (!data || data.constructor !== Array) return this;
             var sheetId = generateId(),
                 rId = generateId('rId'),
                 workSheetName = name || 'worksheet' + sheetId;
-            this.workSheets.push(Object.create(workSheet).init(data, columns, workSheetName, sheetId, rId));
+            this.workSheets.push(Object.create(workSheet).init(data, columns, sheetId, rId));
             this.createChildReturnChild({
                 nodeType: 'sheets'
             })
             .createChild({
                 nodeType: 'sheet',
-                attributes: [
-                    {
-                        name: 'sheet' + sheetId
-                    },
-                    {
-                        sheetId: sheetId
-                    },
-                    {
-                        rId: rId
-                    }
-                ]
+                attributes: {
+                    name: workSheetName,
+                    sheetId: sheetId,
+                    rId: rId
+                }
             });
             return this;
         },
+        /**
+         * Creates a new stylesheet for the workbook
+         * @param {Object} styles - The styles to be applied to the stylesheet
+         * @returns {workbook}
+         */
         createStyleSheet: function _createStyleSheet(styles) {
             this.styleSheets.push(Object.create(styleSheet).init(styles));
             return this;
         },
-        createTable: function _createTable(table) {
+        /*createTable: function _createTable(table) {
             this.tables.push(Object.create(table).init());
             return this;
-        },
+        },*/
+        /**
+         * Creates a new relation for the workbook
+         * @param {Object} relation - The relation to be created
+         * @returns {workbook}
+         */
         createRelation: function _createRelation(relation) {
             this.relations.push(Object.create(relation).init());
             return this;
@@ -185,28 +194,29 @@ var excelExporter = (function _excelExporter() {
         relations: []
     });
 
+    /**
+     * This represents an excel worksheet
+     * @type {xmlNode} - Delegates to xmlNode for base properties and methods
+     */
     var workSheet = Object.create(xmlNode, {
-        init: function _init(data, columns, wsName, sheetId, rId) {
+        /**
+         * Initializes a new worksheet by creating the base nodes
+         * @param {Array} data - An array of data used to create a new table object
+         * @param {Array} columns - An array of the columns to be displayed in the table
+         * @param {string} sheetId - The id of the worksheet that was generated in the workbook
+         * @param {string} rId - The relation Id of the worksheet that was generated in the workbook
+         */
+        init: function _init(data, columns, sheetId, rId) {
             this.createXmlNode({
                 nodeType: 'worksheet',
                 isRoot: true,
-                attributes: [
-                    {
-                        'xmlns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
-                    },
-                    {
-                        'xmlns:r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
-                    },
-                    {
-                        'xmlns:mc': 'http://schemas.openxmlformats.org/markup-compatibility/2006'
-                    },
-                    {
-                        'mc:Ignorable': 'x14ac'
-                    },
-                    {
-                        'xmlns:x14ac': 'http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac'
-                    }
-                ]
+                attributes: {
+                    'xmlns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main',
+                    'xmlns:r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+                    'xmlns:mc': 'http://schemas.openxmlformats.org/markup-compatibility/2006',
+                    'mc:Ignorable': 'x14ac',
+                    'xmlns:x14ac': 'http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac'
+                }
             });
 
             if (!columns) {
@@ -224,33 +234,25 @@ var excelExporter = (function _excelExporter() {
 
             this.createChild({
                 nodeType: 'dimension',
-                attributes: [
-                    {
-                        'ref': ref
-                    }
-                ]
+                attributes: {
+                    'ref': ref
+                }
             })
             .createChildReturnChild({
                 nodeType: 'sheetViews'
             }).createChild({
                 nodeType: 'sheetView',
-                attributes: [
-                    {
-                        'tabSelected': '1'
-                    },
-                    {
-                        'workbookViewId': '0'
-                    }
-                ]
+                attributes: {
+                    'tabSelected': '1',
+                    'workbookViewId': '0'
+                }
             });
 
             this.createChild({
                 nodeType: 'sheetFormatPr',
-                attributes: [
-                    {
-                        defaultRowHeight: '15'
-                    }
-                ]
+                attributes: {
+                    defaultRowHeight: '15'
+                }
             });
 
             var colContainer = this.createChildReturnChild({
@@ -258,9 +260,9 @@ var excelExporter = (function _excelExporter() {
             });
 
             for (var i = 0; i < columns.length; i++) {
-                var attrs = [];
+                var attrs = null;
                 if (columns[i].width)
-                    attrs.push({ width: columns[i].width });
+                    attrs = { width: columns[i].width };
 
                 colContainer.createChild({
                     nodeType: 'col',
@@ -296,41 +298,27 @@ var excelExporter = (function _excelExporter() {
             this.createXmlNode({
                 nodeType: 'table',
                 isRoot: true,
-                attributes: [
-                    {
-                        'xmlns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
-                    },
-                    {
-                        'id': id
-                    },
-                    {
-                        'name': tableId
-                    },
-                    {
-                        'displayName': tableId
-                    },
-                    {
-                        'ref': ref
-                    }
-                ]
+                attributes: {
+                    'xmlns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main',
+                    'id': id,
+                    'name': tableId,
+                    'displayName': tableId,
+                    'ref': ref
+                }
             }).createChild({
                 nodeType: 'autoFilter',
-                attributes: [
-                    {
-                        'ref': ref
-                    }
-                ]
+                attributes: {
+                    'ref': ref
+                }
             }).createChild({
                 nodeType: 'tableStyleInfo'
             });
 
             var tableCols = this.createChildReturnChild({
                     nodeType: 'tableColumns',
-                    attributes: [
-                        {
-                            'count': columns.length
-                        }
-                    ]
+                    attributes: {
+                        'count': columns.length
+                    }
                 });
 
             for (var i = 0; i < columns.length; i++) {
@@ -340,14 +328,10 @@ var excelExporter = (function _excelExporter() {
 
                 tableCols.createChild({
                     nodeType: 'tableColumn',
-                    attributes: [
-                        {
-                            id: generateId()
-                        },
-                        {
-                            name: columnName
-                        }
-                    ]
+                    attributes: {
+                        id: generateId(),
+                        name: columnName
+                    }
                 });
             }
             this.columns.push(columns);
@@ -370,6 +354,40 @@ var excelExporter = (function _excelExporter() {
             top: '',
             bottom: '',
             diagonal: ''
+        }
+    });
+
+    /**
+     * Object used for creating excel relations
+     * @type {xmlNode} - Delegates to xmlNode object
+     */
+    var relation = Object.create(xmlNode, {
+        /**
+         * Initializes a new instance of the relation object, setting up the default nodes
+         */
+        init: function _init() {
+            this.createXmlNode({
+                nodeType: 'Relationships',
+                attributes: {
+                    xmlns: 'http://schemas.openxmlformats.org/package/2006/relationships'
+                }
+            });
+        },
+        /**
+         * Adds a new relation node to the existing relationship object
+         * @param {string} rId - The relation id that the new relation refers to
+         * @param {string} type - The type of the relation
+         * @param {string} target - The location of the relation object
+         */
+        addRelation: function _addRelation(rId, type, target) {
+            this.createChild({
+                nodeType: 'Relationship',
+                attributes: {
+                    Id: rId,
+                    type: type,
+                    target: target
+                }
+            });
         }
     });
 
