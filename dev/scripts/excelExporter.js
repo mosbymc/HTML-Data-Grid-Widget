@@ -1,4 +1,12 @@
 var excelExporter = (function _excelExporter() {
+    var relationTypes = {
+        worksheet: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet',
+        sharedStrings: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings',
+        stylesheet: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles',
+        table: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/table'
+    };
+
+
     /**
      * This is the base object to which all other excel object delegate for creating themselves, adding/creating child node, and toString()-ing themselves
      * @type {Object}
@@ -138,6 +146,9 @@ var excelExporter = (function _excelExporter() {
                     defaultThemeVersion: '153222'
                 }
             });
+
+            this.createRelation();
+
             return this;
         },
         /**
@@ -164,6 +175,9 @@ var excelExporter = (function _excelExporter() {
                     rId: rId
                 }
             });
+
+            this.relations.addRelation(rId, 'worksheet', workSheetName + '.xml');
+
             return this;
         },
         /**
@@ -172,7 +186,9 @@ var excelExporter = (function _excelExporter() {
          * @returns {workbook}
          */
         createStyleSheet: function _createStyleSheet(styles) {
+            var relationId = generateId('rId');
             this.styleSheets.push(Object.create(styleSheet).init(styles));
+            this.relations.addRelation(relationId, 'stylesheet', 'styles.xml');
             return this;
         },
         /*createTable: function _createTable(table) {
@@ -181,17 +197,16 @@ var excelExporter = (function _excelExporter() {
         },*/
         /**
          * Creates a new relation for the workbook
-         * @param {Object} relation - The relation to be created
          * @returns {workbook}
          */
-        createRelation: function _createRelation(relation) {
-            this.relations.push(Object.create(relation).init());
+        createRelation: function _createRelation() {
+            this.relations = Object.create(relation).init();
             return this;
         },
         workSheets: [],
         styleSheets: [],
         tables: [],
-        relations: []
+        relations: null
     });
 
     /**
@@ -384,7 +399,7 @@ var excelExporter = (function _excelExporter() {
                 nodeType: 'Relationship',
                 attributes: {
                     Id: rId,
-                    type: type,
+                    type: relationTypes[type],
                     target: target
                 }
             });
