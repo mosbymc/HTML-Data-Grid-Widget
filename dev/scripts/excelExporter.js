@@ -1,3 +1,14 @@
+/**
+ * Singleton module for creating and manipulating excel workbooks
+ * represented as JSON. Contains two 'public' 'methods':
+ * 1) createWorkBook - This method takes no arguments and will create
+ * and return a new workbook instance, which allows the user to add
+ * worksheets, styles, table, etc.
+ * 2) exportWorkBook - This method takes a workbook object as an argument and will
+ * export the entire workbook (styles, worksheets, tables, etc.) as a single
+ * excel file.
+ * @type {{createWorkBook, exportWorkBook}}
+ */
 var excelExporter = (function _excelExporter() {
     var relationTypes = {
         worksheet: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet',
@@ -6,9 +17,24 @@ var excelExporter = (function _excelExporter() {
         table: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/table'
     };
 
+    var file_DirectoryMap = {
+        '[Content_Types]': '',
+        workbook: 'xl',
+        stylesheet: 'xl',
+        sharedStrings: 'xl',
+        worksheet: 'xl.worksheets',
+        'worksheet-rel': 'xl.worksheets._rels',
+        table: 'xl.tables',
+        'workbook-rel': 'xl._rels',
+        app: 'docProps',
+        core: 'docProps',
+        'root-rel': '_rels'
+    };
+
 
     /**
-     * This is the base object to which all other excel object delegate for creating themselves, adding/creating child node, and toString()-ing themselves
+     * This is the base object to which all other excel object delegate for
+     * creating themselves, adding/creating child node, and toXmlString()-ing themselves
      * @type {Object}
      */
     var xmlNode = {
@@ -34,7 +60,8 @@ var excelExporter = (function _excelExporter() {
             return this;
         },
         /**
-         * Adds additional attributes to an xmlNode after its creation
+         * Adds additional attributes to an xmlNode after its creation. Will
+         * overwrite any existing attributes if new attributes share the same name
          * @param {Array} attrs - A collection of attributes to add to the node
          * @returns {xmlNode}
          */
@@ -52,7 +79,7 @@ var excelExporter = (function _excelExporter() {
          * @returns {xmlNode}
          */
         createChild: function _createChild(props) {
-            this.addChild(this.createXmlNode(props));
+            this.addChild(Object.create(xmlNode).createXmlNode(props));
             return this;
         },
         /**
@@ -62,7 +89,7 @@ var excelExporter = (function _excelExporter() {
          * @returns {xmlNode}
          */
         createChildReturnChild: function _createChildReturnChild(props) {
-            var child = this.createXmlNode(props);
+            var child = Object.create(xmlNode).createXmlNode(props);
             this.children.push(child);
             return child;
         },
@@ -123,6 +150,7 @@ var excelExporter = (function _excelExporter() {
      * @param wb
      */
     function exportWorkBook(wb) {
+        if (!workbook.isPrototypeOf(wb)) return;
         var files = {};
     }
 
@@ -151,7 +179,7 @@ var excelExporter = (function _excelExporter() {
                 attributes: {
                     defaultThemeVersion: '153222'
                 }
-            }).createRelation().createSharedStrings()
+            }).createRelation('root-rel').createSharedStrings()
                 .createContentType().path = '/xl';
 
             return this;
@@ -170,7 +198,8 @@ var excelExporter = (function _excelExporter() {
                 tableId = generateId(),
                 workSheetName = name || 'worksheet' + sheetId;
             var ws = Object.create(workSheet).init(data, columns, workSheetName, tableId);
-            this.workSheets.push(ws.worksheet);
+            this.insertObjectIntoDirectory(ws.worksheet, 'worksheet')
+                .workSheets.push(ws.worksheet);
             this.createChildReturnChild({
                     nodeType: 'sheets'
                 })
@@ -182,10 +211,10 @@ var excelExporter = (function _excelExporter() {
                         rId: rId
                     }
                 })
-                .relations.addRelation(rId, 'worksheet', workSheetName + '.xml');
-            this.sharedStrings.addEntries(ws.sharedStrings);
-            this.contentType.addContentType('/xl/worksheets/' + workSheetName + '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml');
-            this.contentType.addContentType('/xl/tables/table' + tableId + '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml');
+                .directory.xl._rels.addRelation(rId, 'worksheet', workSheetName + '.xml');
+            this.directory.xl.sharedStrings.addEntries(ws.sharedStrings);
+            this.directory['[Content-Types]'].addContentType('/xl/worksheets/' + workSheetName + '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml');
+            this.directory['[Content-Types]'].addContentType('/xl/tables/table' + tableId + '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml');
 
             return this;
         },
@@ -196,24 +225,63 @@ var excelExporter = (function _excelExporter() {
          */
         createStyleSheet: function _createStyleSheet(styles) {
             var relationId = generateId('rId');
-            this.styleSheets.push(Object.create(styleSheet).init(styles));
-            this.relations.addRelation(relationId, 'stylesheet', 'styles.xml');
+            var style = Object.create(styleSheet).init(styles);
+            this.insertObjectIntoDirectory(style, 'stylesheet');
+            //TODO: this won't work anymore. I need a way to find the /xl _rel object and add a relation to it specifically.
+            //this.relations.addRelation(relationId, 'stylesheet', 'styles.xml');
+            this.directory.xl._rels.addRelation(relationId, 'stylesheet', 'styles.xml');
             return this;
         },
         /**
          * Creates a new relation for the workbook
+         * @param {string} relationType - Denotes what type of relation this is; root, worksheet, table, etc...
          * @returns {workbook}
          */
-        createRelation: function _createRelation() {
-            this.relations = Object.create(relation).init();
+        createRelation: function _createRelation(relationType) {
+            var rel = Object.create(relation).init();
+            this.insertObjectIntoDirectory(rel, relationType).relations.push(rel);
             return this;
         },
+        /**
+         * Creates a new sharedStrings xmlNode instance and adds it to
+         * the workbook directory
+         * @returns {workbook}
+         */
         createSharedStrings: function _createSharedStrings() {
-            this.sharedStrings = Object.create(sharedStrings).init();
+            var ss = Object.create(sharedStrings).init();
+            this.insertObjectIntoDirectory(ss, 'sharedStrings').sharedStrings = ss;
             return this;
         },
+        /**
+         * Create a new contentType xmlNode instance and adds it to
+         * the workbook directory
+         * @returns {workbook}
+         */
         createContentType: function _createContentType() {
-            this.contentType = Object.create(contentType).init();
+            var ct = Object.create(contentType).init();
+            this.insertObjectIntoDirectory(ct, '[Content-Types]').contentType = ct;
+            return this;
+        },
+        /**
+         * Inserts a root xmlNode instance into the workbook directory
+         * based on its file_DirectoryMap lookup value
+         * @param {xmlNode} object - A root xmlNode instance that represents a future
+         * file to be exported
+         * @param {string} objectType - The type of the xmlNode instance
+         * @returns {workbook}
+         */
+        insertObjectIntoDirectory: function _insertObjectIntoDirectory(object, objectType) {
+            var loc = file_DirectoryMap[objectType],
+                paths = loc.split('.'),
+                insertionPoint = this.directory[paths[0]];
+
+            for (var i = 1; i < paths.length; i++) {
+                insertionPoint = insertionPoint[paths[i]];
+            }
+            if (insertionPoint && insertionPoint.constructor === Array)
+                insertionPoint.push(object);
+            else
+                insertionPoint = object;
             return this;
         },
         getWorkbookParts: function _getWorkbookParts() {
@@ -229,11 +297,35 @@ var excelExporter = (function _excelExporter() {
 
             //parts.push(this.styleSheets[0].getNameAndPath());
         },
+        //TODO:  replace hardcoded values with xml node objects as they are created
+        directory: {
+            '[Content-Types]': {},
+            _rels: {},
+            xl: {
+                'workbook': {},
+                'styles': {},
+                'sharedStrings': {},
+                worksheets: {
+                    sheets: [],
+                    _rels: {}
+                },
+                theme: {
+                    'theme1': {}
+                },
+                _rels: {
+                    'workbook.xml.rels': {}
+                }
+            },
+            docProps: {
+                'app': {},
+                'core': {}
+            }
+        },
         sharedStrings: null,
         workSheets: [],
         styleSheets: [],
         tables: [],
-        relations: null,
+        relations: [],
         contentType: null
     });
 
@@ -248,6 +340,7 @@ var excelExporter = (function _excelExporter() {
          * @param {Array} columns - An array of the columns to be displayed in the table
          * @param {string} workSheetName - The file name of the worksheet that was generated in the workbook
          * @param {string} tableId - The id of the table for the worksheet that was generated in the workbook
+         * @returns {{worksheet: workSheet, sharedStrings: Array}}
          */
         init: function _init(data, columns, workSheetName, tableId) {
             var sharedStrings = [],
@@ -368,7 +461,7 @@ var excelExporter = (function _excelExporter() {
             }
 
             this.tables.push(Object.create(table).init(columns, ref, tableId));
-            return { worksheet: this, sharedStrings: sharedStrings, sharedStringsMap: sharedStringsMap};
+            return { worksheet: this, sharedStrings: sharedStrings };
         },
         getNamesAndPaths: function _getNameAndPath() {
             var parts = [
@@ -399,7 +492,8 @@ var excelExporter = (function _excelExporter() {
          * This initializes the table object; creates initial nodes
          * @param {Array} columns - A collection of columns to be displayed in the table
          * @param {string} ref - A string detailing the top-left and bottom-right cells of the table
-         * @param {number} tableId - The Id of the table
+         * @param {string|number} tableId - The Id of the table
+         * @returns {table}
          */
         init: function _init(columns, ref, tableId) {
             this.createXmlNode({
@@ -444,6 +538,7 @@ var excelExporter = (function _excelExporter() {
             this.columns.push(columns);
             this.name = tableId;
             this.path = '/tables';
+            return this;
         },
         getNameAndPath: function _getNameAndPath() {
             return { part: 'table', name: this.name, path: this.path };
@@ -475,7 +570,9 @@ var excelExporter = (function _excelExporter() {
      */
     var relation = Object.create(xmlNode, {
         /**
-         * Initializes a new instance of the relation object, setting up the default nodes
+         * Initializes a new instance of the relation object, setting up the default nodes.
+         * Called when a new workbook is initialized or when a table is added to a worksheet.
+         * @returns {relation}
          */
         init: function _init() {
             this.createXmlNode({
@@ -485,12 +582,14 @@ var excelExporter = (function _excelExporter() {
                     xmlns: 'http://schemas.openxmlformats.org/package/2006/relationships'
                 }
             });
+            return this;
         },
         /**
          * Adds a new relation node to the existing relationship object
          * @param {string} rId - The relation id that the new relation refers to
          * @param {string} type - The type of the relation
          * @param {string} target - The location of the relation object
+         * @returns {relation}
          */
         addRelation: function _addRelation(rId, type, target) {
             this.createChild({
@@ -501,10 +600,20 @@ var excelExporter = (function _excelExporter() {
                     target: target
                 }
             });
+            return this;
         }
     });
 
+    /**
+     * Object used for creating sharedStrings
+     * @type {xmlNode} - Delegates to xmlNode object
+     */
     var sharedStrings = Object.create(xmlNode, {
+        /**
+         * Initializes a new sharedStrings object. Called when a new
+         * workbook is initialized
+         * @returns {sharedStrings}
+         */
         init: function _init() {
             this.createXmlNode({
                 nodeType: 'sst',
@@ -513,7 +622,15 @@ var excelExporter = (function _excelExporter() {
                     'xmlns:x': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
                 }
             });
+            return this;
         },
+        /**
+         * Function for adding new shared string nodes (xmlNode objects)
+         * to this sharedString instance
+         * @param {Array} values - An array of string to be added as children of
+         * this xmlNode instance
+         * @returns {sharedStrings}
+         */
         addEntries: function _addEntries(values) {
             for (var i = 0; i < values.length; i++) {
                 this.createChildReturnChild({
@@ -528,7 +645,16 @@ var excelExporter = (function _excelExporter() {
         }
     });
 
+    /**
+     * Object used for creating the [Content-Types] file
+     * @type {xmlNode} - Delegates to xmlNode object
+     */
     var contentType = Object.create(xmlNode, {
+        /**
+         * Initializes the object with all required types. Called when a new
+         * workbook is initialized
+         * @returns {contentType}
+         */
         init: function _init() {
             this.createXmlNode({
                 nodeType: 'Types',
@@ -563,6 +689,12 @@ var excelExporter = (function _excelExporter() {
             });
             return this;
         },
+        /**
+         * Adds a new content type as an xml node to the [Content-Types] file
+         * @param {string} partName - The name of the part
+         * @param {string} type - The type of content
+         * @returns {contentType}
+         */
         addContentType: function _addContentType(partName, type) {
             this.createChild({
                 nodeType: 'Override',
@@ -582,11 +714,11 @@ var excelExporter = (function _excelExporter() {
     var contentTypes = {
             Default: [
                 {
-                    Entension: 'rels',
+                    Extension: 'rels',
                     ContentType: 'application/vnd.openxmlformats-package.relationships+xml'
                 },
                 {
-                    Entension: 'xml',
+                    Extension: 'xml',
                     ContentType: 'application/xml'
                 }
             ],
@@ -617,6 +749,43 @@ var excelExporter = (function _excelExporter() {
                 }
             ]
         };
+
+    function saveAsBlob(dataURI, fileName) {
+        var blob = dataURI;
+        if (typeof dataURI == 'string') {
+            var parts = dataURI.split(';base64,');
+            var contentType = parts[0];
+            var base64 = atob(parts[1]);
+            var array = new Uint8Array(base64.length);
+            for (var idx = 0; idx < base64.length; idx++) {
+                array[idx] = base64.charCodeAt(idx);
+            }
+            blob = new Blob([array.buffer], { type: contentType });
+        }
+        navigator.msSaveBlob(blob, fileName);
+    }
+    function saveAsDataURI(dataURI, fileName) {
+        if (window.Blob && dataURI instanceof Blob) {
+            dataURI = URL.createObjectURL(dataURI);
+        }
+        fileSaver.download = fileName;
+        fileSaver.href = dataURI;
+        var e = document.createEvent('MouseEvents');
+        e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+        fileSaver.dispatchEvent(e);
+        URL.revokeObjectURL(dataURI);
+    }
+    kendo.saveAs = function (options) {
+        var save = postToProxy;
+        if (!options.forceProxy) {
+            if (downloadAttribute) {
+                save = saveAsDataURI;
+            } else if (navigator.msSaveBlob) {
+                save = saveAsBlob;
+            }
+        }
+        save(options.dataURI, options.fileName, options.proxyURL, options.proxyTarget);
+    };
 
     /**
      * Determines what the xml table cell data type should be based on the javascript typeof
@@ -693,6 +862,7 @@ var excelExporter = (function _excelExporter() {
     })(1);
 
     return {
-        createWorkBook: createWorkBook
+        createWorkBook: createWorkBook,
+        exportWorkBook: exportWorkBook
     }
 })();
