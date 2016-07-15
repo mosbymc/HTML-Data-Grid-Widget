@@ -179,7 +179,8 @@ var excelExporter = (function _excelExporter() {
                 attributes: {
                     defaultThemeVersion: '153222'
                 }
-            }).createRelation('root-rel').createSharedStrings()
+            }).createCoreFileObject().createAppFileObject()
+                .createRelation('root-rel').createSharedStrings()
                 .createContentType().path = '/xl';
 
             return this;
@@ -238,7 +239,9 @@ var excelExporter = (function _excelExporter() {
          * @returns {workbook}
          */
         createRelation: function _createRelation(relationType) {
-            var rel = Object.create(relation).init();
+            var createRoot = false;
+            if (relationType === 'root-rel') createRoot = true;
+            var rel = Object.create(relation).init(createRoot);
             this.insertObjectIntoDirectory(rel, relationType).relations.push(rel);
             return this;
         },
@@ -260,6 +263,24 @@ var excelExporter = (function _excelExporter() {
         createContentType: function _createContentType() {
             var ct = Object.create(contentType).init();
             this.insertObjectIntoDirectory(ct, '[Content-Types]').contentType = ct;
+            return this;
+        },
+        /**
+         * Creates an instance of the core file object and inserts into the directory
+         * @returns {workbook}
+         */
+        createCoreFileObject: function _createCoreFileObject() {
+            var coreFile = Object.create(core).init();
+            this.insertObjectIntoDirectory(coreFile, 'core');
+            return this;
+        },
+        /**
+         * Creates an instance of the app file object and inserts it into the directory
+         * @returns {workbook}
+         */
+        createAppFileObject: function _createAppFileObject() {
+            var appFile = Object.create(app).init();
+            this.insertObjectIntoDirectory(appFile, 'app');
             return this;
         },
         /**
@@ -572,9 +593,11 @@ var excelExporter = (function _excelExporter() {
         /**
          * Initializes a new instance of the relation object, setting up the default nodes.
          * Called when a new workbook is initialized or when a table is added to a worksheet.
+         * @param {boolean} createRootRelation - Indicates that the init function should create a root
+         * relation rather than a table/stylesheet/worksheet/etc relation
          * @returns {relation}
          */
-        init: function _init() {
+        init: function _init(createRootRelation) {
             this.createXmlNode({
                 nodeType: 'Relationships',
                 isRoot: true,
@@ -582,6 +605,12 @@ var excelExporter = (function _excelExporter() {
                     xmlns: 'http://schemas.openxmlformats.org/package/2006/relationships'
                 }
             });
+
+            if (createRootRelation) {
+                this.addRelation(generateId('rId'), 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties', 'docProps/app.xml')
+                    .addRelation(generateId('rId'), 'http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties', 'docProps/core.xml')
+                    .addRelation(generateId('rId'), 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument', 'xl/workbook.xml');
+            }
             return this;
         },
         /**
@@ -704,6 +733,55 @@ var excelExporter = (function _excelExporter() {
                 }
             });
             return this;
+        }
+    });
+
+    var core = Object.create(xmlNode, {
+        init: function _init() {
+            var curDate = new Date().toISOString();
+            this.createXmlNode({
+                nodeType: 'cp:coreProperties',
+                isRoot: true,
+                attributes: {
+                    'xmlns:cp': 'http://schemas.openxmlformats.org/package/2006/metadata/core-properties',
+                    'xmlns:dc': 'http://purl.org/dc/elements/1.1/',
+                    'xmlns:dcterms': 'http://purl.org/dc/terms/',
+                    'xmlns:dcmitype': 'http://purl.org/dc/dcmitype/',
+                    'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance'
+                }
+            }).createChild({
+                nodeType: 'dc:creator',
+                textValue: 'XcelXporter'
+            }).createChild({
+                nodeType: 'cp:lastModifiedBy',
+                textValue: 'XcelXporter'
+            }).createChild({
+                nodeType: 'dcterms:created',
+                textValue: curDate,
+                attributes: {
+                    'xsi:type': 'dcterms:W3CDTF'
+                }
+            }).createChild({
+                nodeType: 'dcterms:modified',
+                textValue: curDate,
+                attributes: {
+                    'xsi:type': 'dcterms:W3CDTF'
+                }
+            });
+            return this;
+        }
+    });
+
+    var app = Object.create(xmlNode, {
+        init: function _init() {
+            this.createXmlNode({
+                nodeType: 'Properties',
+                isRoot: true,
+                attributes: {
+                    xmlns: 'http://schemas.openxmlformats.org/officeDocument/2006/extended-properties',
+                    'xmlns:vt': 'http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes'
+                }
+            });
         }
     });
 
