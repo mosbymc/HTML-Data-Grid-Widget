@@ -715,6 +715,18 @@ var excelExporter = (function _excelExporter() {
                     PartName: '/xl/sharedStrings.xml',
                     ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml'
                 }
+            }).createChild({
+                nodeType: 'Override',
+                attributes: {
+                    PartName: '/docProps/core.xml',
+                    ContentType: 'application/vnd.openxmlformats-package.core-properties+xml'
+                }
+            }).createChild({
+                nodeType: 'Override',
+                attributes: {
+                    PartName: 'application/vnd.openxmlformats-package.core-properties+xml',
+                    ContentType: 'application/vnd.openxmlformats-officedocument.extended-properties+xml'
+                }
             });
             return this;
         },
@@ -781,7 +793,39 @@ var excelExporter = (function _excelExporter() {
                     xmlns: 'http://schemas.openxmlformats.org/officeDocument/2006/extended-properties',
                     'xmlns:vt': 'http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes'
                 }
+            }).createChild({
+                nodeType: 'Application',
+                textValue: 'Microsoft Excel'
+            }).createChild({
+                nodeType: 'DocSecurity',
+                textValue: '0'
             });
+
+
+            /*
+             <Application>Microsoft Excel</Application>
+             <DocSecurity>0</DocSecurity>
+             <ScaleCrop>false</ScaleCrop>
+             <HeadingPairs>
+                <vt:vector size="2" baseType="variant">
+                    <vt:variant>
+                        <vt:lpstr>Worksheets</vt:lpstr>
+                    </vt:variant>
+                    <vt:variant>
+                        <vt:i4>1</vt:i4>
+                     </vt:variant>
+                </vt:vector>
+             </HeadingPairs>
+             <TitlesOfParts>
+                <vt:vector size="1" baseType="lpstr">
+                    <vt:lpstr>TestSheet</vt:lpstr>
+                </vt:vector>
+             </TitlesOfParts>
+             <LinksUpToDate>false</LinksUpToDate>
+             <SharedDoc>false</SharedDoc>
+             <HyperlinksChanged>false</HyperlinksChanged>
+             <AppVersion>15.0300</AppVersion>
+             */
         }
     });
 
