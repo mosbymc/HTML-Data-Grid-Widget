@@ -796,7 +796,7 @@ var excelExporter = (function _excelExporter() {
 
     var app = Object.create(xmlNode, {
         init: function _init() {
-            this.createXmlNode({
+            var vector = this.createXmlNode({
                 nodeType: 'Properties',
                 isRoot: true,
                 fileName: 'app.xml',
@@ -810,78 +810,65 @@ var excelExporter = (function _excelExporter() {
             }).createChild({
                 nodeType: 'DocSecurity',
                 textValue: '0'
+            }).createChild({
+                nodeType: 'ScaleCrop',
+                textValue: '0'
+            }).createChild({
+                nodeType: 'HeadingPairs'
+            }).createChildReturnChild({
+                nodeType: 'vt:vector',
+                attributes: {
+                    size: '2',
+                    baseType: 'variant'
+                }
             });
 
+            vector.createChildReturnChild({
+                nodeType: 'vt:variant'
+            }).createChild({
+                nodeType: 'vt:lpstr',
+                textValue: 'Worksheets'
+            });
 
-            /*
-             <Application>Microsoft Excel</Application>
-             <DocSecurity>0</DocSecurity>
-             <ScaleCrop>false</ScaleCrop>
-             <HeadingPairs>
-                <vt:vector size="2" baseType="variant">
-                    <vt:variant>
-                        <vt:lpstr>Worksheets</vt:lpstr>
-                    </vt:variant>
-                    <vt:variant>
-                        <vt:i4>1</vt:i4>
-                     </vt:variant>
-                </vt:vector>
-             </HeadingPairs>
-             <TitlesOfParts>
-                <vt:vector size="1" baseType="lpstr">
-                    <vt:lpstr>TestSheet</vt:lpstr>
-                </vt:vector>
-             </TitlesOfParts>
-             <LinksUpToDate>false</LinksUpToDate>
-             <SharedDoc>false</SharedDoc>
-             <HyperlinksChanged>false</HyperlinksChanged>
-             <AppVersion>15.0300</AppVersion>
-             */
+            vector.createChildReturnChild({
+                nodeType: 'vt:variant'
+            }).createChild({
+                nodeType: 'vt:i4',
+                textValue: '1'
+            });
+
+            this.createChildReturnChild({
+                nodeType: 'TitlesOfParts'
+            }).createChildReturnChild({
+                nodeType: 'vt:vector',
+                attributes: {
+                    size: '1',
+                    baseType: 'lpstr'
+                }
+            }).createChild({
+                nodeType: 'vt:lpstr',
+                textValue: 'TestSheet'
+            });
+
+            this.createChild({
+                nodeType: 'LinksUpToDate',
+                textValue: 'false'
+            }).createChild({
+                nodeType: 'SharedDoc',
+                textValue: 'false'
+            }).createChild({
+                nodeType: 'HyperlinksChanged',
+                textValue: 'false'
+            }).createChild({
+                nodeType: 'AppVersion',
+                textValue: '15.0300'
+            });
         }
     });
 
     //==================================================================================//
     //=======================          Helper Functions          =======================//
     //==================================================================================//
-
-    var contentTypes = {
-            Default: [
-                {
-                    Extension: 'rels',
-                    ContentType: 'application/vnd.openxmlformats-package.relationships+xml'
-                },
-                {
-                    Extension: 'xml',
-                    ContentType: 'application/xml'
-                }
-            ],
-            Override: [
-                {
-                    PartName: 'workbook',
-                    ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml'
-                },
-                {
-                    PartName: 'worksheet',
-                    ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml'
-                },
-                /*{
-                    PartName: 'styles',
-                    ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml'
-                },*/
-                {
-                    PartName: 'table',
-                    ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml'
-                },
-                {
-                    PartName: '/docProps/core.xml',
-                    ContentType: 'application/vnd.openxmlformats-package.core-properties+xml'
-                },
-                {
-                    PartName: '/docProps/app.xml',
-                    ContentType: 'application/vnd.openxmlformats-officedocument.extended-properties+xml'
-                }
-            ]
-        };
 
     function saveAsBlob(dataURI, fileName) {
         var blob = dataURI;
@@ -897,6 +884,7 @@ var excelExporter = (function _excelExporter() {
         }
         navigator.msSaveBlob(blob, fileName);
     }
+
     function saveAsDataURI(dataURI, fileName) {
         if (window.Blob && dataURI instanceof Blob) {
             dataURI = URL.createObjectURL(dataURI);
@@ -908,7 +896,8 @@ var excelExporter = (function _excelExporter() {
         fileSaver.dispatchEvent(e);
         URL.revokeObjectURL(dataURI);
     }
-    kendo.saveAs = function (options) {
+
+    function saveAs(options) {
         var save = postToProxy;
         if (!options.forceProxy) {
             if (downloadAttribute) {
@@ -918,7 +907,7 @@ var excelExporter = (function _excelExporter() {
             }
         }
         save(options.dataURI, options.fileName, options.proxyURL, options.proxyTarget);
-    };
+    }
 
     /**
      * Determines what the xml table cell data type should be based on the javascript typeof
