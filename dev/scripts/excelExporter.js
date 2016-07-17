@@ -38,6 +38,7 @@ var excelExporter = (function _excelExporter() {
      * @type {Object}
      */
     var xmlNode = {
+        fileName: '',
         /**
          * Denotes weather this node is the root node of the file or not
          */
@@ -57,6 +58,7 @@ var excelExporter = (function _excelExporter() {
             this.nodeType = props.nodeType;
             this.children = [];
             this.isRoot = props.isRoot || false;
+            if (this.isRoot) this.fileName = props.fileName;
             return this;
         },
         /**
@@ -167,6 +169,7 @@ var excelExporter = (function _excelExporter() {
             this.createXmlNode({
                 nodeType: 'workbook',
                 isRoot: true,
+                fileName: 'workbook.xml',
                 attributes: {
                     'xmlns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main',
                     'xmlns:r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
@@ -180,7 +183,7 @@ var excelExporter = (function _excelExporter() {
                     defaultThemeVersion: '153222'
                 }
             }).createCoreFileObject().createAppFileObject()
-                .createRelation('root-rel').createSharedStrings()
+                .createRelation('root-rel', '.rels').createSharedStrings()
                 .createContentType().path = '/xl';
 
             return this;
@@ -200,7 +203,8 @@ var excelExporter = (function _excelExporter() {
                 workSheetName = name || 'worksheet' + sheetId;
             var ws = Object.create(workSheet).init(data, columns, workSheetName, tableId);
             this.insertObjectIntoDirectory(ws.worksheet, 'worksheet')
-                .workSheets.push(ws.worksheet);
+                .workSheets.push(ws.worksheet)
+                .createRelation('worksheet-rel', 'sheet1.rels');
             this.createChildReturnChild({
                     nodeType: 'sheets'
                 })
@@ -228,20 +232,19 @@ var excelExporter = (function _excelExporter() {
             var relationId = generateId('rId');
             var style = Object.create(styleSheet).init(styles);
             this.insertObjectIntoDirectory(style, 'stylesheet');
-            //TODO: this won't work anymore. I need a way to find the /xl _rel object and add a relation to it specifically.
-            //this.relations.addRelation(relationId, 'stylesheet', 'styles.xml');
             this.directory.xl._rels.addRelation(relationId, 'stylesheet', 'styles.xml');
             return this;
         },
         /**
          * Creates a new relation for the workbook
          * @param {string} relationType - Denotes what type of relation this is; root, worksheet, table, etc...
+         * @param {string} fileName - The name of the file for this relation
          * @returns {workbook}
          */
-        createRelation: function _createRelation(relationType) {
+        createRelation: function _createRelation(relationType, fileName) {
             var createRoot = false;
             if (relationType === 'root-rel') createRoot = true;
-            var rel = Object.create(relation).init(createRoot);
+            var rel = Object.create(relation).init(createRoot, fileName);
             this.insertObjectIntoDirectory(rel, relationType).relations.push(rel);
             return this;
         },
@@ -369,6 +372,7 @@ var excelExporter = (function _excelExporter() {
                 i, count = 0;
             this.createXmlNode({
                 nodeType: 'worksheet',
+                fileName: 'sheet1.xml',
                 isRoot: true,
                 attributes: {
                     'xmlns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main',
@@ -520,6 +524,7 @@ var excelExporter = (function _excelExporter() {
             this.createXmlNode({
                 nodeType: 'table',
                 isRoot: true,
+                fileName: 'table1.xml',
                 attributes: {
                     'xmlns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main',
                     'id': id,
@@ -595,12 +600,14 @@ var excelExporter = (function _excelExporter() {
          * Called when a new workbook is initialized or when a table is added to a worksheet.
          * @param {boolean} createRootRelation - Indicates that the init function should create a root
          * relation rather than a table/stylesheet/worksheet/etc relation
+         * @param {string|undefined} fileName - The name of the xml file for this relation
          * @returns {relation}
          */
-        init: function _init(createRootRelation) {
+        init: function _init(createRootRelation, fileName) {
             this.createXmlNode({
                 nodeType: 'Relationships',
                 isRoot: true,
+                fileName: fileName,
                 attributes: {
                     xmlns: 'http://schemas.openxmlformats.org/package/2006/relationships'
                 }
@@ -647,6 +654,7 @@ var excelExporter = (function _excelExporter() {
             this.createXmlNode({
                 nodeType: 'sst',
                 isRoot: true,
+                fileName: 'sharedStrings.xml',
                 attributes: {
                     'xmlns:x': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
                 }
@@ -688,6 +696,7 @@ var excelExporter = (function _excelExporter() {
             this.createXmlNode({
                 nodeType: 'Types',
                 isRoot: true,
+                fileName: '[Content-Types].xml',
                 attributes: {
                     xmlns: 'http://schemas.openxmlformats.org/package/2006/content-types'
                 }
@@ -754,6 +763,7 @@ var excelExporter = (function _excelExporter() {
             this.createXmlNode({
                 nodeType: 'cp:coreProperties',
                 isRoot: true,
+                fileName: 'core.xml',
                 attributes: {
                     'xmlns:cp': 'http://schemas.openxmlformats.org/package/2006/metadata/core-properties',
                     'xmlns:dc': 'http://purl.org/dc/elements/1.1/',
@@ -789,6 +799,7 @@ var excelExporter = (function _excelExporter() {
             this.createXmlNode({
                 nodeType: 'Properties',
                 isRoot: true,
+                fileName: 'app.xml',
                 attributes: {
                     xmlns: 'http://schemas.openxmlformats.org/officeDocument/2006/extended-properties',
                     'xmlns:vt': 'http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes'
