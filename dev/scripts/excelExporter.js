@@ -81,8 +81,7 @@ var excelExporter = (function _excelExporter() {
          * @returns {xmlNode}
          */
         createChild: function _createChild(props) {
-            this.addChild(Object.create(xmlNode).createXmlNode(props));
-            return this;
+            return this.addChild(Object.create(xmlNode).createXmlNode(props));
         },
         /**
          * Creates a child node, but returns the child node instance rather than the instance that call this function.
@@ -92,7 +91,7 @@ var excelExporter = (function _excelExporter() {
          */
         createChildReturnChild: function _createChildReturnChild(props) {
             var child = Object.create(xmlNode).createXmlNode(props);
-            this.children.push(child);
+            this.addChild(child);
             return child;
         },
         /**
@@ -122,20 +121,18 @@ var excelExporter = (function _excelExporter() {
             var string = '';
             if (this.isRoot)
                 string = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
-            string += "<" + this.nodeType;
+            string += '<' + this.nodeType;
             for(var attr in this.attributes) {
-                string = string + " " + attr + "=\""+ escape(this.attributes[attr])+"\"";
+                string = string + ' ' + attr + '="' + escape(this.attributes[attr]) + '"';
             }
 
-            var childContent = "";
-            for(var i = 0, l = this.children.length; i < l; i++) {
+            var childContent = '';
+            for(var i = 0; i < this.children.length; i++) {
                 childContent += this.children[i].toXmlString();
             }
 
-            if (this.textValue) string += '>' + this.textValue + '</' + this.name + '>';
-            else if (childContent && !this.textValue) string +=  childContent + '</' + this.name + '>';
-            else if (childContent) string +=  '>' + childContent + '</' + this.name + '>';
-            else string += "/>";
+            if (this.textValue || childContent) string += '>' + (this.textValue || '') + childContent + '</' + this.nodeType + '>';
+            else string += '/>';
 
             return string;
         }
@@ -157,6 +154,23 @@ var excelExporter = (function _excelExporter() {
         if (!workbook.isPrototypeOf(wb)) return;
         var files = {};
         buildFiles('', wb.directory, files);
+
+        var zip = new JSZip();
+        for (var file in files) {
+            zip.file(file.substr(1), files[file], { base64: false });
+        }
+
+        zip.generateAsync({ type: "base64" })
+            .then(function jsZipPromiseCallback(content) {
+                location.href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64," + content;
+                /*var fileSaver = document.createElement('a');
+                fileSaver.download = 'sample.xlsx';
+                fileSaver.href = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+                var e = new MouseEvent('click', 0);
+                //e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+                fileSaver.dispatchEvent(e);*/
+                //URL.revokeObjectURL(dataURI);
+            });
     }
 
     /**
@@ -409,8 +423,7 @@ var excelExporter = (function _excelExporter() {
             attributes: {
                 'ref': ref
             }
-        })
-        .createChildReturnChild({
+        }).createChildReturnChild({
             nodeType: 'sheetViews'
         }).createChild({
             nodeType: 'sheetView',
@@ -462,8 +475,8 @@ var excelExporter = (function _excelExporter() {
                 if (~columns.indexOf(cell)) {
                     var r = positionToLetterRef(i, columns.indexOf(cell));
                     if (typeof data[i][cell] !== 'number') {
-                        sharedStrings.push(cell);
-                        sharedStringsMap[cell] = count;
+                        sharedStrings.push(data[i][cell]);
+                        sharedStringsMap[data[i][cell]] = count;
 
                         row.createChildReturnChild({
                             nodeType: 'c',

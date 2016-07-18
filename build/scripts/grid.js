@@ -2495,7 +2495,11 @@ var grid = (function _grid($) {
             for (var col in storage.grids[gridId].columns) {
                 cols.push(col);
             }
-            excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(excelData, cols));
+
+            var data = [];
+            for (var i = 0; i < 5; i++)
+                data.push(excelData[i]);
+            excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(data, cols));
         }
     }
 
