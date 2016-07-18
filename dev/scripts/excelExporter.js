@@ -122,7 +122,7 @@ var excelExporter = (function _excelExporter() {
             var string = '';
             if (this.isRoot)
                 string = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
-            string += "<" + this.name;
+            string += "<" + this.nodeType;
             for(var attr in this.attributes) {
                 string = string + " " + attr + "=\""+ escape(this.attributes[attr])+"\"";
             }
@@ -132,7 +132,9 @@ var excelExporter = (function _excelExporter() {
                 childContent += this.children[i].toString();
             }
 
-            if (childContent) string +=  ">" + childContent + "</" + this.name + ">";
+            if (this.textValue) string += '>' + this.textValue + '</' + this.name + '>';
+            else if (childContent && !this.textValue) string +=  childContent + '</' + this.name + '>';
+            else if (childContent) string +=  '>' + childContent + '</' + this.name + '>';
             else string += "/>";
 
             return string;
@@ -154,6 +156,27 @@ var excelExporter = (function _excelExporter() {
     function exportWorkBook(wb) {
         if (!workbook.isPrototypeOf(wb)) return;
         var files = {};
+        buildFiles('', wb.directory, files);
+    }
+
+    /**
+     * Builds out the file object with xml string representation of the nodes
+     * @param {string} path - The path of the .xml/.rels files inside the excel directory
+     * @param {Object} directory - The directory built up by the workbook instance
+     * @param {Object} files - The object holding each .xml/.rels file
+     */
+    function buildFiles(path, directory, files) {
+        path = path + '/';
+        for (var file in directory) {
+            if (xmlNode.isPrototypeOf(directory[file]))
+                files[path + file + '/'][directory.file.fileName] = directory[file].toXmlString();
+            else if (directory[file].constructor === Array) {
+                for (var i = 0; i < directory[file].length; i++) {
+                    files[path + file + '/'][directory[file][i][directory.file.fileName]] = directory[file][i].toXmlString();
+                }
+            }
+            else if (typeof directory[file] === 'object') buildFiles(path + file, directory, files);
+        }
     }
 
     /**
@@ -183,8 +206,8 @@ var excelExporter = (function _excelExporter() {
                     defaultThemeVersion: '153222'
                 }
             }).createCoreFileObject().createAppFileObject()
-                .createRelation('root-rel', '.rels').createSharedStrings()
-                .createContentType().path = '/xl';
+                .createRelation('root-rel', '.rels').createRelation('workbook-rel', 'workbook.xml.rels').createSharedStrings()
+                .createAppFileObject().createContentType().path = '/xl';
 
             return this;
         },
@@ -204,7 +227,7 @@ var excelExporter = (function _excelExporter() {
             var ws = Object.create(workSheet).init(data, columns, workSheetName, tableId);
             this.insertObjectIntoDirectory(ws.worksheet, 'worksheet')
                 .workSheets.push(ws.worksheet)
-                .createRelation('worksheet-rel', 'sheet1.rels');
+                .createRelation('worksheet-rel', 'sheet1.xml.rels');
             this.createChildReturnChild({
                     nodeType: 'sheets'
                 })
@@ -216,7 +239,7 @@ var excelExporter = (function _excelExporter() {
                         rId: rId
                     }
                 })
-                .directory.xl._rels.addRelation(rId, 'worksheet', workSheetName + '.xml');
+                .directory.xl._rels.addRelation(rId, 'worksheet', workSheetName + '.xml.rels');
             this.directory.xl.sharedStrings.addEntries(ws.sharedStrings);
             this.directory['[Content-Types]'].addContentType('/xl/worksheets/' + workSheetName + '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml');
             this.directory['[Content-Types]'].addContentType('/xl/tables/table' + tableId + '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml');
@@ -254,6 +277,7 @@ var excelExporter = (function _excelExporter() {
          * @returns {workbook}
          */
         createSharedStrings: function _createSharedStrings() {
+            if (this.directory.xl.sharedStrings) return this;
             var ss = Object.create(sharedStrings).init();
             this.insertObjectIntoDirectory(ss, 'sharedStrings').sharedStrings = ss;
             return this;
@@ -264,6 +288,7 @@ var excelExporter = (function _excelExporter() {
          * @returns {workbook}
          */
         createContentType: function _createContentType() {
+            if (this.directory['[Content-Types].xml']) return this;
             var ct = Object.create(contentType).init();
             this.insertObjectIntoDirectory(ct, '[Content-Types]').contentType = ct;
             return this;
@@ -273,6 +298,7 @@ var excelExporter = (function _excelExporter() {
          * @returns {workbook}
          */
         createCoreFileObject: function _createCoreFileObject() {
+            if (this.directory.docProps['core.xml']) return this;
             var coreFile = Object.create(core).init();
             this.insertObjectIntoDirectory(coreFile, 'core');
             return this;
@@ -282,6 +308,7 @@ var excelExporter = (function _excelExporter() {
          * @returns {workbook}
          */
         createAppFileObject: function _createAppFileObject() {
+            if (this.directory.docProps['app.xml']) return this;
             var appFile = Object.create(app).init();
             this.insertObjectIntoDirectory(appFile, 'app');
             return this;
@@ -305,52 +332,29 @@ var excelExporter = (function _excelExporter() {
             if (insertionPoint && insertionPoint.constructor === Array)
                 insertionPoint.push(object);
             else
-                insertionPoint = object;
+                insertionPoint[object.fileName] = object;
             return this;
         },
-        getWorkbookParts: function _getWorkbookParts() {
-            var parts = [{
-                name: this.nodeType,
-                type: this.nodeType,
-                path: this.path
-            }], i;
-
-            for (i = 0; i < this.workSheets.length; i++) {
-                parts.concat(this.workSheets[i].getNamesAndPaths());
-            }
-
-            //parts.push(this.styleSheets[0].getNameAndPath());
-        },
-        //TODO:  replace hardcoded values with xml node objects as they are created
         directory: {
-            '[Content-Types]': {},
             _rels: {},
             xl: {
-                'workbook': {},
-                'styles': {},
-                'sharedStrings': {},
                 worksheets: {
-                    sheets: [],
                     _rels: {}
                 },
                 theme: {
-                    'theme1': {}
                 },
                 _rels: {
-                    'workbook.xml.rels': {}
                 }
             },
             docProps: {
-                'app': {},
-                'core': {}
             }
         },
-        sharedStrings: null,
+        sharedStrings: {},
         workSheets: [],
         styleSheets: [],
         tables: [],
         relations: [],
-        contentType: null
+        contentType: {}
     });
 
     /**
