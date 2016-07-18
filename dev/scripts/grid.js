@@ -1760,7 +1760,7 @@ var grid = (function _grid($) {
 
     /**
      * Attaches the click handlers for the save and delete buttons on the toolbar for saving/deleting changes made to the grid data
-     * @param {integer} id - the identifier of the grid instance
+     * @param {number} id - the identifier of the grid instance
      * @param {object} gridElem - the grid DOM element
      * @param {object} saveAnchor - the save button DOM element
      * @param {object} deleteAnchor - the delete button DOM element
@@ -1924,7 +1924,7 @@ var grid = (function _grid($) {
                 options.on('click', function excelExportItemClickHandler(/*e*/) {
                     //TODO: Need to update the export data function to take the type of export as well (page, all, selection)
                     //var type = $(e.currentTarget).find('span').text();
-                    exportDataAsExcelFile(storage.grids[gridId].grid);
+                    exportDataAsExcelFile(gridId);
                 });
                 exportOptions.append(exportList);
                 storage.grids[gridId].grid.append(exportOptions);
@@ -3079,47 +3079,33 @@ var grid = (function _grid($) {
         }
     }
 
-    //TODO: basic functionality is here, but need to parse table first, or use dataSource to create new table for export.
-    function exportDataAsExcelFile(data) {
-        /*
-            1) Get values from dropdown/checkbox/whatever to determine how much data to export
-            2) Based on values,
-                - if this is a client-side grid
-                    - Get the 'alteredData' and take what is needed to export
-                - Otherwise,
-                    - if I have all the data needed for export here, take what is needed
-                    - or make a call to server to get all the data that is needed
-            3) Using the data, create a structure that can be downloaded as an excel file
-
-            Note: Need to support filterable columns, grouped columns, etc; at least eventually
-         */
-
-        if (excelExporter && typeof excelExporter.createExcelRoot === 'function') {
-            var excelCreator = excelExporter.createExcelRoot().addWorksheetStyles({}).createWorkSheet('', {}, data);
-            //TODO: remove this statement and actual use the excelCreator; this is only in here to get JsHint to stop yelling temporarily
-            window.face = excelCreator.xml;
+    /**
+     * Exports data from grid based on user's selection (current page data, all data, or selection data if the grid is selectable is turned on)
+     * @param {number} gridId - The id of the grid DOM instance
+     */
+    function exportDataAsExcelFile(gridId) {
+        var excelData = determineGridDataToExport(gridId);
+        if (excelExporter && typeof excelExporter.createWorkBook === 'function') {
+            var cols = [];
+            for (var col in storage.grids[gridId].columns) {
+                cols.push(col);
+            }
+            excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(excelData, cols));
         }
-
-        /*var excel = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>";
-        excel += "<head>";
-        excel += '<meta http-equiv="Content-type" content="text/html;" />';
-        excel += "</head>";
-        excel += "<body>";
-        excel += table.replace(/"/g, '\'');
-        excel += "</body>";
-        excel += "</html>";
-
+        /*
         var uri = "data:application/vnd.ms-excel;base64,";
         var ctx = { worksheet: 'test', table: table };
-
         return window.open((uri + base64(format(excel, ctx))));*/
     }
 
-    /*function determineGridDataToExport() {
-
-    }*/
-
-    //function
+    /**
+     * Determines what data should be exported to excel
+     * @param {number} gridId - The id of the grid DOM instance
+     * @returns {Array} - Returns an array of the grid data to be exported
+     */
+    function determineGridDataToExport(gridId) {
+        return storage.grids[gridId].dataSource.data;
+    }
 
     /*function base64(s) {
         return window.btoa(decodeURIComponent(encodeURIComponent(s)));

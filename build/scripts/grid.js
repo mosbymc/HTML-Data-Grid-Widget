@@ -1475,7 +1475,7 @@ var grid = (function _grid($) {
                 }
                 var options = exportList.find('li');
                 options.on('click', function excelExportItemClickHandler() {
-                    exportDataAsExcelFile(storage.grids[gridId].grid);
+                    exportDataAsExcelFile(gridId);
                 });
                 exportOptions.append(exportList);
                 storage.grids[gridId].grid.append(exportOptions);
@@ -2488,16 +2488,20 @@ var grid = (function _grid($) {
         }
     }
 
-    function exportDataAsExcelFile(data) {
-
-        if (excelExporter && typeof excelExporter.createExcelRoot === 'function') {
-            var excelCreator = excelExporter.createExcelRoot().addWorksheetStyles({}).createWorkSheet('', {}, data);
-            window.face = excelCreator.xml;
+    function exportDataAsExcelFile(gridId) {
+        var excelData = determineGridDataToExport(gridId);
+        if (excelExporter && typeof excelExporter.createWorkBook === 'function') {
+            var cols = [];
+            for (var col in storage.grids[gridId].columns) {
+                cols.push(col);
+            }
+            excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(excelData, cols));
         }
-
     }
 
-
+    function determineGridDataToExport(gridId) {
+        return storage.grids[gridId].dataSource.data;
+    }
 
 
 
