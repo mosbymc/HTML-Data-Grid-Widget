@@ -128,8 +128,8 @@ var excelExporter = (function _excelExporter() {
          */
         toXmlString: function _toXmlString() {
             var string = '';
-            if (this.isRoot)
-                string = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+            //if (this.isRoot)
+              //  string = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
             string += '<' + this.nodeType;
             for(var attr in this.attributes) {
                 string = string + ' ' + attr + '="' + escape(this.attributes[attr]) + '"';
@@ -143,7 +143,13 @@ var excelExporter = (function _excelExporter() {
             if (this.textValue || childContent) string += '>' + (this.textValue || '') + childContent + '</' + this.nodeType + '>';
             else string += '/>';
 
-            return string;
+            var content = string.replace(/xmlns=""/g, '');
+            content = content.replace(/NS[\d]+:/g, '');
+            content = content.replace(/xmlns:NS[\d]+=""/g, '');
+            if (this.isRoot)
+                content = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + content;
+
+            return content;
         }
     };
 
@@ -231,14 +237,28 @@ var excelExporter = (function _excelExporter() {
         }).createChild({
             nodeType: 'fileVersion',
             attributes: {
-                appName: 'xl'
+                appName: 'xl',
+                rupBuild: '14420',
+                lowestEdited: '6',
+                lastEdited: '6'
             }
         }).createChild({
             nodeType: 'calcPr',
             attributes: {
                 calcId: '0'
             }
-        })._createCoreFileObject()._createAppFileObject()
+        }).createChildReturnChild({
+            nodeType: 'bookViews'
+        }).createChild({
+            nodeType: 'workbookView',
+            attributes: {
+                windowHeight: '12435',
+                windowWidth: '28800',
+                yWindow: '0',
+                xWindow: '0'
+            }
+        });
+        this._createCoreFileObject()._createAppFileObject()
             ._createRelation('root-rel', '.rels')._createRelation('workbook-rel', 'workbook.xml.rels')._createSharedStrings()
             ._createAppFileObject()._createContentType()._insertObjectIntoDirectory(this, 'workbook');
 
@@ -269,7 +289,7 @@ var excelExporter = (function _excelExporter() {
                 attributes: {
                     name: workSheetName,
                     sheetId: sheetId,
-                    'r:Id': 'rId' + sheetId
+                    'r:id': 'rId' + sheetId
                 }
             });
         this.directory.xl._rels['workbook.xml.rels'].addRelation('rId' + sheetId, 'worksheet', 'worksheets/' + workSheetName + '.xml');
@@ -568,7 +588,17 @@ var excelExporter = (function _excelExporter() {
             }
         }
 
-        this.createChildReturnChild({
+        this.createChild({
+            nodeType: 'pageMargins',
+            attributes: {
+                left: '0.7',
+                right: '0.7',
+                top: '0.75',
+                bottom: '0.75',
+                header: '0.3',
+                footer: '0.3'
+            }
+        }).createChildReturnChild({
             nodeType: 'tableParts',
             attributes: {
                 count: '1'
@@ -576,7 +606,7 @@ var excelExporter = (function _excelExporter() {
         }).createChild({
             nodeType: 'tablePart',
             attributes: {
-                'r:Id': 'rId' + tableId
+                'r:id': 'rId' + tableId
             }
         });
 
