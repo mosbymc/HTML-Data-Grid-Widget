@@ -14,7 +14,10 @@ var excelExporter = (function _excelExporter() {
         worksheet: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet',
         sharedStrings: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings',
         stylesheet: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles',
-        table: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/table'
+        table: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/table',
+        core: 'http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties',
+        workbook: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument',
+        app: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties'
     };
 
     var file_DirectoryMap = {
@@ -29,6 +32,12 @@ var excelExporter = (function _excelExporter() {
         app: 'docProps',
         core: 'docProps',
         'root-rel': '_rels'
+    };
+
+    var cellDataTypes = {
+        boolean: 'b',
+        number: 'n',
+        string: 's' //Shared_String
     };
 
 
@@ -219,6 +228,16 @@ var excelExporter = (function _excelExporter() {
             attributes: {
                 defaultThemeVersion: '153222'
             }
+        }).createChild({
+            nodeType: 'fileVersion',
+            attributes: {
+                appName: 'xl'
+            }
+        }).createChild({
+            nodeType: 'calcPr',
+            attributes: {
+                calcId: '0'
+            }
         })._createCoreFileObject()._createAppFileObject()
             ._createRelation('root-rel', '.rels')._createRelation('workbook-rel', 'workbook.xml.rels')._createSharedStrings()
             ._createAppFileObject()._createContentType()._insertObjectIntoDirectory(this, 'workbook');
@@ -236,7 +255,6 @@ var excelExporter = (function _excelExporter() {
     workbook.createWorkSheet = function __createWorkSheet(data, columns, name) {
         if (!data || data.constructor !== Array) return this;
         var sheetId = generateId(),
-            rId = generateId('r:Id'),
             tableId = generateId(),
             workSheetName = name || 'sheet' + sheetId;
         var ws = Object.create(workSheet).init(data, columns, workSheetName, tableId);
@@ -251,11 +269,12 @@ var excelExporter = (function _excelExporter() {
                 attributes: {
                     name: workSheetName,
                     sheetId: sheetId,
-                    rId: rId
+                    'r:Id': 'rId' + sheetId
                 }
             });
-        this.directory.xl._rels['workbook.xml.rels'].addRelation(rId, 'worksheet', workSheetName + '.xml');
-        this.directory.xl._rels['workbook.xml.rels'].addRelation(generateId('r:Id'), 'sharedStrings', 'sharedStrings.xml');
+        this.directory.xl._rels['workbook.xml.rels'].addRelation('rId' + sheetId, 'worksheet', 'worksheets/' + workSheetName + '.xml');
+        this.directory.xl._rels['workbook.xml.rels'].addRelation(generateId('rId'), 'sharedStrings', 'sharedStrings.xml');
+        this.directory.xl.worksheets._rels['sheet1.xml.rels'].addRelation('rId' + tableId, 'table', '../tables/table' + tableId + '.xml');
         this.directory.xl['sharedStrings.xml'].addEntries(ws.sharedStrings);
         this.directory['[Content-Types].xml'].addContentType('/xl/worksheets/' + workSheetName + '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml');
         this.directory['[Content-Types].xml'].addContentType('/xl/tables/table' + tableId + '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml');
@@ -460,15 +479,16 @@ var excelExporter = (function _excelExporter() {
             }
         });
 
-        var headerRowPos = positionToLetterRef(1, columns.length);
+        var headerRowPos;
 
         for (i = 0; i < columns.length; i++) {
             var attrs = {};
             if (columns[i].width)
                 attrs = { width: columns[i].width };
-            attrs.min = '1';
-            attrs.max = '1';
+            attrs.min = i + 1;
+            attrs.max = i + 1;
             attrs.customWidth = '1';
+            attrs.bestFit = '1';
 
             colContainer.createChild({
                 nodeType: 'col',
@@ -477,6 +497,7 @@ var excelExporter = (function _excelExporter() {
 
             sharedStrings.push(columns[i].toString());
             sharedStringsMap[columns[i].toString()] = count.toString();
+            headerRowPos = positionToLetterRef((i + 1), 1);
 
             headerRow.createChildReturnChild({
                 nodeType: 'c',
@@ -501,7 +522,7 @@ var excelExporter = (function _excelExporter() {
             });
 
             for (var j = 0; j < columns.length; j++) {
-                var r = positionToLetterRef(i, j);
+                var cellLoc = positionToLetterRef((j + 1), (i + 2));
                 if (typeof data[i][columns[j]] !== 'number') {
                     if (!sharedStringsMap[data[i][columns[j]].toString()]) {
                         sharedStrings.push(data[i][columns[j]].toString());
@@ -510,7 +531,7 @@ var excelExporter = (function _excelExporter() {
                         row.createChildReturnChild({
                             nodeType: 'c',
                             attributes: {
-                                r: r,
+                                r: cellLoc,
                                 t: 's'
                             }
                         }).createChild({
@@ -523,7 +544,7 @@ var excelExporter = (function _excelExporter() {
                         row.createChildReturnChild({
                             nodeType: 'c',
                             attributes: {
-                                r: r,
+                                r: cellLoc,
                                 t: 's'
                             }
                         }).createChild({
@@ -536,7 +557,8 @@ var excelExporter = (function _excelExporter() {
                     row.createChildReturnChild({
                         nodeType: 'c',
                         attributes: {
-                            r: r
+                            r: cellLoc,
+                            t: 'n'
                         }
                     }).createChild({
                         nodeType: 'v',
@@ -545,6 +567,18 @@ var excelExporter = (function _excelExporter() {
                 }
             }
         }
+
+        this.createChildReturnChild({
+            nodeType: 'tableParts',
+            attributes: {
+                count: '1'
+            }
+        }).createChild({
+            nodeType: 'tablePart',
+            attributes: {
+                'r:Id': 'rId' + tableId
+            }
+        });
 
         var t = Object.create(table).init(columns, ref, tableId);
         return { worksheet: this, sharedStrings: sharedStrings, table: t };
@@ -564,16 +598,18 @@ var excelExporter = (function _excelExporter() {
      * @returns {table}
      */
     table.init = function _init(columns, ref, tableId) {
+        var name = 'table' + tableId;
         this.createXmlNode({
             nodeType: 'table',
             isRoot: true,
-            fileName: 'table1.xml',
+            fileName: 'table' + tableId + '.xml',
             attributes: {
                 'xmlns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main',
                 'id': tableId,
-                'name': tableId,
-                'displayName': tableId,
-                'ref': ref
+                'name': name,
+                'displayName': name,
+                'ref': ref,
+                'totalsRowShown': '0'
             }
         }).createChild({
             nodeType: 'autoFilter',
@@ -581,7 +617,14 @@ var excelExporter = (function _excelExporter() {
                 'ref': ref
             }
         }).createChild({
-            nodeType: 'tableStyleInfo'
+            nodeType: 'tableStyleInfo',
+            attributes: {
+                name: 'TableStyleMedium2',
+                showFirstColumn: '0',
+                showLastColumn: '0',
+                showRowStripes: '1',
+                showColumnStripes: '0'
+            }
         });
 
         var tableCols = this.createChildReturnChild({
@@ -599,7 +642,7 @@ var excelExporter = (function _excelExporter() {
             tableCols.createChild({
                 nodeType: 'tableColumn',
                 attributes: {
-                    id: generateId(),
+                    id: (i+1),
                     name: columnName
                 }
             });
@@ -637,9 +680,9 @@ var excelExporter = (function _excelExporter() {
         });
 
         if (createRootRelation) {
-            this.addRelation(generateId('rId'), 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties', 'docProps/app.xml')
-                .addRelation(generateId('rId'), 'http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties', 'docProps/core.xml')
-                .addRelation(generateId('rId'), 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument', 'xl/workbook.xml');
+            this.addRelation(generateId('rId'), 'app', 'docProps/app.xml')
+                .addRelation(generateId('rId'), 'core', 'docProps/core.xml')
+                .addRelation(generateId('rId'), 'workbook', 'xl/workbook.xml');
         }
         return this;
     };
@@ -656,8 +699,8 @@ var excelExporter = (function _excelExporter() {
             nodeType: 'Relationship',
             attributes: {
                 Id: rId,
-                type: relationTypes[type],
-                target: target
+                Type: relationTypes[type],
+                Target: target
             }
         });
         return this;
@@ -760,7 +803,7 @@ var excelExporter = (function _excelExporter() {
         }).createChild({
             nodeType: 'Override',
             attributes: {
-                PartName: 'application/vnd.openxmlformats-package.core-properties+xml',
+                PartName: '/docProps/app.xml',
                 ContentType: 'application/vnd.openxmlformats-officedocument.extended-properties+xml'
             }
         });
@@ -877,7 +920,7 @@ var excelExporter = (function _excelExporter() {
             }
         }).createChild({
             nodeType: 'vt:lpstr',
-            textValue: 'TestSheet'
+            textValue: 'Sheet1'
         });
 
         this.createChild({
