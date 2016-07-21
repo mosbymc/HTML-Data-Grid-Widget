@@ -15,6 +15,7 @@
   "expr": true,
   "sub": true,
   "jquery": true,
+  "-W086": true,
   "globals": [
     "grid",
     "formatter",

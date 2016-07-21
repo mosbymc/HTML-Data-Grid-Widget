@@ -2521,6 +2521,7 @@ var grid = (function _grid($) {
                 }
                 else callback({ data: storage.grids[gridId].originalData, columns: columns });
                 break;
+            case 'page': 
             default:
                 callback({ data: storage.grids[gridId].dataSource.data, columns: columns });
         }

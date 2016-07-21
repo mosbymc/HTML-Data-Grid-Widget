@@ -3128,7 +3128,7 @@ var grid = (function _grid($) {
                 }
                 else callback({ data: storage.grids[gridId].originalData, columns: columns });
                 break;
-            //case 'page': //TODO: figure out how to shut jshint up so it can allow fallthrough
+            case 'page': //TODO: figure out how to shut jshint up so it can allow fallthrough
             default:
                 callback({ data: storage.grids[gridId].dataSource.data, columns: columns });
         }

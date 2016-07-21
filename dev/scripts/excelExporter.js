@@ -194,7 +194,7 @@ var excelExporter = (function _excelExporter() {
             zip.file(file.substr(1), files[file], { base64: false });
         }
 
-        zip.generateAsync({ compression: 'DEFLATE', type: "base64" })
+        zip.generateAsync({ compression: 'DEFLATE', type: 'base64', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
             .then(function jsZipPromiseCallback(content) {
                 var string = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + content;
                 //saveAs(content, "hello.xlsx");
