@@ -68,6 +68,7 @@ var excelExporter = (function _excelExporter() {
             this.children = [];
             this.isRoot = props.isRoot || false;
             if (this.isRoot) this.fileName = props.fileName;
+            this.parent = props.parent || null;
             return this;
         },
         /**
@@ -90,6 +91,7 @@ var excelExporter = (function _excelExporter() {
          * @returns {xmlNode}
          */
         createChild: function _createChild(props) {
+            props.parent = this;
             return this.addChild(Object.create(xmlNode).createXmlNode(props));
         },
         /**
@@ -99,9 +101,26 @@ var excelExporter = (function _excelExporter() {
          * @returns {xmlNode}
          */
         createChildReturnChild: function _createChildReturnChild(props) {
+            props.parent = this;
             var child = Object.create(xmlNode).createXmlNode(props);
             this.addChild(child);
             return child;
+        },
+        createChildReturnRoot: function _createChildReturnRoot(props) {
+            props.parent = this;
+            this.addChild(Object.create(xmlNode).createXmlNode(props));
+            var node = this;
+            if (!node.isRoot && node.parent) {
+                while (!node.isRoot && node.parent) {
+                    node = node.parent;
+                }
+                return node;
+            }
+        },
+        createChildReturnParent: function _createChildReturnParent(props) {
+            props.parent = this;
+            this.addChild(Object.create(xmlNode).createXmlNode(props));
+            return this.parent;
         },
         /**
          * Adds an xmlNode to the list of children
@@ -175,9 +194,12 @@ var excelExporter = (function _excelExporter() {
             zip.file(file.substr(1), files[file], { base64: false });
         }
 
-        zip.generateAsync({ type: "base64" })
+        zip.generateAsync({ compression: 'DEFLATE', type: "base64" })
             .then(function jsZipPromiseCallback(content) {
-                location.href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64," + content;
+                var string = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + content;
+                //saveAs(content, "hello.xlsx");
+                location.href = string;
+                //saveAs(content, 'excelFile.xlsx');
                 /*var fileSaver = document.createElement('a');
                 fileSaver.download = 'sample.xlsx';
                 fileSaver.href = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -185,6 +207,24 @@ var excelExporter = (function _excelExporter() {
                 //e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
                 fileSaver.dispatchEvent(e);*/
                 //URL.revokeObjectURL(dataURI);
+                //var a = document.createElement("a");
+                //a.href = URL.createObjectURL(content);
+                //a.download = 'excelFile.xlsx';
+                //a.click();
+
+                //var dataURI = URL.createObjectURL(string);
+                /*var blob = content;
+                if (typeof content == 'string') {
+                    var parts = content.split(';base64,');
+                    var contentType = parts[0];
+                    var base64 = atob(parts[1]);
+                    var array = new Uint8Array(base64.length);
+                    for (var idx = 0; idx < base64.length; idx++) {
+                        array[idx] = base64.charCodeAt(idx);
+                    }
+                    blob = new Blob([array.buffer], { type: contentType });
+                }
+                saveAsBlob(blob, fileName);*/
             });
     }
 
@@ -249,7 +289,7 @@ var excelExporter = (function _excelExporter() {
             }
         }).createChildReturnChild({
             nodeType: 'bookViews'
-        }).createChild({
+        }).createChildReturnRoot({
             nodeType: 'workbookView',
             attributes: {
                 windowHeight: '12435',
@@ -257,8 +297,20 @@ var excelExporter = (function _excelExporter() {
                 yWindow: '0',
                 xWindow: '0'
             }
-        });
-        this._createCoreFileObject()._createAppFileObject()
+        }).createChildReturnChild({
+            nodeType: 'extLst'
+        }).createChildReturnChild({
+            nodeType: 'ext',
+            attributes: {
+                uri: '{140A7094-0E35-4892-8432-C4D2E57EDEB5}',
+                'xmlns:x15': 'http://schemas.microsoft.com/office/spreadsheetml/2010/11/main'
+            }
+        }).createChildReturnRoot({
+            nodeType: 'x15:workbookPr',
+            attributes: {
+                chartTrackingRefBase: '1'
+            }
+        })._createCoreFileObject()._createAppFileObject()
             ._createRelation('root-rel', '.rels')._createRelation('workbook-rel', 'workbook.xml.rels')._createSharedStrings()
             ._createAppFileObject()._createContentType()._insertObjectIntoDirectory(this, 'workbook');
 
@@ -284,18 +336,17 @@ var excelExporter = (function _excelExporter() {
             .createChildReturnChild({
                 nodeType: 'sheets'
             })
-            .createChild({
+            .createChildReturnRoot({
                 nodeType: 'sheet',
                 attributes: {
-                    name: workSheetName,
+                    name: 'Sheet' + sheetId,
                     sheetId: sheetId,
                     'r:id': 'rId' + sheetId
                 }
-            });
-        this.directory.xl._rels['workbook.xml.rels'].addRelation('rId' + sheetId, 'worksheet', 'worksheets/' + workSheetName + '.xml');
+            }).directory.xl._rels['workbook.xml.rels'].addRelation('rId' + sheetId, 'worksheet', 'worksheets/' + workSheetName + '.xml');
         this.directory.xl._rels['workbook.xml.rels'].addRelation(generateId('rId'), 'sharedStrings', 'sharedStrings.xml');
         this.directory.xl.worksheets._rels['sheet1.xml.rels'].addRelation('rId' + tableId, 'table', '../tables/table' + tableId + '.xml');
-        this.directory.xl['sharedStrings.xml'].addEntries(ws.sharedStrings);
+        this.directory.xl['sharedStrings.xml'].addEntries(ws.sharedStrings, ws.total);
         this.directory['[Content-Types].xml'].addContentType('/xl/worksheets/' + workSheetName + '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml');
         this.directory['[Content-Types].xml'].addContentType('/xl/tables/table' + tableId + '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml');
 
@@ -432,7 +483,7 @@ var excelExporter = (function _excelExporter() {
     workSheet.init = function _init(data, columns, workSheetName, tableId) {
         var sharedStrings = [],
             sharedStringsMap = {},
-            i, count = 0;
+            i, count = 0, total = columns.length;
         this.createXmlNode({
             nodeType: 'worksheet',
             fileName: workSheetName + '.xml',
@@ -468,15 +519,13 @@ var excelExporter = (function _excelExporter() {
             }
         }).createChildReturnChild({
             nodeType: 'sheetViews'
-        }).createChild({
+        }).createChildReturnRoot({
             nodeType: 'sheetView',
             attributes: {
                 'tabSelected': '1',
                 'workbookViewId': '0'
             }
-        });
-
-        this.createChild({
+        }).createChild({
             nodeType: 'sheetFormatPr',
             attributes: {
                 defaultRowHeight: '15'
@@ -544,6 +593,7 @@ var excelExporter = (function _excelExporter() {
             for (var j = 0; j < columns.length; j++) {
                 var cellLoc = positionToLetterRef((j + 1), (i + 2));
                 if (typeof data[i][columns[j]] !== 'number') {
+                    total += 1;
                     if (!sharedStringsMap[data[i][columns[j]].toString()]) {
                         sharedStrings.push(data[i][columns[j]].toString());
                         sharedStringsMap[data[i][columns[j]].toString()] = count.toString();
@@ -611,7 +661,7 @@ var excelExporter = (function _excelExporter() {
         });
 
         var t = Object.create(table).init(columns, ref, tableId);
-        return { worksheet: this, sharedStrings: sharedStrings, table: t };
+        return { worksheet: this, sharedStrings: sharedStrings, table: t, total: total };
     };
 
     /**
@@ -764,9 +814,10 @@ var excelExporter = (function _excelExporter() {
      * to this sharedString instance
      * @param {Array} values - An array of string to be added as children of
      * this xmlNode instance
+     * @param {number} count - The number of shared string references
      * @returns {sharedStrings}
      */
-    sharedStrings.addEntries = function _addEntries(values) {
+    sharedStrings.addEntries = function _addEntries(values, count) {
         for (var i = 0; i < values.length; i++) {
             this.createChildReturnChild({
                 nodeType: 'si'
@@ -776,7 +827,8 @@ var excelExporter = (function _excelExporter() {
             });
         }
         this.addAttributes({
-            uniqueCount: values.length+1
+            uniqueCount: values.length+1,
+            count: count
         });
         return this;
     };
@@ -928,12 +980,10 @@ var excelExporter = (function _excelExporter() {
 
         vector.createChildReturnChild({
             nodeType: 'vt:variant'
-        }).createChild({
+        }).createChildReturnParent({
             nodeType: 'vt:lpstr',
             textValue: 'Worksheets'
-        });
-
-        vector.createChildReturnChild({
+        }).createChildReturnChild({
             nodeType: 'vt:variant'
         }).createChild({
             nodeType: 'vt:i4',
@@ -948,12 +998,10 @@ var excelExporter = (function _excelExporter() {
                 size: '1',
                 baseType: 'lpstr'
             }
-        }).createChild({
+        }).createChildReturnRoot({
             nodeType: 'vt:lpstr',
-            textValue: 'Sheet1'
-        });
-
-        this.createChild({
+            textValue: 'Sheet4'
+        }).createChild({
             nodeType: 'LinksUpToDate',
             textValue: 'false'
         }).createChild({

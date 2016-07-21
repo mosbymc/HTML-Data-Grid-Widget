@@ -58,8 +58,8 @@ var grid = (function _grid($) {
             gridElem[0].grid,
             'export',
             {
-                value: function _export() {
-                    exportDataAsExcelFile(gridElem.find('.grid-content-div').find('table').html());
+                value: function _export(exportType) {
+                    exportDataAsExcelFile(gridElem.find('.grid-content-div').find('table').html(), exportType || 'page');
                 }
             }
         );
@@ -1466,16 +1466,16 @@ var grid = (function _grid($) {
             if (!exportOptions.length) {
                 exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options"></div>');
                 var exportList = $('<ul class="menu-list"></ul>');
-                var gridPage = $('<li><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
-                var allData = $('<li><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
+                var gridPage = $('<li data-value="page"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
+                var allData = $('<li data-value="all"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
                 exportList.append(gridPage).append(allData);
                 if (storage.grids[gridId].selectable) {
-                    var gridSelection = $('<li><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
+                    var gridSelection = $('<li data-value="select"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
                     exportList.append(gridSelection);
                 }
                 var options = exportList.find('li');
                 options.on('click', function excelExportItemClickHandler() {
-                    exportDataAsExcelFile(gridId);
+                    exportDataAsExcelFile(gridId, this.dataset.value);
                 });
                 exportOptions.append(exportList);
                 storage.grids[gridId].grid.append(exportOptions);
@@ -2488,23 +2488,78 @@ var grid = (function _grid($) {
         }
     }
 
-    function exportDataAsExcelFile(gridId) {
-        var excelData = determineGridDataToExport(gridId);
+    function exportDataAsExcelFile(gridId, option) {
         if (excelExporter && typeof excelExporter.createWorkBook === 'function') {
-            var cols = [];
-            for (var col in storage.grids[gridId].columns) {
-                cols.push(col);
-            }
-
-            var data = [];
-            for (var i = 0; i < 5; i++)
-                data.push(excelData[i]);
-            excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(data, cols));
+            determineGridDataToExport(gridId, option, function gridDataCallback(excelDataAndColumns) {
+                var data = [];
+                for (var i = 0; i < 5; i++)
+                    data.push(excelDataAndColumns[i]);
+                excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(data, excelDataAndColumns.columns, 'testSheet'));
+            });
         }
     }
 
-    function determineGridDataToExport(gridId) {
-        return storage.grids[gridId].dataSource.data;
+    function determineGridDataToExport(gridId, option, callback) {
+        var columns = [];
+        switch (option) {
+            case 'select':
+                var selectedData = storage.grids[gridId].grid.selectedData;
+                for (var  i =0; i < selectedData.length; i++) {
+                    if (!columns.indexOf(selectedData[i].field))
+                        columns.push(selectedData[i].field);
+                    selectedData[i] = selectedData[i].data;
+                }
+                callback({ data: selectedData, columns: columns});
+                break;
+            case 'all':
+                columns = getGridColumns(gridId);
+                if (typeof storage.grids[gridId].grid.dataSource.get === 'function') {
+                    var reqObj = createExcelRequestObject(gridId);
+                    storage.grids[gridId].grid.dataSource.get(reqObj, function excelDataCallback(data) {
+                        callback({ data: data, columns: 1});
+                    });
+                }
+                else callback({ data: storage.grids[gridId].originalData, columns: columns });
+                break;
+            default:
+                callback({ data: storage.grids[gridId].dataSource.data, columns: columns });
+        }
+    }
+
+    function getGridColumns(gridId) {
+        var cols = [];
+        for (var col in storage.grids[gridId].columns) {
+            cols.push(col);
+        }
+        return cols;
+    }
+
+    function createExcelRequestObject(gridId) {
+        var gridData = storage.grids[gridId];
+        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
+        var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
+        var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
+        var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
+        var groupedBy = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
+        var groupSortDirection = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
+
+        var requestObj = {};
+        if (gridData.sortable) requestObj.sortedOn = sortedOn;
+
+        if (gridData.filterable) {
+            requestObj.filteredOn = filteredOn;
+            requestObj.filterVal = filterVal;
+            requestObj.filterType = filterType;
+        }
+
+        if (gridData.groupable) {
+            requestObj.groupedBy = groupedBy;
+            requestObj.groupSortDirection = groupSortDirection;
+        }
+
+        requestObj.pageSize = gridData.dataSource.rowCount;
+        requestObj.pageNum = 1;
+        return requestObj;
     }
 
 

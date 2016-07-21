@@ -174,8 +174,8 @@ var grid = (function _grid($) {
             gridElem[0].grid,
             'export',
             {
-                value: function _export() {
-                    exportDataAsExcelFile(gridElem.find('.grid-content-div').find('table').html());
+                value: function _export(exportType) {
+                    exportDataAsExcelFile(gridElem.find('.grid-content-div').find('table').html(), exportType || 'page');
                 }
             }
         );
@@ -1913,18 +1913,18 @@ var grid = (function _grid($) {
             if (!exportOptions.length) {
                 exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options"></div>');
                 var exportList = $('<ul class="menu-list"></ul>');
-                var gridPage = $('<li><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
-                var allData = $('<li><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
+                var gridPage = $('<li data-value="page"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
+                var allData = $('<li data-value="all"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
                 exportList.append(gridPage).append(allData);
                 if (storage.grids[gridId].selectable) {
-                    var gridSelection = $('<li><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
+                    var gridSelection = $('<li data-value="select"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
                     exportList.append(gridSelection);
                 }
                 var options = exportList.find('li');
                 options.on('click', function excelExportItemClickHandler(/*e*/) {
                     //TODO: Need to update the export data function to take the type of export as well (page, all, selection)
                     //var type = $(e.currentTarget).find('span').text();
-                    exportDataAsExcelFile(gridId);
+                    exportDataAsExcelFile(gridId, this.dataset.value);
                 });
                 exportOptions.append(exportList);
                 storage.grids[gridId].grid.append(exportOptions);
@@ -3082,19 +3082,17 @@ var grid = (function _grid($) {
     /**
      * Exports data from grid based on user's selection (current page data, all data, or selection data if the grid is selectable is turned on)
      * @param {number} gridId - The id of the grid DOM instance
+     * @param {string} option - The export option selected by the user
      */
-    function exportDataAsExcelFile(gridId) {
-        var excelData = determineGridDataToExport(gridId);
+    function exportDataAsExcelFile(gridId, option) {
         if (excelExporter && typeof excelExporter.createWorkBook === 'function') {
-            var cols = [];
-            for (var col in storage.grids[gridId].columns) {
-                cols.push(col);
-            }
-
-            var data = [];
-            for (var i = 0; i < 5; i++)
-                data.push(excelData[i]);
-            excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(data, cols));
+            determineGridDataToExport(gridId, option, function gridDataCallback(excelDataAndColumns) {
+                //TODO: currently limiting excel data for testing purposes. This data-reducer needs to be removed later
+                var data = [];
+                for (var i = 0; i < 5; i++)
+                    data.push(excelDataAndColumns[i]);
+                excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(data, excelDataAndColumns.columns, 'testSheet'));
+            });
         }
         /*
         var uri = "data:application/vnd.ms-excel;base64,";
@@ -3103,12 +3101,73 @@ var grid = (function _grid($) {
     }
 
     /**
-     * Determines what data should be exported to excel
+     *
      * @param {number} gridId - The id of the grid DOM instance
-     * @returns {Array} - Returns an array of the grid data to be exported
+     * @param {string} option - The export option selected by the user
+     * @param {function} callback - The callback function; Needed for server-side data requests
      */
-    function determineGridDataToExport(gridId) {
-        return storage.grids[gridId].dataSource.data;
+    function determineGridDataToExport(gridId, option, callback) {
+        var columns = [];
+        switch (option) {
+            case 'select':
+                var selectedData = storage.grids[gridId].grid.selectedData;
+                for (var  i =0; i < selectedData.length; i++) {
+                    if (!columns.indexOf(selectedData[i].field))
+                        columns.push(selectedData[i].field);
+                    selectedData[i] = selectedData[i].data;
+                }
+                callback({ data: selectedData, columns: columns});
+                break;
+            case 'all':
+                columns = getGridColumns(gridId);
+                if (typeof storage.grids[gridId].grid.dataSource.get === 'function') {
+                    var reqObj = createExcelRequestObject(gridId);
+                    storage.grids[gridId].grid.dataSource.get(reqObj, function excelDataCallback(data) {
+                        callback({ data: data, columns: 1});
+                    });
+                }
+                else callback({ data: storage.grids[gridId].originalData, columns: columns });
+                break;
+            //case 'page': //TODO: figure out how to shut jshint up so it can allow fallthrough
+            default:
+                callback({ data: storage.grids[gridId].dataSource.data, columns: columns });
+        }
+    }
+
+    function getGridColumns(gridId) {
+        var cols = [];
+        for (var col in storage.grids[gridId].columns) {
+            cols.push(col);
+        }
+        return cols;
+    }
+
+    function createExcelRequestObject(gridId) {
+        var gridData = storage.grids[gridId];
+        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
+        var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
+        var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
+        var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
+        var groupedBy = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
+        var groupSortDirection = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
+
+        var requestObj = {};
+        if (gridData.sortable) requestObj.sortedOn = sortedOn;
+
+        if (gridData.filterable) {
+            requestObj.filteredOn = filteredOn;
+            requestObj.filterVal = filterVal;
+            requestObj.filterType = filterType;
+        }
+
+        if (gridData.groupable) {
+            requestObj.groupedBy = groupedBy;
+            requestObj.groupSortDirection = groupSortDirection;
+        }
+
+        requestObj.pageSize = gridData.dataSource.rowCount;
+        requestObj.pageNum = 1;
+        return requestObj;
     }
 
     /*function base64(s) {
