@@ -2500,7 +2500,7 @@ var grid = (function _grid($) {
     }
 
     function determineGridDataToExport(gridId, option, callback) {
-        var columns = [];
+        var columns = getGridColumns(gridId);
         switch (option) {
             case 'select':
                 var selectedData = storage.grids[gridId].grid.selectedData;
@@ -2512,7 +2512,6 @@ var grid = (function _grid($) {
                 callback({ data: selectedData, columns: columns});
                 break;
             case 'all':
-                columns = getGridColumns(gridId);
                 if (typeof storage.grids[gridId].grid.dataSource.get === 'function') {
                     var reqObj = createExcelRequestObject(gridId);
                     storage.grids[gridId].grid.dataSource.get(reqObj, function excelDataCallback(data) {
@@ -2521,7 +2520,7 @@ var grid = (function _grid($) {
                 }
                 else callback({ data: storage.grids[gridId].originalData, columns: columns });
                 break;
-            case 'page': 
+            case 'page':
             default:
                 callback({ data: storage.grids[gridId].dataSource.data, columns: columns });
         }

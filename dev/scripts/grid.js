@@ -3107,7 +3107,7 @@ var grid = (function _grid($) {
      * @param {function} callback - The callback function; Needed for server-side data requests
      */
     function determineGridDataToExport(gridId, option, callback) {
-        var columns = [];
+        var columns = getGridColumns(gridId);
         switch (option) {
             case 'select':
                 var selectedData = storage.grids[gridId].grid.selectedData;
@@ -3119,7 +3119,6 @@ var grid = (function _grid($) {
                 callback({ data: selectedData, columns: columns});
                 break;
             case 'all':
-                columns = getGridColumns(gridId);
                 if (typeof storage.grids[gridId].grid.dataSource.get === 'function') {
                     var reqObj = createExcelRequestObject(gridId);
                     storage.grids[gridId].grid.dataSource.get(reqObj, function excelDataCallback(data) {
@@ -3128,7 +3127,7 @@ var grid = (function _grid($) {
                 }
                 else callback({ data: storage.grids[gridId].originalData, columns: columns });
                 break;
-            case 'page': //TODO: figure out how to shut jshint up so it can allow fallthrough
+            case 'page':
             default:
                 callback({ data: storage.grids[gridId].dataSource.data, columns: columns });
         }
