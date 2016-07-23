@@ -40,7 +40,6 @@ var excelExporter = (function _excelExporter() {
         string: 's' //Shared_String
     };
 
-
     /**
      * This is the base object to which all other excel object delegate for
      * creating themselves, adding/creating child node, and toXmlString()-ing themselves
@@ -258,7 +257,7 @@ var excelExporter = (function _excelExporter() {
      * @returns {workbook}
      */
     workbook.init = function _init() {
-        this.createXmlNode({
+        return this.createXmlNode({
             nodeType: 'workbook',
             isRoot: true,
             fileName: 'workbook.xml',
@@ -313,8 +312,6 @@ var excelExporter = (function _excelExporter() {
         })._createCoreFileObject()._createAppFileObject()
             ._createRelation('root-rel', '.rels')._createRelation('workbook-rel', 'workbook.xml.rels')._createSharedStrings()
             ._createAppFileObject()._createContentType()._insertObjectIntoDirectory(this, 'workbook');
-
-        return this;
     };
 
     /**
@@ -388,8 +385,7 @@ var excelExporter = (function _excelExporter() {
     workbook._createSharedStrings = function __createSharedStrings() {
         if (this.directory.xl['sharedStrings.xml']) return this;
         var ss = Object.create(sharedStrings).init();
-        this._insertObjectIntoDirectory(ss, 'sharedStrings').sharedStrings = ss;
-        return this;
+        return this._insertObjectIntoDirectory(ss, 'sharedStrings');
     };
 
     /**
@@ -775,7 +771,7 @@ var excelExporter = (function _excelExporter() {
      * @returns {relation}
      */
     relation.addRelation = function _addRelation(rId, type, target) {
-        this.createChild({
+        return this.createChild({
             nodeType: 'Relationship',
             attributes: {
                 Id: rId,
@@ -783,7 +779,6 @@ var excelExporter = (function _excelExporter() {
                 Target: target
             }
         });
-        return this;
     };
 
     /**
@@ -845,7 +840,7 @@ var excelExporter = (function _excelExporter() {
      * @returns {contentType}
      */
     contentType.init = function _init() {
-        this.createXmlNode({
+        return this.createXmlNode({
             nodeType: 'Types',
             isRoot: true,
             fileName: '[Content-Types].xml',
@@ -882,14 +877,13 @@ var excelExporter = (function _excelExporter() {
                 PartName: '/docProps/core.xml',
                 ContentType: 'application/vnd.openxmlformats-package.core-properties+xml'
             }
-        }).createChild({
+        }).createChildReturnRoot({
             nodeType: 'Override',
             attributes: {
                 PartName: '/docProps/app.xml',
                 ContentType: 'application/vnd.openxmlformats-officedocument.extended-properties+xml'
             }
         });
-        return this;
     };
 
     /**
@@ -899,21 +893,20 @@ var excelExporter = (function _excelExporter() {
     * @returns {contentType}
     */
     contentType.addContentType = function _addContentType(partName, type) {
-        this.createChild({
+        return this.createChildReturnRoot({
             nodeType: 'Override',
             attributes: {
                 PartName: partName,
                 ContentType: type
             }
         });
-        return this;
     };
 
     var core = Object.create(xmlNode);
 
     core.init = function _init() {
         var curDate = new Date().toISOString();
-        this.createXmlNode({
+        return this.createXmlNode({
             nodeType: 'cp:coreProperties',
             isRoot: true,
             fileName: 'core.xml',
@@ -936,14 +929,13 @@ var excelExporter = (function _excelExporter() {
             attributes: {
                 'xsi:type': 'dcterms:W3CDTF'
             }
-        }).createChild({
+        }).createChildReturnRoot({
             nodeType: 'dcterms:modified',
             textValue: curDate,
             attributes: {
                 'xsi:type': 'dcterms:W3CDTF'
             }
         });
-        return this;
     };
 
     var app = Object.create(xmlNode);
@@ -978,19 +970,17 @@ var excelExporter = (function _excelExporter() {
             }
         });
 
-        vector.createChildReturnChild({
+        return vector.createChildReturnChild({
             nodeType: 'vt:variant'
         }).createChildReturnParent({
             nodeType: 'vt:lpstr',
             textValue: 'Worksheets'
         }).createChildReturnChild({
             nodeType: 'vt:variant'
-        }).createChild({
+        }).createChildReturnRoot({
             nodeType: 'vt:i4',
             textValue: '1'
-        });
-
-        this.createChildReturnChild({
+        }).createChildReturnChild({
             nodeType: 'TitlesOfParts'
         }).createChildReturnChild({
             nodeType: 'vt:vector',
@@ -1010,85 +1000,20 @@ var excelExporter = (function _excelExporter() {
         }).createChild({
             nodeType: 'HyperlinksChanged',
             textValue: 'false'
-        }).createChild({
+        }).createChildReturnRoot({
             nodeType: 'AppVersion',
             textValue: '15.0300'
         });
-        return this;
     };
 
     //==================================================================================//
     //=======================          Helper Functions          =======================//
     //==================================================================================//
 
-    function saveAsBlob(dataURI, fileName) {
-        var blob = dataURI;
-        if (typeof dataURI == 'string') {
-            var parts = dataURI.split(';base64,');
-            var contentType = parts[0];
-            var base64 = atob(parts[1]);
-            var array = new Uint8Array(base64.length);
-            for (var idx = 0; idx < base64.length; idx++) {
-                array[idx] = base64.charCodeAt(idx);
-            }
-            blob = new Blob([array.buffer], { type: contentType });
-        }
-        navigator.msSaveBlob(blob, fileName);
-    }
-
-    function saveAsDataURI(dataURI, fileName) {
-        if (window.Blob && dataURI instanceof Blob) {
-            dataURI = URL.createObjectURL(dataURI);
-        }
-        fileSaver.download = fileName;
-        fileSaver.href = dataURI;
-        var e = document.createEvent('MouseEvents');
-        e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-        fileSaver.dispatchEvent(e);
-        URL.revokeObjectURL(dataURI);
-    }
-
-    function saveAs(options) {
-        var save = postToProxy;
-        if (!options.forceProxy) {
-            if (downloadAttribute) {
-                save = saveAsDataURI;
-            } else if (navigator.msSaveBlob) {
-                save = saveAsBlob;
-            }
-        }
-        save(options.dataURI, options.fileName, options.proxyURL, options.proxyTarget);
-    }
-
-    /**
-     * Determines what the xml table cell data type should be based on the javascript typeof
-     * @param {string} item - The 'typeof' a javascript object property
-     * @returns {string} - Returns a data type for xml table cells
-     */
-    function getCellType(item) {
-        var type = typeof item;
-        switch (type) {
-            case 'string':
-            case 'number':
-            case 'boolean':
-                return type;
-            case 'object':
-                return 'string';
-            case 'undefined':
-                return 'string';
-            case 'symbol':
-                return 'string';
-        }
-    }
-
     function escape(string) {
-        // Reset `lastIndex` because in IE < 9 `String#replace` does not.
         string = baseToString(string);
-        //var reUnescapedHtml = /[&<>"'`]/g;
         var reHasUnescapedHtml = new RegExp('[&<>"\'`]');
-        return (string && reHasUnescapedHtml.test(string))
-            ? string.replace(/[&<>"'`]/g, escapeHtmlChar)
-            : string;
+        return (string && reHasUnescapedHtml.test(string)) ? string.replace(/[&<>"'`]/g, escapeHtmlChar) : string;
     }
 
     function baseToString(value) {
