@@ -311,7 +311,7 @@ var excelExporter = (function _excelExporter() {
             }
         })._createCoreFileObject()._createAppFileObject()
             ._createRelation('root-rel', '.rels')._createRelation('workbook-rel', 'workbook.xml.rels')._createSharedStrings()
-            ._createAppFileObject()._createContentType()._insertObjectIntoDirectory(this, 'workbook');
+            ._createContentType()._insertObjectIntoDirectory(this, 'workbook');
     };
 
     /**
@@ -325,11 +325,12 @@ var excelExporter = (function _excelExporter() {
         if (!data || data.constructor !== Array) return this;
         var sheetId = generateId(),
             tableId = generateId(),
-            workSheetName = name || 'sheet' + sheetId;
+            workSheetName = name || 'sheet' + sheetId,
+            relWorkSheet = workSheetName + '.xml.rels';
         var ws = Object.create(workSheet).init(data, columns, workSheetName, tableId);
         this._insertObjectIntoDirectory(ws.worksheet, 'worksheet')
             ._insertObjectIntoDirectory(ws.table, 'table')
-            ._createRelation('worksheet-rel', 'sheet1.xml.rels')
+            ._createRelation('worksheet-rel', relWorkSheet)
             .createChildReturnChild({
                 nodeType: 'sheets'
             })
@@ -342,7 +343,7 @@ var excelExporter = (function _excelExporter() {
                 }
             }).directory.xl._rels['workbook.xml.rels'].addRelation('rId' + sheetId, 'worksheet', 'worksheets/' + workSheetName + '.xml');
         this.directory.xl._rels['workbook.xml.rels'].addRelation(generateId('rId'), 'sharedStrings', 'sharedStrings.xml');
-        this.directory.xl.worksheets._rels['sheet1.xml.rels'].addRelation('rId' + tableId, 'table', '../tables/table' + tableId + '.xml');
+        this.directory.xl.worksheets._rels[relWorkSheet].addRelation('rId' + tableId, 'table', '../tables/table' + tableId + '.xml');
         this.directory.xl['sharedStrings.xml'].addEntries(ws.sharedStrings, ws.total);
         this.directory['[Content-Types].xml'].addContentType('/xl/worksheets/' + workSheetName + '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml');
         this.directory['[Content-Types].xml'].addContentType('/xl/tables/table' + tableId + '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml');
@@ -456,7 +457,6 @@ var excelExporter = (function _excelExporter() {
                 _rels: {}
             },
             tables: {},
-            theme: {},
             _rels: {}
         },
         docProps: {}
@@ -479,7 +479,7 @@ var excelExporter = (function _excelExporter() {
     workSheet.init = function _init(data, columns, workSheetName, tableId) {
         var sharedStrings = [],
             sharedStringsMap = {},
-            i, count = 0, total = columns.length;
+            i, count = -1, total = columns.length;
         this.createXmlNode({
             nodeType: 'worksheet',
             fileName: workSheetName + '.xml',
@@ -505,7 +505,7 @@ var excelExporter = (function _excelExporter() {
         this.columns = columns;
         var tableHeight = data.length + 1;
 
-        var endPos = positionToLetterRef(tableHeight, columns.length),
+        var endPos = positionToLetterRef(columns.length, tableHeight),
             ref = 'A1:' + endPos;
 
         this.createChild({
@@ -561,7 +561,7 @@ var excelExporter = (function _excelExporter() {
             });
 
             sharedStrings.push(columns[i].toString());
-            sharedStringsMap[columns[i].toString()] = count.toString();
+            sharedStringsMap[columns[i].toString()] = (count++).toString();
             headerRowPos = positionToLetterRef((i + 1), 1);
 
             headerRow.createChildReturnChild({
@@ -574,7 +574,6 @@ var excelExporter = (function _excelExporter() {
                 nodeType: 'v',
                 textValue: count.toString()
             });
-            count++;
         }
 
         for (i = 0; i < data.length; i++) {
@@ -592,7 +591,7 @@ var excelExporter = (function _excelExporter() {
                     total += 1;
                     if (!sharedStringsMap[data[i][columns[j]].toString()]) {
                         sharedStrings.push(data[i][columns[j]].toString());
-                        sharedStringsMap[data[i][columns[j]].toString()] = count.toString();
+                        sharedStringsMap[data[i][columns[j]].toString()] = (count++).toString();
 
                         row.createChildReturnChild({
                             nodeType: 'c',
@@ -604,7 +603,6 @@ var excelExporter = (function _excelExporter() {
                             nodeType: 'v',
                             textValue: count.toString()
                         });
-                        count++;
                     }
                     else {
                         row.createChildReturnChild({
@@ -657,7 +655,7 @@ var excelExporter = (function _excelExporter() {
         });
 
         var t = Object.create(table).init(columns, ref, tableId);
-        return { worksheet: this, sharedStrings: sharedStrings, table: t, total: total };
+        return { worksheet: this, sharedStrings: sharedStrings, table: t, total: total === -1 ? 0 : total };
     };
 
     /**
@@ -771,7 +769,7 @@ var excelExporter = (function _excelExporter() {
      * @returns {relation}
      */
     relation.addRelation = function _addRelation(rId, type, target) {
-        return this.createChild({
+        this.createChild({
             nodeType: 'Relationship',
             attributes: {
                 Id: rId,
@@ -779,6 +777,7 @@ var excelExporter = (function _excelExporter() {
                 Target: target
             }
         });
+        return this;
     };
 
     /**
@@ -840,7 +839,7 @@ var excelExporter = (function _excelExporter() {
      * @returns {contentType}
      */
     contentType.init = function _init() {
-        return this.createXmlNode({
+        this.createXmlNode({
             nodeType: 'Types',
             isRoot: true,
             fileName: '[Content-Types].xml',
@@ -884,6 +883,7 @@ var excelExporter = (function _excelExporter() {
                 ContentType: 'application/vnd.openxmlformats-officedocument.extended-properties+xml'
             }
         });
+        return this;
     };
 
     /**
@@ -893,20 +893,21 @@ var excelExporter = (function _excelExporter() {
     * @returns {contentType}
     */
     contentType.addContentType = function _addContentType(partName, type) {
-        return this.createChildReturnRoot({
+        this.createChildReturnRoot({
             nodeType: 'Override',
             attributes: {
                 PartName: partName,
                 ContentType: type
             }
         });
+        return this;
     };
 
     var core = Object.create(xmlNode);
 
     core.init = function _init() {
         var curDate = new Date().toISOString();
-        return this.createXmlNode({
+        this.createXmlNode({
             nodeType: 'cp:coreProperties',
             isRoot: true,
             fileName: 'core.xml',
@@ -936,6 +937,7 @@ var excelExporter = (function _excelExporter() {
                 'xsi:type': 'dcterms:W3CDTF'
             }
         });
+        return this;
     };
 
     var app = Object.create(xmlNode);
@@ -970,7 +972,7 @@ var excelExporter = (function _excelExporter() {
             }
         });
 
-        return vector.createChildReturnChild({
+        vector.createChildReturnChild({
             nodeType: 'vt:variant'
         }).createChildReturnParent({
             nodeType: 'vt:lpstr',
@@ -1004,6 +1006,7 @@ var excelExporter = (function _excelExporter() {
             nodeType: 'AppVersion',
             textValue: '15.0300'
         });
+        return this;
     };
 
     //==================================================================================//

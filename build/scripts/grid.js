@@ -2493,7 +2493,7 @@ var grid = (function _grid($) {
             determineGridDataToExport(gridId, option, function gridDataCallback(excelDataAndColumns) {
                 var data = [];
                 for (var i = 0; i < 5; i++)
-                    data.push(excelDataAndColumns[i]);
+                    data.push(excelDataAndColumns.data[i]);
                 excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(data, excelDataAndColumns.columns, 'testSheet'));
             });
         }

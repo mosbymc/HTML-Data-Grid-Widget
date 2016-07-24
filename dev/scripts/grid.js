@@ -3090,7 +3090,7 @@ var grid = (function _grid($) {
                 //TODO: currently limiting excel data for testing purposes. This data-reducer needs to be removed later
                 var data = [];
                 for (var i = 0; i < 5; i++)
-                    data.push(excelDataAndColumns[i]);
+                    data.push(excelDataAndColumns.data[i]);
                 excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(data, excelDataAndColumns.columns, 'testSheet'));
             });
         }
