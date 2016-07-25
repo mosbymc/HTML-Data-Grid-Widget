@@ -2595,7 +2595,7 @@
         switch (option) {
             case &#039;select&#039;:
                 var selectedData = storage.grids[gridId].grid.selectedData;
-                for (var  i =0; i &lt; selectedData.length; i++) {
+                for (var i = 0; i &lt; selectedData.length; i++) {
                     if (!columns.indexOf(selectedData[i].field))
                         columns.push(selectedData[i].field);
                     selectedData[i] = selectedData[i].data;

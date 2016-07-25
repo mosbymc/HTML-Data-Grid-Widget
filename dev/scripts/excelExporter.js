@@ -479,7 +479,7 @@ var excelExporter = (function _excelExporter() {
     workSheet.init = function _init(data, columns, workSheetName, tableId) {
         var sharedStrings = [],
             sharedStringsMap = {},
-            i, count = -1, total = columns.length;
+            i, count = 0, total = columns.length;
         this.createXmlNode({
             nodeType: 'worksheet',
             fileName: workSheetName + '.xml',
@@ -559,9 +559,9 @@ var excelExporter = (function _excelExporter() {
                 nodeType: 'col',
                 attributes: attrs
             });
-
+            //TODO: Need to update logic here to check first if header is a string or not
             sharedStrings.push(columns[i].toString());
-            sharedStringsMap[columns[i].toString()] = (count++).toString();
+            sharedStringsMap[columns[i].toString()] = count.toString();
             headerRowPos = positionToLetterRef((i + 1), 1);
 
             headerRow.createChildReturnChild({
@@ -574,6 +574,7 @@ var excelExporter = (function _excelExporter() {
                 nodeType: 'v',
                 textValue: count.toString()
             });
+            count++;
         }
 
         for (i = 0; i < data.length; i++) {
@@ -591,7 +592,7 @@ var excelExporter = (function _excelExporter() {
                     total += 1;
                     if (!sharedStringsMap[data[i][columns[j]].toString()]) {
                         sharedStrings.push(data[i][columns[j]].toString());
-                        sharedStringsMap[data[i][columns[j]].toString()] = (count++).toString();
+                        sharedStringsMap[data[i][columns[j]].toString()] = count.toString();
 
                         row.createChildReturnChild({
                             nodeType: 'c',
@@ -603,6 +604,7 @@ var excelExporter = (function _excelExporter() {
                             nodeType: 'v',
                             textValue: count.toString()
                         });
+                        count++;
                     }
                     else {
                         row.createChildReturnChild({
@@ -821,7 +823,7 @@ var excelExporter = (function _excelExporter() {
             });
         }
         this.addAttributes({
-            uniqueCount: values.length+1,
+            uniqueCount: values.length,
             count: count
         });
         return this;

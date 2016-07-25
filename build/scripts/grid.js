@@ -2504,7 +2504,7 @@ var grid = (function _grid($) {
         switch (option) {
             case 'select':
                 var selectedData = storage.grids[gridId].grid.selectedData;
-                for (var  i =0; i < selectedData.length; i++) {
+                for (var i = 0; i < selectedData.length; i++) {
                     if (!columns.indexOf(selectedData[i].field))
                         columns.push(selectedData[i].field);
                     selectedData[i] = selectedData[i].data;
