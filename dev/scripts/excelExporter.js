@@ -269,32 +269,32 @@ var excelExporter = (function _excelExporter() {
                 'xmlns:x15': 'http://schemas.microsoft.com/office/spreadsheetml/2010/11/main'
             }
         }).createChild({
-            nodeType: 'workbookPr',
-            attributes: {
-                defaultThemeVersion: '153222'
-            }
-        }).createChild({
             nodeType: 'fileVersion',
             attributes: {
                 appName: 'xl',
-                rupBuild: '14420',
+                lastEdited: '6',
                 lowestEdited: '6',
-                lastEdited: '6'
+                rupBuild: '14420'
             }
         }).createChild({
-            nodeType: 'calcPr',
+            nodeType: 'workbookPr',
             attributes: {
-                calcId: '0'
+                defaultThemeVersion: '153222'
             }
         }).createChildReturnChild({
             nodeType: 'bookViews'
         }).createChildReturnRoot({
             nodeType: 'workbookView',
             attributes: {
-                windowHeight: '12435',
-                windowWidth: '28800',
+                xWindow: '0',
                 yWindow: '0',
-                xWindow: '0'
+                windowWidth: '28800',
+                windowHeight: '12435'
+            }
+        }).createChild({
+            nodeType: 'calcPr',
+            attributes: {
+                calcId: '152511'
             }
         }).createChildReturnChild({
             nodeType: 'extLst'
@@ -337,7 +337,7 @@ var excelExporter = (function _excelExporter() {
             .createChildReturnRoot({
                 nodeType: 'sheet',
                 attributes: {
-                    name: 'Sheet' + sheetId,
+                    name: workSheetName,
                     sheetId: sheetId,
                     'r:id': 'rId' + sheetId
                 }
@@ -515,16 +515,23 @@ var excelExporter = (function _excelExporter() {
             }
         }).createChildReturnChild({
             nodeType: 'sheetViews'
-        }).createChildReturnRoot({
+        }).createChildReturnChild({
             nodeType: 'sheetView',
             attributes: {
                 'tabSelected': '1',
                 'workbookViewId': '0'
             }
+        }).createChildReturnRoot({
+            nodeType: 'selection',
+            attributes: {
+                activeCell: 'A1',
+                sqref: 'A1'
+            }
         }).createChild({
             nodeType: 'sheetFormatPr',
             attributes: {
-                defaultRowHeight: '15'
+                defaultRowHeight: '15',
+                'x14ac:dyDescent': '0.25'
             }
         });
 
@@ -552,7 +559,7 @@ var excelExporter = (function _excelExporter() {
                 attrs = { width: columns[i].width };
             attrs.min = i + 1;
             attrs.max = i + 1;
-            attrs.customWidth = '1';
+            attrs.width = '10';
             attrs.bestFit = '1';
 
             colContainer.createChild({
@@ -582,7 +589,8 @@ var excelExporter = (function _excelExporter() {
                 nodeType: 'row',
                 attributes: {
                     r: (i + 2).toString(),
-                    spans: '1:' + columns.length
+                    spans: '1:' + columns.length,
+                    'x14ac:dyDescent': '0.25'
                 }
             });
 
@@ -692,15 +700,6 @@ var excelExporter = (function _excelExporter() {
             attributes: {
                 'ref': ref
             }
-        }).createChild({
-            nodeType: 'tableStyleInfo',
-            attributes: {
-                name: 'TableStyleMedium2',
-                showFirstColumn: '0',
-                showLastColumn: '0',
-                showRowStripes: '1',
-                showColumnStripes: '0'
-            }
         });
 
         var tableCols = this.createChildReturnChild({
@@ -723,6 +722,18 @@ var excelExporter = (function _excelExporter() {
                 }
             });
         }
+
+        this.createChild({
+            nodeType: 'tableStyleInfo',
+            attributes: {
+                name: 'TableStyleMedium2',
+                showFirstColumn: '0',
+                showLastColumn: '0',
+                showRowStripes: '1',
+                showColumnStripes: '0'
+            }
+        });
+
         this.columns = [columns];
         this.name = tableId;
         this.path = '/tables';
@@ -994,7 +1005,9 @@ var excelExporter = (function _excelExporter() {
             }
         }).createChildReturnRoot({
             nodeType: 'vt:lpstr',
-            textValue: 'Sheet4'
+            textValue: 'sheet1'
+        }).createChild({
+            nodeType: 'Company'
         }).createChild({
             nodeType: 'LinksUpToDate',
             textValue: 'false'
