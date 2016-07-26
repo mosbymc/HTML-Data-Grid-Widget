@@ -3087,11 +3087,7 @@ var grid = (function _grid($) {
     function exportDataAsExcelFile(gridId, option) {
         if (excelExporter && typeof excelExporter.createWorkBook === 'function') {
             determineGridDataToExport(gridId, option, function gridDataCallback(excelDataAndColumns) {
-                //TODO: currently limiting excel data for testing purposes. This data-reducer needs to be removed later
-                var data = [];
-                for (var i = 0; i < 5; i++)
-                    data.push(excelDataAndColumns.data[i]);
-                excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(data, excelDataAndColumns.columns, 'testSheet'));
+                excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(excelDataAndColumns.data, excelDataAndColumns.columns, 'testSheet'));
             });
         }
         /*
@@ -3110,19 +3106,29 @@ var grid = (function _grid($) {
         var columns = getGridColumns(gridId);
         switch (option) {
             case 'select':
-                var selectedData = storage.grids[gridId].grid.selectedData;
+                //TODO: this is a bad namespace; need to rework the unfortunate grid.grid section
+                //TODO: need to also create a better way to get the selected grid data as it appears in the dataSource
+                var selectedData = storage.grids[gridId].grid[0].grid.selectedData;
+                if (!selectedData.length) return;
+                var data = [], currentRow = selectedData[0].rowIndex;
                 for (var i = 0; i < selectedData.length; i++) {
-                    if (!columns.indexOf(selectedData[i].field))
-                        columns.push(selectedData[i].field);
-                    selectedData[i] = selectedData[i].data;
+                    if (!data.length || currentRow !== selectedData[i].rowIndex) {
+                        var tmpObj = {};
+                        tmpObj[selectedData[i].field] = selectedData[i].data;
+                        data.push(tmpObj);
+                        currentRow = selectedData[i].rowIndex;
+                    }
+                    else {
+                        data[data.length - 1][selectedData[i].field] = selectedData[i].data;
+                    }
                 }
-                callback({ data: selectedData, columns: columns});
+                callback({ data: data, columns: columns});
                 break;
             case 'all':
-                if (typeof storage.grids[gridId].grid.dataSource.get === 'function') {
+                if (typeof storage.grids[gridId].dataSource.get === 'function') {
                     var reqObj = createExcelRequestObject(gridId);
-                    storage.grids[gridId].grid.dataSource.get(reqObj, function excelDataCallback(data) {
-                        callback({ data: data, columns: 1});
+                    storage.grids[gridId].dataSource.get(reqObj, function excelDataCallback(response) {
+                        callback({ data: response.data, columns: columns});
                     });
                 }
                 else callback({ data: storage.grids[gridId].originalData, columns: columns });
@@ -3159,7 +3165,7 @@ var grid = (function _grid($) {
             requestObj.filterType = filterType;
         }
 
-        if (gridData.groupable) {
+        if (gridData.groupable) {   //TODO: not sure if the data can be grouped in excel; maybe a pivot table, but that will come much later, if at all.
             requestObj.groupedBy = groupedBy;
             requestObj.groupSortDirection = groupSortDirection;
         }
