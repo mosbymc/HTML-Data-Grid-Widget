@@ -40,15 +40,6 @@ var excelExporter = (function _excelExporter() {
      * @type {Object}
      */
     var xmlNode = {
-        fileName: '',
-        /**
-         * Denotes weather this node is the root node of the file or not
-         */
-        isRoot: false,
-        /**
-         * Contains a collection of child xmlNodes
-         */
-        children: [],
         /**
          * Create a new xmlNode, setting base attributes
          * @param {Object} props - A list of properties for the node
@@ -249,6 +240,18 @@ var excelExporter = (function _excelExporter() {
      * @returns {workbook}
      */
     workbook.init = function _init() {
+        this.directory = {
+            _rels: {},
+            xl: {
+                worksheets: {
+                    _rels: {}
+                },
+                tables: {},
+                _rels: {}
+            },
+            docProps: {}
+        };
+
         return this.createXmlNode({
             nodeType: 'workbook',
             isRoot: true,
@@ -454,18 +457,6 @@ var excelExporter = (function _excelExporter() {
             else insertionPoint[object.fileName] = object;
             return this;
         }
-    };
-
-    workbook.directory = {
-        _rels: {},
-        xl: {
-            worksheets: {
-                _rels: {}
-            },
-            tables: {},
-            _rels: {}
-        },
-        docProps: {}
     };
 
     /**
