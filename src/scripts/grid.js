@@ -1,15 +1,16 @@
 var grid = (function _grid($) {
     'use strict';
-    var dataTypes, events, storage, aggregates;
+    var dataTypes, events, aggregates, generateId,
+        gridState = [];
 
     function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
-            var id = storage.count;
+            var id = generateId();
             if (id > 0) {   
                 var tmp = id - 1;
                 while (tmp > -1) {  
-                    if (storage.grids[tmp] != null && !$('body').find('#' + storage.grids[tmp].grid[0].id).length)     
-                        delete storage.grids[tmp];      
+                    if (gridState[tmp] != null && !$('body').find('#' + gridState[tmp].grid[0].id).length)     
+                        delete gridState[tmp];      
                     tmp--;
                 }
             }
@@ -20,7 +21,7 @@ var grid = (function _grid($) {
             wrapperDiv.append('<div id="grid-content-' + id + '" data-grid_content_id="' + id + '" class=grid-content-div></div>');
             wrapperDiv.append('<div id="grid-footer-' + id + '" data-grid_footer_id="' + id + '" class=grid-footer-div></div>');
 
-            storage.grids[id] = {};
+            gridState[id] = {};
             gridElem[0].grid = {};
 
             createGridInstanceMethods(gridElem, id);
@@ -142,7 +143,7 @@ var grid = (function _grid($) {
                         if (!funcs || (typeof funcs !== 'function' && funcs.constructor !== Array)) return false;
                         if (typeof funcs === 'function') funcs = [funcs];
                         if (~events.indexOf(evt)) {
-                            storage.grids[gridId].events[evt] = storage.grids[gridId].events[evt].concat(funcs);
+                            gridState[gridId].events[evt] = gridState[gridId].events[evt].concat(funcs);
                             return true;
                         }
                         return false;
@@ -155,13 +156,13 @@ var grid = (function _grid($) {
                         if (~events.indexOf(evt) && (funcs || (typeof funcs === 'function' || funcs.constructor === Array))) {
                             if (typeof funcs === 'function') funcs = [funcs];
                             var tmpEvts = [];
-                            for (var i = 0; i < storage.grids[gridId].events[evt].length; i++) {
+                            for (var i = 0; i < gridState[gridId].events[evt].length; i++) {
                                 for (var j = 0; j < funcs.length; j++) {
-                                    if (storage.grids[gridId].events[evt][i] !== funcs[j])
-                                        tmpEvts.push(storage.grids[gridId].events[evt][i]);
+                                    if (gridState[gridId].events[evt][i] !== funcs[j])
+                                        tmpEvts.push(gridState[gridId].events[evt][i]);
                                 }
                             }
-                            storage.grids[gridId].events[evt] = tmpEvts;
+                            gridState[gridId].events[evt] = tmpEvts;
                             return true;
                         }
                         return false;
@@ -172,7 +173,7 @@ var grid = (function _grid($) {
                 'removeAllEventHandlers': {
                     value: function _removeAllEventHandlers() {
                         for (var i = 0; i < events.length; i++) {
-                            storage.grids[gridId].events[events[i]] = [];
+                            gridState[gridId].events[events[i]] = [];
                         }
                     },
                     writable: false,
@@ -182,7 +183,7 @@ var grid = (function _grid($) {
                     value: function _getHandledEvents() {
                         var evts = [];
                         for (var i = 0; i < events.length; i++) {
-                            if (storage.grids[gridId].events[events[i]].length)
+                            if (gridState[gridId].events[events[i]].length)
                                 evts.push(events[i]);
                         }
                         return evts;
@@ -199,7 +200,7 @@ var grid = (function _grid($) {
                 },
                 'getAggregates': {
                     value: function _getAggregates() {
-                        return storage.grids[gridId].summaryRow;
+                        return gridState[gridId].summaryRow;
                     },
                     writable: false,
                     configurable: false
@@ -210,12 +211,12 @@ var grid = (function _grid($) {
                             result = [],
                             tmpRowModel,
                             validRow;
-                        if (typeof index === 'number' && index > -1 && index <= storage.grids[gridId].dataSource.data.length) {
+                        if (typeof index === 'number' && index > -1 && index <= gridState[gridId].dataSource.data.length) {
                             validRow = findValidRows(index);
                             if (validRow) rows.push(validRow);
                         }
                         else {
-                            for (var i = 0; i < storage.grids[gridId].pageSize; i++) {
+                            for (var i = 0; i < gridState[gridId].pageSize; i++) {
                                 validRow = findValidRows(i);
                                 if (validRow) rows.push(validRow);
                             }
@@ -234,7 +235,7 @@ var grid = (function _grid($) {
                         function findValidRows(index) {
                             var counter = 0;
                             var row = null;
-                            storage.grids[gridId].grid.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
+                            gridState[gridId].grid.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
                                 if ($(this).hasClass('grouped_row_header'))
                                     return true;
                                 if (counter === index) {
@@ -252,13 +253,13 @@ var grid = (function _grid($) {
                 'getCurrentDataSourceData': {
                     value: function _getCurrentDataSourceData(index) {
                         var i;
-                        if (typeof index === 'number' && index > -1 && index <= storage.grids[gridId].dataSource.data.length) {
-                            var val = cloneGridData([].concat(storage.grids[gridId].dataSource.data[index]));
+                        if (typeof index === 'number' && index > -1 && index <= gridState[gridId].dataSource.data.length) {
+                            var val = cloneGridData([].concat(gridState[gridId].dataSource.data[index]));
                             delete val[0]._initialRowIndex;
                             return val;
                         }
                         else {
-                            var gd = cloneGridData(storage.grids[gridId].dataSource.data);
+                            var gd = cloneGridData(gridState[gridId].dataSource.data);
                             for (i = 0; i < gd.length; i++) {
                                 delete gd[i]._initialRowIndex;
                             }
@@ -271,14 +272,14 @@ var grid = (function _grid($) {
                 'updatePageData': {
                     value: function _updatePageData(data) {
                         if (data != null && typeof data === 'object' && data.constructor === Array) {
-                            storage.grids[gridId].dataSource.data = data;
-                            storage.grids[gridId].pageSize = data.length;
-                            storage.grids[gridId].dataSource.rowCount = data.length;
-                            storage.grids[gridId].grid.find('.grid-content-div').empty();
-                            createGridContent(storage.grids[gridId], storage.grids[gridId].grid);
-                            storage.grids[gridId].grid.find('.grid-footer-div').empty();
-                            createGridFooter(storage.grids[gridId], storage.grids[gridId].grid);
-                            buildHeaderAggregations(storage.grids[gridId], gridId);
+                            gridState[gridId].dataSource.data = data;
+                            gridState[gridId].pageSize = data.length;
+                            gridState[gridId].dataSource.rowCount = data.length;
+                            gridState[gridId].grid.find('.grid-content-div').empty();
+                            createGridContent(gridState[gridId], gridState[gridId].grid);
+                            gridState[gridId].grid.find('.grid-footer-div').empty();
+                            createGridFooter(gridState[gridId], gridState[gridId].grid);
+                            buildHeaderAggregations(gridState[gridId], gridId);
                         }
                     },
                     writable: false,
@@ -291,23 +292,23 @@ var grid = (function _grid($) {
                             return;
                         if (rowData.constructor === Array) {
                             for (var i = 0; i < rowData.length; i++) {
-                                if (typeof rowData[i].index !== 'number' || rowData[i].index >= storage.grids[gridId].dataSource.data.length)
+                                if (typeof rowData[i].index !== 'number' || rowData[i].index >= gridState[gridId].dataSource.data.length)
                                     continue;
-                                storage.grids[gridId].dataSource.data[rowData[i].index] = rowData[i].data;
+                                gridState[gridId].dataSource.data[rowData[i].index] = rowData[i].data;
                                 appliedUpdate = true;
                             }
                         }
                         else if (typeof rowData.index === 'number') {
-                            storage.grids[gridId].dataSource.data[rowData.index] = rowData.data;
+                            gridState[gridId].dataSource.data[rowData.index] = rowData.data;
                             appliedUpdate = true;
                         }
 
                         if (appliedUpdate) {
-                            storage.grids[gridId].grid.find('.grid-content-div').empty();
-                            createGridContent(storage.grids[gridId], storage.grids[gridId].grid);
-                            storage.grids[gridId].grid.find('.grid-footer-div').empty();
-                            createGridFooter(storage.grids[gridId], storage.grids[gridId].grid);
-                            buildHeaderAggregations(storage.grids[gridId], gridId);
+                            gridState[gridId].grid.find('.grid-content-div').empty();
+                            createGridContent(gridState[gridId], gridState[gridId].grid);
+                            gridState[gridId].grid.find('.grid-footer-div').empty();
+                            createGridFooter(gridState[gridId], gridState[gridId].grid);
+                            buildHeaderAggregations(gridState[gridId], gridId);
                         }
                     },
                     writable: false,
@@ -324,10 +325,10 @@ var grid = (function _grid($) {
                         else applyUpdate(cellData, setAsDirty);
 
                         function applyUpdate(cell, setAsDirty) {
-                            if (typeof cell.index !== 'number' || typeof cell.field !== 'string' || cell.index > storage.grids[gridId].dataSource.data.length)
+                            if (typeof cell.index !== 'number' || typeof cell.field !== 'string' || cell.index > gridState[gridId].dataSource.data.length)
                                 return;
-                            if (storage.grids[gridId].columns[cell.field]) {
-                                var dataType = storage.grids[gridId].columns[cell.field].type;
+                            if (gridState[gridId].columns[cell.field]) {
+                                var dataType = gridState[gridId].columns[cell.field].type;
                                 if (!dataType)
                                     dataType = 'string';
                                 if (dataType !== 'time' && dataType !== 'date' && dataType !== 'datetime') {
@@ -338,11 +339,11 @@ var grid = (function _grid($) {
                                     var re = new RegExp(dataTypes[dataType]);
                                     if (!re.test(cell.value)) return;
                                 }
-                                storage.grids[gridId].dataSource.data[cell.index][cell.field] = cell.value;
+                                gridState[gridId].dataSource.data[cell.index][cell.field] = cell.value;
                                 var tableCell;
-                                if (storage.grids[gridId].groupedBy) {
+                                if (gridState[gridId].groupedBy) {
                                     var counter = 0;
-                                    storage.grids[gridId].grid.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
+                                    gridState[gridId].grid.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
                                         if ($(this).hasClass('grouped_row_header'))
                                             return true;
                                         if (counter === cell.index) {
@@ -353,7 +354,7 @@ var grid = (function _grid($) {
                                     });
                                 }
                                 else
-                                    tableCell = storage.grids[gridId].grid.find('.grid-content-div').find('table').find('tr:nth-child(' + (cell.index + 1) + ')').find('[data-field="' + cell.field + '"]');
+                                    tableCell = gridState[gridId].grid.find('.grid-content-div').find('table').find('tr:nth-child(' + (cell.index + 1) + ')').find('[data-field="' + cell.field + '"]');
                                 var text = getFormattedCellText(gridId, cell.field, cell.value) || cell.value;
                                 tableCell.text(text);
                                 if (setAsDirty) tableCell.prepend('<span class="dirty"></span>');
@@ -365,8 +366,8 @@ var grid = (function _grid($) {
                 },
                 'destroy': {
                     value: function _destroy() {
-                        findChildren(storage.grids[gridId].grid.children());
-                        delete storage.grids[gridId];
+                        findChildren(gridState[gridId].grid.children());
+                        delete gridState[gridId];
 
                         function findChildren(nodes) {
                             for (var i = 0; i < nodes.length; i++) {
@@ -453,7 +454,7 @@ var grid = (function _grid($) {
         var eventObj = { element: storageData.grid };
         callGridEventHandlers(storageData.events.beforeDataBind, storageData.grid, eventObj);
 
-        storage.grids[id] = storageData;
+        gridState[id] = storageData;
 
         if (gridData.summaryRow && gridData.summaryRow.positionAt === 'top') buildHeaderAggregations(gridData, id);
 
@@ -466,7 +467,7 @@ var grid = (function _grid($) {
     function addNewColumns(newData, gridElem) {
         var oldGrid = $(gridElem).find('.grid-wrapper');
         var id = oldGrid.data('grid_id');
-        var oldData = storage.grids[id].data;
+        var oldData = gridState[id].data;
 
         for (var i = 0; i < newData.length; i++) {
             for (var col in newData[i]) {
@@ -725,7 +726,7 @@ var grid = (function _grid($) {
         gridContent.on('scroll', function contentDivScrollCallback(e) {
             var cDiv = $(e.currentTarget);
             var headWrap = cDiv.parents('.grid-wrapper').find('.grid-header-wrapper');
-            if (storage.grids[headWrap.parent().data('grid_header_id')].resizing)
+            if (gridState[headWrap.parent().data('grid_header_id')].resizing)
                 return;
             headWrap.scrollLeft(cDiv.scrollLeft());
         });
@@ -737,19 +738,19 @@ var grid = (function _grid($) {
 
         copyGridWidth(gridElem);
 
-        storage.grids[id].dataSource.data = gridData.dataSource.data;
+        gridState[id].dataSource.data = gridData.dataSource.data;
         loader.remove();
-        storage.grids[id].updating = false;
+        gridState[id].updating = false;
     }
 
     function attachTableSelectHandler(tableBody) {
         var gridId = tableBody.parents('.grid-wrapper').data('grid_id');
-        var isSelectable = storage.grids[gridId].selectable;
+        var isSelectable = gridState[gridId].selectable;
         if (isSelectable) {
             $(document).on('click', function tableBodySelectCallback(e) {
                 if (e.target === tableBody[0] || $(e.target).parents('tbody')[0] === tableBody[0]) {
-                    if (storage.grids[gridId].selecting) {
-                        storage.grids[gridId].selecting = false;
+                    if (gridState[gridId].selecting) {
+                        gridState[gridId].selecting = false;
                         return;
                     }
                     $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
@@ -768,9 +769,9 @@ var grid = (function _grid($) {
         if (isSelectable === 'multi-row' || isSelectable === 'multi-cell') {
             $(document).on('mousedown', function mouseDownDragCallback(event) {
                 if (event.target === tableBody[0] || $(event.target).parents('tbody')[0] === tableBody[0]) {
-                    storage.grids[gridId].selecting = true;
+                    gridState[gridId].selecting = true;
                     var contentDiv = tableBody.parents('.grid-content-div'),
-                        overlay = $('<div class="selection-highlighter"></div>').appendTo(storage.grids[gridId].grid);
+                        overlay = $('<div class="selection-highlighter"></div>').appendTo(gridState[gridId].grid);
                     overlay.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
                     overlay.data('origin-y', event.pageY + contentDiv.scrollTop()).data('origin-x', event.pageX + contentDiv.scrollLeft()).data('mouse-pos-x', event.pageX).data('mouse-pos-y', event.pageY);
                     overlay.data('previous-top', event.pageY).data('previous-left', event.pageX);
@@ -791,20 +792,20 @@ var grid = (function _grid($) {
                     });
 
                     contentDiv.on('scroll', function updateSelectOverlayOnScrollHandler() {
-                        if (storage.grids[gridId].selecting) {
+                        if (gridState[gridId].selecting) {
                             overlay.data('event-type', 'scroll');
                             setOverlayDimensions(contentDiv, overlay);
                         }
                     });
 
                     $(document).on('mousemove', function updateSelectOverlayOnMouseMoveHandler(ev) {
-                        if (storage.grids[gridId].selecting) {
+                        if (gridState[gridId].selecting) {
                             var domTag = ev.target.tagName.toUpperCase();
                             if (domTag === 'INPUT' || domTag === 'SELECT') return;
 
                             overlay.data('event-type', 'mouse');
                             overlay.data('mouse-pos-x', ev.pageX).data('mouse-pos-y', ev.pageY);
-                            setOverlayDimensions(storage.grids[gridId].grid.find('.grid-content-div'), overlay);
+                            setOverlayDimensions(gridState[gridId].grid.find('.grid-content-div'), overlay);
                         }
                     });
                 }
@@ -960,7 +961,7 @@ var grid = (function _grid($) {
     }
 
     function selectHighlighted(overlay, gridId) {
-        var contentDiv = storage.grids[gridId].grid.find('.grid-content-div'),
+        var contentDiv = gridState[gridId].grid.find('.grid-content-div'),
             ctOffset = contentDiv.offset(),
             ctHeight = contentDiv.height,
             ctWidth = contentDiv.width(),
@@ -988,7 +989,7 @@ var grid = (function _grid($) {
             }
         }
 
-        var gridElems = storage.grids[gridId].selectable === 'multi-cell' ? contentDiv.find('td') : contentDiv.find('tr');
+        var gridElems = gridState[gridId].selectable === 'multi-cell' ? contentDiv.find('td') : contentDiv.find('tr');
 
         gridElems.each(function highlightGridElemsCallback(idx, val) {
             var element = $(val),
@@ -1021,20 +1022,20 @@ var grid = (function _grid($) {
 
     function makeCellEditable(id, td) {
         td.on('click', function editableCellClickHandler(e) {
-            var gridContent = storage.grids[id].grid.find('.grid-content-div');
-            var gridData = storage.grids[id];
+            var gridContent = gridState[id].grid.find('.grid-content-div');
+            var gridData = gridState[id];
             if (e.target !== e.currentTarget) return;
             if (gridContent.find('.invalid').length) return;
             var cell = $(e.currentTarget);
             cell.text('');
 
-            if (storage.grids[id].updating) return;
+            if (gridState[id].updating) return;
             var index = cell.parents('tr').index(),
                 field = cell.data('field'),
-                type = storage.grids[id].columns[field].type || '',
-                val = storage.grids[id].dataSource.data[index][field],
+                type = gridState[id].columns[field].type || '',
+                val = gridState[id].dataSource.data[index][field],
                 dataAttributes = '',
-                gridValidation = storage.grids[id].useValidator ? storage.grids[id].columns[field].validation : null,
+                gridValidation = gridState[id].useValidator ? gridState[id].columns[field].validation : null,
                 dataType, input, inputVal;
 
             if (gridValidation) {
@@ -1043,8 +1044,8 @@ var grid = (function _grid($) {
                 dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
             }
 
-            if (storage.grids[id].useFormatter && storage.grids[id].columns[field].inputFormat)
-                dataAttributes += ' data-inputformat="' + storage.grids[id].columns[field].inputFormat + '"';
+            if (gridState[id].useFormatter && gridState[id].columns[field].inputFormat)
+                dataAttributes += ' data-inputformat="' + gridState[id].columns[field].inputFormat + '"';
 
             switch (type) {
                 case 'boolean':
@@ -1101,17 +1102,17 @@ var grid = (function _grid($) {
 
     function makeCellSelectable(id, td) {
         td.on('click', function selectableCellClickHandler(e) {
-            var gridContent = storage.grids[id].grid.find('.grid-content-div');
-            var gridData = storage.grids[id];
+            var gridContent = gridState[id].grid.find('.grid-content-div');
+            var gridData = gridState[id];
             if (e.target !== e.currentTarget) return;
             if (gridContent.find('.invalid').length) return;
             var cell = $(e.currentTarget);
             cell.text('');
             var index = cell.parents('tr').index();
             var field = cell.data('field');
-            if (storage.grids[id].updating) return;		
+            if (gridState[id].updating) return;		
 
-            var gridValidation = storage.grids[id].useValidator ? storage.grids[id].columns[field].validation : null;
+            var gridValidation = gridState[id].useValidator ? gridState[id].columns[field].validation : null;
             var dataAttributes = '';
 
             if (gridValidation) {
@@ -1238,23 +1239,23 @@ var grid = (function _grid($) {
             id = gridContent.data('grid_content_id'),
             index = cell.parents('tr').index(),
             field = cell.data('field'),
-            type = storage.grids[id].columns[field].type || '',
+            type = gridState[id].columns[field].type || '',
             saveVal, re,
-            displayVal = getFormattedCellText(id, field, val) || storage.grids[id].dataSource.data[index][field];
+            displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field];
 
         input.remove();
         switch (type) {
             case 'number':
                 re = new RegExp(dataTypes.number);
-                if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
-                saveVal = typeof storage.grids[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
+                if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
+                saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
                 break;
             case 'date':
                 saveVal = displayVal;   
                 break;
             case 'time':
                 re = new RegExp(dataTypes.time);
-                if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
+                if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
                 saveVal = displayVal;   
                 break;
             default: 		
@@ -1263,15 +1264,15 @@ var grid = (function _grid($) {
         }
 
         cell.text(displayVal);
-        storage.grids[id].currentEdit[field] = null;
-        var previousVal = storage.grids[id].dataSource.data[index][field];
+        gridState[id].currentEdit[field] = null;
+        var previousVal = gridState[id].dataSource.data[index][field];
         if (previousVal !== saveVal && !('' === saveVal && undefined === previousVal)) {	
-            storage.grids[id].dataSource.data[index][field] = saveVal;
+            gridState[id].dataSource.data[index][field] = saveVal;
             cell.prepend('<span class="dirty"></span>');
         }
         else
-            storage.grids[id].dataSource.data[index][field] = previousVal;
-        callGridEventHandlers(storage.grids[id].events.afterCellEdit, storage.grids[id].grid, null);
+            gridState[id].dataSource.data[index][field] = previousVal;
+        callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
 
     function saveCellSelectData(select) {
@@ -1282,22 +1283,22 @@ var grid = (function _grid($) {
         var id = gridContent.data('grid_content_id'),
             index = parentCell.parents('tr').index(),
             field = parentCell.data('field'),
-            type = storage.grids[id].columns[field].type || '',
-            displayVal = getFormattedCellText(id, field, val) || storage.grids[id].dataSource.data[index][field],
+            type = gridState[id].columns[field].type || '',
+            displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field],
             re, saveVal;
 
         switch (type) {
             case 'number':
                 re = new RegExp(dataTypes.number);
-                if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
-                saveVal = typeof storage.grids[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
+                if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
+                saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
                 break;
             case 'date':
                 saveVal = displayVal;   
                 break;
             case 'time':
                 re = new RegExp(dataTypes.time);
-                if (!re.test(val)) val = storage.grids[id].currentEdit[field] || storage.grids[id].dataSource.data[index][field];
+                if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
                 saveVal = displayVal;   
                 break;
             default: 		
@@ -1306,12 +1307,12 @@ var grid = (function _grid($) {
         }
 
         parentCell.text(displayVal);
-        var previousVal = storage.grids[id].dataSource.data[index][field];
+        var previousVal = gridState[id].dataSource.data[index][field];
         if (previousVal !== saveVal) {	
             parentCell.prepend('<span class="dirty"></span>');
-            storage.grids[id].dataSource.data[index][field] = saveVal;
+            gridState[id].dataSource.data[index][field] = saveVal;
         }
-        callGridEventHandlers(storage.grids[id].events.afterCellEdit, storage.grids[id].grid, null);
+        callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
 
     function createCellEditSaveDiv(gridData, gridElem) {
@@ -1355,36 +1356,36 @@ var grid = (function _grid($) {
 
     function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
         saveAnchor.on('click', function saveChangesHandler() {
-            if (storage.grids[id].updating) return;
+            if (gridState[id].updating) return;
             var dirtyCells = [],
-                pageNum = storage.grids[id].pageNum, i;
+                pageNum = gridState[id].pageNum, i;
             gridElem.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
                 dirtyCells.push($(val).parents('td'));
             });
 
             if (dirtyCells.length) {
-                if (typeof storage.grids[id].dataSource.put !== 'function') {
+                if (typeof gridState[id].dataSource.put !== 'function') {
                     for (i = 0; i < dirtyCells.length; i++) {
                         var index = dirtyCells[i].parents('tr').index();
                         var field = dirtyCells[i].data('field');
-                        var origIndex = storage.grids[id].dataSource.data[index][field]._initialRowIndex;
-                        storage.grids[id].originalData[origIndex][field] = storage.grids[id].dataSource.data[index][field];
+                        var origIndex = gridState[id].dataSource.data[index][field]._initialRowIndex;
+                        gridState[id].originalData[origIndex][field] = gridState[id].dataSource.data[index][field];
                         dirtyCells[i].find('.dirty').remove();
                     }
                 }
                 else {
-                    storage.grids[id].putRequest.eventType = 'save';
-                    storage.grids[id].putRequest.pageNum = pageNum;
-                    storage.grids[id].putRequest.models = [];
-                    var putRequestModels = storage.grids[id].putRequest.models;
+                    gridState[id].putRequest.eventType = 'save';
+                    gridState[id].putRequest.pageNum = pageNum;
+                    gridState[id].putRequest.models = [];
+                    var putRequestModels = gridState[id].putRequest.models;
                     for (i = 0; i < dirtyCells.length; i++) {
-                        var tmpModel = cloneGridData(storage.grids[id].dataSource.data[dirtyCells[i].parents('tr').index()]);
+                        var tmpModel = cloneGridData(gridState[id].dataSource.data[dirtyCells[i].parents('tr').index()]);
                         var tmpMap = tmpModel._initialRowIndex;
                         var idx = existsInPutRequest(putRequestModels, tmpModel);
                         if (~idx)
                             putRequestModels[idx].dirtyFields.push(dirtyCells[i].data('field'));
                         else
-                            putRequestModels.push({ cleanData: storage.grids[id].originalData[tmpMap], dirtyData: tmpModel, dirtyFields: [dirtyCells[i].data('field')] });
+                            putRequestModels.push({ cleanData: gridState[id].originalData[tmpMap], dirtyData: tmpModel, dirtyFields: [dirtyCells[i].data('field')] });
                     }
 
                     for (i = 0; i < putRequestModels.length; i++) {
@@ -1397,7 +1398,7 @@ var grid = (function _grid($) {
         });
 
         deleteAnchor.on('click', function deleteChangeHandler() {
-            if (storage.grids[id].updating) return;
+            if (gridState[id].updating) return;
             var dirtyCells = [];
             gridElem.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
                 dirtyCells.push($(val).parents('td'));
@@ -1407,14 +1408,14 @@ var grid = (function _grid($) {
                 for (var i = 0; i < dirtyCells.length; i++) {
                     var field = dirtyCells[i].data('field');
                     var index = dirtyCells[i].parents('tr').index();
-                    var pageNum = storage.grids[id].pageNum;
-                    var rowNum = storage.grids[id].pageSize;
+                    var pageNum = gridState[id].pageNum;
+                    var rowNum = gridState[id].pageSize;
                     var addend = (pageNum-1)*rowNum;
-                    var cellVal = storage.grids[id].originalData[index][field] !== undefined ? storage.grids[id].originalData[index][field] : '';
+                    var cellVal = gridState[id].originalData[index][field] !== undefined ? gridState[id].originalData[index][field] : '';
                     var text = getFormattedCellText(id, field, cellVal) || cellVal;
                     dirtyCells[i].text(text);
                     dirtyCells[i].find('.dirty').remove();
-                    storage.grids[id].dataSource.data[index][field] = storage.grids[id].originalData[index + addend][field];
+                    gridState[id].dataSource.data[index][field] = gridState[id].originalData[index + addend][field];
                 }
             }
         });
@@ -1433,11 +1434,11 @@ var grid = (function _grid($) {
                 newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu"></div>');
                 var list = $('<ul class="menu-list"></ul>');
                 var saveMenuItems, excelMenuItem;
-                if (storage.grids[gridId].editable || storage.grids[gridId].selectable) saveMenuItems = createSaveDeleteMenuItems(gridId);
+                if (gridState[gridId].editable || gridState[gridId].selectable) saveMenuItems = createSaveDeleteMenuItems(gridId);
                 excelMenuItem = createExcelExportMenuItems(newMenu, gridId);
                 list.append(saveMenuItems).append(excelMenuItem);
                 newMenu.append(list);
-                storage.grids[gridId].grid.append(newMenu);
+                gridState[gridId].grid.append(newMenu);
                 $(document).on('click', function hideMenuHandler(e) {
                     var elem = $(e.target);
                     if (!elem.hasClass('grid_menu') && !elem.hasClass('menu_item_options')) {
@@ -1462,14 +1463,14 @@ var grid = (function _grid($) {
         var menuItem = $('<li class="menu_item"></li>');
         var menuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Export to Excel<span class="menu_arrow"/></span></a>');
         menuItem.on('mouseover', function excelMenuItemHoverHandler() {
-            var exportOptions = storage.grids[gridId].grid.find('#excel_grid_id_' + gridId);
+            var exportOptions = gridState[gridId].grid.find('#excel_grid_id_' + gridId);
             if (!exportOptions.length) {
                 exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options"></div>');
                 var exportList = $('<ul class="menu-list"></ul>');
                 var gridPage = $('<li data-value="page"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
                 var allData = $('<li data-value="all"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
                 exportList.append(gridPage).append(allData);
-                if (storage.grids[gridId].selectable) {
+                if (gridState[gridId].selectable) {
                     var gridSelection = $('<li data-value="select"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
                     exportList.append(gridSelection);
                 }
@@ -1478,7 +1479,7 @@ var grid = (function _grid($) {
                     exportDataAsExcelFile(gridId, this.dataset.value);
                 });
                 exportOptions.append(exportList);
-                storage.grids[gridId].grid.append(exportOptions);
+                gridState[gridId].grid.append(exportOptions);
             }
             else
                 exportOptions.removeClass('hidden_menu_item');
@@ -1497,11 +1498,11 @@ var grid = (function _grid($) {
                     var groupElementOffset = menuItem.offset();
                     if (e.pageX >= groupElementOffset.left && e.pageX <= (groupElementOffset.left + menuItem.outerWidth()) && e.pageY >= groupElementOffset.top &&
                         e.pageY <= (groupElementOffset.top + menuItem.outerHeight())) return;
-                    storage.grids[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
+                    gridState[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
                 });
             }
             else {
-                storage.grids[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
+                gridState[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
             }
         });
         menuItem.append(menuAnchor);
@@ -1514,7 +1515,7 @@ var grid = (function _grid($) {
         var deleteMenuItem = $('<li class="menu_item"></li>');
         var deleteMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Delete Grid Changes</a>');
 
-        attachSaveAndDeleteHandlers(gridId, storage.grids[gridId].grid, saveMenuItem, deleteMenuItem);
+        attachSaveAndDeleteHandlers(gridId, gridState[gridId].grid, saveMenuItem, deleteMenuItem);
 
         saveMenuItem.append(saveMenuAnchor);
         deleteMenuItem.append(deleteMenuAnchor);
@@ -1523,43 +1524,43 @@ var grid = (function _grid($) {
 
     function groupByHandler() {
         var id = $(this).parents('.toolbar').data('grid_id');
-        if (storage.grids[id].updating) return;
+        if (gridState[id].updating) return;
         var colSelector = $(this).parents('.toolbar').find('.group_select'),
             directionSelector = $(this).parents('.toolbar').find('.group_dir_select');
-        if (colSelector.val() === 'none' && (!storage.grids[id].groupedBy || storage.grids[id].groupedBy === 'none')) return;
-        if (Object.keys(storage.grids[id].columns).length === storage.grids[id].grid.find('colgroup').first().find('col').length && colSelector.val() !== 'none') {
-            if (!storage.grids[id].groupedBy)
-                storage.grids[id].groupingStatusChanged = true;
-            var colGroups = storage.grids[id].grid.find('colgroup');
+        if (colSelector.val() === 'none' && (!gridState[id].groupedBy || gridState[id].groupedBy === 'none')) return;
+        if (Object.keys(gridState[id].columns).length === gridState[id].grid.find('colgroup').first().find('col').length && colSelector.val() !== 'none') {
+            if (!gridState[id].groupedBy)
+                gridState[id].groupingStatusChanged = true;
+            var colGroups = gridState[id].grid.find('colgroup');
             colGroups.each(function iterateColGroupsForInsertCallback(idx, val) {
                 $(val).prepend('<col class="group_col"/>');
             });
-            storage.grids[id].grid.find('.grid-headerRow').prepend('<th class="group_spacer">&nbsp</th>');
-            storage.grids[id].grid.find('.summary-row-header').prepend('<td class="group_spacer">&nbsp</td>');
+            gridState[id].grid.find('.grid-headerRow').prepend('<th class="group_spacer">&nbsp</th>');
+            gridState[id].grid.find('.summary-row-header').prepend('<td class="group_spacer">&nbsp</td>');
         }
         else if (colSelector.val() === 'none') {
-            storage.grids[id].groupingStatusChanged = true;
-            storage.grids[id].grid.find('colgroup').find('.group_col').remove();
-            storage.grids[id].grid.find('.group_spacer').remove();
-            storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
+            gridState[id].groupingStatusChanged = true;
+            gridState[id].grid.find('colgroup').find('.group_col').remove();
+            gridState[id].grid.find('.group_spacer').remove();
+            gridState[id].alteredData = cloneGridData(gridState[id].originalData);
         }
-        storage.grids[id].pageRequest.groupedBy = colSelector.val() === 'none' ? undefined : colSelector.val();
-        storage.grids[id].pageRequest.groupSortDirection = colSelector.val() === 'none' ? undefined : directionSelector.val();
-        storage.grids[id].pageRequest.eventType = 'group';
+        gridState[id].pageRequest.groupedBy = colSelector.val() === 'none' ? undefined : colSelector.val();
+        gridState[id].pageRequest.groupSortDirection = colSelector.val() === 'none' ? undefined : directionSelector.val();
+        gridState[id].pageRequest.eventType = 'group';
         preparePageDataGetRequest(id);
     }
 
     function createGridFooter(gridData, gridElem) {
         var gridFooter = gridElem.find('.grid-footer-div');
         var id = gridFooter.data('grid_footer_id');
-        var count = storage.grids[id].dataSource.rowCount;
-        var displayedRows = (count - storage.grids[id].pageSize) > 0 ? storage.grids[id].pageSize : count;
+        var count = gridState[id].dataSource.rowCount;
+        var displayedRows = (count - gridState[id].pageSize) > 0 ? gridState[id].pageSize : count;
         var remainingPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) : 0;
-        var pageNum = storage.grids[parseInt(gridFooter.data('grid_footer_id'))].pageNum;
+        var pageNum = gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum;
 
         var first = $('<a href="#" class="grid-page-link link-disabled" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridFooter);
         var prev = $('<a href="#" class="grid-page-link link-disabled" data-link="prev" data-pagenum="1" title="Previous Page"><span class="grid-page-span span-prev">Prev Page</span></a>').appendTo(gridFooter);
-        var text = 'Page ' + storage.grids[parseInt(gridFooter.data('grid_footer_id'))].pageNum + '/' + (remainingPages + 1);
+        var text = 'Page ' + gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum + '/' + (remainingPages + 1);
         gridFooter.append('<span class="grid-pagenum-span page-counter">' + text + '</span>');
         var next = $('<a href="#" class="grid-page-link" data-link="next" data-pagenum="2" title="Next Page"><span class="grid-page-span span-next">Next Page</span></a>').appendTo(gridFooter);
         var last = $('<a href="#" class="grid-page-link" data-link="last" data-pagenum="' + (remainingPages + 1) + '" title="Last Page"><span class="grid-page-span span-last">Last Page</span></a>').appendTo(gridFooter);
@@ -1586,13 +1587,13 @@ var grid = (function _grid($) {
                 sizeSelectorSpan.appendTo(gridFooter);
                 sizeSelect.appendTo(sizeSelectorSpan);
             }
-            sizeSelect.val(storage.grids[id].pageSize);
+            sizeSelect.val(gridState[id].pageSize);
             sizeSelectorSpan.append('Rows per page');
 
             sizeSelect.on('change', function pageSizeSelectorClickHandler() {
                 var pageSize = $(this).val();
-                storage.grids[id].pageRequest.pageSize = parseInt(pageSize);
-                storage.grids[id].pageRequest.eventType = 'pageSize';
+                gridState[id].pageRequest.pageSize = parseInt(pageSize);
+                gridState[id].pageRequest.eventType = 'pageSize';
                 preparePageDataGetRequest(id);
             });
         }
@@ -1616,8 +1617,8 @@ var grid = (function _grid($) {
                 var gridFooter = link.parents('.grid-footer-div');
                 var allPagers = gridFooter.find('a');
                 var id = parseInt(link.parents('.grid-wrapper')[0].dataset.grid_id);
-                if (storage.grids[id].updating) return;		
-                var gridData = storage.grids[id];
+                if (gridState[id].updating) return;		
+                var gridData = gridState[id];
                 var pageSize = gridData.pageSize;
                 var pagerInfo = gridFooter.find('.pageinfo');
                 var pagerSpan = gridFooter.find('.grid-pagenum-span');
@@ -1680,11 +1681,11 @@ var grid = (function _grid($) {
             var type = filterAnchor.data('type');
             var grid = filterElem.parents('.grid-wrapper');
             var id = grid.data('grid_id');
-            if (storage.grids[id].updating) return;		
+            if (gridState[id].updating) return;		
             var filters = grid.find('.filter-div');
             var currFilter = null;
             var field = filterAnchor.data('field');
-            var title = storage.grids[id].columns[field].title || null;
+            var title = gridState[id].columns[field].title || null;
 
             if (filters.length) {
                 filters.each(function iterateFiltersCallback(idx, val) {
@@ -1765,8 +1766,8 @@ var grid = (function _grid($) {
         var filterDiv = $(e.currentTarget).parents('.filter-div');
         var value = filterDiv.find('.filterInput').val();
         var gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
-        if (storage.grids[gridId].updating) return;		
-        var gridData = storage.grids[gridId];
+        if (gridState[gridId].updating) return;		
+        var gridData = gridState[gridId];
 
         if (value === '' && gridData.filterVal === '') return;
         filterDiv.find('.filterInput').val('');
@@ -1780,7 +1781,7 @@ var grid = (function _grid($) {
         gridData.filterVal = null;
         gridData.filterType = null;
         gridData.pageRequest.eventType = 'filter';
-        storage.grids[gridId].alteredData = cloneGridData(storage.grids[gridId].originalData);
+        gridState[gridId].alteredData = cloneGridData(gridState[gridId].originalData);
         preparePageDataGetRequest(gridId);
     }
 
@@ -1789,8 +1790,8 @@ var grid = (function _grid($) {
             selected = filterDiv.find('.filterSelect').val(),
             value = filterDiv.find('.filterInput').val(),
             gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
-        if (storage.grids[gridId].updating) return;		
-        var gridData = storage.grids[gridId],
+        if (gridState[gridId].updating) return;		
+        var gridData = gridState[gridId],
             type = filterDiv.data('type'),
             errors = filterDiv.find('.filter-div-error'),
             re;
@@ -1853,7 +1854,7 @@ var grid = (function _grid($) {
         var id = targetCol.parents('.grid-header-div').length ? targetCol.parents('.grid-wrapper').data('grid_id') : null;
         var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
         if (!id || !droppedId || id !== droppedId) return;  
-        if (storage.grids[id].updating) return;		
+        if (gridState[id].updating) return;		
         if (droppedCol[0].cellIndex === targetCol[0].cellIndex) return;
         if (droppedCol[0].id === 'sliderDiv') return;
 
@@ -1910,13 +1911,13 @@ var grid = (function _grid($) {
         }
         e.preventDefault();
         var evtObj = {
-            element: storage.grids[id].grid,
+            element: gridState[id].grid,
             droppedColumn: droppedCol.data('field'),
             targetColumn: targetCol.data('field'),
             droppedIndex: droppedIndex,
             targetIndex: targetIndex
         };
-        callGridEventHandlers(storage.grids[id].events.columnReorder, storage.grids[id].grid, evtObj);
+        callGridEventHandlers(gridState[id].events.columnReorder, gridState[id].grid, evtObj);
     }
 
     function mouseLeaveHandlerCallback(e) {
@@ -1932,10 +1933,10 @@ var grid = (function _grid($) {
                 sliderDiv = $('<div id=sliderDiv style="width:10px; height:' + target.innerHeight() + 'px; cursor: col-resize; position: absolute" draggable=true><div></div></div>').appendTo(parentDiv);
                 sliderDiv.on('dragstart', function handleResizeDragStartCallback(e) {
                     e.originalEvent.dataTransfer.setData('text', e.currentTarget.id);
-                    storage.grids[parentDiv.parent().data('grid_header_id')].resizing = true;
+                    gridState[parentDiv.parent().data('grid_header_id')].resizing = true;
                 });
                 sliderDiv.on('dragend', function handleResizeDragEndCallback() {
-                    storage.grids[parentDiv.parent().data('grid_header_id')].resizing = false;
+                    gridState[parentDiv.parent().data('grid_header_id')].resizing = false;
                 });
                 sliderDiv.on('dragover', function handleResizeDragOverCallback(e) {
                     e.preventDefault();
@@ -1956,35 +1957,35 @@ var grid = (function _grid($) {
         elem.on('click', function handleHeaderClickCallback() {
             var headerDiv = elem.parents('.grid-header-div');
             var id = parseInt(headerDiv.data('grid_header_id'));
-            if (storage.grids[id].updating) return;		
+            if (gridState[id].updating) return;		
             var field = elem.data('field'),
                 foundColumn = false;
 
-            if (storage.grids[id].groupedBy && storage.grids[id].groupedBy === field) return;   
+            if (gridState[id].groupedBy && gridState[id].groupedBy === field) return;   
 
-            for (var i = 0; i < storage.grids[id].sortedOn.length; i++) {
-                if (storage.grids[id].sortedOn[i].field === field) {
+            for (var i = 0; i < gridState[id].sortedOn.length; i++) {
+                if (gridState[id].sortedOn[i].field === field) {
                     foundColumn = true;
-                    if (storage.grids[id].sortedOn[i].sortDirection === 'asc') {
-                        storage.grids[id].sortedOn[i].sortDirection = 'desc';
+                    if (gridState[id].sortedOn[i].sortDirection === 'asc') {
+                        gridState[id].sortedOn[i].sortDirection = 'desc';
                         elem.find('.sortSpan').addClass('sort-desc').removeClass('sort-asc');
                     }
                     else {
-                        storage.grids[id].sortedOn =  storage.grids[id].sortedOn.filter(function filterSortedColumns(item) {
+                        gridState[id].sortedOn =  gridState[id].sortedOn.filter(function filterSortedColumns(item) {
                             return item.field !== field;
                         });
                         elem.find('.sortSpan').remove();
-                        storage.grids[id].alteredData = cloneGridData(storage.grids[id].originalData);
+                        gridState[id].alteredData = cloneGridData(gridState[id].originalData);
                     }
                 }
             }
 
             if (!foundColumn) {
-                storage.grids[id].sortedOn.push({ field: field, sortDirection: 'asc' });
+                gridState[id].sortedOn.push({ field: field, sortDirection: 'asc' });
                 elem.find('.header-anchor').append('<span class="sort-asc sortSpan">Sort</span>');
             }
-            storage.grids[id].pageRequest.sortedOn = storage.grids[id].sortedOn;
-            storage.grids[id].pageRequest.eventType = 'sort';
+            gridState[id].pageRequest.sortedOn = gridState[id].sortedOn;
+            gridState[id].pageRequest.eventType = 'sort';
             preparePageDataGetRequest(id);
         });
     }
@@ -2027,7 +2028,7 @@ var grid = (function _grid($) {
         e.preventDefault();
         var sliderDiv = $(e.currentTarget);
         var id = sliderDiv.parents('.grid-wrapper').data('grid_id');
-        if (storage.grids[id].updating) return;		
+        if (gridState[id].updating) return;		
         var targetCell = document.getElementById(sliderDiv.data('targetindex'));
         var targetBox = targetCell.getBoundingClientRect();
         var endPos = e.originalEvent.pageX;
@@ -2040,7 +2041,7 @@ var grid = (function _grid($) {
             var gridWrapper = $(targetCell).parents('.grid-wrapper');
             var colGroups = gridWrapper.find('colgroup');
             var tables = gridWrapper.find('table');
-            if (storage.grids[id].groupedBy && storage.grids[id].groupedBy !== 'none')
+            if (gridState[id].groupedBy && gridState[id].groupedBy !== 'none')
                 index++;
 
             var contentDiv = gridWrapper.find('.grid-content-div');
@@ -2066,7 +2067,7 @@ var grid = (function _grid($) {
     }
 
     function swapContentCells(gridId, droppedIndex, targetIndex) {
-        var gridData = storage.grids[gridId];
+        var gridData = gridState[gridId];
         $('#grid-content-' + gridId).find('tr').each(function iterateContentRowsCallback(idx, val) {
             if ($(val).hasClass('grouped_row_header'))
                 return true;
@@ -2090,8 +2091,8 @@ var grid = (function _grid($) {
     }
 
     function preparePageDataGetRequest(id) {
-        storage.grids[id].updating = true;
-        var gridData = storage.grids[id];
+        gridState[id].updating = true;
+        var gridData = gridState[id];
         var pageNum = gridData.pageRequest.pageNum || gridData.pageNum;
         var pageSize = gridData.pageRequest.pageSize || gridData.pageSize;
         var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
@@ -2120,7 +2121,7 @@ var grid = (function _grid($) {
 
         gridData.grid.find('.grid-content-div').empty();
 
-        callGridEventHandlers(storage.grids[id].events.pageRequested, gridData.grid, { element: gridData.grid });
+        callGridEventHandlers(gridState[id].events.pageRequested, gridData.grid, { element: gridData.grid });
 
         if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function')
             gridData.dataSource.get(requestObj, getPageDataRequestCallback);
@@ -2145,9 +2146,9 @@ var grid = (function _grid($) {
                 gridData.groupingStatusChanged = false;
 
                 if (gridData.pageRequest.eventType === 'newGrid' || groupingStatus)
-                    setColWidth(gridData, storage.grids[id].grid);
+                    setColWidth(gridData, gridState[id].grid);
 
-                createGridContent(gridData, storage.grids[id].grid);
+                createGridContent(gridData, gridState[id].grid);
                 if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === 'pageSize') {
                     gridData.grid.find('.grid-footer-div').empty();
                     createGridFooter(gridData, gridData.grid);
@@ -2160,31 +2161,31 @@ var grid = (function _grid($) {
     }
 
     function prepareGridDataUpdateRequest(id) {
-        storage.grids[id].updating = true;
+        gridState[id].updating = true;
         var requestObj = {
-            models: storage.grids[id].putRequest.models,
-            pageNum: storage.grids[id].putRequest.pageNum
+            models: gridState[id].putRequest.models,
+            pageNum: gridState[id].putRequest.pageNum
         };
 
-        storage.grids[id].dataSource.put(requestObj, updatePageDataPutRequestCallback);
+        gridState[id].dataSource.put(requestObj, updatePageDataPutRequestCallback);
 
         function updatePageDataPutRequestCallback(response) {
-            storage.grids[id].updating = false;
+            gridState[id].updating = false;
             if (response) {
-                storage.grids[id].grid.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
+                gridState[id].grid.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
                     var index = $(val).parents('tr').index();
                     var field = $(val).parents('td').data('field');
-                    var origIdx = storage.grids[id].dataSource.data[index]._initialRowIndex;
-                    storage.grids[id].originalData[origIdx][field] = storage.grids[id].dataSource.data[index][field];
+                    var origIdx = gridState[id].dataSource.data[index]._initialRowIndex;
+                    gridState[id].originalData[origIdx][field] = gridState[id].dataSource.data[index][field];
                     $(val).remove();
                 });
             }
             else {
-                storage.grids[id].grid.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
+                gridState[id].grid.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
                     var cell = $(val).parents('td');
                     var index = cell.parents('tr').index();
                     var field = cell.data('field');
-                    var text = getFormattedCellText(id, cell.data('field'), storage.grids[id].originalData[index][field]) || storage.grids[id].originalData[index][field];
+                    var text = getFormattedCellText(id, cell.data('field'), gridState[id].originalData[index][field]) || gridState[id].originalData[index][field];
                     cell.text(text);
                     $(val).remove();
                 });
@@ -2193,8 +2194,8 @@ var grid = (function _grid($) {
     }
 
     function getPageData(requestObj, id, callback) {
-        var eventType = storage.grids[id].pageRequest.eventType;
-        var fullGridData = cloneGridData(storage.grids[id].alteredData);
+        var eventType = gridState[id].pageRequest.eventType;
+        var fullGridData = cloneGridData(gridState[id].alteredData);
 
         if (eventType === 'page' || eventType === 'pageSize' || eventType === 'newGrid') {
             limitPageData(requestObj, fullGridData, callback);
@@ -2203,33 +2204,33 @@ var grid = (function _grid($) {
 
         if (requestObj.filteredOn) {
             if (requestObj.filterVal !== '') {
-                var dataType = storage.grids[id].columns[requestObj.filteredOn].type || 'string';
-                fullGridData = filterGridData(requestObj.filterType, requestObj.filterVal, requestObj.filteredOn, dataType, cloneGridData(storage.grids[id].originalData));
+                var dataType = gridState[id].columns[requestObj.filteredOn].type || 'string';
+                fullGridData = filterGridData(requestObj.filterType, requestObj.filterVal, requestObj.filteredOn, dataType, cloneGridData(gridState[id].originalData));
             }
-            else fullGridData = cloneGridData(storage.grids[id].originalData);
+            else fullGridData = cloneGridData(gridState[id].originalData);
             requestObj.pageNum = 1;		
-            storage.grids[id].alteredData = fullGridData;
+            gridState[id].alteredData = fullGridData;
         }
 
         if (requestObj.groupedBy) {
-            var groupedData = sortGridData([{ field: requestObj.groupedBy, sortDirection: requestObj.groupSortDirection }], fullGridData || cloneGridData(storage.grids[id].originalData), id);
+            var groupedData = sortGridData([{ field: requestObj.groupedBy, sortDirection: requestObj.groupSortDirection }], fullGridData || cloneGridData(gridState[id].originalData), id);
             if (requestObj.sortedOn.length) {
                 var sortedGroup = [];
                 for (var group in groupedData.groupings) {
-                    sortedGroup = sortedGroup.concat(sortGridData(requestObj.sortedOn, groupedData.groupings[group] || cloneGridData(storage.grids[id].originalData), id));
+                    sortedGroup = sortedGroup.concat(sortGridData(requestObj.sortedOn, groupedData.groupings[group] || cloneGridData(gridState[id].originalData), id));
                 }
-                storage.grids[id].alteredData = fullGridData;
+                gridState[id].alteredData = fullGridData;
                 limitPageData(requestObj, sortedGroup, callback);
                 return;
             }
-            storage.grids[id].alteredData = groupedData;
+            gridState[id].alteredData = groupedData;
             limitPageData(requestObj, groupedData, callback);
             return;
         }
 
         if (requestObj.sortedOn.length && !requestObj.groupedBy)
-            fullGridData = sortGridData(requestObj.sortedOn, fullGridData || cloneGridData(storage.grids[id].originalData), id);
-        storage.grids[id].alteredData = fullGridData;
+            fullGridData = sortGridData(requestObj.sortedOn, fullGridData || cloneGridData(gridState[id].originalData), id);
+        gridState[id].alteredData = fullGridData;
         limitPageData(requestObj, fullGridData, callback);
     }
 
@@ -2305,21 +2306,21 @@ var grid = (function _grid($) {
     function sortGridData (sortedItems, gridData, gridId) {
         for (var i = 0; i < sortedItems.length; i++) {
             if (i === 0)
-                gridData = mergeSort(gridData, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string');
+                gridData = mergeSort(gridData, sortedItems[i], gridState[gridId].columns[sortedItems[i].field].type || 'string');
             else {
                 var sortedGridData = [];
                 var itemsToSort = [];
                 for (var j = 0; j < gridData.length; j++) {
-                    if (!itemsToSort.length || compareValuesByType(itemsToSort[0][sortedItems[i - 1].field], gridData[j][sortedItems[i - 1].field], storage.grids[gridId].columns[sortedItems[i - 1].field].type))
+                    if (!itemsToSort.length || compareValuesByType(itemsToSort[0][sortedItems[i - 1].field], gridData[j][sortedItems[i - 1].field], gridState[gridId].columns[sortedItems[i - 1].field].type))
                         itemsToSort.push(gridData[j]);
                     else {
                         if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
-                        else sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string'));
+                        else sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], gridState[gridId].columns[sortedItems[i].field].type || 'string'));
                         itemsToSort.length = 0;
                         itemsToSort.push(gridData[j]);
                     }
                     if (j === gridData.length - 1)
-                        sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], storage.grids[gridId].columns[sortedItems[i].field].type || 'string'));
+                        sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], gridState[gridId].columns[sortedItems[i].field].type || 'string'));
                 }
                 gridData = sortedGridData;
             }
@@ -2392,12 +2393,12 @@ var grid = (function _grid($) {
 
     function getFormattedCellText(gridId, column, value) {
         var text;
-        switch(storage.grids[gridId].columns[column].type) {
+        switch(gridState[gridId].columns[column].type) {
             case 'number':
-                text = formatNumericCellData(value, storage.grids[gridId].columns[column].format);
+                text = formatNumericCellData(value, gridState[gridId].columns[column].format);
                 break;
             case 'date':
-                text = formatDateCellData(value, storage.grids[gridId].columns[column].format);
+                text = formatDateCellData(value, gridState[gridId].columns[column].format);
                 break;
             case 'time':
                 text = formatTimeCellData(value, column, gridId);
@@ -2410,7 +2411,7 @@ var grid = (function _grid($) {
                 text = value;
         }
 
-        var template = storage.grids[gridId].columns[column].template;
+        var template = gridState[gridId].columns[column].template;
         if (template && text !== '') {
             if (typeof template === 'function')
                 return template.call(column, text);
@@ -2500,7 +2501,7 @@ var grid = (function _grid($) {
         var columns = getGridColumns(gridId);
         switch (option) {
             case 'select':
-                var selectedData = storage.grids[gridId].grid[0].grid.selectedData;
+                var selectedData = gridState[gridId].grid[0].grid.selectedData;
                 if (!selectedData.length) return;
                 var data = [], currentRow = selectedData[0].rowIndex;
                 for (var i = 0; i < selectedData.length; i++) {
@@ -2517,30 +2518,30 @@ var grid = (function _grid($) {
                 callback({ data: data, columns: columns});
                 break;
             case 'all':
-                if (typeof storage.grids[gridId].dataSource.get === 'function') {
+                if (typeof gridState[gridId].dataSource.get === 'function') {
                     var reqObj = createExcelRequestObject(gridId);
-                    storage.grids[gridId].dataSource.get(reqObj, function excelDataCallback(response) {
+                    gridState[gridId].dataSource.get(reqObj, function excelDataCallback(response) {
                         callback({ data: response.data, columns: columns});
                     });
                 }
-                else callback({ data: storage.grids[gridId].originalData, columns: columns });
+                else callback({ data: gridState[gridId].originalData, columns: columns });
                 break;
             case 'page':
             default:
-                callback({ data: storage.grids[gridId].dataSource.data, columns: columns });
+                callback({ data: gridState[gridId].dataSource.data, columns: columns });
         }
     }
 
     function getGridColumns(gridId) {
         var cols = [];
-        for (var col in storage.grids[gridId].columns) {
+        for (var col in gridState[gridId].columns) {
             cols.push(col);
         }
         return cols;
     }
 
     function createExcelRequestObject(gridId) {
-        var gridData = storage.grids[gridId];
+        var gridData = gridState[gridId];
         var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
         var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
         var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
@@ -2567,8 +2568,6 @@ var grid = (function _grid($) {
         return requestObj;
     }
 
-
-
     dataTypes = {
         number: '^-?(?:[1-9]{1}[0-9]{0,2}(?:,[0-9]{3})*(?:\\.[0-9]+)?|[1-9]{1}[0-9]{0,}(?:\\.[0-9]+)?|0(?:\\.[0-9]+)?|(?:\\.[0-9]+)?)$',
         numberChar: '[\\d,\\.-]',
@@ -2590,8 +2589,8 @@ var grid = (function _grid($) {
     function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
             formattedTime,
-            format = storage.grids[gridId].columns[column].format,
-            timeFormat = storage.grids[gridId].columns[column].timeFormat;
+            format = gridState[gridId].columns[column].format,
+            timeFormat = gridState[gridId].columns[column].timeFormat;
 
         if (timeArray.length < 2) return '';
 
@@ -2810,20 +2809,12 @@ var grid = (function _grid($) {
         return typeof value === 'number' && value === value;
     }
 
-    storage = {
-        gridCount: 1,
-        grids: []
-    };
-
-    Object.defineProperty(
-        storage,
-        'count',
-        {
-            get: function _getCount() {
-                return this.gridCount++;
-            }
-        }
-    );
+    generateId = (function guid(seed) {
+        return function _generateId() {
+            seed++;
+            return seed.toString();
+        };
+    })(-1);
 
     var gridApi = {};
 
@@ -2832,9 +2823,9 @@ var grid = (function _grid($) {
             'getGridInstance': {
                 value: function getGridInstance(elem) {
                     elem = $(elem);
-                    for (var i = 0; i < storage.grids.length; i++) {
-                        if (elem[0] === storage.grids[i].grid[0])
-                            return storage.grids[i].grid[0].grid;
+                    for (var i = 0; i < gridState.length; i++) {
+                        if (elem[0] === gridState[i].grid[0])
+                            return gridState[i].grid[0].grid;
                     }
                 },
                 writable: false,
