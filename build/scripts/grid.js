@@ -57,10 +57,10 @@ var grid = (function _grid($) {
 
         Object.defineProperty(
             gridElem[0].grid,
-            'export',
+            'exportToExcel',
             {
-                value: function _export(exportType) {
-                    exportDataAsExcelFile(gridElem.find('.grid-content-div').find('table').html(), exportType || 'page');
+                value: function _exportToExcel(exportType) {
+                    exportDataAsExcelFile(gridId, exportType || 'page');
                 }
             }
         );
@@ -2491,7 +2491,7 @@ var grid = (function _grid($) {
 
     function exportDataAsExcelFile(gridId, option) {
         if (excelExporter && typeof excelExporter.createWorkBook === 'function') {
-            determineGridDataToExport(gridId, option, function gridDataCallback(excelDataAndColumns) {
+            determineGridDataToExport(gridId, (option || 'page'), function gridDataCallback(excelDataAndColumns) {
                 excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(excelDataAndColumns.data, excelDataAndColumns.columns, 'testSheet'));
             });
         }
