@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.25</p>
+      <p class="stat">55.29</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2846</p>
+      <p class="stat">2859</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">194.58</p>
+      <p class="stat">195.01</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">60.68</p>
+      <p class="stat">60.88</p>
     </div>
   </div>
 </div>
@@ -1522,12 +1522,17 @@
                 newMenu;
 
             if (!menu.length) {
-                newMenu = $(&#039;&lt;div id=&quot;menu_model_grid_id_&#039; + gridId + &#039;&quot; class=&quot;grid_menu&quot;&gt;&lt;/div&gt;&#039;);
+                newMenu = $(&#039;&lt;div id=&quot;menu_model_grid_id_&#039; + gridId + &#039;&quot; class=&quot;grid_menu&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&lt;/div&gt;&#039;);
                 var list = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
-                var saveMenuItems, excelMenuItem;
-                if (gridState[gridId].editable || gridState[gridId].selectable) saveMenuItems = createSaveDeleteMenuItems(gridId);
-                excelMenuItem = createExcelExportMenuItems(newMenu, gridId);
-                list.append(saveMenuItems).append(excelMenuItem);
+                if (gridState[gridId].editable || gridState[gridId].selectable) {
+                    list.append(createSaveDeleteMenuItems(gridId));
+                }
+                if (gridState[gridId].filterable) {
+                    list.append(createFilterMenuItems());
+                }
+                if (gridState[gridId].excelExport) {
+                    list.append(createExcelExportMenuItems(newMenu, gridId));
+                }
                 newMenu.append(list);
                 gridState[gridId].grid.append(newMenu);
                 $(document).on(&#039;click&#039;, function hideMenuHandler(e) {
@@ -1611,6 +1616,12 @@
         saveMenuItem.append(saveMenuAnchor);
         deleteMenuItem.append(deleteMenuAnchor);
         return [saveMenuItem, deleteMenuItem];
+    }
+
+    function createFilterMenuItems() {
+        var filterMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;).append($(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Remove Grid Filter&lt;/a&gt;&#039;));
+        filterMenuItem.on(&#039;click&#039;, resetButtonClickHandler);
+        return filterMenuItem;
     }
 
     function groupByHandler() {
@@ -1776,7 +1787,7 @@
             var filters = grid.find(&#039;.filter-div&#039;);
             var currFilter = null;
             var field = filterAnchor.data(&#039;field&#039;);
-            var title = gridState[id].columns[field].title || null;
+            var title = gridState[id].columns[field].title || field;
 
             if (filters.length) {
                 filters.each(function iterateFiltersCallback(idx, val) {
@@ -1854,9 +1865,11 @@
     }
 
     function resetButtonClickHandler(e) {
-        var filterDiv = $(e.currentTarget).parents(&#039;.filter-div&#039;);
-        var value = filterDiv.find(&#039;.filterInput&#039;).val();
-        var gridId = filterDiv.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
+        var filterDiv = $(e.currentTarget).parents(&#039;.filter-div&#039;),
+            value = filterDiv.find(&#039;.filterInput&#039;).val(),
+            gridId;
+        if (!filterDiv.length) gridId = $(e.currentTarget).parents(&#039;.grid_menu&#039;).data(&#039;grid_id&#039;);
+        else gridId = filterDiv.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
         if (gridState[gridId].updating) return;		
         var gridData = gridState[gridId];
 

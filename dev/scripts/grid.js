@@ -86,7 +86,7 @@
  - Work on selecting rows/cells when user scrolls up/down and then changes mouse/scroll direction. - DONE
  - Add grid instance functions that get/set selected grid rows/cells - DONE
  - Update unit tests for new/altered grid instance functionality - DONE
- - Add grid-to-csv export functionality - should work with grid selection
+ - Add grid-to-excel export functionality - should work with grid selection - DONE
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Add integration tests if possible
  - Add type checking - passed in grid data
@@ -1864,6 +1864,12 @@ var grid = (function _grid($) {
             items: {
                 removeFilter: 'Remove Grid Filter'
             }
+        },
+        selectable: {
+            type: 'click',
+            items: {
+                removeSelection: 'Remove Grid Selection'
+            }
         }
     };*/
 
@@ -1883,12 +1889,19 @@ var grid = (function _grid($) {
 
             if (!menu.length) {
                 //TODO: this needs to eventually be pushed into its own function and check all grid config options to display in the menu
-                newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu"></div>');
+                newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu" data-grid_id="' + gridId + '"></div>');
                 var list = $('<ul class="menu-list"></ul>');
-                var saveMenuItems, excelMenuItem;
-                if (gridState[gridId].editable || gridState[gridId].selectable) saveMenuItems = createSaveDeleteMenuItems(gridId);
-                excelMenuItem = createExcelExportMenuItems(newMenu, gridId);
-                list.append(saveMenuItems).append(excelMenuItem);
+                //TODO: need to change names for 'selectable' columns. Using selectable for grid selection and that makes more
+                //TODO: sense than using it for a drop-down list for a cell.
+                if (gridState[gridId].editable || gridState[gridId].selectable) {
+                    list.append(createSaveDeleteMenuItems(gridId));
+                }
+                if (gridState[gridId].filterable) {
+                    list.append(createFilterMenuItems());
+                }
+                if (gridState[gridId].excelExport) {
+                    list.append(createExcelExportMenuItems(newMenu, gridId));
+                }
                 newMenu.append(list);
                 gridState[gridId].grid.append(newMenu);
                 $(document).on('click', function hideMenuHandler(e) {
@@ -1980,6 +1993,12 @@ var grid = (function _grid($) {
         saveMenuItem.append(saveMenuAnchor);
         deleteMenuItem.append(deleteMenuAnchor);
         return [saveMenuItem, deleteMenuItem];
+    }
+
+    function createFilterMenuItems() {
+        var filterMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove Grid Filter</a>'));
+        filterMenuItem.on('click', resetButtonClickHandler);
+        return filterMenuItem;
     }
 
     /**
@@ -2162,7 +2181,7 @@ var grid = (function _grid($) {
             var filters = grid.find('.filter-div');
             var currFilter = null;
             var field = filterAnchor.data('field');
-            var title = gridState[id].columns[field].title || null;
+            var title = gridState[id].columns[field].title || field;
 
             if (filters.length) {
                 filters.each(function iterateFiltersCallback(idx, val) {
@@ -2251,9 +2270,11 @@ var grid = (function _grid($) {
     }
 
     function resetButtonClickHandler(e) {
-        var filterDiv = $(e.currentTarget).parents('.filter-div');
-        var value = filterDiv.find('.filterInput').val();
-        var gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
+        var filterDiv = $(e.currentTarget).parents('.filter-div'),
+            value = filterDiv.find('.filterInput').val(),
+            gridId;
+        if (!filterDiv.length) gridId = $(e.currentTarget).parents('.grid_menu').data('grid_id');
+        else gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
         if (gridState[gridId].updating) return;		//can't filter if grid is updating
         var gridData = gridState[gridId];
 

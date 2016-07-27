@@ -1431,12 +1431,17 @@ var grid = (function _grid($) {
                 newMenu;
 
             if (!menu.length) {
-                newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu"></div>');
+                newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu" data-grid_id="' + gridId + '"></div>');
                 var list = $('<ul class="menu-list"></ul>');
-                var saveMenuItems, excelMenuItem;
-                if (gridState[gridId].editable || gridState[gridId].selectable) saveMenuItems = createSaveDeleteMenuItems(gridId);
-                excelMenuItem = createExcelExportMenuItems(newMenu, gridId);
-                list.append(saveMenuItems).append(excelMenuItem);
+                if (gridState[gridId].editable || gridState[gridId].selectable) {
+                    list.append(createSaveDeleteMenuItems(gridId));
+                }
+                if (gridState[gridId].filterable) {
+                    list.append(createFilterMenuItems());
+                }
+                if (gridState[gridId].excelExport) {
+                    list.append(createExcelExportMenuItems(newMenu, gridId));
+                }
                 newMenu.append(list);
                 gridState[gridId].grid.append(newMenu);
                 $(document).on('click', function hideMenuHandler(e) {
@@ -1520,6 +1525,12 @@ var grid = (function _grid($) {
         saveMenuItem.append(saveMenuAnchor);
         deleteMenuItem.append(deleteMenuAnchor);
         return [saveMenuItem, deleteMenuItem];
+    }
+
+    function createFilterMenuItems() {
+        var filterMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove Grid Filter</a>'));
+        filterMenuItem.on('click', resetButtonClickHandler);
+        return filterMenuItem;
     }
 
     function groupByHandler() {
@@ -1685,7 +1696,7 @@ var grid = (function _grid($) {
             var filters = grid.find('.filter-div');
             var currFilter = null;
             var field = filterAnchor.data('field');
-            var title = gridState[id].columns[field].title || null;
+            var title = gridState[id].columns[field].title || field;
 
             if (filters.length) {
                 filters.each(function iterateFiltersCallback(idx, val) {
@@ -1763,9 +1774,11 @@ var grid = (function _grid($) {
     }
 
     function resetButtonClickHandler(e) {
-        var filterDiv = $(e.currentTarget).parents('.filter-div');
-        var value = filterDiv.find('.filterInput').val();
-        var gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
+        var filterDiv = $(e.currentTarget).parents('.filter-div'),
+            value = filterDiv.find('.filterInput').val(),
+            gridId;
+        if (!filterDiv.length) gridId = $(e.currentTarget).parents('.grid_menu').data('grid_id');
+        else gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
         if (gridState[gridId].updating) return;		
         var gridData = gridState[gridId];
 
