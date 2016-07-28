@@ -33,8 +33,8 @@ gridDataHelpers.filterGridData = function filterGridData(filterType, value, fiel
             if (value.indexOf('PM') > -1)
                 baseVal[0] += 12;
 
-            curVal = gridDataHelpers.convertTimeArrayToSeconds(curVal);
-            baseVal = gridDataHelpers.convertTimeArrayToSeconds(baseVal);
+            curVal = convertTimeArrayToSeconds(curVal);
+            baseVal = convertTimeArrayToSeconds(baseVal);
         }
         else if (dataType === 'number') {
             curVal = parseFloat(gridData[i][field]);
@@ -75,6 +75,31 @@ gridDataHelpers.comparator = function comparator(val, base, type) {
     }
 };
 
+gridDataHelpers.sortGridData = function sortGridData (sortedItems, gridData, columns) {
+    for (var i = 0; i < sortedItems.length; i++) {
+        if (i === 0)
+            gridData = gridDataHelpers.mergeSort(gridData, sortedItems[i], columns[sortedItems[i].field].type || 'string');
+        else {
+            var sortedGridData = [];
+            var itemsToSort = [];
+            for (var j = 0; j < gridData.length; j++) {
+                if (!itemsToSort.length || compareValuesByType(itemsToSort[0][sortedItems[i - 1].field], gridData[j][sortedItems[i - 1].field], columns[sortedItems[i - 1].field].type))
+                    itemsToSort.push(gridData[j]);
+                else {
+                    if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
+                    else sortedGridData = sortedGridData.concat(gridDataHelpers.mergeSort(itemsToSort, sortedItems[i], columns[sortedItems[i].field].type || 'string'));
+                    itemsToSort.length = 0;
+                    itemsToSort.push(gridData[j]);
+                }
+                if (j === gridData.length - 1)
+                    sortedGridData = sortedGridData.concat(gridDataHelpers.mergeSort(itemsToSort, sortedItems[i], columns[sortedItems[i].field].type || 'string'));
+            }
+            gridData = sortedGridData;
+        }
+    }
+    return gridData;
+}
+
 gridDataHelpers.mergeSort = function mergeSort(data, field, type) {
     if (data.length < 2) return data;
     var middle = parseInt(data.length / 2);
@@ -83,35 +108,35 @@ gridDataHelpers.mergeSort = function mergeSort(data, field, type) {
     return gridDataHelpers.merge(gridDataHelpers.mergeSort(left, field, type), gridDataHelpers.mergeSort(right, field, type), field, type);
 };
 
-gridDataHelpers.merge = function tmpMerge(left, right, field, type) {
+gridDataHelpers.merge = function merge(left, right, sortObj, type) {
     var result = [], leftVal, rightVal;
     while (left.length && right.length) {
         if (type === 'time') {
-            leftVal = gridDataHelpers.getNumbersFromTime(left[0][field]);
-            rightVal = gridDataHelpers.getNumbersFromTime(right[0][field]);
+            leftVal = gridDataHelpers.getNumbersFromTime(left[0][sortObj.field]);
+            rightVal = gridDataHelpers.getNumbersFromTime(right[0][sortObj.field]);
 
-            if (~left[0][field].indexOf('PM'))
+            if (~left[0][sortObj.field].indexOf('PM'))
                 leftVal[0] += 12;
-            if (~right[0][field].indexOf('PM'))
+            if (~right[0][sortObj.field].indexOf('PM'))
                 rightVal[0] += 12;
 
-            leftVal = gridDataHelpers.convertTimeArrayToSeconds(leftVal);
-            rightVal = gridDataHelpers.convertTimeArrayToSeconds(rightVal);
+            leftVal = convertTimeArrayToSeconds(leftVal);
+            rightVal = convertTimeArrayToSeconds(rightVal);
         }
         else if (type === 'number') {
-            leftVal = parseFloat(left[0][field]);
-            rightVal = parseFloat(right[0][field]);
+            leftVal = parseFloat(left[0][sortObj.field]);
+            rightVal = parseFloat(right[0][sortObj.field]);
         }
         else if (type === 'date') {
-            leftVal = new Date(left[0][field]);
-            rightVal = new Date(right[0][field]);
+            leftVal = new Date(left[0][sortObj.field]);
+            rightVal = new Date(right[0][sortObj.field]);
         }
         else {
-            leftVal = left[0][field];
-            rightVal = right[0][field];
+            leftVal = left[0][sortObj.field];
+            rightVal = right[0][sortObj.field];
         }
-
-        gridDataHelpers.comparator(leftVal, rightVal, 'lte') ? result.push(left.shift()) : result.push(right.shift());
+        var operator = sortObj.sortDirection === 'asc' ? 'lte' : 'gte';
+        gridDataHelpers.comparator(leftVal, rightVal, operator) ? result.push(left.shift()) : result.push(right.shift());
     }
 
     while (left.length)
@@ -151,10 +176,39 @@ gridDataHelpers.getNumbersFromTime = function getNumbersFromTime(val) {
     return retVal;
 };
 
-gridDataHelpers.convertTimeArrayToSeconds = function convertTimeArrayToSeconds(timeArray) {
+function convertTimeArrayToSeconds(timeArray) {
     var hourVal = timeArray[0] === 12 || timeArray[0] === 24 ? timeArray[0] - 12 : timeArray[0];
     return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
 };
+
+function compareValuesByType (val1, val2, dataType) {
+    switch (dataType) {
+        case 'string':
+            return val1.toString() === val2.toString();
+        case 'number':
+            return parseFloat(val1.toString()) === parseFloat(val2.toString());
+        case 'boolean':
+            /*jshint -W018*/    //have to turn off jshint check for !! operation because there's not built-in way to turn it off in the config file and
+            //like most js devs, those of jshint aren't the most savvy JSers
+            return !!val1 === !!val2;
+        case 'date':
+            var date1 = new Date(val1),
+                date2 = new Date(val2);
+            if (typeof date1 === 'object' && typeof date2 === 'object' && date1 !== date1 && date2 !== date2)
+                return true;    //invalid date values - creating a date from both values resulted in either NaN or 'Invalid Date', neither of which are equal to themselves.
+            return date1 === date2;
+        case 'time':
+            var value1 = getNumbersFromTime(val1);
+            var value2 = getNumbersFromTime(val2);
+            if (value1[3] && value1[3] === 'PM')
+                value1[0] += 12;
+            if (value2[3] && value2[3] === 'PM')
+                value2[0] += 12;
+            return convertTimeArrayToSeconds(value1) === convertTimeArrayToSeconds(value2);
+        default:
+            return val1.toString() === val2.toString();
+    }
+}
 
 var dataTypes = {
     string: "\.*",

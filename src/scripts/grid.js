@@ -521,6 +521,7 @@ var grid = (function _grid($) {
             }
 
             if (gridData.columns[col].filterable === true) {
+                gridState[gridHeader.data('grid_header_id')].filterable = true;
                 setFilterableClickListener(th, gridData, col);
                 gridData.filterable = true;
             }
@@ -543,7 +544,7 @@ var grid = (function _grid($) {
                 sumRow.remove();
             sumRow = $('<tr class=summary-row-header></tr>').appendTo(headerTHead);
             if (gridData.groupedBy && gridData.groupedBy !== 'none') {
-                sumRow.append('<th class="grid-header-cell grouped_cell"></th>');
+                sumRow.append('<td class="group_spacer">&nbsp</td>');
             }
             for (var col in sum) {
                 var text = sum[col] != null ? sum[col] : '';
@@ -696,13 +697,13 @@ var grid = (function _grid($) {
                 }
                 var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
                 td.text(text);
-                if (gridData.columns[columns[j]].editable) {
+                if (gridData.columns[columns[j]].editable && gridData.columns[columns[j]].editable !== 'drop-down') {
                     makeCellEditable(id, td);
-                    gridData.editable = true;
+                    gridState[id].editable = true;
                 }
-                else if (gridData.columns[columns[j]].selectable) {
+                else if (gridData.columns[columns[j]].editable === 'drop-down') {
                     makeCellSelectable(id, td);
-                    gridData.selectable = true;
+                    gridState[id].editable = true;
                 }
             }
         }
@@ -1433,11 +1434,14 @@ var grid = (function _grid($) {
             if (!menu.length) {
                 newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu" data-grid_id="' + gridId + '"></div>');
                 var list = $('<ul class="menu-list"></ul>');
-                if (gridState[gridId].editable || gridState[gridId].selectable) {
+                if (gridState[gridId].editable) {
                     list.append(createSaveDeleteMenuItems(gridId));
                 }
                 if (gridState[gridId].filterable) {
                     list.append(createFilterMenuItems());
+                }
+                if (gridState[gridId].selectable) {
+                    list.append(createDeselectMenuOption(gridId));
                 }
                 if (gridState[gridId].excelExport) {
                     list.append(createExcelExportMenuItems(newMenu, gridId));
@@ -1512,6 +1516,14 @@ var grid = (function _grid($) {
         });
         menuItem.append(menuAnchor);
         return menuItem;
+    }
+
+    function createDeselectMenuOption(gridId) {
+        var deSelectMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove Grid Selection</a>'));
+        deSelectMenuItem.on('click', function deselectGridClickHandler() {
+            gridState[gridId].grid.find('.selected').removeClass('selected');
+        });
+        return deSelectMenuItem;
     }
 
     function createSaveDeleteMenuItems(gridId) {
@@ -2241,7 +2253,7 @@ var grid = (function _grid($) {
             return;
         }
 
-        if (requestObj.sortedOn.length && !requestObj.groupedBy)
+        if (requestObj.sortedOn && requestObj.sortedOn.length && !requestObj.groupedBy)
             fullGridData = sortGridData(requestObj.sortedOn, fullGridData || cloneGridData(gridState[id].originalData), id);
         gridState[id].alteredData = fullGridData;
         limitPageData(requestObj, fullGridData, callback);

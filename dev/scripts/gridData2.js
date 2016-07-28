@@ -75,8 +75,7 @@ var gridData = {
             type: "number",
             template: "{{data}} hour(s)",
             format: '#',
-            //decimals: 0,
-            selectable: true,
+            editable: 'drop-down',
             options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
             width: 160,
             validation: {

@@ -51,7 +51,7 @@ var getInitialGridDataSource = function _getInitialGridDataSource(req, res) {
 };
 
 function determinePageData(requestObj, fullGridData, callback) {
-    if (requestObj.filteredOn) {
+    /*if (requestObj.filteredOn) {
         if (requestObj.filterVal !== "") {
             var dataType = columns[requestObj.filteredOn].type || "string";
             fullGridData = gridDataHelpers.filterGridData(requestObj.filterType, requestObj.filterVal, requestObj.filteredOn, dataType, fullGridData);
@@ -82,6 +82,31 @@ function determinePageData(requestObj, fullGridData, callback) {
             fullGridData = originalData.dataSource.data;
         }
     }
+    limitPageData(requestObj, fullGridData, callback);*/
+
+    if (requestObj.filteredOn) {
+        if (requestObj.filterVal !== '') {
+            var dataType = columns[requestObj.filteredOn].type || 'string';
+            fullGridData = gridDataHelpers.filterGridData(requestObj.filterType, requestObj.filterVal, requestObj.filteredOn, dataType, fullGridData);
+        }
+    }
+
+    if (requestObj.groupedBy) {
+        var groupedData = gridDataHelpers.sortGridData([{ field: requestObj.groupedBy, sortDirection: requestObj.groupSortDirection }], fullGridData, columns);
+        if (requestObj.sortedOn && requestObj.sortedOn.length) {
+            var sortedGroup = [];
+            for (var group in groupedData.groupings) {
+                sortedGroup = sortedGroup.concat(gridDataHelpers.sortGridData(requestObj.sortedOn, groupedData.groupings[group], columns));
+            }
+            limitPageData(requestObj, sortedGroup, callback);
+            return;
+        }
+        limitPageData(requestObj, groupedData, callback);
+        return;
+    }
+
+    if (requestObj.sortedOn && requestObj.sortedOn.length && !requestObj.groupedBy)
+        fullGridData = gridDataHelpers.sortGridData(requestObj.sortedOn, fullGridData, columns);
     limitPageData(requestObj, fullGridData, callback);
 }
 

@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.29</p>
+      <p class="stat">55.38</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2859</p>
+      <p class="stat">2871</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">195.01</p>
+      <p class="stat">195.02</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">60.88</p>
+      <p class="stat">61.18</p>
     </div>
   </div>
 </div>
@@ -612,6 +612,7 @@
             }
 
             if (gridData.columns[col].filterable === true) {
+                gridState[gridHeader.data(&#039;grid_header_id&#039;)].filterable = true;
                 setFilterableClickListener(th, gridData, col);
                 gridData.filterable = true;
             }
@@ -634,7 +635,7 @@
                 sumRow.remove();
             sumRow = $(&#039;&lt;tr class=summary-row-header&gt;&lt;/tr&gt;&#039;).appendTo(headerTHead);
             if (gridData.groupedBy &amp;&amp; gridData.groupedBy !== &#039;none&#039;) {
-                sumRow.append(&#039;&lt;th class=&quot;grid-header-cell grouped_cell&quot;&gt;&lt;/th&gt;&#039;);
+                sumRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
             }
             for (var col in sum) {
                 var text = sum[col] != null ? sum[col] : &#039;&#039;;
@@ -787,13 +788,13 @@
                 }
                 var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
                 td.text(text);
-                if (gridData.columns[columns[j]].editable) {
+                if (gridData.columns[columns[j]].editable &amp;&amp; gridData.columns[columns[j]].editable !== &#039;drop-down&#039;) {
                     makeCellEditable(id, td);
-                    gridData.editable = true;
+                    gridState[id].editable = true;
                 }
-                else if (gridData.columns[columns[j]].selectable) {
+                else if (gridData.columns[columns[j]].editable === &#039;drop-down&#039;) {
                     makeCellSelectable(id, td);
-                    gridData.selectable = true;
+                    gridState[id].editable = true;
                 }
             }
         }
@@ -1524,11 +1525,14 @@
             if (!menu.length) {
                 newMenu = $(&#039;&lt;div id=&quot;menu_model_grid_id_&#039; + gridId + &#039;&quot; class=&quot;grid_menu&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&lt;/div&gt;&#039;);
                 var list = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
-                if (gridState[gridId].editable || gridState[gridId].selectable) {
+                if (gridState[gridId].editable) {
                     list.append(createSaveDeleteMenuItems(gridId));
                 }
                 if (gridState[gridId].filterable) {
                     list.append(createFilterMenuItems());
+                }
+                if (gridState[gridId].selectable) {
+                    list.append(createDeselectMenuOption(gridId));
                 }
                 if (gridState[gridId].excelExport) {
                     list.append(createExcelExportMenuItems(newMenu, gridId));
@@ -1603,6 +1607,14 @@
         });
         menuItem.append(menuAnchor);
         return menuItem;
+    }
+
+    function createDeselectMenuOption(gridId) {
+        var deSelectMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;).append($(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Remove Grid Selection&lt;/a&gt;&#039;));
+        deSelectMenuItem.on(&#039;click&#039;, function deselectGridClickHandler() {
+            gridState[gridId].grid.find(&#039;.selected&#039;).removeClass(&#039;selected&#039;);
+        });
+        return deSelectMenuItem;
     }
 
     function createSaveDeleteMenuItems(gridId) {
@@ -2332,7 +2344,7 @@
             return;
         }
 
-        if (requestObj.sortedOn.length &amp;&amp; !requestObj.groupedBy)
+        if (requestObj.sortedOn &amp;&amp; requestObj.sortedOn.length &amp;&amp; !requestObj.groupedBy)
             fullGridData = sortGridData(requestObj.sortedOn, fullGridData || cloneGridData(gridState[id].originalData), id);
         gridState[id].alteredData = fullGridData;
         limitPageData(requestObj, fullGridData, callback);
