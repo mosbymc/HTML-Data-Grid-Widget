@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.38</p>
+      <p class="stat">55.34</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2871</p>
+      <p class="stat">2883</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">195.02</p>
+      <p class="stat">195.90</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">61.18</p>
+      <p class="stat">61.50</p>
     </div>
   </div>
 </div>
@@ -1447,8 +1447,11 @@
     }
 
     function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
-        saveAnchor.on(&#039;click&#039;, function saveChangesHandler() {
+        saveAnchor.on(&#039;click&#039;, function saveChangesHandler(e) {
             if (gridState[id].updating) return;
+            var gridMenu = $(e.currentTarget).parents(&#039;.grid_menu&#039;);
+            if (gridMenu.length)
+                $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
             var dirtyCells = [],
                 pageNum = gridState[id].pageNum, i;
             gridElem.find(&#039;.dirty&#039;).each(function iterateDirtySpansCallback(idx, val) {
@@ -1489,8 +1492,11 @@
             }
         });
 
-        deleteAnchor.on(&#039;click&#039;, function deleteChangeHandler() {
+        deleteAnchor.on(&#039;click&#039;, function deleteChangeHandler(e) {
             if (gridState[id].updating) return;
+            var gridMenu = $(e.currentTarget).parents(&#039;.grid_menu&#039;);
+            if (gridMenu.length)
+                $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
             var dirtyCells = [];
             gridElem.find(&#039;.dirty&#039;).each(function iterateDirtySpansCallback(idx, val) {
                 dirtyCells.push($(val).parents(&#039;td&#039;));
@@ -1565,7 +1571,7 @@
         menuItem.on(&#039;mouseover&#039;, function excelMenuItemHoverHandler() {
             var exportOptions = gridState[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId);
             if (!exportOptions.length) {
-                exportOptions = $(&#039;&lt;div id=&quot;excel_grid_id_&#039; + gridId + &#039;&quot; class=&quot;menu_item_options&quot;&gt;&lt;/div&gt;&#039;);
+                exportOptions = $(&#039;&lt;div id=&quot;excel_grid_id_&#039; + gridId + &#039;&quot; class=&quot;menu_item_options&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&lt;/div&gt;&#039;);
                 var exportList = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
                 var gridPage = $(&#039;&lt;li data-value=&quot;page&quot;&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Current Page Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
                 var allData = $(&#039;&lt;li data-value=&quot;all&quot;&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;All Page Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
@@ -1577,6 +1583,7 @@
                 var options = exportList.find(&#039;li&#039;);
                 options.on(&#039;click&#039;, function excelExportItemClickHandler() {
                     exportDataAsExcelFile(gridId, this.dataset.value);
+                    gridState[gridId].grid.find(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
                 });
                 exportOptions.append(exportList);
                 gridState[gridId].grid.append(exportOptions);
@@ -1611,8 +1618,9 @@
 
     function createDeselectMenuOption(gridId) {
         var deSelectMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;).append($(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Remove Grid Selection&lt;/a&gt;&#039;));
-        deSelectMenuItem.on(&#039;click&#039;, function deselectGridClickHandler() {
+        deSelectMenuItem.on(&#039;click&#039;, function deselectGridClickHandler(e) {
             gridState[gridId].grid.find(&#039;.selected&#039;).removeClass(&#039;selected&#039;);
+            $(e.currentTarget).parents(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
         });
         return deSelectMenuItem;
     }
@@ -1880,7 +1888,11 @@
         var filterDiv = $(e.currentTarget).parents(&#039;.filter-div&#039;),
             value = filterDiv.find(&#039;.filterInput&#039;).val(),
             gridId;
-        if (!filterDiv.length) gridId = $(e.currentTarget).parents(&#039;.grid_menu&#039;).data(&#039;grid_id&#039;);
+        if (!filterDiv.length) {
+            var gridMenu = $(e.currentTarget).parents(&#039;.grid_menu&#039;);
+            gridId = gridMenu.data(&#039;grid_id&#039;);
+            $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
+        }
         else gridId = filterDiv.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
         if (gridState[gridId].updating) return;		
         var gridData = gridState[gridId];
@@ -1969,7 +1981,7 @@
         var targetCol = $(e.currentTarget);
         var id = targetCol.parents(&#039;.grid-header-div&#039;).length ? targetCol.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;) : null;
         var droppedId = droppedCol.parents(&#039;.grid-header-div&#039;).length ? droppedCol.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;) : null;
-        if (!id || !droppedId || id !== droppedId) return;  
+        if (id == null || droppedId == null || id !== droppedId) return;  
         if (gridState[id].updating) return;		
         if (droppedCol[0].cellIndex === targetCol[0].cellIndex) return;
         if (droppedCol[0].id === &#039;sliderDiv&#039;) return;

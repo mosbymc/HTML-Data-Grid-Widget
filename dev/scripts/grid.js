@@ -1768,8 +1768,11 @@ var grid = (function _grid($) {
      * @param {object} deleteAnchor - the delete button DOM element
      */
     function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
-        saveAnchor.on('click', function saveChangesHandler() {
+        saveAnchor.on('click', function saveChangesHandler(e) {
             if (gridState[id].updating) return;
+            var gridMenu = $(e.currentTarget).parents('.grid_menu');
+            if (gridMenu.length)
+                $('.grid_menu').addClass('hiddenMenu');
             var dirtyCells = [],
                 pageNum = gridState[id].pageNum, i;
             gridElem.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
@@ -1810,8 +1813,11 @@ var grid = (function _grid($) {
             }
         });
 
-        deleteAnchor.on('click', function deleteChangeHandler() {
+        deleteAnchor.on('click', function deleteChangeHandler(e) {
             if (gridState[id].updating) return;
+            var gridMenu = $(e.currentTarget).parents('.grid_menu');
+            if (gridMenu.length)
+                $('.grid_menu').addClass('hiddenMenu');
             var dirtyCells = [];
             gridElem.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
                 dirtyCells.push($(val).parents('td'));
@@ -1938,7 +1944,7 @@ var grid = (function _grid($) {
         menuItem.on('mouseover', function excelMenuItemHoverHandler() {
             var exportOptions = gridState[gridId].grid.find('#excel_grid_id_' + gridId);
             if (!exportOptions.length) {
-                exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options"></div>');
+                exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '"></div>');
                 var exportList = $('<ul class="menu-list"></ul>');
                 var gridPage = $('<li data-value="page"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
                 var allData = $('<li data-value="all"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
@@ -1948,10 +1954,11 @@ var grid = (function _grid($) {
                     exportList.append(gridSelection);
                 }
                 var options = exportList.find('li');
-                options.on('click', function excelExportItemClickHandler(/*e*/) {
+                options.on('click', function excelExportItemClickHandler() {
                     //TODO: Need to update the export data function to take the type of export as well (page, all, selection)
                     //var type = $(e.currentTarget).find('span').text();
                     exportDataAsExcelFile(gridId, this.dataset.value);
+                    gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
                 });
                 exportOptions.append(exportList);
                 gridState[gridId].grid.append(exportOptions);
@@ -1986,8 +1993,9 @@ var grid = (function _grid($) {
 
     function createDeselectMenuOption(gridId) {
         var deSelectMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove Grid Selection</a>'));
-        deSelectMenuItem.on('click', function deselectGridClickHandler() {
+        deSelectMenuItem.on('click', function deselectGridClickHandler(e) {
             gridState[gridId].grid.find('.selected').removeClass('selected');
+            $(e.currentTarget).parents('.grid_menu').addClass('hiddenMenu');
         });
         return deSelectMenuItem;
     }
@@ -2283,7 +2291,11 @@ var grid = (function _grid($) {
         var filterDiv = $(e.currentTarget).parents('.filter-div'),
             value = filterDiv.find('.filterInput').val(),
             gridId;
-        if (!filterDiv.length) gridId = $(e.currentTarget).parents('.grid_menu').data('grid_id');
+        if (!filterDiv.length) {
+            var gridMenu = $(e.currentTarget).parents('.grid_menu');
+            gridId = gridMenu.data('grid_id');
+            $('.grid_menu').addClass('hiddenMenu');
+        }
         else gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
         if (gridState[gridId].updating) return;		//can't filter if grid is updating
         var gridData = gridState[gridId];
@@ -2372,7 +2384,7 @@ var grid = (function _grid($) {
         var targetCol = $(e.currentTarget);
         var id = targetCol.parents('.grid-header-div').length ? targetCol.parents('.grid-wrapper').data('grid_id') : null;
         var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
-        if (!id || !droppedId || id !== droppedId) return;  //at least one of the involved dom elements is not a grid column, or they are from different grids
+        if (id == null || droppedId == null || id !== droppedId) return;  //at least one of the involved dom elements is not a grid column, or they are from different grids
         if (gridState[id].updating) return;		//can't resort columns if grid is updating
         if (droppedCol[0].cellIndex === targetCol[0].cellIndex) return;
         if (droppedCol[0].id === 'sliderDiv') return;
