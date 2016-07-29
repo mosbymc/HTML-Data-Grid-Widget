@@ -1897,20 +1897,22 @@ var grid = (function _grid($) {
             if (!menu.length) {
                 //TODO: this needs to eventually be pushed into its own function and check all grid config options to display in the menu
                 newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu" data-grid_id="' + gridId + '"></div>');
-                var list = $('<ul class="menu-list"></ul>');
+                //var list = $('<ul class="menu-list"></ul>');
                 if (gridState[gridId].editable) {
-                    list.append(createSaveDeleteMenuItems(gridId));
+                    newMenu.append($('<ul class="menu-list"></ul>').append(createSaveDeleteMenuItems(gridId)));
                 }
                 if (gridState[gridId].filterable) {
-                    list.append(createFilterMenuItems());
+                    newMenu.append($('<hr/>'));
+                    newMenu.append($('<ul class="menu-list"></ul>').append(createFilterMenuItems()));
                 }
                 if (gridState[gridId].selectable) {
-                    list.append(createDeselectMenuOption(gridId));
+                    newMenu.append($('<ul class="menu-list"></ul>').append(createDeselectMenuOption(gridId)));
                 }
                 if (gridState[gridId].excelExport) {
-                    list.append(createExcelExportMenuItems(newMenu, gridId));
+                    newMenu.append($('<hr/>'));
+                    newMenu.append($('<ul class="menu-list"></ul>').append(createExcelExportMenuItems(newMenu, gridId)));
                 }
-                newMenu.append(list);
+                //newMenu.append(list);
                 gridState[gridId].grid.append(newMenu);
                 $(document).on('click', function hideMenuHandler(e) {
                     var elem = $(e.target);

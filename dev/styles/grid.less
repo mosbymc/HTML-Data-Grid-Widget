@@ -847,11 +847,10 @@ input {
   width: auto;
   position: fixed;
   border: 1px solid;
-  padding: 12px 0 12px 12px;
+  padding: 12px 0 12px 0;
   background-color: @white;
-  .font-settings;
-  line-height: 16px;
-  font-size: 12px;
+  .font-settings(12px);
+  line-height: 20px;
 }
 
 .hiddenMenu {
@@ -861,7 +860,7 @@ input {
 .menu-list {
   list-style: none;
   padding-left: 0;
-  margin: 0;
+  margin: 0 0 0 12px;
 }
 
 .menu_item {
@@ -894,7 +893,7 @@ input {
   width: auto;
   position: fixed;
   border: 1px solid;
-  padding: 12px;
+  padding: 12px 0 12px 0;
   background-color: @white;
   .font-settings;
   line-height: 16px;
