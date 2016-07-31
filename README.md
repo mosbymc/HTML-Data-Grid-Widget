@@ -11,19 +11,19 @@ Currently Implemented Functionality:
 - Reorderable Columns
 - Filterable Columns
 - Sortable Columns
+- Groupable Columns
 - In-cell Editing
-- Client-side paging
+- Paging
+- Exporting data as an excel file via integration with [XcelXporter](https://github.com/mosbymc/XcelXporter)
+- Formatting user input when allowing in-cell editing via integration with [inputFormatter](https://github.com/mosbymc/inputformatter)
 - Partial integration with [validator.js](https://github.com/mosbymc/validator)... more to come
+
+All data manipulation functionality (sorting, filtering, grouping, editing, and paging) can occur on the client-side or server-side depending on your configuration options.
 
 Planned functionality:
 - Dynamically add new columns
 - Dynamically add new rows
-- Server-side paging
 - Nested drill-down grids
-- Export grid to cvs
-- Event hooks
-- Graphics/logo support
-- Integration with [validator.js](https://github.com/mosbymc/validator)
 
 
 The grid.html file is my test page for the functionality in the grid widget. It requires grid.js, and grid.css to run properly.
