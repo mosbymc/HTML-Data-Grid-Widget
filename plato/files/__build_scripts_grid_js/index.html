@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.33</p>
+      <p class="stat">55.41</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2898</p>
+      <p class="stat">2911</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">196.96</p>
+      <p class="stat">197.31</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">61.98</p>
+      <p class="stat">62.33</p>
     </div>
   </div>
 </div>
@@ -1534,12 +1534,11 @@
                 if (gridState[gridId].editable) {
                     newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createSaveDeleteMenuItems(gridId)));
                 }
-                if (gridState[gridId].filterable) {
+                if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable) {
                     newMenu.append($(&#039;&lt;hr/&gt;&#039;));
-                    newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createFilterMenuItems()));
-                }
-                if (gridState[gridId].selectable) {
-                    newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createDeselectMenuOption(gridId)));
+                    if (gridState[gridId].sortable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createSortMenuItem()));
+                    if (gridState[gridId].filterable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createFilterMenuItems()));
+                    if (gridState[gridId].selectable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createDeselectMenuOption(gridId)));
                 }
                 if (gridState[gridId].excelExport) {
                     newMenu.append($(&#039;&lt;hr/&gt;&#039;));
@@ -1639,10 +1638,24 @@
         return [saveMenuItem, deleteMenuItem];
     }
 
+    function createSortMenuItem() {
+        var sortMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;).append($(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Remove All Column Sorts&lt;/a&gt;&#039;));
+        sortMenuItem.on(&#039;click&#039;, RemoveAllColumnSorts);
+        return sortMenuItem;
+    }
+
     function createFilterMenuItems() {
-        var filterMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;).append($(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Remove Grid Filter&lt;/a&gt;&#039;));
+        var filterMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;).append($(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Remove All Grid Filters&lt;/a&gt;&#039;));
         filterMenuItem.on(&#039;click&#039;, resetAllFilters);
         return filterMenuItem;
+    }
+
+    function RemoveAllColumnSorts(e) {
+        var gridMenu = $(e.currentTarget).parents(&#039;.grid_menu&#039;),
+            gridId = gridMenu.data(&#039;grid_id&#039;);
+        $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
+        gridState[gridId].sortedOn = [];
+
     }
 
     function groupByHandler() {

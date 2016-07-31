@@ -1902,12 +1902,11 @@ var grid = (function _grid($) {
                 if (gridState[gridId].editable) {
                     newMenu.append($('<ul class="menu-list"></ul>').append(createSaveDeleteMenuItems(gridId)));
                 }
-                if (gridState[gridId].filterable) {
+                if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable) {
                     newMenu.append($('<hr/>'));
-                    newMenu.append($('<ul class="menu-list"></ul>').append(createFilterMenuItems()));
-                }
-                if (gridState[gridId].selectable) {
-                    newMenu.append($('<ul class="menu-list"></ul>').append(createDeselectMenuOption(gridId)));
+                    if (gridState[gridId].sortable) newMenu.append($('<ul class="menu-list"></ul>').append(createSortMenuItem()));
+                    if (gridState[gridId].filterable) newMenu.append($('<ul class="menu-list"></ul>').append(createFilterMenuItems()));
+                    if (gridState[gridId].selectable) newMenu.append($('<ul class="menu-list"></ul>').append(createDeselectMenuOption(gridId)));
                 }
                 if (gridState[gridId].excelExport) {
                     newMenu.append($('<hr/>'));
@@ -2016,10 +2015,26 @@ var grid = (function _grid($) {
         return [saveMenuItem, deleteMenuItem];
     }
 
+    function createSortMenuItem() {
+        var sortMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove All Column Sorts</a>'));
+        sortMenuItem.on('click', RemoveAllColumnSorts);
+        return sortMenuItem;
+    }
+
     function createFilterMenuItems() {
-        var filterMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove Grid Filter</a>'));
+        var filterMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove All Grid Filters</a>'));
         filterMenuItem.on('click', resetAllFilters);
         return filterMenuItem;
+    }
+
+    function RemoveAllColumnSorts(e) {
+        var gridMenu = $(e.currentTarget).parents('.grid_menu'),
+            gridId = gridMenu.data('grid_id');
+        $('.grid_menu').addClass('hiddenMenu');
+        gridState[gridId].sortedOn = [];
+
+        //TODO: need to find every column that has a sorted icon (asc/desc) and remove those DOM elements...
+        //TODO: ...then I need to call the 'getGridPageData' (or whatever its called) to retrieve the updated, non-sorted, view
     }
 
     /**
