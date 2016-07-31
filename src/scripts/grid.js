@@ -1497,8 +1497,7 @@ var grid = (function _grid($) {
                 exportOptions.append(exportList);
                 gridState[gridId].grid.append(exportOptions);
             }
-            else
-                exportOptions.removeClass('hidden_menu_item');
+            else exportOptions.removeClass('hidden_menu_item');
 
             var groupAnchorOffset = menuAnchor.offset(),
                 newMenuOffset = menu.offset();
@@ -1563,8 +1562,11 @@ var grid = (function _grid($) {
         var gridMenu = $(e.currentTarget).parents('.grid_menu'),
             gridId = gridMenu.data('grid_id');
         $('.grid_menu').addClass('hiddenMenu');
-        gridState[gridId].sortedOn = [];
 
+        $('.sortSpan').remove();
+        gridState[gridId].sortedOn = [];
+        gridState[gridId].pageRequest.eventType = 'sort';
+        preparePageDataGetRequest(gridId);
     }
 
     function groupByHandler() {
@@ -1811,10 +1813,9 @@ var grid = (function _grid($) {
         var gridMenu = $(e.currentTarget).parents('.grid_menu'),
             gridId = gridMenu.data('grid_id');
         $('.grid_menu').addClass('hiddenMenu');
+        gridState[gridId].grid.find('filterInput').val('');
 
         if (gridState[gridId].updating) return;		
-        gridState[gridId].filteredOn = [];
-        gridState[gridId].pageRequest.filteredOn = [];
         gridState[gridId].filteredOn = [];
         gridState[gridId].pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
@@ -1840,7 +1841,6 @@ var grid = (function _grid($) {
             }
         }
 
-        gridData.pageRequest.filteredOn = remainingFilters;
         gridData.filteredOn = remainingFilters;
         gridData.pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
@@ -1883,7 +1883,6 @@ var grid = (function _grid($) {
         gridState[gridId].filteredOn = tmpFilters;
 
         filterDiv.addClass('hiddenFilter');
-        gridData.pageRequest.filteredOn = gridState[gridId].filteredOn;
         gridData.pageRequest.eventType = 'filter-add';
         preparePageDataGetRequest(gridId);
     }
@@ -2057,7 +2056,6 @@ var grid = (function _grid($) {
                 gridState[id].sortedOn.push({ field: field, sortDirection: 'asc' });
                 elem.find('.header-anchor').append('<span class="sort-asc sortSpan">Sort</span>');
             }
-            gridState[id].pageRequest.sortedOn = gridState[id].sortedOn;
             gridState[id].pageRequest.eventType = 'sort';
             preparePageDataGetRequest(id);
         });
