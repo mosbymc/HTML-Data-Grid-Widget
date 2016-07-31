@@ -712,6 +712,7 @@ var grid = (function _grid($) {
         storageData.putRequest = {};
         storageData.resizing = false;
         storageData.sortedOn = [];
+        storageData.filteredOn = [];
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -1948,11 +1949,11 @@ var grid = (function _grid($) {
             if (!exportOptions.length) {
                 exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '"></div>');
                 var exportList = $('<ul class="menu-list"></ul>');
-                var gridPage = $('<li data-value="page"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
-                var allData = $('<li data-value="all"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
+                var gridPage = $('<li data-value="page" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
+                var allData = $('<li data-value="all" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
                 exportList.append(gridPage).append(allData);
                 if (gridState[gridId].selectable) {
-                    var gridSelection = $('<li data-value="select"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
+                    var gridSelection = $('<li data-value="select" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
                     exportList.append(gridSelection);
                 }
                 var options = exportList.find('li');
@@ -2017,7 +2018,7 @@ var grid = (function _grid($) {
 
     function createFilterMenuItems() {
         var filterMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove Grid Filter</a>'));
-        filterMenuItem.on('click', resetButtonClickHandler);
+        filterMenuItem.on('click', resetAllFilters);
         return filterMenuItem;
     }
 
@@ -2289,32 +2290,43 @@ var grid = (function _grid($) {
         });
     }
 
+    function resetAllFilters(e) {
+        var gridMenu = $(e.currentTarget).parents('.grid_menu'),
+            gridId = gridMenu.data('grid_id');
+        $('.grid_menu').addClass('hiddenMenu');
+
+        if (gridState[gridId].updating) return;		//can't filter if grid is updating
+        gridState[gridId].filteredOn = [];
+        gridState[gridId].pageRequest.filteredOn = [];
+        gridState[gridId].filteredOn = [];
+        gridState[gridId].pageRequest.eventType = 'filter';
+        preparePageDataGetRequest(gridId);
+    }
+
     function resetButtonClickHandler(e) {
         var filterDiv = $(e.currentTarget).parents('.filter-div'),
             value = filterDiv.find('.filterInput').val(),
-            gridId;
-        if (!filterDiv.length) {
-            var gridMenu = $(e.currentTarget).parents('.grid_menu');
-            gridId = gridMenu.data('grid_id');
-            $('.grid_menu').addClass('hiddenMenu');
-        }
-        else gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
+            field = $(this).data('field'),
+            remainingFilters = [],
+            gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
         if (gridState[gridId].updating) return;		//can't filter if grid is updating
         var gridData = gridState[gridId];
 
-        if (value === '' && gridData.filterVal === '') return;
+        if (value === '' && !gridData.filteredOn.length) return;
         filterDiv.find('.filterInput').val('');
 
         filterDiv.addClass('hiddenFilter');
 
-        gridData.pageRequest.filteredOn = null;
-        gridData.pageRequest.filterVal = null;
-        gridData.pageRequest.filterType = null;
-        gridData.filteredOn = null;
-        gridData.filterVal = null;
-        gridData.filterType = null;
+        for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
+            if (gridState[gridId].filteredOn[i].field !== field) {
+                remainingFilters.push(gridState[gridId].filteredOn[i]);
+            }
+        }
+
+        gridData.pageRequest.filteredOn = remainingFilters;
+        gridData.filteredOn = remainingFilters;
         gridData.pageRequest.eventType = 'filter';
-        gridState[gridId].alteredData = cloneGridData(gridState[gridId].originalData);
+        //gridState[gridId].alteredData = cloneGridData(gridState[gridId].originalData);
         preparePageDataGetRequest(gridId);
     }
 
@@ -2327,6 +2339,8 @@ var grid = (function _grid($) {
         var gridData = gridState[gridId],
             type = filterDiv.data('type'),
             errors = filterDiv.find('.filter-div-error'),
+            field = $(this).data('field'),
+            foundColumn = false,
             re;
 
         if (dataTypes[type]) {
@@ -2338,12 +2352,23 @@ var grid = (function _grid($) {
         }
 
         if (errors.length) errors.remove();
-        if (value === '' && gridData.filterVal === '') return;
+        if (value === '' && !gridData.filteredOn.length) return;
+
+        for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
+            if (gridState[gridId].filteredOn[i].field === field) {
+                foundColumn = true;
+                gridState[gridId].filteredOn[i].value = value;
+                gridState[gridId].filteredOn[i].filterType = selected;
+                break;
+            }
+        }
+
+        if (!foundColumn) {
+            gridState[gridId].filteredOn.push({ field: field, value: value, filterType: selected });
+        }
 
         filterDiv.addClass('hiddenFilter');
-        gridData.pageRequest.filteredOn = $(this).data('field');
-        gridData.pageRequest.filterVal = value;
-        gridData.pageRequest.filterType = selected;
+        gridData.pageRequest.filteredOn = gridState[gridId].filteredOn;
         gridData.pageRequest.eventType = 'filter';
         preparePageDataGetRequest(gridId);
     }
@@ -2654,20 +2679,13 @@ var grid = (function _grid($) {
         var pageNum = gridData.pageRequest.pageNum || gridData.pageNum;
         var pageSize = gridData.pageRequest.pageSize || gridData.pageSize;
         var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
-        var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
-        var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
+        var filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
         var groupedBy = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
         var groupSortDirection = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
 
         var requestObj = {};
         if (gridData.sortable) requestObj.sortedOn = sortedOn;
-
-        if (gridData.filterable) {
-            requestObj.filteredOn = filteredOn;
-            requestObj.filterVal = filterVal;
-            requestObj.filterType = filterType;
-        }
+        if (gridData.filterable) requestObj.filteredOn = filteredOn;
 
         if (gridData.groupable) {
             requestObj.groupedBy = groupedBy;
@@ -2696,13 +2714,11 @@ var grid = (function _grid($) {
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
                 gridData.pageNum = requestObj.pageNum;
-                gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.length;
+                gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy;
                 gridData.groupSortDirection = requestObj.groupSortDirection;
                 gridData.sortedOn = requestObj.sortedOn;
                 gridData.filteredOn = requestObj.filteredOn;
-                gridData.filterVal = requestObj.filterVal;
-                gridData.filterType = requestObj.filterType;
                 gridData.groupingStatusChanged = false;
 
                 if (gridData.pageRequest.eventType === 'newGrid' || groupingStatus)
@@ -2774,12 +2790,14 @@ var grid = (function _grid($) {
             return;
         }
 
-        if (requestObj.filteredOn) {
-            if (requestObj.filterVal !== '') {
-                var dataType = gridState[id].columns[requestObj.filteredOn].type || 'string';
-                fullGridData = filterGridData(requestObj.filterType, requestObj.filterVal, requestObj.filteredOn, dataType, cloneGridData(gridState[id].originalData));
+        //TODO: I can make this much smarter and faster by checking to see if a filter has been added or removed. If added, just take the existing data
+        //TODO: and filter it again. If removed, need to take the original data and apply all remaining filters.
+        if (requestObj.filteredOn && requestObj.filteredOn.length) {
+            fullGridData = cloneGridData(gridState[id].originalData);
+            for (var i = 0; i <  requestObj.filteredOn.length; i++) {
+                var dataType = gridState[id].columns[requestObj.filteredOn[i].field].type || 'string';
+                fullGridData = filterGridData(requestObj.filteredOn[i].filterType, requestObj.filteredOn[i].value, requestObj.filteredOn[i].field, dataType, fullGridData);
             }
-            else fullGridData = cloneGridData(gridState[id].originalData);
             requestObj.pageNum = 1;		//reset the page to the first page when a filter is applied or removed.
             gridState[id].alteredData = fullGridData;
         }

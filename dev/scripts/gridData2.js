@@ -9,6 +9,7 @@ var gridData = {
     selectable: 'multi-row',
     excelExport: true,
     pagingOptions: [25, 50, 100],
+    menu: ['filter', 'excel', 'save', 'sort', 'selection'],
     //pageSize: 50,
     summaryRow: {
         Service: {

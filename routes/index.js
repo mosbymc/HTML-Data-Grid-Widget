@@ -84,10 +84,12 @@ function determinePageData(requestObj, fullGridData, callback) {
     }
     limitPageData(requestObj, fullGridData, callback);*/
 
-    if (requestObj.filteredOn) {
-        if (requestObj.filterVal !== '') {
-            var dataType = columns[requestObj.filteredOn].type || 'string';
-            fullGridData = gridDataHelpers.filterGridData(requestObj.filterType, requestObj.filterVal, requestObj.filteredOn, dataType, fullGridData);
+    //TODO: I can make this much smarter and faster by checking to see if a filter has been added or removed. If added, just take the existing data
+    //TODO: and filter it again. If removed, need to take the original data and apply all remaining filters.
+    if (requestObj.filteredOn && requestObj.filteredOn.length) {
+        for (var i = 0; i <  requestObj.filteredOn.length; i++) {
+            var dataType = columns[requestObj.filteredOn[i].field].type || 'string';
+            fullGridData = gridDataHelpers.filterGridData(requestObj.filteredOn[i].filterType, requestObj.filteredOn[i].value, requestObj.filteredOn[i].field, dataType, fullGridData);
         }
     }
 

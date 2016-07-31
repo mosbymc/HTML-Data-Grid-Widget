@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2883</p>
+      <p class="stat">2898</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">196.19</p>
+      <p class="stat">196.96</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">61.59</p>
+      <p class="stat">61.98</p>
     </div>
   </div>
 </div>
@@ -540,6 +540,7 @@
         storageData.putRequest = {};
         storageData.resizing = false;
         storageData.sortedOn = [];
+        storageData.filteredOn = [];
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -1573,11 +1574,11 @@
             if (!exportOptions.length) {
                 exportOptions = $(&#039;&lt;div id=&quot;excel_grid_id_&#039; + gridId + &#039;&quot; class=&quot;menu_item_options&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&lt;/div&gt;&#039;);
                 var exportList = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
-                var gridPage = $(&#039;&lt;li data-value=&quot;page&quot;&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Current Page Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
-                var allData = $(&#039;&lt;li data-value=&quot;all&quot;&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;All Page Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
+                var gridPage = $(&#039;&lt;li data-value=&quot;page&quot; class=&quot;menu_item&quot;&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Current Page Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
+                var allData = $(&#039;&lt;li data-value=&quot;all&quot; class=&quot;menu_item&quot;&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;All Page Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
                 exportList.append(gridPage).append(allData);
                 if (gridState[gridId].selectable) {
-                    var gridSelection = $(&#039;&lt;li data-value=&quot;select&quot;&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Selected Grid Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
+                    var gridSelection = $(&#039;&lt;li data-value=&quot;select&quot; class=&quot;menu_item&quot;&gt;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Selected Grid Data&lt;/span&gt;&lt;/a&gt;&lt;/li&gt;&#039;);
                     exportList.append(gridSelection);
                 }
                 var options = exportList.find(&#039;li&#039;);
@@ -1640,7 +1641,7 @@
 
     function createFilterMenuItems() {
         var filterMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;).append($(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Remove Grid Filter&lt;/a&gt;&#039;));
-        filterMenuItem.on(&#039;click&#039;, resetButtonClickHandler);
+        filterMenuItem.on(&#039;click&#039;, resetAllFilters);
         return filterMenuItem;
     }
 
@@ -1884,32 +1885,42 @@
         });
     }
 
+    function resetAllFilters(e) {
+        var gridMenu = $(e.currentTarget).parents(&#039;.grid_menu&#039;),
+            gridId = gridMenu.data(&#039;grid_id&#039;);
+        $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
+
+        if (gridState[gridId].updating) return;		
+        gridState[gridId].filteredOn = [];
+        gridState[gridId].pageRequest.filteredOn = [];
+        gridState[gridId].filteredOn = [];
+        gridState[gridId].pageRequest.eventType = &#039;filter&#039;;
+        preparePageDataGetRequest(gridId);
+    }
+
     function resetButtonClickHandler(e) {
         var filterDiv = $(e.currentTarget).parents(&#039;.filter-div&#039;),
             value = filterDiv.find(&#039;.filterInput&#039;).val(),
-            gridId;
-        if (!filterDiv.length) {
-            var gridMenu = $(e.currentTarget).parents(&#039;.grid_menu&#039;);
-            gridId = gridMenu.data(&#039;grid_id&#039;);
-            $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
-        }
-        else gridId = filterDiv.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
+            field = $(this).data(&#039;field&#039;),
+            remainingFilters = [],
+            gridId = filterDiv.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
         if (gridState[gridId].updating) return;		
         var gridData = gridState[gridId];
 
-        if (value === &#039;&#039; &amp;&amp; gridData.filterVal === &#039;&#039;) return;
+        if (value === &#039;&#039; &amp;&amp; !gridData.filteredOn.length) return;
         filterDiv.find(&#039;.filterInput&#039;).val(&#039;&#039;);
 
         filterDiv.addClass(&#039;hiddenFilter&#039;);
 
-        gridData.pageRequest.filteredOn = null;
-        gridData.pageRequest.filterVal = null;
-        gridData.pageRequest.filterType = null;
-        gridData.filteredOn = null;
-        gridData.filterVal = null;
-        gridData.filterType = null;
+        for (var i = 0; i &lt; gridState[gridId].filteredOn.length; i++) {
+            if (gridState[gridId].filteredOn[i].field !== field) {
+                remainingFilters.push(gridState[gridId].filteredOn[i]);
+            }
+        }
+
+        gridData.pageRequest.filteredOn = remainingFilters;
+        gridData.filteredOn = remainingFilters;
         gridData.pageRequest.eventType = &#039;filter&#039;;
-        gridState[gridId].alteredData = cloneGridData(gridState[gridId].originalData);
         preparePageDataGetRequest(gridId);
     }
 
@@ -1922,6 +1933,8 @@
         var gridData = gridState[gridId],
             type = filterDiv.data(&#039;type&#039;),
             errors = filterDiv.find(&#039;.filter-div-error&#039;),
+            field = $(this).data(&#039;field&#039;),
+            foundColumn = false,
             re;
 
         if (dataTypes[type]) {
@@ -1933,12 +1946,23 @@
         }
 
         if (errors.length) errors.remove();
-        if (value === &#039;&#039; &amp;&amp; gridData.filterVal === &#039;&#039;) return;
+        if (value === &#039;&#039; &amp;&amp; !gridData.filteredOn.length) return;
+
+        for (var i = 0; i &lt; gridState[gridId].filteredOn.length; i++) {
+            if (gridState[gridId].filteredOn[i].field === field) {
+                foundColumn = true;
+                gridState[gridId].filteredOn[i].value = value;
+                gridState[gridId].filteredOn[i].filterType = selected;
+                break;
+            }
+        }
+
+        if (!foundColumn) {
+            gridState[gridId].filteredOn.push({ field: field, value: value, filterType: selected });
+        }
 
         filterDiv.addClass(&#039;hiddenFilter&#039;);
-        gridData.pageRequest.filteredOn = $(this).data(&#039;field&#039;);
-        gridData.pageRequest.filterVal = value;
-        gridData.pageRequest.filterType = selected;
+        gridData.pageRequest.filteredOn = gridState[gridId].filteredOn;
         gridData.pageRequest.eventType = &#039;filter&#039;;
         preparePageDataGetRequest(gridId);
     }
@@ -2224,20 +2248,13 @@
         var pageNum = gridData.pageRequest.pageNum || gridData.pageNum;
         var pageSize = gridData.pageRequest.pageSize || gridData.pageSize;
         var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
-        var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
-        var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
+        var filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
         var groupedBy = gridData.pageRequest.eventType === &#039;group&#039; ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
         var groupSortDirection = gridData.pageRequest.eventType === &#039;group&#039; ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
 
         var requestObj = {};
         if (gridData.sortable) requestObj.sortedOn = sortedOn;
-
-        if (gridData.filterable) {
-            requestObj.filteredOn = filteredOn;
-            requestObj.filterVal = filterVal;
-            requestObj.filterType = filterType;
-        }
+        if (gridData.filterable) requestObj.filteredOn = filteredOn;
 
         if (gridData.groupable) {
             requestObj.groupedBy = groupedBy;
@@ -2264,13 +2281,11 @@
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
                 gridData.pageNum = requestObj.pageNum;
-                gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.length;
+                gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy;
                 gridData.groupSortDirection = requestObj.groupSortDirection;
                 gridData.sortedOn = requestObj.sortedOn;
                 gridData.filteredOn = requestObj.filteredOn;
-                gridData.filterVal = requestObj.filterVal;
-                gridData.filterType = requestObj.filterType;
                 gridData.groupingStatusChanged = false;
 
                 if (gridData.pageRequest.eventType === &#039;newGrid&#039; || groupingStatus)
@@ -2330,12 +2345,12 @@
             return;
         }
 
-        if (requestObj.filteredOn) {
-            if (requestObj.filterVal !== &#039;&#039;) {
-                var dataType = gridState[id].columns[requestObj.filteredOn].type || &#039;string&#039;;
-                fullGridData = filterGridData(requestObj.filterType, requestObj.filterVal, requestObj.filteredOn, dataType, cloneGridData(gridState[id].originalData));
+        if (requestObj.filteredOn &amp;&amp; requestObj.filteredOn.length) {
+            fullGridData = cloneGridData(gridState[id].originalData);
+            for (var i = 0; i &lt;  requestObj.filteredOn.length; i++) {
+                var dataType = gridState[id].columns[requestObj.filteredOn[i].field].type || &#039;string&#039;;
+                fullGridData = filterGridData(requestObj.filteredOn[i].filterType, requestObj.filteredOn[i].value, requestObj.filteredOn[i].field, dataType, fullGridData);
             }
-            else fullGridData = cloneGridData(gridState[id].originalData);
             requestObj.pageNum = 1;		
             gridState[id].alteredData = fullGridData;
         }
