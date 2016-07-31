@@ -98,7 +98,7 @@ gridDataHelpers.sortGridData = function sortGridData (sortedItems, gridData, col
         }
     }
     return gridData;
-}
+};
 
 gridDataHelpers.mergeSort = function mergeSort(data, field, type) {
     if (data.length < 2) return data;
@@ -179,7 +179,7 @@ gridDataHelpers.getNumbersFromTime = function getNumbersFromTime(val) {
 function convertTimeArrayToSeconds(timeArray) {
     var hourVal = timeArray[0] === 12 || timeArray[0] === 24 ? timeArray[0] - 12 : timeArray[0];
     return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
-};
+}
 
 function compareValuesByType (val1, val2, dataType) {
     switch (dataType) {

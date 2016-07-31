@@ -1816,7 +1816,7 @@ var grid = (function _grid($) {
         gridState[gridId].filteredOn = [];
         gridState[gridId].pageRequest.filteredOn = [];
         gridState[gridId].filteredOn = [];
-        gridState[gridId].pageRequest.eventType = 'filter';
+        gridState[gridId].pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
     }
 
@@ -1842,7 +1842,7 @@ var grid = (function _grid($) {
 
         gridData.pageRequest.filteredOn = remainingFilters;
         gridData.filteredOn = remainingFilters;
-        gridData.pageRequest.eventType = 'filter';
+        gridData.pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
     }
 
@@ -1857,7 +1857,8 @@ var grid = (function _grid($) {
             errors = filterDiv.find('.filter-div-error'),
             field = $(this).data('field'),
             foundColumn = false,
-            re;
+            tmpFilters = [],
+            updatedFilter, re;
 
         if (dataTypes[type]) {
             re = new RegExp(dataTypes[type]);
@@ -1871,21 +1872,19 @@ var grid = (function _grid($) {
         if (value === '' && !gridData.filteredOn.length) return;
 
         for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
-            if (gridState[gridId].filteredOn[i].field === field) {
+            if (gridState[gridId].filteredOn[i].field !== field) tmpFilters.push(gridState[gridId].filteredOn[i]);
+            else {
+                updatedFilter = gridState[gridId].filteredOn[i];
                 foundColumn = true;
-                gridState[gridId].filteredOn[i].value = value;
-                gridState[gridId].filteredOn[i].filterType = selected;
-                break;
             }
         }
 
-        if (!foundColumn) {
-            gridState[gridId].filteredOn.push({ field: field, value: value, filterType: selected });
-        }
+        tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, filterType: selected });
+        gridState[gridId].filteredOn = tmpFilters;
 
         filterDiv.addClass('hiddenFilter');
         gridData.pageRequest.filteredOn = gridState[gridId].filteredOn;
-        gridData.pageRequest.eventType = 'filter';
+        gridData.pageRequest.eventType = 'filter-add';
         preparePageDataGetRequest(gridId);
     }
 
@@ -2189,7 +2188,6 @@ var grid = (function _grid($) {
         gridData.grid.find('.grid-content-div').empty();
 
         callGridEventHandlers(gridState[id].events.pageRequested, gridData.grid, { element: gridData.grid });
-
         if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function')
             gridData.dataSource.get(requestObj, getPageDataRequestCallback);
         else {
@@ -2214,7 +2212,7 @@ var grid = (function _grid($) {
                     setColWidth(gridData, gridState[id].grid);
 
                 createGridContent(gridData, gridState[id].grid);
-                if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === 'pageSize') {
+                if (gridData.pageRequest.eventType === 'filter-add' || gridData.pageRequest.eventType === 'filter-rem' || gridData.pageRequest.eventType === 'pageSize') {
                     gridData.grid.find('.grid-footer-div').empty();
                     createGridFooter(gridData, gridData.grid);
                 }
@@ -2267,9 +2265,10 @@ var grid = (function _grid($) {
             return;
         }
 
-        if (requestObj.filteredOn && requestObj.filteredOn.length) {
-            fullGridData = cloneGridData(gridState[id].originalData);
-            for (var i = 0; i <  requestObj.filteredOn.length; i++) {
+        if ((requestObj.filteredOn && requestObj.filteredOn.length) || eventType === 'filter-rem') {
+            fullGridData = eventType === 'filter-add' ? cloneGridData(gridState[id].alteredData) : cloneGridData(gridState[id].originalData);
+            var startIdx = eventType === 'filter-add' ? requestObj.filteredOn.length - 1 : 0;
+            for (var i = startIdx; i <  requestObj.filteredOn.length; i++) {
                 var dataType = gridState[id].columns[requestObj.filteredOn[i].field].type || 'string';
                 fullGridData = filterGridData(requestObj.filteredOn[i].filterType, requestObj.filteredOn[i].value, requestObj.filteredOn[i].field, dataType, fullGridData);
             }
@@ -2345,6 +2344,7 @@ var grid = (function _grid($) {
             }
             if (comparator(curVal, baseVal, filterType)) filteredData.push(gridData[i]);
         }
+        return filteredData;
     }
 
     function comparator(val, base, type) {

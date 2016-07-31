@@ -44,7 +44,7 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.41</p>
+      <p class="stat">55.38</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">197.31</p>
+      <p class="stat">197.00</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">62.33</p>
+      <p class="stat">62.53</p>
     </div>
   </div>
 </div>
@@ -1907,7 +1907,7 @@
         gridState[gridId].filteredOn = [];
         gridState[gridId].pageRequest.filteredOn = [];
         gridState[gridId].filteredOn = [];
-        gridState[gridId].pageRequest.eventType = &#039;filter&#039;;
+        gridState[gridId].pageRequest.eventType = &#039;filter-rem&#039;;
         preparePageDataGetRequest(gridId);
     }
 
@@ -1933,7 +1933,7 @@
 
         gridData.pageRequest.filteredOn = remainingFilters;
         gridData.filteredOn = remainingFilters;
-        gridData.pageRequest.eventType = &#039;filter&#039;;
+        gridData.pageRequest.eventType = &#039;filter-rem&#039;;
         preparePageDataGetRequest(gridId);
     }
 
@@ -1948,7 +1948,8 @@
             errors = filterDiv.find(&#039;.filter-div-error&#039;),
             field = $(this).data(&#039;field&#039;),
             foundColumn = false,
-            re;
+            tmpFilters = [],
+            updatedFilter, re;
 
         if (dataTypes[type]) {
             re = new RegExp(dataTypes[type]);
@@ -1962,21 +1963,19 @@
         if (value === &#039;&#039; &amp;&amp; !gridData.filteredOn.length) return;
 
         for (var i = 0; i &lt; gridState[gridId].filteredOn.length; i++) {
-            if (gridState[gridId].filteredOn[i].field === field) {
+            if (gridState[gridId].filteredOn[i].field !== field) tmpFilters.push(gridState[gridId].filteredOn[i]);
+            else {
+                updatedFilter = gridState[gridId].filteredOn[i];
                 foundColumn = true;
-                gridState[gridId].filteredOn[i].value = value;
-                gridState[gridId].filteredOn[i].filterType = selected;
-                break;
             }
         }
 
-        if (!foundColumn) {
-            gridState[gridId].filteredOn.push({ field: field, value: value, filterType: selected });
-        }
+        tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, filterType: selected });
+        gridState[gridId].filteredOn = tmpFilters;
 
         filterDiv.addClass(&#039;hiddenFilter&#039;);
         gridData.pageRequest.filteredOn = gridState[gridId].filteredOn;
-        gridData.pageRequest.eventType = &#039;filter&#039;;
+        gridData.pageRequest.eventType = &#039;filter-add&#039;;
         preparePageDataGetRequest(gridId);
     }
 
@@ -2280,7 +2279,6 @@
         gridData.grid.find(&#039;.grid-content-div&#039;).empty();
 
         callGridEventHandlers(gridState[id].events.pageRequested, gridData.grid, { element: gridData.grid });
-
         if (gridData.dataSource.get &amp;&amp; typeof gridData.dataSource.get === &#039;function&#039;)
             gridData.dataSource.get(requestObj, getPageDataRequestCallback);
         else {
@@ -2305,7 +2303,7 @@
                     setColWidth(gridData, gridState[id].grid);
 
                 createGridContent(gridData, gridState[id].grid);
-                if (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === &#039;pageSize&#039;) {
+                if (gridData.pageRequest.eventType === &#039;filter-add&#039; || gridData.pageRequest.eventType === &#039;filter-rem&#039; || gridData.pageRequest.eventType === &#039;pageSize&#039;) {
                     gridData.grid.find(&#039;.grid-footer-div&#039;).empty();
                     createGridFooter(gridData, gridData.grid);
                 }
@@ -2358,9 +2356,10 @@
             return;
         }
 
-        if (requestObj.filteredOn &amp;&amp; requestObj.filteredOn.length) {
-            fullGridData = cloneGridData(gridState[id].originalData);
-            for (var i = 0; i &lt;  requestObj.filteredOn.length; i++) {
+        if ((requestObj.filteredOn &amp;&amp; requestObj.filteredOn.length) || eventType === &#039;filter-rem&#039;) {
+            fullGridData = eventType === &#039;filter-add&#039; ? cloneGridData(gridState[id].alteredData) : cloneGridData(gridState[id].originalData);
+            var startIdx = eventType === &#039;filter-add&#039; ? requestObj.filteredOn.length - 1 : 0;
+            for (var i = startIdx; i &lt;  requestObj.filteredOn.length; i++) {
                 var dataType = gridState[id].columns[requestObj.filteredOn[i].field].type || &#039;string&#039;;
                 fullGridData = filterGridData(requestObj.filteredOn[i].filterType, requestObj.filteredOn[i].value, requestObj.filteredOn[i].field, dataType, fullGridData);
             }
@@ -2436,6 +2435,7 @@
             }
             if (comparator(curVal, baseVal, filterType)) filteredData.push(gridData[i]);
         }
+        return filteredData;
     }
 
     function comparator(val, base, type) {

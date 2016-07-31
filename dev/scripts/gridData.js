@@ -6,7 +6,10 @@ var gridData = {
     reorderable: true,
     groupable: true,
     filterable: true,
+    selectable: 'multi-row',
+    excelExport: true,
     pagingOptions: [25, 50, 100],
+    menu: ['filter', 'excel', 'save', 'sort', 'selection'],
     //pageSize: 50,
     summaryRow: {
         Service: {
@@ -73,8 +76,7 @@ var gridData = {
             type: "number",
             template: "{{data}} hour(s)",
             format: '#',
-            //decimals: 0,
-            selectable: true,
+            editable: 'drop-down',
             options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
             width: 160,
             validation: {
@@ -120,6 +122,7 @@ var gridData = {
         Billed: {
             type: "number",
             format: '0C2',
+            editable: true,
             //symbol: "$",
             //template: "${{data}}",
             width: 155,
@@ -177,8 +180,9 @@ var gridData = {
             delimiter: ":"
         },
         Paid: {
-            type: "bool",
+            type: "boolean",
             editable: true,
+            filterable: true,
             //width: 100
         }
     },
