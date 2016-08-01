@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">196.65</p>
+      <p class="stat">196.49</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">62.47</p>
+      <p class="stat">62.48</p>
     </div>
   </div>
 </div>
@@ -1851,7 +1851,7 @@
         var domName = title ? title : type;
         var filterInput, resetButton, button,
             span = $(&#039;&lt;span class=&quot;filterTextSpan&quot;&gt;Filter rows where &#039; + domName + &#039; is:&lt;/span&gt;&#039;).appendTo(filterDiv),
-            select = type !== &#039;boolean&#039; ? $(&#039;&lt;select class=&quot;filterSelect select&quot;&gt;&lt;/select&gt;&#039;).appendTo(filterDiv)
+            select = type !== &#039;boolean&#039; ? $(&#039;&lt;select class=&quot;filterSelect select input&quot;&gt;&lt;/select&gt;&#039;).appendTo(filterDiv)
                 .append(&#039;&lt;option value=&quot;eq&quot;&gt;Equal to:&lt;/option&gt;&#039;).append(&#039;&lt;option value=&quot;neq&quot;&gt;Not equal to:&lt;/option&gt;&#039;) : null;
 
         switch (type) {

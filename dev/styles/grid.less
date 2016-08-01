@@ -374,17 +374,50 @@
 .page-counter {
   margin-left: 5px;
   color: #000;
+  -webkit-appearance: none;
+  -webkit-rtl-ordering: logical;
+  -webkit-tap-highlight-color: @black;
+  -webkit-user-select: text;
+  background-color: @white;
+  .font-settings;
+  font-stretch: normal;
+  height: 2em;
+  letter-spacing: normal;
+  line-height: 2em;
+  text-align: start;
+  text-indent: .5em;
+  white-space: nowrap;
+  zoom: 1;
+  box-sizing: content-box;
 }
 
 .filterSelect {
+  width: 95% !important;
   display: block;
   margin: 5px;
 }
 
 .filterInput {
   display: block;
-  margin: 5px;
-  width: 100%;
+  margin: 5px 10px 5px 5px;
+  width: 90%;
+
+  -webkit-appearance: none;
+  -webkit-rtl-ordering: logical;
+  -webkit-tap-highlight-color: @black;
+  -webkit-user-select: text;
+  background-color: @white;
+  color: @dark-grey;
+  .font-settings;
+  font-stretch: normal;
+  height: 2em;
+  letter-spacing: normal;
+  line-height: 2em;
+  text-align: start;
+  text-indent: .5em;
+  white-space: nowrap;
+  zoom: 1;
+  box-sizing: border-box;
 }
 
 .filter-div {
@@ -437,7 +470,7 @@
   text-transform: none;
   text-shadow: none;
   text-align: start;
-  box-sizing: border-box;
+  box-sizing: content-box;
   background-color: #fff;
   color: #444;
   border-radius: 5px;
@@ -447,8 +480,9 @@
 
 .select {
   border-radius: 5px;
-  padding: 4px;
+  padding: .177em 0;
   width: 100%;
+  height: 2em;
 }
 
 .button {

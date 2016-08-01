@@ -1760,7 +1760,7 @@ var grid = (function _grid($) {
         var domName = title ? title : type;
         var filterInput, resetButton, button,
             span = $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv),
-            select = type !== 'boolean' ? $('<select class="filterSelect select"></select>').appendTo(filterDiv)
+            select = type !== 'boolean' ? $('<select class="filterSelect select input"></select>').appendTo(filterDiv)
                 .append('<option value="eq">Equal to:</option>').append('<option value="neq">Not equal to:</option>') : null;
 
         switch (type) {
