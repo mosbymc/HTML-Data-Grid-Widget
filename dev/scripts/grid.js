@@ -1744,11 +1744,19 @@ var grid = (function _grid($) {
                     title = gridState[groupId].columns[field].title || field;
 
                 //TODO: need to put some spans in here for grouping direction and removal of column grouping. Also attach event handlers for click events
-                var groupItem = $('<div class="group_item" data-grid_field="' + groupId + '_' + field + '"></div>').appendTo(groupMenuBar);
-                    groupItem.append('<span class="sort-asc sortSpan"></span>').append('<span>' + title + '</span>')
-                        .append('<span class="remove"></span>');
-                 //columnsList.on('change', groupByHandler2);
-                 //dirList.on('change', groupByHandler2);
+                var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>').appendTo(groupMenuBar);
+                var groupDirSpan = $('<span></span>').appendTo(groupItem);
+                groupDirSpan.append('<span class="sort-asc groupSortSpan"></span>').append('<span>' + title + '</span>');
+                var cancelButton = $('<span class="remove"></span>').appendTo(groupItem);
+                groupDirSpan.on('click', function changeGroupSortDirHandler() {
+                    var sortSpan = $(this).children('.groupSortSpan');
+                    if (sortSpan.hasClass('sort-asc')) sortSpan.removeClass('sort-asc').addClass('sort-desc');
+                    else sortSpan.removeClass('sort-desc').addClass('sort-asc');
+                });
+
+                cancelButton.on('click', function removeDataGrouping() {
+
+                });
             });
             groupMenuBar.on('dragover', function handleHeaderDragOverCallback(e) {
                 e.preventDefault();

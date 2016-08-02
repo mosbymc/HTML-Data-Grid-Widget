@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.48</p>
+      <p class="stat">55.58</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2891</p>
+      <p class="stat">2901</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">195.43</p>
+      <p class="stat">195.12</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">61.81</p>
+      <p class="stat">62.08</p>
     </div>
   </div>
 </div>
@@ -1425,9 +1425,19 @@
                 var field = droppedCol.data(&#039;field&#039;),
                     title = gridState[groupId].columns[field].title || field;
 
-                var groupItem = $(&#039;&lt;div class=&quot;group_item&quot; data-grid_field=&quot;&#039; + groupId + &#039;_&#039; + field + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(groupMenuBar);
-                    groupItem.append(&#039;&lt;span class=&quot;sort-asc sortSpan&quot;&gt;&lt;/span&gt;&#039;).append(&#039;&lt;span&gt;&#039; + title + &#039;&lt;/span&gt;&#039;)
-                        .append(&#039;&lt;span class=&quot;remove&quot;&gt;&lt;/span&gt;&#039;);
+                var groupItem = $(&#039;&lt;div class=&quot;group_item&quot; data-grid_id=&quot;&#039; + groupId + &#039;&quot; data-field=&quot;&#039; + field + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(groupMenuBar);
+                var groupDirSpan = $(&#039;&lt;span&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
+                groupDirSpan.append(&#039;&lt;span class=&quot;sort-asc groupSortSpan&quot;&gt;&lt;/span&gt;&#039;).append(&#039;&lt;span&gt;&#039; + title + &#039;&lt;/span&gt;&#039;);
+                var cancelButton = $(&#039;&lt;span class=&quot;remove&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
+                groupDirSpan.on(&#039;click&#039;, function changeGroupSortDirHandler() {
+                    var sortSpan = $(this).children(&#039;.groupSortSpan&#039;);
+                    if (sortSpan.hasClass(&#039;sort-asc&#039;)) sortSpan.removeClass(&#039;sort-asc&#039;).addClass(&#039;sort-desc&#039;);
+                    else sortSpan.removeClass(&#039;sort-desc&#039;).addClass(&#039;sort-asc&#039;);
+                });
+
+                cancelButton.on(&#039;click&#039;, function removeDataGrouping() {
+
+                });
             });
             groupMenuBar.on(&#039;dragover&#039;, function handleHeaderDragOverCallback(e) {
                 e.preventDefault();

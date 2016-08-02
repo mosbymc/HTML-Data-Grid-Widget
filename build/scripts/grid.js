@@ -1334,9 +1334,19 @@ var grid = (function _grid($) {
                 var field = droppedCol.data('field'),
                     title = gridState[groupId].columns[field].title || field;
 
-                var groupItem = $('<div class="group_item" data-grid_field="' + groupId + '_' + field + '"></div>').appendTo(groupMenuBar);
-                    groupItem.append('<span class="sort-asc sortSpan"></span>').append('<span>' + title + '</span>')
-                        .append('<span class="remove"></span>');
+                var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>').appendTo(groupMenuBar);
+                var groupDirSpan = $('<span></span>').appendTo(groupItem);
+                groupDirSpan.append('<span class="sort-asc groupSortSpan"></span>').append('<span>' + title + '</span>');
+                var cancelButton = $('<span class="remove"></span>').appendTo(groupItem);
+                groupDirSpan.on('click', function changeGroupSortDirHandler() {
+                    var sortSpan = $(this).children('.groupSortSpan');
+                    if (sortSpan.hasClass('sort-asc')) sortSpan.removeClass('sort-asc').addClass('sort-desc');
+                    else sortSpan.removeClass('sort-desc').addClass('sort-asc');
+                });
+
+                cancelButton.on('click', function removeDataGrouping() {
+
+                });
             });
             groupMenuBar.on('dragover', function handleHeaderDragOverCallback(e) {
                 e.preventDefault();

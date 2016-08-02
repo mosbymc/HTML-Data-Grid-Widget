@@ -789,6 +789,46 @@ input {
   float: right;
   width: 12px;
   height: 12px;
+  vertical-align: middle;
+  border-collapse: separate;
+  border-color: @black;
+  box-sizing: content-box;
+  color: rgb(168, 168, 168);
+  cursor: pointer;
+  display: inline-block;
+  empty-cells: show;
+  text-align: center;
+  margin-left: 10px;
+  margin-right: 5px;
+  margin-top: 5px;
+}
+
+.groupSortSpan {
+  /*background: @black no-repeat;*/
+  margin-right: 5px;
+  border-collapse: separate;
+  border-color: @black;
+  box-sizing: content-box;
+  color: rgb(168, 168, 168);
+  cursor: pointer;
+  display: inline-block;
+  empty-cells: show;
+  .font-settings(0, @base-font-weight);
+  height: 16px;
+  line-height: 0;
+  .list-styles;
+  opacity: 0.45;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  position: static;
+  text-align: center;
+  vertical-align: bottom;
+  white-space: nowrap;
+  width: 12px;
+
+  &:visited {
+    color: @black;
+  }
 }
 
 .sliderDiv {
