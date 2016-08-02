@@ -798,6 +798,45 @@ input {
 .toolbarAnchor:hover {
   background-color: #4555b6;
 }
+.group_div {
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-variant: normal;
+  font-style: normal;
+  font-weight: normal;
+  display: block;
+  background-color: #3f51b5;
+  box-sizing: content-box;
+  color: rgba(255, 255, 255, 0.5);
+  list-style: none outside none;
+  padding: 0.429em;
+  line-height: 2.6;
+}
+.group_item {
+  color: #ffffff;
+  background-color: #32408f;
+  box-shadow: none;
+  border-radius: 2px;
+  border: 1px solid #32408f;
+  margin: 0 3px;
+  padding: .5em .15em .429em .4em;
+  line-height: 1.5em;
+  box-sizing: content-box;
+  color: rgba(255, 255, 255, 0.5);
+  display: inline-block;
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-variant: normal;
+  font-style: normal;
+  font-weight: normal;
+  list-style: none outside none;
+}
+.remove {
+  background: rgba(0, 0, 0, 0) url('../images/close.png') no-repeat;
+  float: right;
+  width: 12px;
+  height: 12px;
+}
 .sliderDiv {
   z-index: 100;
 }

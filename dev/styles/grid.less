@@ -756,6 +756,41 @@ input {
   }
 }
 
+.group_div {
+  .font-settings(@base-font-size);
+  display: block;
+  background-color: #3f51b5;
+  box-sizing: content-box;
+  color: rgba(255,255,255,.5);
+  .list-styles;
+  padding: 0.429em;
+  line-height: 2.6;
+}
+
+.group_item {
+  color: #ffffff;
+  background-color: #32408f;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  border-radius: 2px;
+  border: 1px solid #32408f;
+  margin: 0 3px;
+  padding: .5em .15em .429em .4em;
+  line-height: 1.5em;
+  box-sizing: content-box;
+  color: rgba(255,255,255,.5);
+  display: inline-block;
+  .font-settings(@base-font-size);
+  .list-styles;
+}
+
+.remove {
+  background: @black url('../images/close.png') no-repeat;
+  float: right;
+  width: 12px;
+  height: 12px;
+}
+
 .sliderDiv {
   z-index: 100;
 }

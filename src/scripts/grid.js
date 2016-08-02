@@ -1,7 +1,8 @@
 var grid = (function _grid($) {
     'use strict';
     var dataTypes, events, aggregates, generateId,
-        gridState = [];
+        gridState = [],
+        groupMenuText = 'Drag and drop a column header here to group by that column';
 
     function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
@@ -37,9 +38,9 @@ var grid = (function _grid($) {
                         gridData.dataSource.data = res.data;
                         gridData.dataSource.rowCount = res.rowCount || 25;
                         if (res.aggregations) {
-                            for (var col in gridData.summaryRow) {
+                            for (var col in gridData.aggregates) {
                                 if (res.aggregations[col])
-                                    gridData.summaryRow[col].value = res.aggregations[col];
+                                    gridData.aggregates[col].value = res.aggregations[col];
                             }
                         }
                     }
@@ -200,7 +201,7 @@ var grid = (function _grid($) {
                 },
                 'getAggregates': {
                     value: function _getAggregates() {
-                        return gridState[gridId].summaryRow;
+                        return gridState[gridId].aggregates;
                     },
                     writable: false,
                     configurable: false
@@ -457,7 +458,7 @@ var grid = (function _grid($) {
 
         gridState[id] = storageData;
 
-        if (gridData.summaryRow && gridData.summaryRow.positionAt === 'top') buildHeaderAggregations(gridData, id);
+        if (gridData.aggregates && gridData.aggregates.positionAt === 'top') buildHeaderAggregations(gridData, id);
 
         createGridFooter(gridData, gridElem);
         createGridContent(gridData, gridElem);
@@ -527,7 +528,7 @@ var grid = (function _grid($) {
                 gridData.filterable = true;
             }
 
-            if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createCellEditSaveDiv(gridData, gridElem);
+            if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
 
             $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
             index++;
@@ -561,23 +562,23 @@ var grid = (function _grid($) {
         for (var col in gridData.columns) {
             var type = typeof gridData.columns[col].type === 'string' ? gridData.columns[col].type : '';
             var text;
-            if (!gridData.summaryRow[col]) {
+            if (!gridData.aggregates[col]) {
                 aggData[col] = '';
                 continue;
             }
             if (typeof gridData.dataSource.get === 'function') {
-                if (gridData.summaryRow[col].type && gridData.summaryRow[col].value) {
-                    text = getFormattedCellText(gridId, col, gridData.summaryRow[col].value) || gridData.summaryRow[col].value;
-                    aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
+                if (gridData.aggregates[col].type && gridData.aggregates[col].value) {
+                    text = getFormattedCellText(gridId, col, gridData.aggregates[col].value) || gridData.aggregates[col].value;
+                    aggData[col] = aggregates[gridData.aggregates[col].type] + text;
                 }
                 else
                     aggData[col] = null;
             }
             else {
-                switch (gridData.summaryRow[col].type) {
+                switch (gridData.aggregates[col].type) {
                     case 'count':
                         text = getFormattedCellText(gridId, col, gridData.dataSource.rowCount) || gridData.dataSource.rowCount;
-                        aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
+                        aggData[col] = aggregates[gridData.aggregates[col].type] + text;
                         break;
                     case 'average':
                         total = 0;
@@ -586,7 +587,7 @@ var grid = (function _grid($) {
                         }
                         var avg = parseFloat(total/parseFloat(gridData.dataSource.rowCount)).toFixed(2);
                         text = getFormattedCellText(gridId, col, avg) || avg;
-                        aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
+                        aggData[col] = aggregates[gridData.aggregates[col].type] + text;
                         break;
                     case 'total':
                         total = 0;
@@ -595,7 +596,7 @@ var grid = (function _grid($) {
                         }
                         if (type === 'currency') total = total.toFixed(2);
                         text = getFormattedCellText(gridId, col, total) || total;
-                        aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
+                        aggData[col] = aggregates[gridData.aggregates[col].type] + text;
                         break;
                     case 'min':
                         var min;
@@ -603,7 +604,7 @@ var grid = (function _grid($) {
                             if (!min || parseFloat(data[i][col]) < min) min = parseFloat(data[i][col]);
                         }
                         text = getFormattedCellText(gridId, col, min) || min;
-                        aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
+                        aggData[col] = aggregates[gridData.aggregates[col].type] + text;
                         break;
                     case 'max':
                         var max;
@@ -611,7 +612,7 @@ var grid = (function _grid($) {
                             if (!max || parseFloat(data[i][col]) > max) max = parseFloat(data[i][col]);
                         }
                         text = getFormattedCellText(gridId, col, max) || max;
-                        aggData[col] = aggregates[gridData.summaryRow[col].type] + text;
+                        aggData[col] = aggregates[gridData.aggregates[col].type] + text;
                         break;
                     case '':
                         aggData[col] = null;
@@ -715,7 +716,7 @@ var grid = (function _grid($) {
         if (gridData.groupedBy && gridData.groupedBy !== 'none')
             colGroup.prepend('<col class="group_col"/>');
 
-        if (gridData.summaryRow && gridData.summaryRow.positionAt === 'bottom') {
+        if (gridData.aggregates && gridData.aggregates.positionAt === 'bottom') {
             var sum = buildAggregatesRow(gridData, id);
             var sumRow = $('<tr class="summary-row-footer"></tr>').appendTo(contentTBody);
             for (var col in sum) {
@@ -1317,42 +1318,50 @@ var grid = (function _grid($) {
         callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
 
-    function createCellEditSaveDiv(gridData, gridElem) {
+    function createGridToolbar(gridData, gridElem, canEdit) {
         var id = gridElem.find('.grid-wrapper').data('grid_id');
         if ($('#grid_' + id + '_toolbar').length) return;	
 
-        var saveBar = $('<div id="grid_' + id + '_toolbar" class="toolbar clearfix" data-grid_id="' + id + '"></div>').prependTo(gridElem);
+        if (gridData.groupable) {
+            var groupMenuBar = $('<div id="grid_' + id + 'group_div" class="group_div clearfix" data-grid_id="' + id + '">' + groupMenuText + '</div>').prependTo(gridElem);
+            groupMenuBar.on('drop', function handleDropCallback(e) {
+                var droppedCol = $('#' + e.originalEvent.dataTransfer.getData('text'));
+                var groupId = $(e.currentTarget).data('grid_id');
+                var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
+                if (groupId == null || droppedId == null || groupId !== droppedId) return;
+                if (gridState[id].updating) return;		
+                groupMenuBar.text('');
+                var field = droppedCol.data('field'),
+                    title = gridState[groupId].columns[field].title || field;
 
-        if (gridData.excelExport) {
-            var menuLink = $('<a href="#"></a>');
-            menuLink.append('<span class="menuSpan"></span>');
-            saveBar.append(menuLink);
-            attachMenuClickHandler(menuLink, id);
+                var groupItem = $('<div class="group_item" data-grid_field="' + groupId + '_' + field + '"></div>').appendTo(groupMenuBar);
+                    groupItem.append('<span class="sort-asc sortSpan"></span>').append('<span>' + title + '</span>')
+                        .append('<span class="remove"></span>');
+            });
+            groupMenuBar.on('dragover', function handleHeaderDragOverCallback(e) {
+                e.preventDefault();
+            });
+
+
         }
 
-        var saveAnchor = $('<a href="#" class="toolbarAnchor saveToolbar"></a>').appendTo(saveBar);
-        saveAnchor.append('<span class="toolbarSpan saveToolbarSpan"></span>Save Changes');
-
-        var deleteAnchor = $('<a href="#" class="toolbarAnchor deleteToolbar"></a>').appendTo(saveBar);
-        deleteAnchor.append('<span class="toolbarSpan deleteToolbarSpan">Delete Changes</span>');
-
-        attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor);
-
-        if (gridData.groupable) {
-            var groupSpan = $('<span class="toolbarSpan group_span" style="float:right;"><span class="groupTextSpan" style="float:left;">Group By: </span></span>').appendTo(saveBar);
-            var columnsList = $('<select class="input select group_select" style="float:none; display: inline; width: auto;"></select>').appendTo(groupSpan);
-            var dirList = $('<select class="input select group_dir_select" style="display: inline; width: auto;"></span>').appendTo(groupSpan);
-            dirList.append('<option value="asc">Ascending</span>');
-            dirList.append('<option value="desc">Descending</span>');
-            columnsList.append('<option value="none">None</option>');
-            for (var col in gridData.columns) {
-                if (gridData.columns[col].groupable !== false) {
-                    var colTitle = gridData.columns[col].title || col;
-                    columnsList.append('<option value="' + col + '">' + colTitle + '</option>');
-                }
+        if (canEdit || gridData.excelExport) {
+            var saveBar = $('<div id="grid_' + id + '_toolbar" class="toolbar clearfix" data-grid_id="' + id + '"></div>').prependTo(gridElem);
+            if (gridData.excelExport) {
+                var menuLink = $('<a href="#"></a>');
+                menuLink.append('<span class="menuSpan"></span>');
+                saveBar.append(menuLink);
+                attachMenuClickHandler(menuLink, id);
             }
-            columnsList.on('change', groupByHandler);
-            dirList.on('change', groupByHandler);
+            if (canEdit) {
+                var saveAnchor = $('<a href="#" class="toolbarAnchor saveToolbar"></a>').appendTo(saveBar);
+                saveAnchor.append('<span class="toolbarSpan saveToolbarSpan"></span>Save Changes');
+
+                var deleteAnchor = $('<a href="#" class="toolbarAnchor deleteToolbar"></a>').appendTo(saveBar);
+                deleteAnchor.append('<span class="toolbarSpan deleteToolbarSpan">Delete Changes</span>');
+
+                attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor);
+            }
         }
     }
 
@@ -1569,33 +1578,6 @@ var grid = (function _grid($) {
         preparePageDataGetRequest(gridId);
     }
 
-    function groupByHandler() {
-        var id = $(this).parents('.toolbar').data('grid_id');
-        if (gridState[id].updating) return;
-        var colSelector = $(this).parents('.toolbar').find('.group_select'),
-            directionSelector = $(this).parents('.toolbar').find('.group_dir_select');
-        if (colSelector.val() === 'none' && (!gridState[id].groupedBy || gridState[id].groupedBy === 'none')) return;
-        if (Object.keys(gridState[id].columns).length === gridState[id].grid.find('colgroup').first().find('col').length && colSelector.val() !== 'none') {
-            if (!gridState[id].groupedBy)
-                gridState[id].groupingStatusChanged = true;
-            var colGroups = gridState[id].grid.find('colgroup');
-            colGroups.each(function iterateColGroupsForInsertCallback(idx, val) {
-                $(val).prepend('<col class="group_col"/>');
-            });
-            gridState[id].grid.find('.grid-headerRow').prepend('<th class="group_spacer">&nbsp</th>');
-            gridState[id].grid.find('.summary-row-header').prepend('<td class="group_spacer">&nbsp</td>');
-        }
-        else if (colSelector.val() === 'none') {
-            gridState[id].groupingStatusChanged = true;
-            gridState[id].grid.find('colgroup').find('.group_col').remove();
-            gridState[id].grid.find('.group_spacer').remove();
-            gridState[id].alteredData = cloneGridData(gridState[id].originalData);
-        }
-        gridState[id].pageRequest.groupedBy = colSelector.val() === 'none' ? undefined : colSelector.val();
-        gridState[id].pageRequest.groupSortDirection = colSelector.val() === 'none' ? undefined : directionSelector.val();
-        gridState[id].pageRequest.eventType = 'group';
-        preparePageDataGetRequest(id);
-    }
 
     function createGridFooter(gridData, gridElem) {
         var gridFooter = gridElem.find('.grid-footer-div');
@@ -2214,7 +2196,7 @@ var grid = (function _grid($) {
                     gridData.grid.find('.grid-footer-div').empty();
                     createGridFooter(gridData, gridData.grid);
                 }
-                if (gridData.pageRequest.eventType === 'filter' && gridData.summaryRow && gridData.summaryRow.positionAt === 'top')
+                if (gridData.pageRequest.eventType === 'filter' && gridData.aggregates && gridData.aggregates.positionAt === 'top')
                     buildHeaderAggregations(gridData, id);
                 gridData.pageRequest = {};
             }

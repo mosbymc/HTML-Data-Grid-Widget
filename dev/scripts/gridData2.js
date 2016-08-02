@@ -11,7 +11,7 @@ var gridData = {
     pagingOptions: [25, 50, 100],
     menu: ['filter', 'excel', 'save', 'sort', 'selection'],
     //pageSize: 50,
-    summaryRow: {
+    aggregates: {
         Service: {
             type: "count"
         },
