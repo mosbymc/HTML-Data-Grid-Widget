@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.58</p>
+      <p class="stat">55.59</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2901</p>
+      <p class="stat">2984</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">195.12</p>
+      <p class="stat">198.38</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">62.08</p>
+      <p class="stat">63.96</p>
     </div>
   </div>
 </div>
@@ -542,6 +542,7 @@
         storageData.resizing = false;
         storageData.sortedOn = [];
         storageData.filteredOn = [];
+        storageData.groupedBy = [];
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -549,10 +550,10 @@
 
         gridState[id] = storageData;
 
-        if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039;) buildHeaderAggregations(gridData, id);
+        if (storageData.aggregates &amp;&amp; storageData.aggregates.positionAt === &#039;top&#039;) buildHeaderAggregations(storageData, id);
 
-        createGridFooter(gridData, gridElem);
-        createGridContent(gridData, gridElem);
+        createGridFooter(storageData, gridElem);
+        createGridContent(storageData, gridElem);
 
         callGridEventHandlers(storageData.events.afterDataBind, storageData.grid, eventObj);
     }
@@ -636,8 +637,10 @@
             if (sumRow.length)
                 sumRow.remove();
             sumRow = $(&#039;&lt;tr class=summary-row-header&gt;&lt;/tr&gt;&#039;).appendTo(headerTHead);
-            if (gridData.groupedBy &amp;&amp; gridData.groupedBy !== &#039;none&#039;) {
-                sumRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
+            if (gridData.groupedBy.length) {
+                for (var i = 0; i &lt; gridData.groupedBy.length; i++) {
+                    sumRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
+                }
             }
             for (var col in sum) {
                 var text = sum[col] != null ? sum[col] : &#039;&#039;;
@@ -743,25 +746,46 @@
                 columns.push($(val).data(&#039;field&#039;));
         });
 
-        var rowStart = 0;
-        var rowEnd = gridData.dataSource.data.length;
-        var curRow;
-        var rows = gridData.rows;
+        var rowStart = 0,
+            rowEnd = gridData.dataSource.data.length,
+            rows = gridData.rows,
+            currentGroupedRows = {},
+            groupedDiff = [gridData.groupedBy.length],
+            foundDiff = false;
 
         for (var i = (rowStart); i &lt; rowEnd; i++) {
             gridData.dataSource.data[i]._initialRowIndex = i;
-            if (gridData.groupedBy &amp;&amp; gridData.groupedBy !== &#039;none&#039;) {
-                if (!curRow || gridData.dataSource.data[i][gridData.groupedBy] !== curRow) {
-                    curRow = gridData.dataSource.data[i][gridData.groupedBy];
-                    var groupedText = getFormattedCellText(id, gridData.groupedBy, curRow) || curRow;
-                    var groupTr = $(&#039;&lt;tr class=&quot;grouped_row_header&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
-                    var groupTitle = gridData.columns[gridData.groupedBy].title || gridData.groupedBy;
-                    groupTr.append(&#039;&lt;td colspan=&quot;&#039; + (columns.length + 1) + &#039;&quot;&gt;&lt;p class=&quot;grouped&quot;&gt;&lt;a class=&quot;group-desc sortSpan group_acc_link&quot;&gt;&lt;/a&gt;&#039; + groupTitle + &#039;: &#039; + groupedText + &#039;&lt;/p&gt;&lt;/td&gt;&#039;);
+            if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) {
+                for (var q = 0; q &lt; gridData.groupedBy.length; q++) {
+                    if (!currentGroupedRows[gridData.groupedBy[q].field] || currentGroupedRows[gridData.groupedBy[q].field] !== gridData.dataSource.data[i][gridData.groupedBy[q].field]) {
+                        currentGroupedRows[gridData.groupedBy[q].field] = gridData.dataSource.data[i][gridData.groupedBy[q].field];
+                        groupedDiff[q] = 1;
+                        foundDiff = true;
+                    }
+                    else {
+                        if (!q || groupedDiff[q - 1]) groupedDiff[q] = 0;
+                        else groupedDiff[q] = 1;
+                    }
                 }
-            }
-            else if (!gridData.groupedBy &amp;&amp; gridElem.find(&#039;.group_spacer&#039;).length) {
-                $(document).find(&#039;.group_col&#039;).remove();
-                $(document).find(&#039;.group_spacer&#039;).remove();
+                if (foundDiff) {
+                    for (var t = 0; t &lt; groupedDiff.length; t++) {
+                        if (groupedDiff[t]) {
+                            var groupedText = getFormattedCellText(id, gridData.groupedBy[t].field, gridData.dataSource.data[i][gridData.groupedBy[t].field]) ||
+                                gridData.dataSource.data[i][gridData.groupedBy[t].field];
+                            var groupTr = $(&#039;&lt;tr class=&quot;grouped_row_header&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
+                            var groupTitle = gridData.columns[gridData.groupedBy[t].field].title || gridData.groupedBy[t].field;
+                            for (var u = 0; u &lt;= t; u++) {
+                                var indent = u === t ? (columns.length + gridData.groupedBy.length - u) : u + 1;
+                                groupTr.data(&#039;group-indent&#039;, indent);
+                                var groupingCell = $(&#039;&lt;td colspan=&quot;&#039; + indent + &#039;&quot;&gt;&#039;).appendTo(groupTr);
+                                if (u === t) {
+                                    groupingCell.append(&#039;&lt;p class=&quot;grouped&quot;&gt;&lt;a class=&quot;group-desc sortSpan group_acc_link&quot;&gt;&lt;/a&gt;&#039; + groupTitle + &#039;: &#039; + groupedText + &#039;&lt;/p&gt;&lt;/td&gt;&#039;);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
             }
             var tr = $(&#039;&lt;tr&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
             if (i % 2) {
@@ -778,8 +802,12 @@
                 }
             }
 
-            if (gridData.groupedBy &amp;&amp; gridData.groupedBy !== &#039;none&#039;)
-                tr.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
+            if (gridData.groupedBy.length) {
+                for (var g = 0; g &lt; gridData.groupedBy.length; g++) {
+                    tr.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
+                }
+            }
+
 
             for (var j = 0; j &lt; columns.length; j++) {
                 var td = $(&#039;&lt;td data-field=&quot;&#039; + columns[j] + &#039;&quot; class=&quot;grid-content-cell&quot;&gt;&lt;/td&gt;&#039;).appendTo(tr);
@@ -804,8 +832,11 @@
         for (var k = 0; k &lt; columns.length; k++) {
             colGroup.append(&#039;&lt;col/&gt;&#039;);
         }
-        if (gridData.groupedBy &amp;&amp; gridData.groupedBy !== &#039;none&#039;)
-            colGroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
+        if (gridData.groupedBy.length) {
+            for (var f = 0; f &lt; gridData.groupedBy.length; f++) {
+                colGroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
+            }
+        }
 
         if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;bottom&#039;) {
             var sum = buildAggregatesRow(gridData, id);
@@ -1102,14 +1133,27 @@
         $(&#039;.group_acc_link&#039;).each(function iterateAccordionsCallback(idx, val) {
             $(val).data(&#039;state&#039;, &#039;open&#039;);
         }).on(&#039;click&#039;, function groupedAccordionsClickListenerCallback(e) {
-            var accRow = $(e.currentTarget).parents(&#039;tr&#039;);
+            var accRow = $(e.currentTarget).parents(&#039;tr&#039;),
+                indent = accRow.data(&#039;group-indent&#039;);
             if ($(e.currentTarget).data(&#039;state&#039;) === &#039;open&#039;) {
                 $(e.currentTarget).data(&#039;state&#039;, &#039;closed&#039;).removeClass(&#039;group-desc&#039;).addClass(&#039;group-asc&#039;);
-                accRow.nextUntil(&#039;.grouped_row_header&#039;).css(&#039;display&#039;, &#039;none&#039;);
+                accRow.nextAll().each(function iterateAccordionRowSiblingsToCloseCallback(idx, val) {
+                    var row = $(val),
+                        rowIndent = row.data(&#039;group-indent&#039;);
+                    if (!rowIndent || rowIndent &lt; indent)
+                        row.css(&#039;display&#039;, &#039;none&#039;);
+                    else return false;
+                });
             }
             else {
                 $(e.currentTarget).data(&#039;state&#039;, &#039;open&#039;).removeClass(&#039;group-asc&#039;).addClass(&#039;group-desc&#039;);
-                accRow.nextUntil(&#039;.grouped_row_header&#039;).css(&#039;display&#039;, &#039;table-row&#039;);
+                accRow.nextAll().each(function iterateAccordionRowSiblingsToOpenCallback(idx, val) {
+                    var row = $(val),
+                        rowIndent = row.data(&#039;group-indent&#039;);
+                    if (!rowIndent || rowIndent &lt; indent)
+                        row.css(&#039;display&#039;, &#039;table-row&#039;);
+                    else return false;
+                });
             }
         });
     }
@@ -1281,10 +1325,10 @@
 
         colGroups.each(function iterateColsCallback(idx, val) {
             var i = idx;
-            if (gridData.groupedBy &amp;&amp; gridData.groupedBy !== &#039;none&#039;) {
-                i = (idx%(colGroups.length/2)) - 1;
+            if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) {
+                i = (idx%(colGroups.length/2)) - gridData.groupedBy.length;
             }
-            if (gridData.groupedBy &amp;&amp; gridData.groupedBy !== &#039;none&#039; &amp;&amp; idx === 0) {
+            if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length &amp;&amp; idx &lt; gridData.groupedBy.length) {
                 $(val).css(&#039;width&#039;, 27);
             }
             else if (columnNames[columnList[i]] != null) {
@@ -1421,7 +1465,7 @@
                 var droppedId = droppedCol.parents(&#039;.grid-header-div&#039;).length ? droppedCol.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;) : null;
                 if (groupId == null || droppedId == null || groupId !== droppedId) return;
                 if (gridState[id].updating) return;		
-                groupMenuBar.text(&#039;&#039;);
+                if (!groupMenuBar.children().length) groupMenuBar.text(&#039;&#039;);
                 var field = droppedCol.data(&#039;field&#039;),
                     title = gridState[groupId].columns[field].title || field;
 
@@ -1429,21 +1473,68 @@
                 var groupDirSpan = $(&#039;&lt;span class=&quot;group_sort&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
                 groupDirSpan.append(&#039;&lt;span class=&quot;sort-asc groupSortSpan&quot;&gt;&lt;/span&gt;&#039;).append(&#039;&lt;span&gt;&#039; + title + &#039;&lt;/span&gt;&#039;);
                 var cancelButton = $(&#039;&lt;span class=&quot;remove&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
+                var groupings = [];
+                groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupedColumnsCallback(idx, val) {
+                    var item = $(val);
+                    groupings.push({
+                        field: item.data(&#039;field&#039;),
+                        sortDirection: item.hasClass(&#039;sort-asc&#039;) ? &#039;asc&#039; : &#039;desc&#039;
+                    });
+                });
+                gridState[id].groupedBy = groupings;
+                gridState[id].pageRequest.eventType = &#039;group&#039;;
+
+                var colGroups = gridState[id].grid.find(&#039;colgroup&#039;);
+                colGroups.each(function iterateColGroupsForInsertCallback(idx, val) {
+                    $(val).prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
+                });
+                    gridState[id].grid.find(&#039;.grid-headerRow&#039;).prepend(&#039;&lt;th class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/th&gt;&#039;);
+                    gridState[id].grid.find(&#039;.summary-row-header&#039;).prepend(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
+
+                preparePageDataGetRequest(id);
+
                 groupDirSpan.on(&#039;click&#039;, function changeGroupSortDirHandler() {
-                    var sortSpan = $(this).children(&#039;.groupSortSpan&#039;);
+                    var groupElem = $(this),
+                        id = groupElem.parents(&#039;.group_item&#039;).data(&#039;grid_id&#039;),
+                        sortSpan = groupElem.children(&#039;.groupSortSpan&#039;),
+                        groupElements = [];
+                    if (gridState[id].updating) return;		
                     if (sortSpan.hasClass(&#039;sort-asc&#039;)) sortSpan.removeClass(&#039;sort-asc&#039;).addClass(&#039;sort-desc&#039;);
                     else sortSpan.removeClass(&#039;sort-desc&#039;).addClass(&#039;sort-asc&#039;);
+                    groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupedColumnsCallback(idx, val) {
+                        var item = $(val);
+                        groupElements.push({
+                            field: item.data(&#039;field&#039;),
+                            sortDirection: item.hasClass(&#039;sort-asc&#039;) ? &#039;asc&#039; : &#039;desc&#039;
+                        });
+                    });
+                    gridState[id].groupedBy = groupElements;
+                    gridState[id].pageRequest.eventType = &#039;group&#039;;
+                    preparePageDataGetRequest(id);
                 });
 
                 cancelButton.on(&#039;click&#039;, function removeDataGrouping() {
-
+                    var groupElem = $(this),
+                        groupedCol = groupElem.parents(&#039;.group_item&#039;),
+                        id = groupedCol.data(&#039;grid_id&#039;),
+                        groupElements = [];
+                    if (gridState[id].updating) return;		
+                    groupedCol.remove();
+                    groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupedColumnsCallback(idx, val) {
+                        var item = $(val);
+                        groupElements.push({
+                            field: item.data(&#039;field&#039;),
+                            sortDirection: item.hasClass(&#039;sort-asc&#039;) ? &#039;asc&#039; : &#039;desc&#039;
+                        });
+                    });
+                    gridState[id].groupedBy = groupElements;
+                    gridState[id].pageRequest.eventType = &#039;group&#039;;
+                    preparePageDataGetRequest(id);
                 });
             });
             groupMenuBar.on(&#039;dragover&#039;, function handleHeaderDragOverCallback(e) {
                 e.preventDefault();
             });
-
-
         }
 
         if (canEdit || gridData.excelExport) {
@@ -2251,16 +2342,13 @@
         var pageSize = gridData.pageRequest.pageSize || gridData.pageSize;
         var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
         var filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
-        var groupedBy = gridData.pageRequest.eventType === &#039;group&#039; ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
-        var groupSortDirection = gridData.pageRequest.eventType === &#039;group&#039; ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
 
         var requestObj = {};
         if (gridData.sortable) requestObj.sortedOn = sortedOn;
         if (gridData.filterable) requestObj.filteredOn = filteredOn;
 
         if (gridData.groupable) {
-            requestObj.groupedBy = groupedBy;
-            requestObj.groupSortDirection = groupSortDirection;
+            requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
         }
 
         requestObj.pageSize = pageSize;
@@ -2277,7 +2365,6 @@
         }
 
         function getPageDataRequestCallback(response) {
-            var groupingStatus = gridData.groupingStatusChanged;
             if (response) {
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
@@ -2289,7 +2376,7 @@
                 gridData.filteredOn = requestObj.filteredOn;
                 gridData.groupingStatusChanged = false;
 
-                if (gridData.pageRequest.eventType === &#039;newGrid&#039; || groupingStatus)
+                if (gridData.pageRequest.eventType === &#039;newGrid&#039; || &#039;group&#039;)
                     setColWidth(gridData, gridState[id].grid);
 
                 createGridContent(gridData, gridState[id].grid);
@@ -2357,23 +2444,18 @@
             gridState[id].alteredData = fullGridData;
         }
 
-        if (requestObj.groupedBy) {
-            var groupedData = sortGridData([{ field: requestObj.groupedBy, sortDirection: requestObj.groupSortDirection }], fullGridData || cloneGridData(gridState[id].originalData), id);
-            if (requestObj.sortedOn.length) {
-                var sortedGroup = [];
-                for (var group in groupedData.groupings) {
-                    sortedGroup = sortedGroup.concat(sortGridData(requestObj.sortedOn, groupedData.groupings[group] || cloneGridData(gridState[id].originalData), id));
-                }
-                gridState[id].alteredData = fullGridData;
-                limitPageData(requestObj, sortedGroup, callback);
-                return;
+        if (requestObj.groupedBy &amp;&amp; requestObj.groupedBy.length) {
+            var groupedData;
+            if (requestObj.sortedOn &amp;&amp; requestObj.sortedOn.length) {
+                groupedData = sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
             }
+            else groupedData = sortGridData(requestObj.groupedBy, fullGridData || cloneGridData(gridState[id].originalData), id);
             gridState[id].alteredData = groupedData;
             limitPageData(requestObj, groupedData, callback);
             return;
         }
 
-        if (requestObj.sortedOn &amp;&amp; requestObj.sortedOn.length &amp;&amp; !requestObj.groupedBy)
+        if (requestObj.sortedOn &amp;&amp; requestObj.sortedOn.length &amp;&amp; (!requestObj.groupedBy || !requestObj.groupedBy.length))
             fullGridData = sortGridData(requestObj.sortedOn, fullGridData || cloneGridData(gridState[id].originalData), id);
         gridState[id].alteredData = fullGridData;
         limitPageData(requestObj, fullGridData, callback);
@@ -2538,8 +2620,9 @@
     }
 
     function getFormattedCellText(gridId, column, value) {
-        var text;
-        switch(gridState[gridId].columns[column].type) {
+        var text,
+            type = gridState[gridId].columns[column].type || &#039;string&#039;;
+        switch(type) {
             case &#039;number&#039;:
                 text = formatNumericCellData(value, gridState[gridId].columns[column].format);
                 break;
