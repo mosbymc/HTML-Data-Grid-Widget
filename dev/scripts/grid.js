@@ -1820,7 +1820,7 @@ var grid = (function _grid($) {
                 //TODO: need to put some spans in here for grouping direction and removal of column grouping. Also attach event handlers for click events
                 var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>').appendTo(groupMenuBar);
                 var groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
-                groupDirSpan.append('<span class="sort-asc groupSortSpan"></span>').append('<span>' + title + '</span>');
+                groupDirSpan.append('<span class="sort-desc-white groupSortSpan"></span>').append('<span>' + title + '</span>');
                 var cancelButton = $('<span class="remove"></span>').appendTo(groupItem);
                 var groupings = [];
                 groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
@@ -1836,14 +1836,10 @@ var grid = (function _grid($) {
                 var colGroups = gridState[id].grid.find('colgroup');
                 colGroups.each(function iterateColGroupsForInsertCallback(idx, val) {
                     $(val).prepend('<col class="group_col"/>');
-                    /*for (var k = colGroups[idx].childNodes.length; k < groupings.length; k++) {
-                        $(val).prepend('<col class="group_col"/>');
-                    }*/
                 });
-                //for (var l = 0; l < groupings.length; l++) {
-                    gridState[id].grid.find('.grid-headerRow').prepend('<th class="group_spacer">&nbsp</th>');
-                    gridState[id].grid.find('.summary-row-header').prepend('<td class="group_spacer">&nbsp</td>');
-                //}
+                gridState[id].grid.find('.grid-headerRow').prepend('<th class="group_spacer">&nbsp</th>');
+                gridState[id].grid.find('.summary-row-header').prepend('<td class="group_spacer">&nbsp</td>');
+
 
                 preparePageDataGetRequest(id);
 
@@ -1853,13 +1849,13 @@ var grid = (function _grid($) {
                         sortSpan = groupElem.children('.groupSortSpan'),
                         groupElements = [];
                     if (gridState[id].updating) return;		//can't resort columns if grid is updating
-                    if (sortSpan.hasClass('sort-asc')) sortSpan.removeClass('sort-asc').addClass('sort-desc');
-                    else sortSpan.removeClass('sort-desc').addClass('sort-asc');
+                    if (sortSpan.hasClass('sort-asc-white')) sortSpan.removeClass('sort-asc-white').addClass('sort-desc-white');
+                    else sortSpan.removeClass('sort-desc-white').addClass('sort-asc-white');
                     groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
                         var item = $(val);
                         groupElements.push({
                             field: item.data('field'),
-                            sortDirection: item.hasClass('sort-asc') ? 'asc' : 'desc'
+                            sortDirection: item.find('.groupSortSpan').hasClass('sort-asc-white') ? 'asc' : 'desc'
                         });
                     });
                     gridState[id].groupedBy = groupElements;

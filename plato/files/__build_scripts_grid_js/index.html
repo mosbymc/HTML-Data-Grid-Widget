@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2984</p>
+      <p class="stat">2985</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">198.38</p>
+      <p class="stat">198.09</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">63.96</p>
+      <p class="stat">63.99</p>
     </div>
   </div>
 </div>
@@ -1471,7 +1471,7 @@
 
                 var groupItem = $(&#039;&lt;div class=&quot;group_item&quot; data-grid_id=&quot;&#039; + groupId + &#039;&quot; data-field=&quot;&#039; + field + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(groupMenuBar);
                 var groupDirSpan = $(&#039;&lt;span class=&quot;group_sort&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
-                groupDirSpan.append(&#039;&lt;span class=&quot;sort-asc groupSortSpan&quot;&gt;&lt;/span&gt;&#039;).append(&#039;&lt;span&gt;&#039; + title + &#039;&lt;/span&gt;&#039;);
+                groupDirSpan.append(&#039;&lt;span class=&quot;sort-desc-white groupSortSpan&quot;&gt;&lt;/span&gt;&#039;).append(&#039;&lt;span&gt;&#039; + title + &#039;&lt;/span&gt;&#039;);
                 var cancelButton = $(&#039;&lt;span class=&quot;remove&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
                 var groupings = [];
                 groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupedColumnsCallback(idx, val) {
@@ -1488,8 +1488,9 @@
                 colGroups.each(function iterateColGroupsForInsertCallback(idx, val) {
                     $(val).prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
                 });
-                    gridState[id].grid.find(&#039;.grid-headerRow&#039;).prepend(&#039;&lt;th class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/th&gt;&#039;);
-                    gridState[id].grid.find(&#039;.summary-row-header&#039;).prepend(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
+                gridState[id].grid.find(&#039;.grid-headerRow&#039;).prepend(&#039;&lt;th class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/th&gt;&#039;);
+                gridState[id].grid.find(&#039;.summary-row-header&#039;).prepend(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
+
 
                 preparePageDataGetRequest(id);
 
@@ -1499,13 +1500,13 @@
                         sortSpan = groupElem.children(&#039;.groupSortSpan&#039;),
                         groupElements = [];
                     if (gridState[id].updating) return;		
-                    if (sortSpan.hasClass(&#039;sort-asc&#039;)) sortSpan.removeClass(&#039;sort-asc&#039;).addClass(&#039;sort-desc&#039;);
-                    else sortSpan.removeClass(&#039;sort-desc&#039;).addClass(&#039;sort-asc&#039;);
+                    if (sortSpan.hasClass(&#039;sort-asc-white&#039;)) sortSpan.removeClass(&#039;sort-asc-white&#039;).addClass(&#039;sort-desc-white&#039;);
+                    else sortSpan.removeClass(&#039;sort-desc-white&#039;).addClass(&#039;sort-asc-white&#039;);
                     groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupedColumnsCallback(idx, val) {
                         var item = $(val);
                         groupElements.push({
                             field: item.data(&#039;field&#039;),
-                            sortDirection: item.hasClass(&#039;sort-asc&#039;) ? &#039;asc&#039; : &#039;desc&#039;
+                            sortDirection: item.find(&#039;.groupSortSpan&#039;).hasClass(&#039;sort-asc-white&#039;) ? &#039;asc&#039; : &#039;desc&#039;
                         });
                     });
                     gridState[id].groupedBy = groupElements;
