@@ -93,7 +93,17 @@ function determinePageData(requestObj, fullGridData, callback) {
         }
     }
 
-    if (requestObj.groupedBy) {
+    if (requestObj.groupedBy && requestObj.groupedBy.length) {
+        var groupedData;
+        if (requestObj.sortedOn && requestObj.sortedOn.length) {
+            groupedData = gridDataHelpers.sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData, columns);
+        }
+        else groupedData = gridDataHelpers.sortGridData(requestObj.groupedBy, fullGridData, columns);
+        limitPageData(requestObj, groupedData, callback);
+        return;
+    }
+
+    /*if (requestObj.groupedBy) {
         var groupedData = gridDataHelpers.sortGridData([{ field: requestObj.groupedBy, sortDirection: requestObj.groupSortDirection }], fullGridData, columns);
         if (requestObj.sortedOn && requestObj.sortedOn.length) {
             var sortedGroup = [];
@@ -105,7 +115,7 @@ function determinePageData(requestObj, fullGridData, callback) {
         }
         limitPageData(requestObj, groupedData, callback);
         return;
-    }
+    }*/
 
     if (requestObj.sortedOn && requestObj.sortedOn.length && !requestObj.groupedBy)
         fullGridData = gridDataHelpers.sortGridData(requestObj.sortedOn, fullGridData, columns);

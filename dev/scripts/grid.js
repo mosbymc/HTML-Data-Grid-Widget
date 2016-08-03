@@ -89,6 +89,12 @@
  - Add grid-to-excel export functionality - should work with grid selection - DONE
  - Add multiple-grouping capability
  - Add group-aggregate calculations
+ - Re-work how aggregates are calculated:
+    > all data on client side should cache each column's value per the aggregate function and then reference that when creating the dom elements for the grid aggregates
+    > Grouping aggregates is a bit more tricky
+        - If all of the groups aggregates can fit on a single page of data, then the grid can do the calculate the aggregates similar to the above, except that
+        each level of grouping will need its own aggregate values maintained
+        - If a single page of grid data cannot display a full group, then to ensure accurate aggregates, the server needs to supply them
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Add integration tests if possible
  - Add type checking - passed in grid data
@@ -716,6 +722,7 @@ var grid = (function _grid($) {
         storageData.resizing = false;
         storageData.sortedOn = [];
         storageData.filteredOn = [];
+        storageData.groupedBy = [];
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -723,10 +730,10 @@ var grid = (function _grid($) {
 
         gridState[id] = storageData;
 
-        if (gridData.aggregates && gridData.aggregates.positionAt === 'top') buildHeaderAggregations(gridData, id);
+        if (storageData.aggregates && storageData.aggregates.positionAt === 'top') buildHeaderAggregations(storageData, id);
 
-        createGridFooter(gridData, gridElem);
-        createGridContent(gridData, gridElem);
+        createGridFooter(storageData, gridElem);
+        createGridContent(storageData, gridElem);
 
         callGridEventHandlers(storageData.events.afterDataBind, storageData.grid, eventObj);
     }
@@ -832,8 +839,10 @@ var grid = (function _grid($) {
             if (sumRow.length)
                 sumRow.remove();
             sumRow = $('<tr class=summary-row-header></tr>').appendTo(headerTHead);
-            if (gridData.groupedBy && gridData.groupedBy !== 'none') {
-                sumRow.append('<td class="group_spacer">&nbsp</td>');
+            if (gridData.groupedBy.length) {
+                for (var i = 0; i < gridData.groupedBy.length; i++) {
+                    sumRow.append('<td class="group_spacer">&nbsp</td>');
+                }
             }
             for (var col in sum) {
                 var text = sum[col] != null ? sum[col] : '';
@@ -958,14 +967,50 @@ var grid = (function _grid($) {
                 columns.push($(val).data('field'));
         });
 
-        var rowStart = 0;
-        var rowEnd = gridData.dataSource.data.length;
-        var curRow;
-        var rows = gridData.rows;
+        var rowStart = 0,
+            rowEnd = gridData.dataSource.data.length,
+            curRow,
+            rows = gridData.rows,
+            currentGroupedRows = {},
+            //TODO: make sure the groupedBy property is set or this will throw
+            groupedDiff = [gridData.groupedBy.length],
+            foundDiff = false;
 
         for (var i = (rowStart); i < rowEnd; i++) {
             gridData.dataSource.data[i]._initialRowIndex = i;
-            if (gridData.groupedBy && gridData.groupedBy !== 'none') {
+            //TODO: need to rework this... won't work anymore with array of groupings
+            if (gridData.groupedBy && gridData.groupedBy.length) {
+                for (var q = 0; q < gridData.groupedBy.length; q++) {
+                    //If the current cached value for the same field is different than the current grid's data for the same field,
+                    //then cache the same value and note the diff.
+                    if (!currentGroupedRows[gridData.groupedBy[q].field] || currentGroupedRows[gridData.groupedBy[q].field] !== gridData.dataSource.data[i][gridData.groupedBy[q].field]) {
+                        currentGroupedRows[gridData.groupedBy[q].field] = gridData.dataSource.data[i][gridData.groupedBy[q].field];
+                        groupedDiff[q] = 1;
+                        foundDiff = true;
+                    }
+                    else {
+                        //Otherwise, check the previous diff; if there isn't a diff, then set the current diff to none (i.e. 0),
+                        //but if the previous diff was found, set the current diff.
+                        if (!q || groupedDiff[q - 1]) groupedDiff[q] = 0;
+                        else groupedDiff[q] = 1;
+                    }
+                }
+                if (foundDiff) {
+                    for (var t = 0; t < groupedDiff.length; t++) {
+                        if (groupedDiff[t]) {
+                            var groupedText = getFormattedCellText(id, gridData.groupedBy[t].field, gridData.dataSource.data[i][gridData.groupedBy[t].field])
+                                || gridData.dataSource.data[i][gridData.groupedBy[t].field];
+                            var groupTr = $('<tr class="grouped_row_header"></tr>').appendTo(contentTBody);
+                            var groupTitle = gridData.columns[gridData.groupedBy[t].field].title || gridData.groupedBy[t].field;
+                            for (var u = t; u < groupedDiff.length; u++) {
+                                groupTr.append('<td colspan="' + (columns.length + u + 1) + '">' +
+                                    '<p class="grouped"><a class="group-desc sortSpan group_acc_link"></a>' + groupTitle + ': ' + groupedText + '</p></td>');
+                            }
+                        }
+                    }
+                }
+            }
+            /*if (gridData.groupedBy && gridData.groupedBy !== 'none') {
                 if (!curRow || gridData.dataSource.data[i][gridData.groupedBy] !== curRow) {
                     curRow = gridData.dataSource.data[i][gridData.groupedBy];
                     var groupedText = getFormattedCellText(id, gridData.groupedBy, curRow) || curRow;
@@ -977,7 +1022,7 @@ var grid = (function _grid($) {
             else if (!gridData.groupedBy && gridElem.find('.group_spacer').length) {
                 $(document).find('.group_col').remove();
                 $(document).find('.group_spacer').remove();
-            }
+            }*/
             var tr = $('<tr></tr>').appendTo(contentTBody);
             if (i % 2) {
                 tr.addClass('alt-row');
@@ -993,8 +1038,14 @@ var grid = (function _grid($) {
                 }
             }
 
-            if (gridData.groupedBy && gridData.groupedBy !== 'none')
-                tr.append('<td class="grouped_cell">&nbsp</td>');
+            if (gridData.groupedBy.length) {
+                for (var g = 0; g < gridData.groupedBy.length; g++) {
+                    tr.append('<td class="grouped_cell">&nbsp</td>');
+                }
+            }
+
+            //if (gridData.groupedBy && gridData.groupedBy !== 'none')
+              //  tr.append('<td class="grouped_cell">&nbsp</td>');
 
             for (var j = 0; j < columns.length; j++) {
                 var td = $('<td data-field="' + columns[j] + '" class="grid-content-cell"></td>').appendTo(tr);
@@ -1020,8 +1071,13 @@ var grid = (function _grid($) {
         for (var k = 0; k < columns.length; k++) {
             colGroup.append('<col/>');
         }
-        if (gridData.groupedBy && gridData.groupedBy !== 'none')
-            colGroup.prepend('<col class="group_col"/>');
+        if (gridData.groupedBy.length) {
+            for (var f = 0; f < gridData.groupedBy.length; f++) {
+                colGroup.prepend('<col class="group_col"/>');
+            }
+        }
+        //if (gridData.groupedBy && gridData.groupedBy !== 'none')
+          //  colGroup.prepend('<col class="group_col"/>');
 
         if (gridData.aggregates && gridData.aggregates.positionAt === 'bottom') {
             var sum = buildAggregatesRow(gridData, id);
@@ -1557,10 +1613,10 @@ var grid = (function _grid($) {
 
         colGroups.each(function iterateColsCallback(idx, val) {
             var i = idx;
-            if (gridData.groupedBy && gridData.groupedBy !== 'none') {
-                i = (idx%(colGroups.length/2)) - 1;
+            if (gridData.groupedBy && gridData.groupedBy.length) {
+                i = (idx%(colGroups.length/2)) - gridData.groupedBy.length;
             }
-            if (gridData.groupedBy && gridData.groupedBy !== 'none' && idx === 0) {
+            if (gridData.groupedBy && gridData.groupedBy.length && idx <= gridData.groupedBy.length) {
                 $(val).css('width', 27);
             }
             else if (columnNames[columnList[i]] != null) {
@@ -1745,40 +1801,64 @@ var grid = (function _grid($) {
 
                 //TODO: need to put some spans in here for grouping direction and removal of column grouping. Also attach event handlers for click events
                 var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>').appendTo(groupMenuBar);
-                var groupDirSpan = $('<span></span>').appendTo(groupItem);
+                var groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
                 groupDirSpan.append('<span class="sort-asc groupSortSpan"></span>').append('<span>' + title + '</span>');
                 var cancelButton = $('<span class="remove"></span>').appendTo(groupItem);
+                var groupings = [];
+                groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
+                    var item = $(val);
+                    groupings.push({
+                        field: item.data('field'),
+                        sortDirection: item.hasClass('sort-asc') ? 'asc' : 'desc'
+                    });
+                });
+                gridState[id].groupedBy = groupings;
+                gridState[id].pageRequest.eventType = 'group';
+                preparePageDataGetRequest(id);
+
                 groupDirSpan.on('click', function changeGroupSortDirHandler() {
-                    var sortSpan = $(this).children('.groupSortSpan');
+                    var groupElem = $(this),
+                        id = groupElem.parents('.group_item').data('grid_id'),
+                        sortSpan = groupElem.children('.groupSortSpan'),
+                        groupElements = [];
+                    if (gridState[id].updating) return;		//can't resort columns if grid is updating
                     if (sortSpan.hasClass('sort-asc')) sortSpan.removeClass('sort-asc').addClass('sort-desc');
                     else sortSpan.removeClass('sort-desc').addClass('sort-asc');
+                    groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
+                        var item = $(val);
+                        groupElements.push({
+                            field: item.data('field'),
+                            sortDirection: item.hasClass('sort-asc') ? 'asc' : 'desc'
+                        });
+                    });
+                    gridState[id].groupedBy = groupElements;
+                    gridState[id].pageRequest.eventType = 'group';
+                    preparePageDataGetRequest(id);
                 });
 
                 cancelButton.on('click', function removeDataGrouping() {
-
+                    var groupElem = $(this),
+                        groupedCol = groupElem.parents('.group_item'),
+                        id = groupedCol.data('grid_id'),
+                        groupElements = [];
+                    if (gridState[id].updating) return;		//can't resort columns if grid is updating
+                    var field = groupedCol.data('field');
+                    groupedCol.remove();
+                    groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
+                        var item = $(val);
+                        groupElements.push({
+                            field: item.data('field'),
+                            sortDirection: item.hasClass('sort-asc') ? 'asc' : 'desc'
+                        });
+                    });
+                    gridState[id].groupedBy = groupElements;
+                    gridState[id].pageRequest.eventType = 'group';
+                    preparePageDataGetRequest(id);
                 });
             });
             groupMenuBar.on('dragover', function handleHeaderDragOverCallback(e) {
                 e.preventDefault();
             });
-
-
-            /*if (gridData.groupable) {
-             var groupSpan = $('<span class="toolbarSpan group_span" style="float:right;"><span class="groupTextSpan" style="float:left;">Group By: </span></span>').appendTo(groupMenuBar);
-             var columnsList = $('<select class="input select group_select" style="float:none; display: inline; width: auto;"></select>').appendTo(groupSpan);
-             var dirList = $('<select class="input select group_dir_select" style="display: inline; width: auto;"></span>').appendTo(groupSpan);
-             dirList.append('<option value="asc">Ascending</span>');
-             dirList.append('<option value="desc">Descending</span>');
-             columnsList.append('<option value="none">None</option>');
-             for (var col in gridData.columns) {
-             if (gridData.columns[col].groupable !== false) {
-             var colTitle = gridData.columns[col].title || col;
-             columnsList.append('<option value="' + col + '">' + colTitle + '</option>');
-             }
-             }
-             columnsList.on('change', groupByHandler);
-             dirList.on('change', groupByHandler);
-             }*/
         }
 
         if (canEdit || gridData.excelExport) {
@@ -2731,16 +2811,17 @@ var grid = (function _grid($) {
         var pageSize = gridData.pageRequest.pageSize || gridData.pageSize;
         var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
         var filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
-        var groupedBy = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
-        var groupSortDirection = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
+        //var groupedBy = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
+        //var groupSortDirection = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
 
         var requestObj = {};
         if (gridData.sortable) requestObj.sortedOn = sortedOn;
         if (gridData.filterable) requestObj.filteredOn = filteredOn;
 
         if (gridData.groupable) {
-            requestObj.groupedBy = groupedBy;
-            requestObj.groupSortDirection = groupSortDirection;
+            requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
+            //requestObj.groupedBy = groupedBy;
+            //requestObj.groupSortDirection = groupSortDirection;
         }
 
         requestObj.pageSize = pageSize;
@@ -2771,7 +2852,7 @@ var grid = (function _grid($) {
                 gridData.filteredOn = requestObj.filteredOn;
                 gridData.groupingStatusChanged = false;
 
-                if (gridData.pageRequest.eventType === 'newGrid' || groupingStatus)
+                if (gridData.pageRequest.eventType === 'newGrid' || 'group')
                     setColWidth(gridData, gridState[id].grid);
 
                 createGridContent(gridData, gridState[id].grid);
@@ -2851,8 +2932,16 @@ var grid = (function _grid($) {
             gridState[id].alteredData = fullGridData;
         }
 
-        if (requestObj.groupedBy) {
-            var groupedData = sortGridData([{ field: requestObj.groupedBy, sortDirection: requestObj.groupSortDirection }], fullGridData || cloneGridData(gridState[id].originalData), id);
+        if (requestObj.groupedBy && requestObj.groupedBy.length) {
+            var groupedData;
+            if (requestObj.sortedOn && requestObj.sortedOn.length) {
+                groupedData = sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
+            }
+            else groupedData = sortGridData(requestObj.groupedBy, fullGridData || cloneGridData(gridState[id].originalData), id);
+            gridState[id].alteredData = groupedData;
+            limitPageData(requestObj, groupedData, callback);
+            return;
+            /*var groupedData = sortGridData([{ field: requestObj.groupedBy, sortDirection: requestObj.groupSortDirection }], fullGridData || cloneGridData(gridState[id].originalData), id);
             if (requestObj.sortedOn.length) {
                 var sortedGroup = [];
                 for (var group in groupedData.groupings) {
@@ -2864,10 +2953,10 @@ var grid = (function _grid($) {
             }
             gridState[id].alteredData = groupedData;
             limitPageData(requestObj, groupedData, callback);
-            return;
+            return;*/
         }
 
-        if (requestObj.sortedOn && requestObj.sortedOn.length && !requestObj.groupedBy)
+        if (requestObj.sortedOn && requestObj.sortedOn.length && (!requestObj.groupedBy || !requestObj.groupedBy.length))
             fullGridData = sortGridData(requestObj.sortedOn, fullGridData || cloneGridData(gridState[id].originalData), id);
         gridState[id].alteredData = fullGridData;
         limitPageData(requestObj, fullGridData, callback);
@@ -3080,8 +3169,9 @@ var grid = (function _grid($) {
      * otherwise, returns the value
      */
     function getFormattedCellText(gridId, column, value) {
-        var text;
-        switch(gridState[gridId].columns[column].type) {
+        var text,
+            type = gridState[gridId].columns[column].type || 'string';
+        switch(type) {
             case 'number':
                 text = formatNumericCellData(value, gridState[gridId].columns[column].format);
                 break;

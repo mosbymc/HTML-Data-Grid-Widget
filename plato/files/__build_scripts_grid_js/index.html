@@ -1426,7 +1426,7 @@
                     title = gridState[groupId].columns[field].title || field;
 
                 var groupItem = $(&#039;&lt;div class=&quot;group_item&quot; data-grid_id=&quot;&#039; + groupId + &#039;&quot; data-field=&quot;&#039; + field + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(groupMenuBar);
-                var groupDirSpan = $(&#039;&lt;span&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
+                var groupDirSpan = $(&#039;&lt;span class=&quot;group_sort&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
                 groupDirSpan.append(&#039;&lt;span class=&quot;sort-asc groupSortSpan&quot;&gt;&lt;/span&gt;&#039;).append(&#039;&lt;span&gt;&#039; + title + &#039;&lt;/span&gt;&#039;);
                 var cancelButton = $(&#039;&lt;span class=&quot;remove&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
                 groupDirSpan.on(&#039;click&#039;, function changeGroupSortDirHandler() {
