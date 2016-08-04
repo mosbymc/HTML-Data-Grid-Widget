@@ -701,13 +701,13 @@ var grid = (function _grid($) {
                 tr.addClass('alt-row');
                 if (rows && rows.alternateRows && rows.alternateRows.constructor === Array)
                     for (var x = 0; x < rows.alternateRows.length; x++) {
-                        tr.addClass(rows.alternateRows[x]);
+                        tr.addClass(rows.alternateRows[x].toString());
                     }
             }
 
             if (rows && rows.all && rows.all.constructor === Array) {
                 for (var y = 0; y < rows.all.length; y++) {
-                    tr.addClass(rows.all[y]);
+                    tr.addClass(rows.all[y].toString());
                 }
             }
 
@@ -716,7 +716,6 @@ var grid = (function _grid($) {
                     tr.append('<td class="grouped_cell">&nbsp</td>');
                 }
             }
-
 
             for (var j = 0; j < columns.length; j++) {
                 var td = $('<td data-field="' + columns[j] + '" class="grid-content-cell"></td>').appendTo(tr);
@@ -1378,11 +1377,11 @@ var grid = (function _grid($) {
                 var field = droppedCol.data('field'),
                     title = gridState[groupId].columns[field].title || field;
 
-                var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>').appendTo(groupMenuBar);
-                var groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
+                var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>').appendTo(groupMenuBar),
+                    groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
                 groupDirSpan.append('<span class="sort-desc-white groupSortSpan"></span>').append('<span>' + title + '</span>');
-                var cancelButton = $('<span class="remove"></span>').appendTo(groupItem);
-                var groupings = [];
+                var cancelButton = $('<span class="remove"></span>').appendTo(groupItem),
+                    groupings = [];
                 groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
                     var item = $(val);
                     groupings.push({
@@ -1429,6 +1428,9 @@ var grid = (function _grid($) {
                         id = groupedCol.data('grid_id'),
                         groupElements = [];
                     if (gridState[id].updating) return;		
+                    gridState[id].grid.find('colgroup').first().children().first().remove();
+                    gridState[id].grid.find('.grid-headerRow').children('.group_spacer').first().remove();
+                    gridState[id].grid.find('.summary-row-header').children('.group_spacer').first().remove();
                     groupedCol.remove();
                     groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
                         var item = $(val);
@@ -1437,6 +1439,7 @@ var grid = (function _grid($) {
                             sortDirection: item.hasClass('sort-asc') ? 'asc' : 'desc'
                         });
                     });
+                    if (!groupElements.length) groupMenuBar.text(groupMenuText);
                     gridState[id].groupedBy = groupElements;
                     gridState[id].pageRequest.eventType = 'group';
                     preparePageDataGetRequest(id);
@@ -1554,10 +1557,11 @@ var grid = (function _grid($) {
                 if (gridState[gridId].editable) {
                     newMenu.append($('<ul class="menu-list"></ul>').append(createSaveDeleteMenuItems(gridId)));
                 }
-                if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable) {
+                if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable || gridState[gridId].groupable) {
                     newMenu.append($('<hr/>'));
                     if (gridState[gridId].sortable) newMenu.append($('<ul class="menu-list"></ul>').append(createSortMenuItem()));
                     if (gridState[gridId].filterable) newMenu.append($('<ul class="menu-list"></ul>').append(createFilterMenuItems()));
+                    if (gridState[gridId].groupable) newMenu.append($('<ul class="menu-list"></ul>').append(createGroupMenuItem()));
                     if (gridState[gridId].selectable) newMenu.append($('<ul class="menu-list"></ul>').append(createDeselectMenuOption(gridId)));
                 }
                 if (gridState[gridId].excelExport) {
@@ -1674,12 +1678,38 @@ var grid = (function _grid($) {
             gridId = gridMenu.data('grid_id');
         $('.grid_menu').addClass('hiddenMenu');
 
-        $('.sortSpan').remove();
+        gridState[gridId].find('.sortSpan').remove();
         gridState[gridId].sortedOn = [];
         gridState[gridId].pageRequest.eventType = 'sort';
         preparePageDataGetRequest(gridId);
     }
 
+    function createGroupMenuItem() {
+        var groupMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove All Column Grouping</a>'));
+        groupMenuItem.on('click', RemoveAllColumnGrouping);
+        return groupMenuItem;
+    }
+
+    function RemoveAllColumnGrouping(e) {
+        var gridMenu = $(e.currentTarget).parents('.grid_menu'),
+            gridId = gridMenu.data('grid_id');
+        $('.grid_menu').addClass('hiddenMenu');
+
+        var groupItems = gridState[gridId].grid.find('.group_item'),
+            groupItemsCount = groupItems.length,
+            headerColGroup = gridState[gridId].grid.find('colgroup').first();
+        groupItems.remove();
+        for (var i = 0; i < groupItemsCount; i++) {
+            headerColGroup.children().first().remove();
+        }
+        gridState[gridId].grid.find('colgroup').first().children().first().remove();
+        gridState[gridId].grid.find('.grid-headerRow').children('.group_spacer').remove();
+        gridState[gridId].grid.find('.summary-row-header').children('.group_spacer').remove();
+        gridState[gridId].grid.find('.group_div').text(groupMenuText);
+        gridState[gridId].groupedBy = [];
+        gridState[gridId].pageRequest.eventType = 'group';
+        preparePageDataGetRequest(gridId);
+    }
 
     function createGridFooter(gridData, gridElem) {
         var gridFooter = gridElem.find('.grid-footer-div');
@@ -2117,7 +2147,11 @@ var grid = (function _grid($) {
             var field = elem.data('field'),
                 foundColumn = false;
 
-            if (gridState[id].groupedBy && gridState[id].groupedBy === field) return;   
+            if (gridState[id].groupedBy.length) {
+                for (var j = 0; j < gridState[id].groupedBy.length; j++) {
+                    if (gridState[id].groupedBy[j].field === field) return; 
+                }
+            }
 
             for (var i = 0; i < gridState[id].sortedOn.length; i++) {
                 if (gridState[id].sortedOn[i].field === field) {
@@ -2250,16 +2284,11 @@ var grid = (function _grid($) {
         var gridData = gridState[id];
         var pageNum = gridData.pageRequest.pageNum || gridData.pageNum;
         var pageSize = gridData.pageRequest.pageSize || gridData.pageSize;
-        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        var filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
 
         var requestObj = {};
-        if (gridData.sortable) requestObj.sortedOn = sortedOn;
-        if (gridData.filterable) requestObj.filteredOn = filteredOn;
-
-        if (gridData.groupable) {
-            requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
-        }
+        if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
+        if (gridData.filterable) requestObj.filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
+        if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
         requestObj.pageSize = pageSize;
         requestObj.pageNum = gridData.eventType === 'filter' ? 1 : pageNum;

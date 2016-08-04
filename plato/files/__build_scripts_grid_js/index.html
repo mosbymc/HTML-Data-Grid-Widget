@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">2985</p>
+      <p class="stat">3014</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">198.09</p>
+      <p class="stat">199.65</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">63.99</p>
+      <p class="stat">65.10</p>
     </div>
   </div>
 </div>
@@ -792,13 +792,13 @@
                 tr.addClass(&#039;alt-row&#039;);
                 if (rows &amp;&amp; rows.alternateRows &amp;&amp; rows.alternateRows.constructor === Array)
                     for (var x = 0; x &lt; rows.alternateRows.length; x++) {
-                        tr.addClass(rows.alternateRows[x]);
+                        tr.addClass(rows.alternateRows[x].toString());
                     }
             }
 
             if (rows &amp;&amp; rows.all &amp;&amp; rows.all.constructor === Array) {
                 for (var y = 0; y &lt; rows.all.length; y++) {
-                    tr.addClass(rows.all[y]);
+                    tr.addClass(rows.all[y].toString());
                 }
             }
 
@@ -807,7 +807,6 @@
                     tr.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
                 }
             }
-
 
             for (var j = 0; j &lt; columns.length; j++) {
                 var td = $(&#039;&lt;td data-field=&quot;&#039; + columns[j] + &#039;&quot; class=&quot;grid-content-cell&quot;&gt;&lt;/td&gt;&#039;).appendTo(tr);
@@ -1469,11 +1468,11 @@
                 var field = droppedCol.data(&#039;field&#039;),
                     title = gridState[groupId].columns[field].title || field;
 
-                var groupItem = $(&#039;&lt;div class=&quot;group_item&quot; data-grid_id=&quot;&#039; + groupId + &#039;&quot; data-field=&quot;&#039; + field + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(groupMenuBar);
-                var groupDirSpan = $(&#039;&lt;span class=&quot;group_sort&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
+                var groupItem = $(&#039;&lt;div class=&quot;group_item&quot; data-grid_id=&quot;&#039; + groupId + &#039;&quot; data-field=&quot;&#039; + field + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(groupMenuBar),
+                    groupDirSpan = $(&#039;&lt;span class=&quot;group_sort&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
                 groupDirSpan.append(&#039;&lt;span class=&quot;sort-desc-white groupSortSpan&quot;&gt;&lt;/span&gt;&#039;).append(&#039;&lt;span&gt;&#039; + title + &#039;&lt;/span&gt;&#039;);
-                var cancelButton = $(&#039;&lt;span class=&quot;remove&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
-                var groupings = [];
+                var cancelButton = $(&#039;&lt;span class=&quot;remove&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem),
+                    groupings = [];
                 groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupedColumnsCallback(idx, val) {
                     var item = $(val);
                     groupings.push({
@@ -1520,6 +1519,9 @@
                         id = groupedCol.data(&#039;grid_id&#039;),
                         groupElements = [];
                     if (gridState[id].updating) return;		
+                    gridState[id].grid.find(&#039;colgroup&#039;).first().children().first().remove();
+                    gridState[id].grid.find(&#039;.grid-headerRow&#039;).children(&#039;.group_spacer&#039;).first().remove();
+                    gridState[id].grid.find(&#039;.summary-row-header&#039;).children(&#039;.group_spacer&#039;).first().remove();
                     groupedCol.remove();
                     groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupedColumnsCallback(idx, val) {
                         var item = $(val);
@@ -1528,6 +1530,7 @@
                             sortDirection: item.hasClass(&#039;sort-asc&#039;) ? &#039;asc&#039; : &#039;desc&#039;
                         });
                     });
+                    if (!groupElements.length) groupMenuBar.text(groupMenuText);
                     gridState[id].groupedBy = groupElements;
                     gridState[id].pageRequest.eventType = &#039;group&#039;;
                     preparePageDataGetRequest(id);
@@ -1645,10 +1648,11 @@
                 if (gridState[gridId].editable) {
                     newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createSaveDeleteMenuItems(gridId)));
                 }
-                if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable) {
+                if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable || gridState[gridId].groupable) {
                     newMenu.append($(&#039;&lt;hr/&gt;&#039;));
                     if (gridState[gridId].sortable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createSortMenuItem()));
                     if (gridState[gridId].filterable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createFilterMenuItems()));
+                    if (gridState[gridId].groupable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createGroupMenuItem()));
                     if (gridState[gridId].selectable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createDeselectMenuOption(gridId)));
                 }
                 if (gridState[gridId].excelExport) {
@@ -1765,12 +1769,38 @@
             gridId = gridMenu.data(&#039;grid_id&#039;);
         $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
 
-        $(&#039;.sortSpan&#039;).remove();
+        gridState[gridId].find(&#039;.sortSpan&#039;).remove();
         gridState[gridId].sortedOn = [];
         gridState[gridId].pageRequest.eventType = &#039;sort&#039;;
         preparePageDataGetRequest(gridId);
     }
 
+    function createGroupMenuItem() {
+        var groupMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;).append($(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Remove All Column Grouping&lt;/a&gt;&#039;));
+        groupMenuItem.on(&#039;click&#039;, RemoveAllColumnGrouping);
+        return groupMenuItem;
+    }
+
+    function RemoveAllColumnGrouping(e) {
+        var gridMenu = $(e.currentTarget).parents(&#039;.grid_menu&#039;),
+            gridId = gridMenu.data(&#039;grid_id&#039;);
+        $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
+
+        var groupItems = gridState[gridId].grid.find(&#039;.group_item&#039;),
+            groupItemsCount = groupItems.length,
+            headerColGroup = gridState[gridId].grid.find(&#039;colgroup&#039;).first();
+        groupItems.remove();
+        for (var i = 0; i &lt; groupItemsCount; i++) {
+            headerColGroup.children().first().remove();
+        }
+        gridState[gridId].grid.find(&#039;colgroup&#039;).first().children().first().remove();
+        gridState[gridId].grid.find(&#039;.grid-headerRow&#039;).children(&#039;.group_spacer&#039;).remove();
+        gridState[gridId].grid.find(&#039;.summary-row-header&#039;).children(&#039;.group_spacer&#039;).remove();
+        gridState[gridId].grid.find(&#039;.group_div&#039;).text(groupMenuText);
+        gridState[gridId].groupedBy = [];
+        gridState[gridId].pageRequest.eventType = &#039;group&#039;;
+        preparePageDataGetRequest(gridId);
+    }
 
     function createGridFooter(gridData, gridElem) {
         var gridFooter = gridElem.find(&#039;.grid-footer-div&#039;);
@@ -2208,7 +2238,11 @@
             var field = elem.data(&#039;field&#039;),
                 foundColumn = false;
 
-            if (gridState[id].groupedBy &amp;&amp; gridState[id].groupedBy === field) return;   
+            if (gridState[id].groupedBy.length) {
+                for (var j = 0; j &lt; gridState[id].groupedBy.length; j++) {
+                    if (gridState[id].groupedBy[j].field === field) return; 
+                }
+            }
 
             for (var i = 0; i &lt; gridState[id].sortedOn.length; i++) {
                 if (gridState[id].sortedOn[i].field === field) {
@@ -2341,16 +2375,11 @@
         var gridData = gridState[id];
         var pageNum = gridData.pageRequest.pageNum || gridData.pageNum;
         var pageSize = gridData.pageRequest.pageSize || gridData.pageSize;
-        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        var filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
 
         var requestObj = {};
-        if (gridData.sortable) requestObj.sortedOn = sortedOn;
-        if (gridData.filterable) requestObj.filteredOn = filteredOn;
-
-        if (gridData.groupable) {
-            requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
-        }
+        if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
+        if (gridData.filterable) requestObj.filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
+        if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
         requestObj.pageSize = pageSize;
         requestObj.pageNum = gridData.eventType === &#039;filter&#039; ? 1 : pageNum;
