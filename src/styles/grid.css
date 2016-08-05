@@ -838,7 +838,7 @@ input {
   list-style: none outside none;
 }
 .remove {
-  background: rgba(0, 0, 0, 0) url('../images/close.png') no-repeat;
+  background: rgba(0, 0, 0, 0) url('../images/close-white.png') no-repeat;
   float: right;
   width: 12px;
   height: 12px;
@@ -853,7 +853,7 @@ input {
   text-align: center;
   margin-left: 10px;
   margin-right: 5px;
-  margin-top: 5px;
+  margin-top: 8px;
 }
 .group_sort {
   cursor: pointer;

@@ -684,7 +684,7 @@ var grid = (function _grid($) {
                             var groupTr = $('<tr class="grouped_row_header"></tr>').appendTo(contentTBody);
                             var groupTitle = gridData.columns[gridData.groupedBy[t].field].title || gridData.groupedBy[t].field;
                             for (var u = 0; u <= t; u++) {
-                                var indent = u === t ? (columns.length + gridData.groupedBy.length - u) : u + 1;
+                                var indent = u === t ? (columns.length + gridData.groupedBy.length - u) : 1;
                                 groupTr.data('group-indent', indent);
                                 var groupingCell = $('<td colspan="' + indent + '">').appendTo(groupTr);
                                 if (u === t) {
