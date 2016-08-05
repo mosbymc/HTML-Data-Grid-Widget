@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.59</p>
+      <p class="stat">55.74</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3014</p>
+      <p class="stat">3008</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">199.63</p>
+      <p class="stat">199.30</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">65.10</p>
+      <p class="stat">65.12</p>
     </div>
   </div>
 </div>
@@ -371,7 +371,7 @@
                             createGridContent(gridState[gridId], gridState[gridId].grid);
                             gridState[gridId].grid.find(&#039;.grid-footer-div&#039;).empty();
                             createGridFooter(gridState[gridId], gridState[gridId].grid);
-                            buildHeaderAggregations(gridState[gridId], gridId);
+                            buildHeaderAggregations(gridId);
                         }
                     },
                     writable: false,
@@ -400,7 +400,7 @@
                             createGridContent(gridState[gridId], gridState[gridId].grid);
                             gridState[gridId].grid.find(&#039;.grid-footer-div&#039;).empty();
                             createGridFooter(gridState[gridId], gridState[gridId].grid);
-                            buildHeaderAggregations(gridState[gridId], gridId);
+                            buildHeaderAggregations(gridId);
                         }
                     },
                     writable: false,
@@ -543,18 +543,21 @@
         storageData.sortedOn = [];
         storageData.filteredOn = [];
         storageData.groupedBy = [];
+        storageData.gridAggregations = {};
+        storageData.groupAggregations = {};
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
         callGridEventHandlers(storageData.events.beforeDataBind, storageData.grid, eventObj);
 
         gridState[id] = storageData;
-
-        if (storageData.aggregates &amp;&amp; storageData.aggregates.positionAt === &#039;top&#039;) buildHeaderAggregations(storageData, id);
+        if (gridData.aggregates &amp;&amp; typeof gridData.dataSource.get === &#039;function&#039;) {
+            constructAggregationsFromServer(id, storageData.gridAggregations);
+            buildHeaderAggregations(id);
+        }
 
         createGridFooter(storageData, gridElem);
         createGridContent(storageData, gridElem);
-
         callGridEventHandlers(storageData.events.afterDataBind, storageData.grid, eventObj);
     }
 
@@ -629,116 +632,45 @@
         setColWidth(gridData, gridElem);
     }
 
-    function buildHeaderAggregations(gridData, gridId) {
-        var sum = buildAggregatesRow(gridData, gridId);
-        if (sum) {
+    function buildHeaderAggregations(gridId) {
+        var aggrs = gridState[gridId].gridAggregations;
+        if (aggrs) {
             var headerTHead = $(&#039;#grid-header-&#039; + gridId).find(&#039;thead&#039;);
-            var sumRow = headerTHead.find(&#039;.summary-row-header&#039;);
-            if (sumRow.length)
-                sumRow.remove();
-            sumRow = $(&#039;&lt;tr class=summary-row-header&gt;&lt;/tr&gt;&#039;).appendTo(headerTHead);
-            if (gridData.groupedBy.length) {
-                for (var i = 0; i &lt; gridData.groupedBy.length; i++) {
-                    sumRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
+            var aggRow = headerTHead.find(&#039;.summary-row-header&#039;);
+            if (aggRow.length)
+                aggRow.remove();
+            aggRow = $(&#039;&lt;tr class=summary-row-header&gt;&lt;/tr&gt;&#039;).appendTo(headerTHead);
+            if (gridState[gridId].groupedBy.length) {
+                for (var i = 0; i &lt; gridState[gridId].groupedBy.length; i++) {
+                    aggRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
                 }
             }
-            for (var col in sum) {
-                var text = sum[col] != null ? sum[col] : &#039;&#039;;
-                sumRow.append(&#039;&lt;td data-field=&quot;&#039; + col + &#039;&quot; class=summary-cell-header&gt;&#039; + text + &#039;&lt;/td&gt;&#039;);
+            for (var col in aggrs) {
+                var text = aggrs[col].value || &#039;&#039;;
+                aggRow.append(&#039;&lt;td data-field=&quot;&#039; + col + &#039;&quot; class=summary-cell-header&gt;&#039; + text + &#039;&lt;/td&gt;&#039;);
             }
         }
-    }
-
-    function buildAggregatesRow(gridData, gridId) {
-        var aggData = {},
-            data = gridData.alteredData ? gridData.alteredData :  gridData.dataSource.data,
-            total, i;
-        for (var col in gridData.columns) {
-            var type = typeof gridData.columns[col].type === &#039;string&#039; ? gridData.columns[col].type : &#039;&#039;;
-            var text;
-            if (!gridData.aggregates[col]) {
-                aggData[col] = &#039;&#039;;
-                continue;
-            }
-            if (typeof gridData.dataSource.get === &#039;function&#039;) {
-                if (gridData.aggregates[col].type &amp;&amp; gridData.aggregates[col].value) {
-                    text = getFormattedCellText(gridId, col, gridData.aggregates[col].value) || gridData.aggregates[col].value;
-                    aggData[col] = aggregates[gridData.aggregates[col].type] + text;
-                }
-                else
-                    aggData[col] = null;
-            }
-            else {
-                switch (gridData.aggregates[col].type) {
-                    case &#039;count&#039;:
-                        text = getFormattedCellText(gridId, col, gridData.dataSource.rowCount) || gridData.dataSource.rowCount;
-                        aggData[col] = aggregates[gridData.aggregates[col].type] + text;
-                        break;
-                    case &#039;average&#039;:
-                        total = 0;
-                        for (i = 0; i &lt; gridData.dataSource.rowCount; i++) {
-                            total += parseFloat(data[i][col]);
-                        }
-                        var avg = parseFloat(total/parseFloat(gridData.dataSource.rowCount)).toFixed(2);
-                        text = getFormattedCellText(gridId, col, avg) || avg;
-                        aggData[col] = aggregates[gridData.aggregates[col].type] + text;
-                        break;
-                    case &#039;total&#039;:
-                        total = 0;
-                        for (i = 0; i &lt; gridData.dataSource.rowCount; i++) {
-                            total += parseFloat(data[i][col]);
-                        }
-                        if (type === &#039;currency&#039;) total = total.toFixed(2);
-                        text = getFormattedCellText(gridId, col, total) || total;
-                        aggData[col] = aggregates[gridData.aggregates[col].type] + text;
-                        break;
-                    case &#039;min&#039;:
-                        var min;
-                        for (i = 0; i &lt; gridData.dataSource.rowCount; i++) {
-                            if (!min || parseFloat(data[i][col]) &lt; min) min = parseFloat(data[i][col]);
-                        }
-                        text = getFormattedCellText(gridId, col, min) || min;
-                        aggData[col] = aggregates[gridData.aggregates[col].type] + text;
-                        break;
-                    case &#039;max&#039;:
-                        var max;
-                        for (i = 0; i &lt; gridData.dataSource.rowCount; i++) {
-                            if (!max || parseFloat(data[i][col]) &gt; max) max = parseFloat(data[i][col]);
-                        }
-                        text = getFormattedCellText(gridId, col, max) || max;
-                        aggData[col] = aggregates[gridData.aggregates[col].type] + text;
-                        break;
-                    case &#039;&#039;:
-                        aggData[col] = null;
-                        break;
-                }
-            }
-        }
-        for (col in gridData.columns) {
-            if (aggData[col] != null)
-                return aggData;
-        }
-        return null;
     }
 
     function createGridContent(gridData, gridElem) {
-        var contentHeight;
-        var footerHeight = parseFloat(gridElem.find(&#039;.grid-footer-div&#039;).css(&#039;height&#039;));
-        var headerHeight = parseFloat(gridElem.find(&#039;.grid-header-div&#039;).css(&#039;height&#039;));
-        var toolbarHeight = 0;
+        var contentHeight,
+            footerHeight = parseFloat(gridElem.find(&#039;.grid-footer-div&#039;).css(&#039;height&#039;)),
+            headerHeight = parseFloat(gridElem.find(&#039;.grid-header-div&#039;).css(&#039;height&#039;)),
+            toolbarHeight = 0;
         if (gridElem.find(&#039;.toolbar&#039;))
             toolbarHeight = parseFloat(gridElem.find(&#039;.toolbar&#039;).css(&#039;height&#039;));
 
         contentHeight = gridData.height &amp;&amp; isNumber(parseFloat(gridData.height)) ? gridData.height - (headerHeight + footerHeight + toolbarHeight) + &#039;px&#039; : &#039;250px&#039;;
-        var gridContent = gridElem.find(&#039;.grid-content-div&#039;).css(&#039;height&#039;, contentHeight);
-        var id = gridContent.data(&#039;grid_content_id&#039;);
-        var gcOffsets = gridContent.offset();
-        var top = gcOffsets.top + (gridContent.height()/2) + $(window).scrollTop();
-        var left = gcOffsets.left + (gridContent.width()/2) + $(window).scrollLeft();
-        var loader = $(&#039;&lt;span id=&quot;loader-span&quot; class=&quot;spinner&quot;&gt;&lt;/span&gt;&#039;).appendTo(gridContent).css(&#039;top&#039;, top).css(&#039;left&#039;, left);
-        var contentTable = $(&#039;&lt;table id=&quot;&#039; + gridElem[0].id + &#039;_content&quot; style=&quot;height:auto;&quot;&gt;&lt;/table&gt;&#039;).appendTo(gridContent);
-        var colGroup = $(&#039;&lt;colgroup&gt;&lt;/colgroup&gt;&#039;).appendTo(contentTable);
-        var contentTBody = $(&#039;&lt;tbody&gt;&lt;/tbody&gt;&#039;).appendTo(contentTable);
+        var gridContent = gridElem.find(&#039;.grid-content-div&#039;).css(&#039;height&#039;, contentHeight),
+            id = gridContent.data(&#039;grid_content_id&#039;),
+            gcOffsets = gridContent.offset(),
+            top = gcOffsets.top + (gridContent.height()/2) + $(window).scrollTop(),
+            left = gcOffsets.left + (gridContent.width()/2) + $(window).scrollLeft(),
+            loader = $(&#039;&lt;span id=&quot;loader-span&quot; class=&quot;spinner&quot;&gt;&lt;/span&gt;&#039;).appendTo(gridContent).css(&#039;top&#039;, top).css(&#039;left&#039;, left),
+            contentTable = $(&#039;&lt;table id=&quot;&#039; + gridElem[0].id + &#039;_content&quot; style=&quot;height:auto;&quot;&gt;&lt;/table&gt;&#039;).appendTo(gridContent),
+            colGroup = $(&#039;&lt;colgroup&gt;&lt;/colgroup&gt;&#039;).appendTo(contentTable),
+            contentTBody = $(&#039;&lt;tbody&gt;&lt;/tbody&gt;&#039;).appendTo(contentTable),
+            text;
         if (gridData.selectable) attachTableSelectHandler(contentTBody);
         var columns = [];
         gridElem.find(&#039;th&#039;).each(function headerIterationCallback(idx, val) {
@@ -815,8 +747,9 @@
                         td.addClass(gridData.columns[columns[j]].attributes.cellClasses[z]);
                     }
                 }
-                var text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
+                text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
                 td.text(text);
+                if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
                 if (gridData.columns[columns[j]].editable &amp;&amp; gridData.columns[columns[j]].editable !== &#039;drop-down&#039;) {
                     makeCellEditable(id, td);
                     gridState[id].editable = true;
@@ -837,11 +770,21 @@
             }
         }
 
+        if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039; &amp;&amp; typeof gridData.dataSource.get !== &#039;function&#039;) buildHeaderAggregations(id);
+
         if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;bottom&#039;) {
-            var sum = buildAggregatesRow(gridData, id);
-            var sumRow = $(&#039;&lt;tr class=&quot;summary-row-footer&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
-            for (var col in sum) {
-                sumRow.append(&#039;&lt;td data-field=&quot;&#039; + col + &#039;&quot; class=&quot;summary-cell-footer&quot;&gt;&#039; + sum[col] + &#039;&lt;/td&gt;&#039;);
+            var aggrs = gridState[id].gridAggregations;
+            if (aggrs) {
+                var aggRow = $(&#039;&lt;tr class=&quot;summary-row-footer&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
+                if (gridState[id].groupedBy.length) {
+                    for (i = 0; i &lt; gridState[id].groupedBy.length; i++) {
+                        aggRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
+                    }
+                }
+                for (var col in aggrs) {
+                    text = aggrs[col].value || &#039;&#039;;
+                    aggRow.append(&#039;&lt;td data-field=&quot;&#039; + col + &#039;&quot; class=summary-cell-header&gt;&#039; + text + &#039;&lt;/td&gt;&#039;);
+                }
             }
         }
 
@@ -865,6 +808,57 @@
         gridState[id].dataSource.data = gridData.dataSource.data;
         loader.remove();
         gridState[id].updating = false;
+    }
+
+    function constructAggregationsFromServer(gridId, aggregationObj) {
+        for (var col in gridState[gridId].columns) {
+            if (!aggregationObj[col]) aggregationObj[col] = {};
+            if (!gridState[gridId].aggregates[col]) {
+                aggregationObj[col] = &#039;&#039;;
+                continue;
+            }
+            if (typeof gridState[gridId].dataSource.get === &#039;function&#039;) {
+                if (gridState[gridId].aggregates[col].type &amp;&amp; gridState[gridId].aggregates[col].value) {
+                    var text = getFormattedCellText(gridId, col, gridState[gridId].aggregates[col].value) || gridState[gridId].aggregates[col].value;
+                    aggregationObj[col].value = aggregates[gridState[gridId].aggregates[col].type] + text;
+                }
+                else aggregationObj[col].value = null;
+            }
+        }
+    }
+
+    function addValueToAggregations(gridId, field, value, aggregationObj) {
+        var text, total;
+        if (!aggregationObj[field]) aggregationObj[field] = {};
+        switch (gridState[gridId].aggregates[field].type) {
+            case &#039;count&#039;:
+                aggregationObj[field].value++;
+                return;
+            case &#039;average&#039;:
+                total = aggregationObj[field].total || 1;
+                value = parseFloat(value.toString());
+                var avg = parseFloat(parseFloat(aggregationObj[field].value)/total).toFixed(2);
+                text = getFormattedCellText(gridId, field, avg) || avg;
+                aggregationObj[field].value = aggregates[gridState[gridId].aggregates[field].type] + text;
+                return;
+            case &#039;max&#039;:
+                if (!aggregationObj[field].value || aggregationObj[field].value &lt; parseFloat(value.toString()))
+                    text = getFormattedCellText(gridId, field, value) || value;
+                aggregationObj[field].value = aggregates[gridState[gridId].aggregates[field].type] + text;
+                return;
+            case &#039;min&#039;:
+                if (!aggregationObj[field].value || aggregationObj[field].value &gt; parseFloat(value.toString()))
+                    text = getFormattedCellText(gridId, field, value) || value;
+                aggregationObj[field].value = aggregates[gridState[gridId].aggregates[field].type] + text;
+                return;
+            case &#039;total&#039;:
+                total = (aggregationObj[field].total || 0) + value;
+                text = getFormattedCellText(gridId, field, total) || total;
+                aggregationObj[field].value = aggregates[gridState[gridId].aggregates[field].type] + text;
+                return;
+            default:
+                aggregationObj[field].value = null;
+        }
     }
 
     function attachTableSelectHandler(tableBody) {
@@ -2415,7 +2409,7 @@
                     createGridFooter(gridData, gridData.grid);
                 }
                 if (gridData.pageRequest.eventType === &#039;filter&#039; &amp;&amp; gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039;)
-                    buildHeaderAggregations(gridData, id);
+                    buildHeaderAggregations(id);
                 gridData.pageRequest = {};
             }
         }
