@@ -555,7 +555,7 @@ var grid = (function _grid($) {
                 }
             }
             for (var col in aggrs) {
-                var text = aggrs[col].value || '';
+                var text = aggrs[col].text || '';
                 aggRow.append('<td data-field="' + col + '" class=summary-cell-header>' + text + '</td>');
             }
         }
@@ -608,18 +608,46 @@ var grid = (function _grid($) {
                         else groupedDiff[q] = 1;
                     }
                 }
-                if (foundDiff) {
-                    for (var t = 0; t < groupedDiff.length; t++) {
-                        if (groupedDiff[t]) {
-                            var groupedText = getFormattedCellText(id, gridData.groupedBy[t].field, gridData.dataSource.data[i][gridData.groupedBy[t].field]) ||
-                                gridData.dataSource.data[i][gridData.groupedBy[t].field];
+                if (foundDiff && i) {
+                    for (var p = 0; p < groupedDiff.length; p++) {
+                        if (groupedDiff[p]) {
+                            var idx = groupedDiff.length;
+                            while (idx > p) {
+                                var groupAggregateRow = $('<tr class="grouped_row_header"></tr>').appendTo(contentTBody);
+                                for (var w = 0; w < groupedDiff.length; w++) {
+                                    groupAggregateRow.append('<td colspan="1">');
+                                }
+                                for (var item in gridData.groupAggregations[idx - 1]) {
+                                    groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[idx - 1][item].text || '') + '</td>');
+                                }
+                                gridData.groupAggregations[idx - 1] = {};
+                                idx--;
+                            }
+                            break;
+                        }
+                    }
+                }
+                for (var b = 0; b < groupedDiff.length; b++) {
+                    if (!gridData.groupAggregations[b]) gridData.groupAggregations[b] = {};
+                    if (!groupedDiff[b]) {
+                        for (var c in gridData.columns) {
+                            addValueToAggregations(id, c, gridData.dataSource.data[i][c], gridData.groupAggregations[b]);
+                        }
+                    }
+                    else {
+                        if (groupedDiff[b]) {
+                            for (var ff in gridData.columns) {
+                                addValueToAggregations(id, ff, gridData.dataSource.data[i][ff], gridData.groupAggregations[b]);
+                            }
+                            var groupedText = getFormattedCellText(id, gridData.groupedBy[b].field, gridData.dataSource.data[i][gridData.groupedBy[b].field]) ||
+                                gridData.dataSource.data[i][gridData.groupedBy[b].field];
                             var groupTr = $('<tr class="grouped_row_header"></tr>').appendTo(contentTBody);
-                            var groupTitle = gridData.columns[gridData.groupedBy[t].field].title || gridData.groupedBy[t].field;
-                            for (var u = 0; u <= t; u++) {
-                                var indent = u === t ? (columns.length + gridData.groupedBy.length - u) : 1;
+                            var groupTitle = gridData.columns[gridData.groupedBy[b].field].title || gridData.groupedBy[b].field;
+                            for (var u = 0; u <= b; u++) {
+                                var indent = u === b ? (columns.length + gridData.groupedBy.length - u) : 1;
                                 groupTr.data('group-indent', indent);
                                 var groupingCell = $('<td colspan="' + indent + '">').appendTo(groupTr);
-                                if (u === t) {
+                                if (u === b) {
                                     groupingCell.append('<p class="grouped"><a class="group-desc sortSpan group_acc_link"></a>' + groupTitle + ': ' + groupedText + '</p></td>');
                                     break;
                                 }
@@ -627,6 +655,7 @@ var grid = (function _grid($) {
                         }
                     }
                 }
+
             }
             var tr = $('<tr></tr>').appendTo(contentTBody);
             if (i % 2) {
@@ -729,9 +758,9 @@ var grid = (function _grid($) {
             if (typeof gridState[gridId].dataSource.get === 'function') {
                 if (gridState[gridId].aggregates[col].type && gridState[gridId].aggregates[col].value) {
                     var text = getFormattedCellText(gridId, col, gridState[gridId].aggregates[col].value) || gridState[gridId].aggregates[col].value;
-                    aggregationObj[col].value = aggregates[gridState[gridId].aggregates[col].type] + text;
+                    aggregationObj[col].text = aggregates[gridState[gridId].aggregates[col].type] + text;
                 }
-                else aggregationObj[col].value = null;
+                else aggregationObj[col].text = null;
             }
         }
     }
@@ -741,32 +770,39 @@ var grid = (function _grid($) {
         if (!aggregationObj[field]) aggregationObj[field] = {};
         switch (gridState[gridId].aggregates[field].type) {
             case 'count':
-                aggregationObj[field].value++;
+                aggregationObj[field].value =(aggregationObj[field].value || 0) + 1;
+                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + aggregationObj[field].value;
                 return;
             case 'average':
-                total = aggregationObj[field].total || 1;
+                total = aggregationObj[field].total ? aggregationObj[field].total + 1 : 1;
                 value = parseFloat(value.toString());
-                var avg = parseFloat(parseFloat(aggregationObj[field].value)/total).toFixed(2);
-                text = getFormattedCellText(gridId, field, avg) || avg;
-                aggregationObj[field].value = aggregates[gridState[gridId].aggregates[field].type] + text;
+                var avg = parseFloat(parseFloat((aggregationObj[field].value || 0) + value)/total);
+                text = getFormattedCellText(gridId, field, avg.toFixed(2)) || avg.toFixed(2);
+                aggregationObj[field].total = total;
+                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
+                aggregationObj[field].value = avg;
                 return;
             case 'max':
                 if (!aggregationObj[field].value || aggregationObj[field].value < parseFloat(value.toString()))
                     text = getFormattedCellText(gridId, field, value) || value;
-                aggregationObj[field].value = aggregates[gridState[gridId].aggregates[field].type] + text;
+                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
+                aggregationObj[field].value = value;
                 return;
             case 'min':
                 if (!aggregationObj[field].value || aggregationObj[field].value > parseFloat(value.toString()))
                     text = getFormattedCellText(gridId, field, value) || value;
-                aggregationObj[field].value = aggregates[gridState[gridId].aggregates[field].type] + text;
+                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
+                aggregationObj[field].value = text;
                 return;
             case 'total':
                 total = (aggregationObj[field].total || 0) + value;
                 text = getFormattedCellText(gridId, field, total) || total;
-                aggregationObj[field].value = aggregates[gridState[gridId].aggregates[field].type] + text;
+                aggregationObj[field].total = total;
+                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
+                aggregationObj[field].value = text;
                 return;
             default:
-                aggregationObj[field].value = null;
+                aggregationObj[field].text = null;
         }
     }
 
