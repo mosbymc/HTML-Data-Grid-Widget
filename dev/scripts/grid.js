@@ -724,7 +724,6 @@ var grid = (function _grid($) {
         storageData.filteredOn = [];
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
-        storageData.groupAggregations = {};
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -895,6 +894,8 @@ var grid = (function _grid($) {
             groupedDiff = [gridData.groupedBy.length],
             foundDiff = false;
 
+        if (gridData.groupAggregates) gridData.groupAggregations = {};
+
         for (var i = (rowStart); i < rowEnd; i++) {
             gridData.dataSource.data[i]._initialRowIndex = i;
             if (gridData.groupedBy && gridData.groupedBy.length) {
@@ -914,13 +915,14 @@ var grid = (function _grid($) {
                     }
                 }
                 if (foundDiff && i) {
+                    //TODO: I may need to iterate backwards here
                     for (var p = 0; p < groupedDiff.length; p++) {
                         if (groupedDiff[p]) {
                             var idx = groupedDiff.length;
                             while (idx > p) {
                                 var groupAggregateRow = $('<tr class="grouped_row_header"></tr>').appendTo(contentTBody);
                                 for (var w = 0; w < groupedDiff.length; w++) {
-                                    groupAggregateRow.append('<td colspan="1">');
+                                    groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
                                 }
                                 for (var item in gridData.groupAggregations[idx - 1]) {
                                     groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[idx - 1][item].text || '') + '</td>');
@@ -951,7 +953,7 @@ var grid = (function _grid($) {
                             for (var u = 0; u <= b; u++) {
                                 var indent = u === b ? (columns.length + gridData.groupedBy.length - u) : 1;
                                 groupTr.data('group-indent', indent);
-                                var groupingCell = $('<td colspan="' + indent + '">').appendTo(groupTr);
+                                var groupingCell = $('<td colspan="' + indent + '" class="grouped_cell"></td>').appendTo(groupTr);
                                 if (u === b) {
                                     groupingCell.append('<p class="grouped"><a class="group-desc sortSpan group_acc_link"></a>' + groupTitle + ': ' + groupedText + '</p></td>');
                                     break;
@@ -960,26 +962,6 @@ var grid = (function _grid($) {
                         }
                     }
                 }
-
-                /*if (foundDiff) {
-                    for (var t = 0; t < groupedDiff.length; t++) {
-                        if (groupedDiff[t]) {
-                            var groupedText = getFormattedCellText(id, gridData.groupedBy[t].field, gridData.dataSource.data[i][gridData.groupedBy[t].field]) ||
-                                gridData.dataSource.data[i][gridData.groupedBy[t].field];
-                            var groupTr = $('<tr class="grouped_row_header"></tr>').appendTo(contentTBody);
-                            var groupTitle = gridData.columns[gridData.groupedBy[t].field].title || gridData.groupedBy[t].field;
-                            for (var u = 0; u <= t; u++) {
-                                var indent = u === t ? (columns.length + gridData.groupedBy.length - u) : 1;
-                                groupTr.data('group-indent', indent);
-                                var groupingCell = $('<td colspan="' + indent + '">').appendTo(groupTr);
-                                if (u === t) {
-                                    groupingCell.append('<p class="grouped"><a class="group-desc sortSpan group_acc_link"></a>' + groupTitle + ': ' + groupedText + '</p></td>');
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }*/
             }
             var tr = $('<tr></tr>').appendTo(contentTBody);
             if (i % 2) {
@@ -1116,16 +1098,18 @@ var grid = (function _grid($) {
                 aggregationObj[field].value = avg;
                 return;
             case 'max':
-                if (!aggregationObj[field].value || aggregationObj[field].value < parseFloat(value.toString()))
+                if (!aggregationObj[field].value || aggregationObj[field].value < parseFloat(value.toString())) {
                     text = getFormattedCellText(gridId, field, value) || value;
-                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
-                aggregationObj[field].value = value;
+                    aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
+                    aggregationObj[field].value = value;
+                }
                 return;
             case 'min':
-                if (!aggregationObj[field].value || aggregationObj[field].value > parseFloat(value.toString()))
+                if (!aggregationObj[field].value || aggregationObj[field].value > parseFloat(value.toString())) {
                     text = getFormattedCellText(gridId, field, value) || value;
-                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
-                aggregationObj[field].value = text;
+                    aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
+                    aggregationObj[field].value = text;
+                }
                 return;
             case 'total':
                 total = (aggregationObj[field].total || 0) + value;

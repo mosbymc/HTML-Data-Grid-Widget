@@ -919,6 +919,12 @@ input {
   border-top-width: 0;
   color: #444;
   background-color: #fafafa;
+  border-color: #e6e6e6;
+  border-left-width: 1px;
+  border-right-width: 1px;
+}
+.grouped_cell:first-child {
+  border-left-width: 0;
 }
 .grouped_row_header td {
   color: #444;

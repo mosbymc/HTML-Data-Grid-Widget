@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.48</p>
+      <p class="stat">55.47</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3044</p>
+      <p class="stat">3046</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">200.83</p>
+      <p class="stat">200.54</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">66.05</p>
+      <p class="stat">66.08</p>
     </div>
   </div>
 </div>
@@ -544,7 +544,6 @@
         storageData.filteredOn = [];
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
-        storageData.groupAggregations = {};
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -685,6 +684,8 @@
             groupedDiff = [gridData.groupedBy.length],
             foundDiff = false;
 
+        if (gridData.groupAggregates) gridData.groupAggregations = {};
+
         for (var i = (rowStart); i &lt; rowEnd; i++) {
             gridData.dataSource.data[i]._initialRowIndex = i;
             if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) {
@@ -706,7 +707,7 @@
                             while (idx &gt; p) {
                                 var groupAggregateRow = $(&#039;&lt;tr class=&quot;grouped_row_header&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
                                 for (var w = 0; w &lt; groupedDiff.length; w++) {
-                                    groupAggregateRow.append(&#039;&lt;td colspan=&quot;1&quot;&gt;&#039;);
+                                    groupAggregateRow.append(&#039;&lt;td colspan=&quot;1&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
                                 }
                                 for (var item in gridData.groupAggregations[idx - 1]) {
                                     groupAggregateRow.append(&#039;&lt;td class=&quot;group_aggregate_cell&quot;&gt;&#039; + (gridData.groupAggregations[idx - 1][item].text || &#039;&#039;) + &#039;&lt;/td&gt;&#039;);
@@ -737,7 +738,7 @@
                             for (var u = 0; u &lt;= b; u++) {
                                 var indent = u === b ? (columns.length + gridData.groupedBy.length - u) : 1;
                                 groupTr.data(&#039;group-indent&#039;, indent);
-                                var groupingCell = $(&#039;&lt;td colspan=&quot;&#039; + indent + &#039;&quot;&gt;&#039;).appendTo(groupTr);
+                                var groupingCell = $(&#039;&lt;td colspan=&quot;&#039; + indent + &#039;&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;).appendTo(groupTr);
                                 if (u === b) {
                                     groupingCell.append(&#039;&lt;p class=&quot;grouped&quot;&gt;&lt;a class=&quot;group-desc sortSpan group_acc_link&quot;&gt;&lt;/a&gt;&#039; + groupTitle + &#039;: &#039; + groupedText + &#039;&lt;/p&gt;&lt;/td&gt;&#039;);
                                     break;
@@ -746,7 +747,6 @@
                         }
                     }
                 }
-
             }
             var tr = $(&#039;&lt;tr&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
             if (i % 2) {
@@ -874,16 +874,18 @@
                 aggregationObj[field].value = avg;
                 return;
             case &#039;max&#039;:
-                if (!aggregationObj[field].value || aggregationObj[field].value &lt; parseFloat(value.toString()))
+                if (!aggregationObj[field].value || aggregationObj[field].value &lt; parseFloat(value.toString())) {
                     text = getFormattedCellText(gridId, field, value) || value;
-                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
-                aggregationObj[field].value = value;
+                    aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
+                    aggregationObj[field].value = value;
+                }
                 return;
             case &#039;min&#039;:
-                if (!aggregationObj[field].value || aggregationObj[field].value &gt; parseFloat(value.toString()))
+                if (!aggregationObj[field].value || aggregationObj[field].value &gt; parseFloat(value.toString())) {
                     text = getFormattedCellText(gridId, field, value) || value;
-                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
-                aggregationObj[field].value = text;
+                    aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
+                    aggregationObj[field].value = text;
+                }
                 return;
             case &#039;total&#039;:
                 total = (aggregationObj[field].total || 0) + value;

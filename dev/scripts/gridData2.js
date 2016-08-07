@@ -5,6 +5,7 @@ var gridData = {
     sortable: true,
     reorderable: true,
     groupable: true,
+    groupAggregates: true,
     filterable: true,
     selectable: 'multi-row',
     excelExport: true,
