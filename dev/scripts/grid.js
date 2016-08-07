@@ -915,17 +915,24 @@ var grid = (function _grid($) {
                     }
                 }
                 if (foundDiff && i) {
+                    var idx = groupedDiff.length;
                     //TODO: I may need to iterate backwards here
-                    for (var p = 0; p < groupedDiff.length; p++) {
+                    for (var p = groupedDiff.length - 1; p >= 0; p--) {
                         if (groupedDiff[p]) {
-                            var idx = groupedDiff.length;
+                            if (p !== 0 && gridData.groupAggregations[p - 1].items === 1) {
+                                gridData.groupAggregations[idx - 1] = {};
+                                idx--;
+                                continue;
+                            }
                             while (idx > p) {
                                 var groupAggregateRow = $('<tr class="grouped_row_header"></tr>').appendTo(contentTBody);
                                 for (var w = 0; w < groupedDiff.length; w++) {
                                     groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
                                 }
                                 for (var item in gridData.groupAggregations[idx - 1]) {
-                                    groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[idx - 1][item].text || '') + '</td>');
+                                    if (item !== 'items') {
+                                        groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[idx - 1][item].text || '') + '</td>');
+                                    }
                                 }
                                 gridData.groupAggregations[idx - 1] = {};
                                 idx--;
@@ -1083,6 +1090,7 @@ var grid = (function _grid($) {
     function addValueToAggregations(gridId, field, value, aggregationObj) {
         var text, total;
         if (!aggregationObj[field]) aggregationObj[field] = {};
+        aggregationObj.items = aggregationObj.items ? aggregationObj.items++ : 1;
         switch (gridState[gridId].aggregates[field].type) {
             case 'count':
                 aggregationObj[field].value =(aggregationObj[field].value || 0) + 1;
