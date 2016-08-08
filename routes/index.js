@@ -51,39 +51,6 @@ var getInitialGridDataSource = function _getInitialGridDataSource(req, res) {
 };
 
 function determinePageData(requestObj, fullGridData, callback) {
-    /*if (requestObj.filteredOn) {
-        if (requestObj.filterVal !== "") {
-            var dataType = columns[requestObj.filteredOn].type || "string";
-            fullGridData = gridDataHelpers.filterGridData(requestObj.filterType, requestObj.filterVal, requestObj.filteredOn, dataType, fullGridData);
-        }
-    }
-
-    if (requestObj.groupedBy) {	//Need to group the columns first, before sorting. Sorting grouped columns is going to be a bitch!
-        var groupedData = gridDataHelpers.groupColumns(fullGridData, requestObj.groupedBy);
-        if (requestObj.sortedOn && requestObj.sortedBy !== "default") {
-            var sortedGroup = [];
-            for (var group in groupedData.groupings) {
-                sortedGroup = sortedGroup.concat(gridDataHelpers.mergeSort(groupedData.groupings[group], requestObj.sortedOn, columns[requestObj.sortedOn].type || "string"));
-            }
-            if (requestObj.sortedBy === "asc") sortedGroup.reverse();
-            limitPageData(requestObj, sortedGroup, callback);
-            return;
-        }
-        limitPageData(requestObj, groupedData.groupedData, callback);
-        return;
-    }
-
-    if (requestObj.sortedOn && !requestObj.groupedBy) {
-        if (requestObj.sortedBy !== "default") {
-            fullGridData = gridDataHelpers.mergeSort(fullGridData, requestObj.sortedOn, columns[requestObj.sortedOn].type || "string");
-            if (requestObj.sortedBy === "asc") fullGridData.reverse();
-        }
-        else if (!fullGridData.length) {
-            fullGridData = originalData.dataSource.data;
-        }
-    }
-    limitPageData(requestObj, fullGridData, callback);*/
-
     //TODO: I can make this much smarter and faster by checking to see if a filter has been added or removed. If added, just take the existing data
     //TODO: and filter it again. If removed, need to take the original data and apply all remaining filters.
     if (requestObj.filteredOn && requestObj.filteredOn.length) {
@@ -102,20 +69,6 @@ function determinePageData(requestObj, fullGridData, callback) {
         limitPageData(requestObj, groupedData, callback);
         return;
     }
-
-    /*if (requestObj.groupedBy) {
-        var groupedData = gridDataHelpers.sortGridData([{ field: requestObj.groupedBy, sortDirection: requestObj.groupSortDirection }], fullGridData, columns);
-        if (requestObj.sortedOn && requestObj.sortedOn.length) {
-            var sortedGroup = [];
-            for (var group in groupedData.groupings) {
-                sortedGroup = sortedGroup.concat(gridDataHelpers.sortGridData(requestObj.sortedOn, groupedData.groupings[group], columns));
-            }
-            limitPageData(requestObj, sortedGroup, callback);
-            return;
-        }
-        limitPageData(requestObj, groupedData, callback);
-        return;
-    }*/
 
     if (requestObj.sortedOn && requestObj.sortedOn.length && !requestObj.groupedBy)
         fullGridData = gridDataHelpers.sortGridData(requestObj.sortedOn, fullGridData, columns);

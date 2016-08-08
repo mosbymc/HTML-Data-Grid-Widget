@@ -1415,20 +1415,38 @@ var grid = (function _grid($) {
                 if (gridState[id].updating) return;		
                 if (!groupMenuBar.children().length) groupMenuBar.text('');
                 var field = droppedCol.data('field'),
-                    title = gridState[groupId].columns[field].title || field;
+                    title = gridState[groupId].columns[field].title || field,
+                    foundDupe = false;
+
+                groupMenuBar.find('.group_item').each(function iterateGroupItemsCallback(idx, val) {
+                    if ($(val).data('field') === field) foundDupe = true;
+                });
+                if (foundDupe) return;  
 
                 var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>').appendTo(groupMenuBar),
                     groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
-                groupDirSpan.append('<span class="sort-desc-white groupSortSpan"></span>').append('<span>' + title + '</span>');
+                groupDirSpan.append('<span class="sort-asc-white groupSortSpan"></span>').append('<span>' + title + '</span>');
                 var cancelButton = $('<span class="remove"></span>').appendTo(groupItem),
                     groupings = [];
                 groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
                     var item = $(val);
                     groupings.push({
                         field: item.data('field'),
-                        sortDirection: item.hasClass('sort-asc') ? 'asc' : 'desc'
+                        sortDirection: item.find('.groupSortSpan').hasClass('sort-asc-white') ? 'asc' : 'desc'
                     });
                 });
+
+                if (gridState[id].sortedOn && gridState[id].sortedOn.length) {
+                    var sortArr = [];
+                    for (var l = 0; l < gridState[id].sortedOn.length; l++) {
+                        if (gridState[id].sortedOn[l].field !== field) sortArr.push(gridState[id].sortedOn[l]);
+                        else {
+                            gridState[id].grid.find('.grid-header-wrapper').find('#' + field + '_grid_id_' + id).find('.sortSpan').remove();
+                        }
+                    }
+                    gridState[id].sortedOn = sortArr;
+                }
+
                 gridState[id].groupedBy = groupings;
                 gridState[id].pageRequest.eventType = 'group';
 

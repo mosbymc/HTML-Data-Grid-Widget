@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.40</p>
+      <p class="stat">55.39</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3054</p>
+      <p class="stat">3072</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">200.69</p>
+      <p class="stat">201.31</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">66.26</p>
+      <p class="stat">66.73</p>
     </div>
   </div>
 </div>
@@ -1506,20 +1506,38 @@
                 if (gridState[id].updating) return;		
                 if (!groupMenuBar.children().length) groupMenuBar.text(&#039;&#039;);
                 var field = droppedCol.data(&#039;field&#039;),
-                    title = gridState[groupId].columns[field].title || field;
+                    title = gridState[groupId].columns[field].title || field,
+                    foundDupe = false;
+
+                groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupItemsCallback(idx, val) {
+                    if ($(val).data(&#039;field&#039;) === field) foundDupe = true;
+                });
+                if (foundDupe) return;  
 
                 var groupItem = $(&#039;&lt;div class=&quot;group_item&quot; data-grid_id=&quot;&#039; + groupId + &#039;&quot; data-field=&quot;&#039; + field + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(groupMenuBar),
                     groupDirSpan = $(&#039;&lt;span class=&quot;group_sort&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
-                groupDirSpan.append(&#039;&lt;span class=&quot;sort-desc-white groupSortSpan&quot;&gt;&lt;/span&gt;&#039;).append(&#039;&lt;span&gt;&#039; + title + &#039;&lt;/span&gt;&#039;);
+                groupDirSpan.append(&#039;&lt;span class=&quot;sort-asc-white groupSortSpan&quot;&gt;&lt;/span&gt;&#039;).append(&#039;&lt;span&gt;&#039; + title + &#039;&lt;/span&gt;&#039;);
                 var cancelButton = $(&#039;&lt;span class=&quot;remove&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem),
                     groupings = [];
                 groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupedColumnsCallback(idx, val) {
                     var item = $(val);
                     groupings.push({
                         field: item.data(&#039;field&#039;),
-                        sortDirection: item.hasClass(&#039;sort-asc&#039;) ? &#039;asc&#039; : &#039;desc&#039;
+                        sortDirection: item.find(&#039;.groupSortSpan&#039;).hasClass(&#039;sort-asc-white&#039;) ? &#039;asc&#039; : &#039;desc&#039;
                     });
                 });
+
+                if (gridState[id].sortedOn &amp;&amp; gridState[id].sortedOn.length) {
+                    var sortArr = [];
+                    for (var l = 0; l &lt; gridState[id].sortedOn.length; l++) {
+                        if (gridState[id].sortedOn[l].field !== field) sortArr.push(gridState[id].sortedOn[l]);
+                        else {
+                            gridState[id].grid.find(&#039;.grid-header-wrapper&#039;).find(&#039;#&#039; + field + &#039;_grid_id_&#039; + id).find(&#039;.sortSpan&#039;).remove();
+                        }
+                    }
+                    gridState[id].sortedOn = sortArr;
+                }
+
                 gridState[id].groupedBy = groupings;
                 gridState[id].pageRequest.eventType = &#039;group&#039;;
 

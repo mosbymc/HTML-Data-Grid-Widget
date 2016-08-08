@@ -95,6 +95,7 @@
         - If all of the groups aggregates can fit on a single page of data, then the grid can calculate the aggregates similar to the above, except that
         each level of grouping will need its own aggregate values maintained
         - If a single page of grid data cannot display a full group, then to ensure accurate aggregates, the server needs to supply them
+ - Add number formatting (n)
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Add integration tests if possible
  - Add type checking - passed in grid data
@@ -1816,6 +1817,8 @@ var grid = (function _grid($) {
         if (gridData.groupable) {
             var groupMenuBar = $('<div id="grid_' + id + 'group_div" class="group_div clearfix" data-grid_id="' + id + '">' + groupMenuText + '</div>').prependTo(gridElem);
             groupMenuBar.on('drop', function handleDropCallback(e) {
+                //TODO: figure out why debugging this in the browser causes two server requests to be made;
+                //TODO: 1 to get the grouped data that fails, and a second call when the page reloads for no apparent reason
                 var droppedCol = $('#' + e.originalEvent.dataTransfer.getData('text'));
                 var groupId = $(e.currentTarget).data('grid_id');
                 var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
@@ -1823,20 +1826,38 @@ var grid = (function _grid($) {
                 if (gridState[id].updating) return;		//can't resort columns if grid is updating
                 if (!groupMenuBar.children().length) groupMenuBar.text('');
                 var field = droppedCol.data('field'),
-                    title = gridState[groupId].columns[field].title || field;
+                    title = gridState[groupId].columns[field].title || field,
+                    foundDupe = false;
+
+                groupMenuBar.find('.group_item').each(function iterateGroupItemsCallback(idx, val) {
+                    if ($(val).data('field') === field) foundDupe = true;
+                });
+                if (foundDupe) return;  //can't group on the same column twice
 
                 var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>').appendTo(groupMenuBar),
                     groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
-                groupDirSpan.append('<span class="sort-desc-white groupSortSpan"></span>').append('<span>' + title + '</span>');
+                groupDirSpan.append('<span class="sort-asc-white groupSortSpan"></span>').append('<span>' + title + '</span>');
                 var cancelButton = $('<span class="remove"></span>').appendTo(groupItem),
                     groupings = [];
                 groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
                     var item = $(val);
                     groupings.push({
                         field: item.data('field'),
-                        sortDirection: item.hasClass('sort-asc') ? 'asc' : 'desc'
+                        sortDirection: item.find('.groupSortSpan').hasClass('sort-asc-white') ? 'asc' : 'desc'
                     });
                 });
+
+                if (gridState[id].sortedOn && gridState[id].sortedOn.length) {
+                    var sortArr = [];
+                    for (var l = 0; l < gridState[id].sortedOn.length; l++) {
+                        if (gridState[id].sortedOn[l].field !== field) sortArr.push(gridState[id].sortedOn[l]);
+                        else {
+                            gridState[id].grid.find('.grid-header-wrapper').find('#' + field + '_grid_id_' + id).find('.sortSpan').remove();
+                        }
+                    }
+                    gridState[id].sortedOn = sortArr;
+                }
+
                 gridState[id].groupedBy = groupings;
                 gridState[id].pageRequest.eventType = 'group';
 
