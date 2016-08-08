@@ -164,10 +164,10 @@ QUnit.test('General grid API tests', function gridEventTests(assert) {
     assert.ok(aggregates, "Data was returned");
 
     for (var col in aggregates) {
-        if (typeof aggregates[col] === 'object')
-            assert.ok(aggregates[col].type === gridData.summaryRow[col].type, "Aggregate type for column '" + col + "' equals the gridData.summaryRow type");
+        if (gridData.aggregates[col] && gridData.aggregates[col].type)
+            assert.ok(aggregates[col].text, 'Aggregate data for column ' + col + ' was calculated with the following value: ' + aggregates[col].text);
         else
-            assert.ok(aggregates[col] === gridData.summaryRow[col], "Position location is the same");
+            assert.ok(!aggregates[col].text, 'No aggregate data for column ' + col + ' was calculated because gridData.aggregates.' + col + ' did not specify a type.');
     }
 
     var currentGridData = gridApi.getCurrentDataSourceData();

@@ -8,7 +8,7 @@ var gridData = {
     pagingOptions: [25, 50, 100],
     selectable: 'multi-row',
     //pageSize: 50,
-    summaryRow: {
+    aggregates: {
         Service: {
             type: "count"
         },
