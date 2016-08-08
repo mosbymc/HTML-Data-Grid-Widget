@@ -1568,7 +1568,7 @@ var grid = (function _grid($) {
             if (gridContent.find('.invalid').length) return;
             var cell = $(e.currentTarget);
             cell.text('');
-            var index = cell.parents('tr').index('.data-row');
+            var index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row');
             var field = cell.data('field');
             if (gridState[id].updating) return;		//can't edit a cell if the grid is updating
 
@@ -1737,7 +1737,7 @@ var grid = (function _grid($) {
         var gridContent = input.parents('.grid-wrapper').find('.grid-content-div'),
             cell = input.parents('td'),
             id = gridContent.data('grid_content_id'),
-            index = cell.parents('tr').index('.data-row'),
+            index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
             field = cell.data('field'),
             type = gridState[id].columns[field].type || '',
             saveVal, re,
@@ -1790,7 +1790,7 @@ var grid = (function _grid($) {
             parentCell = select.parents('td');
         select.remove();
         var id = gridContent.data('grid_content_id'),
-            index = parentCell.parents('tr').index('.data-row'),
+            index = parentCell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
             field = parentCell.data('field'),
             type = gridState[id].columns[field].type || '',
             displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field],
