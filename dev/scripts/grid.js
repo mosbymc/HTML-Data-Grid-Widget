@@ -87,7 +87,7 @@
  - Add grid instance functions that get/set selected grid rows/cells - DONE
  - Update unit tests for new/altered grid instance functionality - DONE
  - Add grid-to-excel export functionality - should work with grid selection - DONE
- - Add multiple-grouping capability
+ - Add multiple-grouping capability - DONE
  - Add group-aggregate calculations
  - Re-work how aggregates are calculated:
     > all data on client side should cache each column's value per the aggregate function and then reference that when creating the dom elements for the grid aggregates
@@ -95,7 +95,7 @@
         - If all of the groups aggregates can fit on a single page of data, then the grid can calculate the aggregates similar to the above, except that
         each level of grouping will need its own aggregate values maintained
         - If a single page of grid data cannot display a full group, then to ensure accurate aggregates, the server needs to supply them
- - Add number formatting (n)
+ - Add number formatting (n) - DONE
  - View http://docs.telerik.com/kendo-ui/api/javascript/ui/grid for events/methods/properties
  - Add integration tests if possible
  - Add type checking - passed in grid data
@@ -911,67 +911,67 @@ var grid = (function _grid($) {
                     else {
                         //Otherwise, check the previous diff; if there isn't a diff, then set the current diff to none (i.e. 0),
                         //but if the previous diff was found, set the current diff.
-                        if (!q || groupedDiff[q - 1]) groupedDiff[q] = 0;
+                        if (!q || !groupedDiff[q - 1]) groupedDiff[q] = 0;
                         else groupedDiff[q] = 1;
                     }
                 }
-                if (foundDiff && i) {
-                    var idx = groupedDiff.length;
-                    //TODO: I may need to iterate backwards here
-                    for (var p = groupedDiff.length - 1; p >= 0; p--) {
-                        if (groupedDiff[p]) {
-                            if (p !== 0 && gridData.groupAggregations[p - 1].items === 1) {
-                                gridData.groupAggregations[idx - 1] = {};
-                                idx--;
-                                continue;
+                if (foundDiff && i) {   //If a diff was found...
+                    for (var p = groupedDiff.length - 1; p >= 0; p--) {     //...go backwards through the grouped aggregates...
+                        var numItems = gridData.groupAggregations[p].items; //...save the current row's number of items...
+                        if (groupedDiff[p]) {                               //...if there is a diff at the current row, print it to the screen
+                            var groupAggregateRow = $('<tr class="grouped_row_header"></tr>').appendTo(contentTBody);
+                            for (var w = 0; w < groupedDiff.length; w++) {
+                                groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
                             }
-                            while (idx > p) {
-                                var groupAggregateRow = $('<tr class="grouped_row_header"></tr>').appendTo(contentTBody);
-                                for (var w = 0; w < groupedDiff.length; w++) {
-                                    groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
+                            for (var item in gridData.groupAggregations[p]) {
+                                if (item !== 'items') {
+                                    groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[p][item].text || '') + '</td>');
                                 }
-                                for (var item in gridData.groupAggregations[idx - 1]) {
-                                    if (item !== 'items') {
-                                        groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[idx - 1][item].text || '') + '</td>');
-                                    }
-                                }
-                                gridData.groupAggregations[idx - 1] = {};
-                                idx--;
                             }
-                            break;
+                            gridData.groupAggregations[p] = {       //Then reset the current row's aggregate object...
+                                items: 0
+                            };
+                            for (var r = p - 1; r >= 0; r--) {  //...and go backward through the diffs starting from the prior index, and compare the number of items in each diff...
+                                if (groupedDiff[r] && gridData.groupAggregations[r].items == numItems) {    //...if the number of items are equal, reset that diff as well
+                                    groupedDiff[r] = 0;
+                                    gridData.groupAggregations[r] = {
+                                        items: 0
+                                    };
+                                }
+                            }
                         }
                     }
                 }
                 for (var b = 0; b < groupedDiff.length; b++) {
-                    if (!gridData.groupAggregations[b]) gridData.groupAggregations[b] = {};
-                    if (!groupedDiff[b]) {
-                        for (var c in gridData.columns) {
-                            addValueToAggregations(id, c, gridData.dataSource.data[i][c], gridData.groupAggregations[b]);
-                        }
+                    if (!gridData.groupAggregations[b]) {
+                        gridData.groupAggregations[b] = {
+                            items: 0
+                        };
                     }
-                    else {
-                        if (groupedDiff[b]) {
-                            for (var ff in gridData.columns) {
-                                addValueToAggregations(id, ff, gridData.dataSource.data[i][ff], gridData.groupAggregations[b]);
-                            }
-                            var groupedText = getFormattedCellText(id, gridData.groupedBy[b].field, gridData.dataSource.data[i][gridData.groupedBy[b].field]) ||
-                                gridData.dataSource.data[i][gridData.groupedBy[b].field];
-                            var groupTr = $('<tr class="grouped_row_header"></tr>').appendTo(contentTBody);
-                            var groupTitle = gridData.columns[gridData.groupedBy[b].field].title || gridData.groupedBy[b].field;
-                            for (var u = 0; u <= b; u++) {
-                                var indent = u === b ? (columns.length + gridData.groupedBy.length - u) : 1;
-                                groupTr.data('group-indent', indent);
-                                var groupingCell = $('<td colspan="' + indent + '" class="grouped_cell"></td>').appendTo(groupTr);
-                                if (u === b) {
-                                    groupingCell.append('<p class="grouped"><a class="group-desc sortSpan group_acc_link"></a>' + groupTitle + ': ' + groupedText + '</p></td>');
-                                    break;
-                                }
+                    for (var c in gridData.columns) {
+                        addValueToAggregations(id, c, gridData.dataSource.data[i][c], gridData.groupAggregations[b]);
+                    }
+                    gridData.groupAggregations[b].items++;
+                    if (groupedDiff[b]) {
+                        var groupedText = getFormattedCellText(id, gridData.groupedBy[b].field, gridData.dataSource.data[i][gridData.groupedBy[b].field]) ||
+                            gridData.dataSource.data[i][gridData.groupedBy[b].field];
+                        var groupTr = $('<tr class="grouped_row_header"></tr>').appendTo(contentTBody);
+                        var groupTitle = gridData.columns[gridData.groupedBy[b].field].title || gridData.groupedBy[b].field;
+                        for (var u = 0; u <= b; u++) {
+                            var indent = u === b ? (columns.length + gridData.groupedBy.length - u) : 1;
+                            groupTr.data('group-indent', indent);
+                            var groupingCell = $('<td colspan="' + indent + '" class="grouped_cell"></td>').appendTo(groupTr);
+                            if (u === b) {
+                                groupingCell.append('<p class="grouped"><a class="group-desc sortSpan group_acc_link"></a>' + groupTitle + ': ' + groupedText + '</p></td>');
+                                break;
                             }
                         }
                     }
                 }
+                foundDiff = false;
+                groupedDiff = [gridData.groupedBy.length];
             }
-            var tr = $('<tr></tr>').appendTo(contentTBody);
+            var tr = $('<tr class="data-row"></tr>').appendTo(contentTBody);
             if (i % 2) {
                 tr.addClass('alt-row');
                 if (rows && rows.alternateRows && rows.alternateRows.constructor === Array)
@@ -1091,18 +1091,19 @@ var grid = (function _grid($) {
     function addValueToAggregations(gridId, field, value, aggregationObj) {
         var text, total;
         if (!aggregationObj[field]) aggregationObj[field] = {};
-        aggregationObj.items = aggregationObj.items ? aggregationObj.items++ : 1;
         switch (gridState[gridId].aggregates[field].type) {
             case 'count':
                 aggregationObj[field].value =(aggregationObj[field].value || 0) + 1;
                 aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + aggregationObj[field].value;
                 return;
             case 'average':
-                total = aggregationObj[field].total ? aggregationObj[field].total + 1 : 1;
+                var count = aggregationObj[field].count ? aggregationObj[field].count + 1 : 1;
                 value = parseFloat(value.toString());
-                var avg = parseFloat(parseFloat((aggregationObj[field].value || 0) + value)/total);
+                total = aggregationObj[field].total ? aggregationObj[field].total + value : value;
+                var avg = parseFloat(parseFloat(total/count));
                 text = getFormattedCellText(gridId, field, avg.toFixed(2)) || avg.toFixed(2);
                 aggregationObj[field].total = total;
+                aggregationObj[field].count = count;
                 aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
                 aggregationObj[field].value = avg;
                 return;
@@ -1463,7 +1464,7 @@ var grid = (function _grid($) {
             cell.text('');
 
             if (gridState[id].updating) return;
-            var index = cell.parents('tr').index(),
+            var index = cell.parents('tr').index('.data-row'),
                 field = cell.data('field'),
                 type = gridState[id].columns[field].type || '',
                 val = gridState[id].dataSource.data[index][field],
@@ -1547,7 +1548,7 @@ var grid = (function _grid($) {
             if (gridContent.find('.invalid').length) return;
             var cell = $(e.currentTarget);
             cell.text('');
-            var index = cell.parents('tr').index();
+            var index = cell.parents('tr').index('.data-row');
             var field = cell.data('field');
             if (gridState[id].updating) return;		//can't edit a cell if the grid is updating
 
@@ -1716,7 +1717,7 @@ var grid = (function _grid($) {
         var gridContent = input.parents('.grid-wrapper').find('.grid-content-div'),
             cell = input.parents('td'),
             id = gridContent.data('grid_content_id'),
-            index = cell.parents('tr').index(),
+            index = cell.parents('tr').index('.data-row'),
             field = cell.data('field'),
             type = gridState[id].columns[field].type || '',
             saveVal, re,
@@ -1769,7 +1770,7 @@ var grid = (function _grid($) {
             parentCell = select.parents('td');
         select.remove();
         var id = gridContent.data('grid_content_id'),
-            index = parentCell.parents('tr').index(),
+            index = parentCell.parents('tr').index('.data-row'),
             field = parentCell.data('field'),
             type = gridState[id].columns[field].type || '',
             displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field],
@@ -1905,7 +1906,7 @@ var grid = (function _grid($) {
                         var item = $(val);
                         groupElements.push({
                             field: item.data('field'),
-                            sortDirection: item.hasClass('sort-asc') ? 'asc' : 'desc'
+                            sortDirection: item.find('.groupSortSpan').hasClass('sort-asc-white') ? 'asc' : 'desc'
                         });
                     });
                     if (!groupElements.length) groupMenuBar.text(groupMenuText);
@@ -3500,7 +3501,8 @@ var grid = (function _grid($) {
         if (!format) return num;
         var formatSections = [];
         var dataSections = [];
-        var formatObject = (~format.indexOf('P') || ~format.indexOf('C')) ? createCurrencyOrPercentFormat(format) : verifyFormat(format);
+        format = format.toUpperCase();
+        var formatObject = (~format.indexOf('P') || ~format.indexOf('C') || ~format.indexOf('N')) ? createCurrencyNumberOrPercentFormat(format) : verifyFormat(format);
         format = formatObject.value;
 
         var formatDecimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length;
@@ -3608,12 +3610,12 @@ var grid = (function _grid($) {
      * @param {string} format - A string denoting the currency or percent a value in a field should take.
      * @returns {object} - Returns an object containing the normalized format string, as well as metadata on how to treat the value to be formatted.
      */
-    function createCurrencyOrPercentFormat(format) {
+    function createCurrencyNumberOrPercentFormat(format) {
         var charStripper = '\\d{0,2}]',
-            cOrP = ~format.indexOf('P') ? 'P' : 'C';
-        format = format.split(cOrP);
+            cPOrN = ~format.indexOf('P') ? 'P' : ~format.indexOf('N') ? 'N' : 'C';
+        format = format.split(cPOrN);
         var wholeNums = verifyFormat(format[0]),
-            re = new RegExp('[^' + cOrP + charStripper, 'g');
+            re = new RegExp('[^' + cPOrN + charStripper, 'g');
         format = format[1].replace(re, '');
         var numDecimals = 2, newFormat;
         if (format.length)
@@ -3621,20 +3623,22 @@ var grid = (function _grid($) {
 
         if (wholeNums.value)
             newFormat = numDecimals ? wholeNums.value + '.' : wholeNums.value;
-        else if (numDecimals && cOrP === 'C')
+        else if (numDecimals && cPOrN === 'C')
             newFormat = '0.';
-        else if (numDecimals && cOrP === 'P')
+        else if (numDecimals && cPOrN === 'P')
             newFormat = '00.';
-        else newFormat = cOrP === 'C' ? '0' : '00';
+        else if (numDecimals && cPOrN === 'N')
+            newFormat = '0.';
+        else newFormat = cPOrN === 'C' || cPOrN === 'N' ? '0' : '00';
 
         for (var i = 0; i < numDecimals; i++) {
             newFormat += '0';
         }
         return { value: newFormat,
             shouldInsertSeparators: wholeNums.shouldInsertSeparators,
-            alterer: cOrP == 'C' ? null : x100,
-            prependedSymbol: cOrP === 'C' ? '$' : '',
-            appendedSymbol: cOrP === 'P' ? '%' : ''
+            alterer: cPOrN === 'C' || cPOrN === 'N' ? null : x100,
+            prependedSymbol: cPOrN === 'C' ? '$' : '',
+            appendedSymbol: cPOrN === 'P' ? '%' : ''
         };
     }
 

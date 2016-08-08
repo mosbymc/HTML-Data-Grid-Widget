@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.39</p>
+      <p class="stat">55.38</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3072</p>
+      <p class="stat">3077</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">201.31</p>
+      <p class="stat">201.40</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">66.73</p>
+      <p class="stat">66.93</p>
     </div>
   </div>
 </div>
@@ -696,66 +696,67 @@
                         foundDiff = true;
                     }
                     else {
-                        if (!q || groupedDiff[q - 1]) groupedDiff[q] = 0;
+                        if (!q || !groupedDiff[q - 1]) groupedDiff[q] = 0;
                         else groupedDiff[q] = 1;
                     }
                 }
-                if (foundDiff &amp;&amp; i) {
-                    var idx = groupedDiff.length;
-                    for (var p = groupedDiff.length - 1; p &gt;= 0; p--) {
-                        if (groupedDiff[p]) {
-                            if (p !== 0 &amp;&amp; gridData.groupAggregations[p - 1].items === 1) {
-                                gridData.groupAggregations[idx - 1] = {};
-                                idx--;
-                                continue;
+                if (foundDiff &amp;&amp; i) {   
+                    for (var p = groupedDiff.length - 1; p &gt;= 0; p--) {     
+                        var numItems = gridData.groupAggregations[p].items; 
+                        if (groupedDiff[p]) {                               
+                            var groupAggregateRow = $(&#039;&lt;tr class=&quot;grouped_row_header&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
+                            for (var w = 0; w &lt; groupedDiff.length; w++) {
+                                groupAggregateRow.append(&#039;&lt;td colspan=&quot;1&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
                             }
-                            while (idx &gt; p) {
-                                var groupAggregateRow = $(&#039;&lt;tr class=&quot;grouped_row_header&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
-                                for (var w = 0; w &lt; groupedDiff.length; w++) {
-                                    groupAggregateRow.append(&#039;&lt;td colspan=&quot;1&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
+                            for (var item in gridData.groupAggregations[p]) {
+                                if (item !== &#039;items&#039;) {
+                                    groupAggregateRow.append(&#039;&lt;td class=&quot;group_aggregate_cell&quot;&gt;&#039; + (gridData.groupAggregations[p][item].text || &#039;&#039;) + &#039;&lt;/td&gt;&#039;);
                                 }
-                                for (var item in gridData.groupAggregations[idx - 1]) {
-                                    if (item !== &#039;items&#039;) {
-                                        groupAggregateRow.append(&#039;&lt;td class=&quot;group_aggregate_cell&quot;&gt;&#039; + (gridData.groupAggregations[idx - 1][item].text || &#039;&#039;) + &#039;&lt;/td&gt;&#039;);
-                                    }
-                                }
-                                gridData.groupAggregations[idx - 1] = {};
-                                idx--;
                             }
-                            break;
+                            gridData.groupAggregations[p] = {       
+                                items: 0
+                            };
+                            for (var r = p - 1; r &gt;= 0; r--) {  
+                                if (groupedDiff[r] &amp;&amp; gridData.groupAggregations[r].items == numItems) {    
+                                    groupedDiff[r] = 0;
+                                    gridData.groupAggregations[r] = {
+                                        items: 0
+                                    };
+                                }
+                            }
                         }
                     }
                 }
                 for (var b = 0; b &lt; groupedDiff.length; b++) {
-                    if (!gridData.groupAggregations[b]) gridData.groupAggregations[b] = {};
-                    if (!groupedDiff[b]) {
-                        for (var c in gridData.columns) {
-                            addValueToAggregations(id, c, gridData.dataSource.data[i][c], gridData.groupAggregations[b]);
-                        }
+                    if (!gridData.groupAggregations[b]) {
+                        gridData.groupAggregations[b] = {
+                            items: 0
+                        };
                     }
-                    else {
-                        if (groupedDiff[b]) {
-                            for (var ff in gridData.columns) {
-                                addValueToAggregations(id, ff, gridData.dataSource.data[i][ff], gridData.groupAggregations[b]);
-                            }
-                            var groupedText = getFormattedCellText(id, gridData.groupedBy[b].field, gridData.dataSource.data[i][gridData.groupedBy[b].field]) ||
-                                gridData.dataSource.data[i][gridData.groupedBy[b].field];
-                            var groupTr = $(&#039;&lt;tr class=&quot;grouped_row_header&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
-                            var groupTitle = gridData.columns[gridData.groupedBy[b].field].title || gridData.groupedBy[b].field;
-                            for (var u = 0; u &lt;= b; u++) {
-                                var indent = u === b ? (columns.length + gridData.groupedBy.length - u) : 1;
-                                groupTr.data(&#039;group-indent&#039;, indent);
-                                var groupingCell = $(&#039;&lt;td colspan=&quot;&#039; + indent + &#039;&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;).appendTo(groupTr);
-                                if (u === b) {
-                                    groupingCell.append(&#039;&lt;p class=&quot;grouped&quot;&gt;&lt;a class=&quot;group-desc sortSpan group_acc_link&quot;&gt;&lt;/a&gt;&#039; + groupTitle + &#039;: &#039; + groupedText + &#039;&lt;/p&gt;&lt;/td&gt;&#039;);
-                                    break;
-                                }
+                    for (var c in gridData.columns) {
+                        addValueToAggregations(id, c, gridData.dataSource.data[i][c], gridData.groupAggregations[b]);
+                    }
+                    gridData.groupAggregations[b].items++;
+                    if (groupedDiff[b]) {
+                        var groupedText = getFormattedCellText(id, gridData.groupedBy[b].field, gridData.dataSource.data[i][gridData.groupedBy[b].field]) ||
+                            gridData.dataSource.data[i][gridData.groupedBy[b].field];
+                        var groupTr = $(&#039;&lt;tr class=&quot;grouped_row_header&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
+                        var groupTitle = gridData.columns[gridData.groupedBy[b].field].title || gridData.groupedBy[b].field;
+                        for (var u = 0; u &lt;= b; u++) {
+                            var indent = u === b ? (columns.length + gridData.groupedBy.length - u) : 1;
+                            groupTr.data(&#039;group-indent&#039;, indent);
+                            var groupingCell = $(&#039;&lt;td colspan=&quot;&#039; + indent + &#039;&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;).appendTo(groupTr);
+                            if (u === b) {
+                                groupingCell.append(&#039;&lt;p class=&quot;grouped&quot;&gt;&lt;a class=&quot;group-desc sortSpan group_acc_link&quot;&gt;&lt;/a&gt;&#039; + groupTitle + &#039;: &#039; + groupedText + &#039;&lt;/p&gt;&lt;/td&gt;&#039;);
+                                break;
                             }
                         }
                     }
                 }
+                foundDiff = false;
+                groupedDiff = [gridData.groupedBy.length];
             }
-            var tr = $(&#039;&lt;tr&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
+            var tr = $(&#039;&lt;tr class=&quot;data-row&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
             if (i % 2) {
                 tr.addClass(&#039;alt-row&#039;);
                 if (rows &amp;&amp; rows.alternateRows &amp;&amp; rows.alternateRows.constructor === Array)
@@ -866,18 +867,19 @@
     function addValueToAggregations(gridId, field, value, aggregationObj) {
         var text, total;
         if (!aggregationObj[field]) aggregationObj[field] = {};
-        aggregationObj.items = aggregationObj.items ? aggregationObj.items++ : 1;
         switch (gridState[gridId].aggregates[field].type) {
             case &#039;count&#039;:
                 aggregationObj[field].value =(aggregationObj[field].value || 0) + 1;
                 aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + aggregationObj[field].value;
                 return;
             case &#039;average&#039;:
-                total = aggregationObj[field].total ? aggregationObj[field].total + 1 : 1;
+                var count = aggregationObj[field].count ? aggregationObj[field].count + 1 : 1;
                 value = parseFloat(value.toString());
-                var avg = parseFloat(parseFloat((aggregationObj[field].value || 0) + value)/total);
+                total = aggregationObj[field].total ? aggregationObj[field].total + value : value;
+                var avg = parseFloat(parseFloat(total/count));
                 text = getFormattedCellText(gridId, field, avg.toFixed(2)) || avg.toFixed(2);
                 aggregationObj[field].total = total;
+                aggregationObj[field].count = count;
                 aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
                 aggregationObj[field].value = avg;
                 return;
@@ -1207,7 +1209,7 @@
             cell.text(&#039;&#039;);
 
             if (gridState[id].updating) return;
-            var index = cell.parents(&#039;tr&#039;).index(),
+            var index = cell.parents(&#039;tr&#039;).index(&#039;.data-row&#039;),
                 field = cell.data(&#039;field&#039;),
                 type = gridState[id].columns[field].type || &#039;&#039;,
                 val = gridState[id].dataSource.data[index][field],
@@ -1285,7 +1287,7 @@
             if (gridContent.find(&#039;.invalid&#039;).length) return;
             var cell = $(e.currentTarget);
             cell.text(&#039;&#039;);
-            var index = cell.parents(&#039;tr&#039;).index();
+            var index = cell.parents(&#039;tr&#039;).index(&#039;.data-row&#039;);
             var field = cell.data(&#039;field&#039;);
             if (gridState[id].updating) return;		
 
@@ -1414,7 +1416,7 @@
         var gridContent = input.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-content-div&#039;),
             cell = input.parents(&#039;td&#039;),
             id = gridContent.data(&#039;grid_content_id&#039;),
-            index = cell.parents(&#039;tr&#039;).index(),
+            index = cell.parents(&#039;tr&#039;).index(&#039;.data-row&#039;),
             field = cell.data(&#039;field&#039;),
             type = gridState[id].columns[field].type || &#039;&#039;,
             saveVal, re,
@@ -1458,7 +1460,7 @@
             parentCell = select.parents(&#039;td&#039;);
         select.remove();
         var id = gridContent.data(&#039;grid_content_id&#039;),
-            index = parentCell.parents(&#039;tr&#039;).index(),
+            index = parentCell.parents(&#039;tr&#039;).index(&#039;.data-row&#039;),
             field = parentCell.data(&#039;field&#039;),
             type = gridState[id].columns[field].type || &#039;&#039;,
             displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field],
@@ -1585,7 +1587,7 @@
                         var item = $(val);
                         groupElements.push({
                             field: item.data(&#039;field&#039;),
-                            sortDirection: item.hasClass(&#039;sort-asc&#039;) ? &#039;asc&#039; : &#039;desc&#039;
+                            sortDirection: item.find(&#039;.groupSortSpan&#039;).hasClass(&#039;sort-asc-white&#039;) ? &#039;asc&#039; : &#039;desc&#039;
                         });
                     });
                     if (!groupElements.length) groupMenuBar.text(groupMenuText);
@@ -2951,7 +2953,8 @@
         if (!format) return num;
         var formatSections = [];
         var dataSections = [];
-        var formatObject = (~format.indexOf(&#039;P&#039;) || ~format.indexOf(&#039;C&#039;)) ? createCurrencyOrPercentFormat(format) : verifyFormat(format);
+        format = format.toUpperCase();
+        var formatObject = (~format.indexOf(&#039;P&#039;) || ~format.indexOf(&#039;C&#039;) || ~format.indexOf(&#039;N&#039;)) ? createCurrencyNumberOrPercentFormat(format) : verifyFormat(format);
         format = formatObject.value;
 
         var formatDecimalIndex = ~format.indexOf(&#039;.&#039;) ? format.indexOf(&#039;.&#039;) : format.length;
@@ -3049,12 +3052,12 @@
         };
     }
 
-    function createCurrencyOrPercentFormat(format) {
+    function createCurrencyNumberOrPercentFormat(format) {
         var charStripper = &#039;\\d{0,2}]&#039;,
-            cOrP = ~format.indexOf(&#039;P&#039;) ? &#039;P&#039; : &#039;C&#039;;
-        format = format.split(cOrP);
+            cPOrN = ~format.indexOf(&#039;P&#039;) ? &#039;P&#039; : ~format.indexOf(&#039;N&#039;) ? &#039;N&#039; : &#039;C&#039;;
+        format = format.split(cPOrN);
         var wholeNums = verifyFormat(format[0]),
-            re = new RegExp(&#039;[^&#039; + cOrP + charStripper, &#039;g&#039;);
+            re = new RegExp(&#039;[^&#039; + cPOrN + charStripper, &#039;g&#039;);
         format = format[1].replace(re, &#039;&#039;);
         var numDecimals = 2, newFormat;
         if (format.length)
@@ -3062,20 +3065,22 @@
 
         if (wholeNums.value)
             newFormat = numDecimals ? wholeNums.value + &#039;.&#039; : wholeNums.value;
-        else if (numDecimals &amp;&amp; cOrP === &#039;C&#039;)
+        else if (numDecimals &amp;&amp; cPOrN === &#039;C&#039;)
             newFormat = &#039;0.&#039;;
-        else if (numDecimals &amp;&amp; cOrP === &#039;P&#039;)
+        else if (numDecimals &amp;&amp; cPOrN === &#039;P&#039;)
             newFormat = &#039;00.&#039;;
-        else newFormat = cOrP === &#039;C&#039; ? &#039;0&#039; : &#039;00&#039;;
+        else if (numDecimals &amp;&amp; cPOrN === &#039;N&#039;)
+            newFormat = &#039;0.&#039;;
+        else newFormat = cPOrN === &#039;C&#039; || cPOrN === &#039;N&#039; ? &#039;0&#039; : &#039;00&#039;;
 
         for (var i = 0; i &lt; numDecimals; i++) {
             newFormat += &#039;0&#039;;
         }
         return { value: newFormat,
             shouldInsertSeparators: wholeNums.shouldInsertSeparators,
-            alterer: cOrP == &#039;C&#039; ? null : x100,
-            prependedSymbol: cOrP === &#039;C&#039; ? &#039;$&#039; : &#039;&#039;,
-            appendedSymbol: cOrP === &#039;P&#039; ? &#039;%&#039; : &#039;&#039;
+            alterer: cPOrN === &#039;C&#039; || cPOrN === &#039;N&#039; ? null : x100,
+            prependedSymbol: cPOrN === &#039;C&#039; ? &#039;$&#039; : &#039;&#039;,
+            appendedSymbol: cPOrN === &#039;P&#039; ? &#039;%&#039; : &#039;&#039;
         };
     }
 

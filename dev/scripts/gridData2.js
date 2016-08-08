@@ -76,7 +76,7 @@ var gridData = {
         Labor: {
             type: "number",
             template: "{{data}} hour(s)",
-            format: '###.##',
+            format: 'n2',
             editable: 'drop-down',
             options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
             width: 160,
