@@ -199,6 +199,43 @@ var grid = (function _grid($) {
                     writable: false,
                     configurable: false
                 },
+                'hideColumn': {
+                    value: function _hideColumn(col) {
+                        if (~gridState[gridId].columns[col]) {
+                            gridState[gridId].columns[col].isHidden = true;
+                            gridState[gridId].grid.find('[data-field="' + col + '"]').css('display', 'none');
+                            var colGroups = gridState[gridId].grid.find('colgroup');
+                            var group1 = $(colGroups[0]).find('col');
+                            var group2 = $(colGroups[1]).find('col');
+                            if (gridState[gridId].groupedBy.length) {
+                                for (var i = 0; i < group1.length; i++) {
+                                    if (!group1[i].hasClass('group_col')) {
+                                        $(group1[i]).remove();
+                                        $(group2[i]).remove();
+                                    }
+                                }
+                            }
+                            else {
+                                $(group1[0]).remove();
+                                $(group2[0]).remove();
+                            }
+                        }
+                    },
+                    writable: false,
+                    configurable: false
+                },
+                'showColumn': {
+                    value: function _showColumn(col) {
+                        if (~gridState[gridId].columns[col] && gridState[gridId].columns[col].isHidden) {
+                            gridState[gridId].columns[col].isHidden = false;
+                            gridState[gridId].grid.find('[data-field="' + col + '"]').css('display', '');
+                            gridState[gridId].grid.find('colgroup').append('col');
+                            setColWidth(gridState[gridId], gridState[gridId].grid);
+                        }
+                    },
+                    writable: false,
+                    configurable: false
+                },
                 'getAggregates': {
                     value: function _getAggregates() {
                         return gridState[gridId].gridAggregations;
@@ -1271,8 +1308,10 @@ var grid = (function _grid($) {
             columnList = [];
         var tableDiv = gridElem.find('.grid-header-wrapper');
         for (name in gridData.columns) {
-            columnNames[name] = isNumber(gridData.columns[name].width) ? gridData.columns[name].width : null;
-            columnList.push(name);
+            if (!gridData.columns[name].isHidden) {
+                columnNames[name] = isNumber(gridData.columns[name].width) ? gridData.columns[name].width : null;
+                columnList.push(name);
+            }
         }
         var colGroups = tableDiv.find('col');
 
@@ -1621,6 +1660,10 @@ var grid = (function _grid($) {
                 if (gridState[gridId].editable) {
                     newMenu.append($('<ul class="menu-list"></ul>').append(createSaveDeleteMenuItems(gridId)));
                 }
+                if (gridState[gridId].columnToggle) {
+                    newMenu.append($('<hr/>'));
+                    newMenu.append($('<ul class="menu-list"></ul>').append(createColumnToggleMenuOptions()));
+                }
                 if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable || gridState[gridId].groupable) {
                     newMenu.append($('<hr/>'));
                     if (gridState[gridId].sortable) newMenu.append($('<ul class="menu-list"></ul>').append(createSortMenuItem()));
@@ -1773,6 +1816,10 @@ var grid = (function _grid($) {
         gridState[gridId].groupedBy = [];
         gridState[gridId].pageRequest.eventType = 'group';
         preparePageDataGetRequest(gridId);
+    }
+
+    function createColumnToggleMenuOptions() {
+
     }
 
     function createGridFooter(gridData, gridElem) {

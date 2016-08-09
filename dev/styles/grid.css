@@ -1021,6 +1021,7 @@ input {
 }
 .menu_item {
   min-width: 150px;
+  padding-right: 12px;
 }
 .menu_item:hover {
   background-color: #0aaaf1;
@@ -1035,7 +1036,7 @@ input {
   background-color: #0aaaf1;
 }
 .menu_arrow {
-  margin-top: 3px;
+  margin-top: 4px;
   float: right;
   background: rgba(0, 0, 0, 0) url('../images/arrowRight.svg') no-repeat;
   width: 12px;

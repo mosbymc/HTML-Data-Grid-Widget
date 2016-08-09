@@ -9,6 +9,7 @@ var gridData = {
     filterable: true,
     selectable: 'multi-row',
     excelExport: true,
+    columnToggle: true,
     pagingOptions: [25, 50, 100],
     menu: ['filter', 'excel', 'save', 'sort', 'selection'],
     //pageSize: 50,
@@ -20,8 +21,7 @@ var gridData = {
             type: "average"
         },
         Cost: {
-            type: "max",
-            template: "${{data}}"
+            type: "max"
         },
         Date: {
             type: ""
@@ -39,8 +39,7 @@ var gridData = {
             type: ""
         },
         Billed: {
-            type: "total",
-            template: "${{data}}"
+            type: "total"
         },
         Markup: {
             type: ""
