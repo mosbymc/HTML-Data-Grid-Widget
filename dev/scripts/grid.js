@@ -2143,7 +2143,7 @@ var grid = (function _grid($) {
 
             if (!menu.length) {
                 //TODO: this needs to eventually be pushed into its own function and check all grid config options to display in the menu
-                newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu" data-grid_id="' + gridId + '"></div>');
+                newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu" data-grid_id="' + gridId + '" style="z-index: 2"></div>');
                 if (gridState[gridId].editable) {
                     newMenu.append($('<ul class="menu-list"></ul>').append(createSaveDeleteMenuItems(gridId)));
                 }
@@ -2169,7 +2169,8 @@ var grid = (function _grid($) {
                         if (!elem.parents('.grid_menu').length && !elem.parents('.menu_item_options').length) {
                             var gridMenu = $('.grid_menu');
                             gridMenu.addClass('hiddenMenu');
-                            gridMenu.find('.menu_item_options').addClass('hidden_menu_item');
+                            //gridMenu.find('.menu_item_options').addClass('hidden_menu_item');
+                            //toggle(gridMenu.find('.menu_item_options'));
                         }
                     }
                 });
@@ -2319,7 +2320,7 @@ var grid = (function _grid($) {
         menuItem.on('mouseover', function columnToggleMenuItemHoverHandler() {
             var toggleOptions = gridState[gridId].grid.find('#toggle_grid_id_' + gridId);
             if (!toggleOptions.length) {
-                toggleOptions = $('<div id="toggle_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '"></div>');
+                toggleOptions = $('<div id="toggle_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '" style="display: none; z-index: 1"></div>');
                 var columnList = $('<ul class="menu-list"></ul>');
                 for (var col in gridState[gridId].columns) {
                     var fieldName = gridState[gridId].columns.field || col;
@@ -2336,12 +2337,15 @@ var grid = (function _grid($) {
                 toggleOptions.append(columnList);
                 menuItem.append(toggleOptions);
             }
-            else toggleOptions.removeClass('hidden_menu_item');
+            //else toggleOptions.removeClass('hidden_menu_item');
 
             var groupAnchorOffset = menuAnchor.offset(),
                 newMenuOffset = menu.offset();
-            toggleOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
-            toggleOptions.css('left', (newMenuOffset.left + menu.outerWidth() - 1 - $(window).scrollLeft()));
+            toggleOptions.css('top', groupAnchorOffset.top);
+            toggleOptions.css('left', newMenuOffset.left + (menu.outerWidth() - toggleOptions.outerWidth()));
+            //toggleOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
+            //toggleOptions.css('left', (newMenuOffset.left + menu.outerWidth() - 1 - $(window).scrollLeft()));
+            toggle(toggleOptions, { duration: 200 });
         });
         menuItem.on('mouseout', function columnToggleItemHoverHandler(evt) {
             var toggleOptions = $('#toggle_grid_id_' + gridId),
@@ -2352,11 +2356,13 @@ var grid = (function _grid($) {
                     var groupElementOffset = menuItem.offset();
                     if (e.pageX >= groupElementOffset.left && e.pageX <= (groupElementOffset.left + menuItem.outerWidth()) && e.pageY >= groupElementOffset.top &&
                         e.pageY <= (groupElementOffset.top + menuItem.outerHeight())) return;
-                    gridState[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
+                    toggle(toggleOptions, { duration: 200 });
+                    //gridState[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
                 });
             }
             else {
-                gridState[gridId].grid.find('#toggle_grid_id_' + gridId).addClass('hidden_menu_item');
+                toggle(toggleOptions, { duration: 200 });
+                //gridState[gridId].grid.find('#toggle_grid_id_' + gridId).addClass('hidden_menu_item');
             }
         });
         menuItem.append(menuAnchor);

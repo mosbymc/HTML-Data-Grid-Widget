@@ -1,5 +1,7 @@
 function toggle(element, options) {
     element = $(element);
+    if (element.hasClass('sliding')) return;
+    else element.addClass('sliding');
     options = typeof options === 'object' ? options : {};
     options.duration = options.duration || 500;
     options.direction = options.direction || 'horizontal';
@@ -23,28 +25,16 @@ function toggle(element, options) {
             style = options.direction === 'horizontal' ? 'left' : 'top';
 
         if(options.duration <= elapsedTicks) {
-            if(options.open) {
-                elem.css(style, (options.startLoc + options.slideDistance));
-                elem.css('overflow', 'auto');
-            }
-            else {
-                elem.css(style, (options.startLoc - options.slideDistance));
-                elem.css('display', 'none');
-            }
+            if(options.open) elem.css(style, (options.startLoc + options.slideDistance)).css('overflow', 'auto').removeClass('sliding');
+            else elem.css(style, (options.startLoc - options.slideDistance)).css('display', 'none').removeClass('sliding');
             return;
         }
 
         timeRemaining -= elapsedTicks;
         var newSlidePos = Math.round((elapsedTicks/options.duration) * options.slideDistance);
 
-        if(options.open) {
-            console.log('StepOut: ' + (options.startLoc - options.slideDistance + newSlidePos + elem.width()))
-            elem.css(style, options.startLoc - options.slideDistance + newSlidePos + elem.width());
-        }
-        else {
-            console.log('StepIn: ' + (options.startLoc + options.slideDistance - newSlidePos - elem.width()));
-            elem.css(style, options.startLoc + options.slideDistance - newSlidePos - elem.width());
-        }
+        if(options.open) elem.css(style, options.startLoc - options.slideDistance + newSlidePos + elem.width());
+        else elem.css(style, options.startLoc + options.slideDistance - newSlidePos - elem.width());
         setTimeout(function animateTimer() {
             animate(elem, options, timeRemaining, startTick);
         }, 33);
