@@ -203,7 +203,7 @@ var grid = (function _grid($) {
                     value: function _hideColumn(col) {
                         if (~gridState[gridId].columns[col]) {
                             gridState[gridId].columns[col].isHidden = true;
-                            gridState[gridId].grid.find('[data-field="' + col + '"]').css('display', 'none');
+                            gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', 'none');
                             var colGroups = gridState[gridId].grid.find('colgroup');
                             var group1 = $(colGroups[0]).find('col');
                             var group2 = $(colGroups[1]).find('col');
@@ -228,7 +228,7 @@ var grid = (function _grid($) {
                     value: function _showColumn(col) {
                         if (~gridState[gridId].columns[col] && gridState[gridId].columns[col].isHidden) {
                             gridState[gridId].columns[col].isHidden = false;
-                            gridState[gridId].grid.find('[data-field="' + col + '"]').css('display', '');
+                            gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
                             gridState[gridId].grid.find('colgroup').append('col');
                             setColWidth(gridState[gridId], gridState[gridId].grid);
                         }
@@ -1662,7 +1662,7 @@ var grid = (function _grid($) {
                 }
                 if (gridState[gridId].columnToggle) {
                     newMenu.append($('<hr/>'));
-                    newMenu.append($('<ul class="menu-list"></ul>').append(createColumnToggleMenuOptions()));
+                    newMenu.append($('<ul class="menu-list"></ul>').append(createColumnToggleMenuOptions(newMenu, gridId)));
                 }
                 if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable || gridState[gridId].groupable) {
                     newMenu.append($('<hr/>'));
@@ -1680,7 +1680,9 @@ var grid = (function _grid($) {
                     var elem = $(e.target);
                     if (!elem.hasClass('grid_menu') && !elem.hasClass('menu_item_options')) {
                         if (!elem.parents('.grid_menu').length && !elem.parents('.menu_item_options').length) {
-                            $('.grid_menu').addClass('hiddenMenu');
+                            var gridMenu = $('.grid_menu');
+                            gridMenu.addClass('hiddenMenu');
+                            gridMenu.find('.menu_item_options').addClass('hidden_menu_item');
                         }
                     }
                 });
@@ -1717,13 +1719,13 @@ var grid = (function _grid($) {
                     gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
                 });
                 exportOptions.append(exportList);
-                gridState[gridId].grid.append(exportOptions);
+                menuItem.append(exportOptions);
             }
             else exportOptions.removeClass('hidden_menu_item');
 
             var groupAnchorOffset = menuAnchor.offset(),
                 newMenuOffset = menu.offset();
-            exportOptions.css('top', (groupAnchorOffset.top - $(window).scrollTop()));
+            exportOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
             exportOptions.css('left', (newMenuOffset.left + menu.outerWidth() - 1 - $(window).scrollLeft()));
         });
         menuItem.on('mouseout', function excelMenuItemHoverHandler(evt) {
@@ -1818,8 +1820,54 @@ var grid = (function _grid($) {
         preparePageDataGetRequest(gridId);
     }
 
-    function createColumnToggleMenuOptions() {
+    function createColumnToggleMenuOptions(menu, gridId) {
+        var menuItem = $('<li class="menu_item"></li>');
+        var menuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Toggle Columns<span class="menu_arrow"/></span></a>');
+        menuItem.on('mouseover', function columnToggleMenuItemHoverHandler() {
+            var toggleOptions = gridState[gridId].grid.find('#toggle_grid_id_' + gridId);
+            if (!toggleOptions.length) {
+                toggleOptions = $('<div id="toggle_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '"></div>');
+                var columnList = $('<ul class="menu-list"></ul>');
+                for (var col in gridState[gridId].columns) {
+                    var fieldName = gridState[gridId].columns.field || col;
+                    var columnOption = $('<li data-value="' + col + '" class="menu_item">');
+                    var columnToggle = $('<span class="excel_span"><input type="checkbox" data-field="' + col + '"> ' + fieldName + '</span>');
+                    columnToggle.appendTo(columnOption);
+                    columnList.append(columnOption);
+                }
+                var options = columnList.find('input');
+                options.on('click', function excelExportItemClickHandler() {
+                    if (this.checked) gridState[gridId].grid[0].grid.hideColumn($(this).data('field'));
+                    else gridState[gridId].grid[0].grid.showColumn($(this).data('field'));
+                });
+                toggleOptions.append(columnList);
+                menuItem.append(toggleOptions);
+            }
+            else toggleOptions.removeClass('hidden_menu_item');
 
+            var groupAnchorOffset = menuAnchor.offset(),
+                newMenuOffset = menu.offset();
+            toggleOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
+            toggleOptions.css('left', (newMenuOffset.left + menu.outerWidth() - 1 - $(window).scrollLeft()));
+        });
+        menuItem.on('mouseout', function columnToggleItemHoverHandler(evt) {
+            var toggleOptions = $('#toggle_grid_id_' + gridId),
+                toggleOptionsOffset = toggleOptions.offset();
+            if (evt.pageX >= toggleOptionsOffset.left && evt.pageX <= (toggleOptionsOffset.left + toggleOptions.width()) && evt.pageY >= toggleOptionsOffset.top &&
+                evt.pageY <= (toggleOptionsOffset.top + toggleOptions.height())) {
+                toggleOptions.one('mouseleave', function(e) {
+                    var groupElementOffset = menuItem.offset();
+                    if (e.pageX >= groupElementOffset.left && e.pageX <= (groupElementOffset.left + menuItem.outerWidth()) && e.pageY >= groupElementOffset.top &&
+                        e.pageY <= (groupElementOffset.top + menuItem.outerHeight())) return;
+                    gridState[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
+                });
+            }
+            else {
+                gridState[gridId].grid.find('#toggle_grid_id_' + gridId).addClass('hidden_menu_item');
+            }
+        });
+        menuItem.append(menuAnchor);
+        return menuItem;
     }
 
     function createGridFooter(gridData, gridElem) {
