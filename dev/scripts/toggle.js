@@ -18,7 +18,6 @@ function toggle(element, options) {
     element.css('overflow', 'hidden');
 
     animate(element, options, options.duration, options.startTime);
-
     function animate(elem, options, timeRemaining, startTick) {
         var curTick = Date.now(),
             elapsedTicks = curTick - startTick,

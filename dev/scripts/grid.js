@@ -2136,14 +2136,15 @@ var grid = (function _grid($) {
         menuAnchor.on('click', function menuAnchorClickHandler(e) {
             e.stopPropagation();	//stop event bubbling so that the click won't bubble to document click handler
             e.preventDefault();
-            var grid = menuAnchor.parents('.grid-wrapper'),
-                menu = grid.find('#menu_id_' + gridId),
+            var menu = gridState[gridId].grid.find('#menu_model_grid_id_' + gridId),
+                //grid = menuAnchor.parents('.grid-wrapper'),
+                //menu = grid.find('#menu_model_grid_id_' + gridId),
                 //menuOptions = ['excelExport'],  //TODO: change this to an object so click or mouseover action can be mapped to each option
                 newMenu;
 
             if (!menu.length) {
                 //TODO: this needs to eventually be pushed into its own function and check all grid config options to display in the menu
-                newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu" data-grid_id="' + gridId + '" style="z-index: 2"></div>');
+                newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu" data-grid_id="' + gridId + '"></div>');
                 if (gridState[gridId].editable) {
                     newMenu.append($('<ul class="menu-list"></ul>').append(createSaveDeleteMenuItems(gridId)));
                 }
@@ -2169,8 +2170,6 @@ var grid = (function _grid($) {
                         if (!elem.parents('.grid_menu').length && !elem.parents('.menu_item_options').length) {
                             var gridMenu = $('.grid_menu');
                             gridMenu.addClass('hiddenMenu');
-                            //gridMenu.find('.menu_item_options').addClass('hidden_menu_item');
-                            //toggle(gridMenu.find('.menu_item_options'));
                         }
                     }
                 });
@@ -2199,7 +2198,7 @@ var grid = (function _grid($) {
         menuItem.on('mouseover', function excelMenuItemHoverHandler() {
             var exportOptions = gridState[gridId].grid.find('#excel_grid_id_' + gridId);
             if (!exportOptions.length) {
-                exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '"></div>');
+                exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '" style="display: none;"></div>');
                 var exportList = $('<ul class="menu-list"></ul>');
                 var gridPage = $('<li data-value="page" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
                 var allData = $('<li data-value="all" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
@@ -2214,17 +2213,28 @@ var grid = (function _grid($) {
                     gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
                 });
                 exportOptions.append(exportList);
-                menuItem.append(exportOptions);
+                gridState[gridId].grid.append(exportOptions);
             }
             else exportOptions.removeClass('hidden_menu_item');
 
-            var groupAnchorOffset = menuAnchor.offset(),
-                newMenuOffset = menu.offset();
-            exportOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
-            exportOptions.css('left', (newMenuOffset.left + menu.outerWidth() - 1 - $(window).scrollLeft()));
+            if (exportOptions.css('display') === 'none') {
+                var groupAnchorOffset = menuAnchor.offset(),
+                    newMenuOffset = menu.offset();
+                exportOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
+                exportOptions.css('left', newMenuOffset.left + (menu.outerWidth() - exportOptions.outerWidth()));
+                toggle(exportOptions, {duration: 200, callback: function checkForMouseOver() {
+
+                }});
+            }
         });
         menuList.on('mouseleave', function excelMenuItemHoverHandler() {
-            gridState[gridId].grid.find('#excel_grid_id_' + gridId).addClass('hidden_menu_item');
+            /*var excelOptions = $('#excel_grid_id_' + gridId),
+                excelOptionsOffset = excelOptions.offset();
+            if (evt.pageX - 5 >= excelOptionsOffset.left && evt.pageX <= (excelOptionsOffset.left + excelOptions.width()) && evt.pageY - 5 >= excelOptionsOffset.top &&
+                evt.pageY <= (excelOptionsOffset.top + excelOptions.height())) {
+                return;
+            }*/
+            toggle($('#excel_grid_id_' + gridId), { duration: 200 });
         });
         menuList.append(menuItem.append(menuAnchor));
         return menuList;
@@ -2309,7 +2319,7 @@ var grid = (function _grid($) {
         menuItem.on('mouseover', function columnToggleMenuItemHoverHandler() {
             var toggleOptions = gridState[gridId].grid.find('#toggle_grid_id_' + gridId);
             if (!toggleOptions.length) {
-                toggleOptions = $('<div id="toggle_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '" style="display: none; z-index: 1"></div>');
+                toggleOptions = $('<div id="toggle_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '" style="display: none;"></div>');
                 var columnList = $('<ul class="menu-list"></ul>');
                 for (var col in gridState[gridId].columns) {
                     var fieldName = gridState[gridId].columns.field || col;
@@ -2324,21 +2334,20 @@ var grid = (function _grid($) {
                     else gridState[gridId].grid[0].grid.showColumn($(this).data('field'));
                 });
                 toggleOptions.append(columnList);
-                menuItem.append(toggleOptions);
+                gridState[gridId].grid.append(toggleOptions);
             }
-            //else toggleOptions.removeClass('hidden_menu_item');
+            if (toggleOptions.css('display') === 'none') {
+                var groupAnchorOffset = menuAnchor.offset(),
+                    newMenuOffset = menu.offset();
+                toggleOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
+                toggleOptions.css('left', newMenuOffset.left + (menu.outerWidth() - toggleOptions.outerWidth()));
+                toggle(toggleOptions, {duration: 200, callback: function checkForMouseOver() {
 
-            var groupAnchorOffset = menuAnchor.offset(),
-                newMenuOffset = menu.offset();
-            toggleOptions.css('top', groupAnchorOffset.top);
-            toggleOptions.css('left', newMenuOffset.left + (menu.outerWidth() - toggleOptions.outerWidth()));
-            //toggleOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
-            //toggleOptions.css('left', (newMenuOffset.left + menu.outerWidth() - 1 - $(window).scrollLeft()));
-            toggle(toggleOptions, { duration: 200 });
+                }});
+            }
         });
         menuList.on('mouseleave', function columnToggleItemHoverHandler() {
-            var toggleOptions = $('#toggle_grid_id_' + gridId);
-            toggle(toggleOptions, { duration: 200 });
+            toggle($('#toggle_grid_id_' + gridId), { duration: 200 });
         });
         menuList.append(menuItem.append(menuAnchor));
         return menuList;

@@ -1010,6 +1010,7 @@ input {
   font-style: normal;
   font-weight: normal;
   line-height: 20px;
+  z-index: 1;
 }
 .hiddenMenu {
   display: none;
@@ -1018,6 +1019,7 @@ input {
   list-style: none;
   padding-left: 0;
   margin: 0 0 0 12px;
+  background-color: #ffffff;
 }
 .menu_item {
   min-width: 150px;
