@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.75</p>
+      <p class="stat">55.70</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3175</p>
+      <p class="stat">3152</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">205.05</p>
+      <p class="stat">203.61</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">69.51</p>
+      <p class="stat">68.65</p>
     </div>
   </div>
 </div>
@@ -1753,7 +1753,7 @@
                 }
                 if (gridState[gridId].columnToggle) {
                     newMenu.append($(&#039;&lt;hr/&gt;&#039;));
-                    newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createColumnToggleMenuOptions(newMenu, gridId)));
+                    newMenu.append(createColumnToggleMenuOptions(newMenu, gridId));
                 }
                 if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable || gridState[gridId].groupable) {
                     newMenu.append($(&#039;&lt;hr/&gt;&#039;));
@@ -1764,7 +1764,7 @@
                 }
                 if (gridState[gridId].excelExport) {
                     newMenu.append($(&#039;&lt;hr/&gt;&#039;));
-                    newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createExcelExportMenuItems(newMenu, gridId)));
+                    newMenu.append(createExcelExportMenuItems(newMenu, gridId));
                 }
                 gridState[gridId].grid.append(newMenu);
                 $(document).on(&#039;click&#039;, function hideMenuHandler(e) {
@@ -1789,6 +1789,7 @@
     }
 
     function createExcelExportMenuItems(menu, gridId) {
+        var menuList = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
         var menuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;);
         var menuAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Export to Excel&lt;span class=&quot;menu_arrow&quot;/&gt;&lt;/span&gt;&lt;/a&gt;&#039;);
         menuItem.on(&#039;mouseover&#039;, function excelMenuItemHoverHandler() {
@@ -1818,24 +1819,11 @@
             exportOptions.css(&#039;top&#039;, (groupAnchorOffset.top - 3 - $(window).scrollTop()));
             exportOptions.css(&#039;left&#039;, (newMenuOffset.left + menu.outerWidth() - 1 - $(window).scrollLeft()));
         });
-        menuItem.on(&#039;mouseout&#039;, function excelMenuItemHoverHandler(evt) {
-            var excelOptions = $(&#039;#excel_grid_id_&#039; + gridId),
-                excelOptionsOffset = excelOptions.offset();
-            if (evt.pageX &gt;= excelOptionsOffset.left &amp;&amp; evt.pageX &lt;= (excelOptionsOffset.left + excelOptions.width()) &amp;&amp; evt.pageY &gt;= excelOptionsOffset.top &amp;&amp;
-                evt.pageY &lt;= (excelOptionsOffset.top + excelOptions.height())) {
-                excelOptions.one(&#039;mouseleave&#039;, function(e) {
-                    var groupElementOffset = menuItem.offset();
-                    if (e.pageX &gt;= groupElementOffset.left &amp;&amp; e.pageX &lt;= (groupElementOffset.left + menuItem.outerWidth()) &amp;&amp; e.pageY &gt;= groupElementOffset.top &amp;&amp;
-                        e.pageY &lt;= (groupElementOffset.top + menuItem.outerHeight())) return;
-                    gridState[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId).addClass(&#039;hidden_menu_item&#039;);
-                });
-            }
-            else {
-                gridState[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId).addClass(&#039;hidden_menu_item&#039;);
-            }
+        menuList.on(&#039;mouseleave&#039;, function excelMenuItemHoverHandler() {
+            gridState[gridId].grid.find(&#039;#excel_grid_id_&#039; + gridId).addClass(&#039;hidden_menu_item&#039;);
         });
-        menuItem.append(menuAnchor);
-        return menuItem;
+        menuList.append(menuItem.append(menuAnchor));
+        return menuList;
     }
 
     function createDeselectMenuOption(gridId) {
@@ -1911,6 +1899,7 @@
     }
 
     function createColumnToggleMenuOptions(menu, gridId) {
+        var menuList = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
         var menuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;);
         var menuAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Toggle Columns&lt;span class=&quot;menu_arrow&quot;/&gt;&lt;/span&gt;&lt;/a&gt;&#039;);
         menuItem.on(&#039;mouseover&#039;, function columnToggleMenuItemHoverHandler() {
@@ -1940,24 +1929,12 @@
             toggleOptions.css(&#039;left&#039;, newMenuOffset.left + (menu.outerWidth() - toggleOptions.outerWidth()));
             toggle(toggleOptions, { duration: 200 });
         });
-        menuItem.on(&#039;mouseout&#039;, function columnToggleItemHoverHandler(evt) {
-            var toggleOptions = $(&#039;#toggle_grid_id_&#039; + gridId),
-                toggleOptionsOffset = toggleOptions.offset();
-            if (evt.pageX &gt;= toggleOptionsOffset.left &amp;&amp; evt.pageX &lt;= (toggleOptionsOffset.left + toggleOptions.width()) &amp;&amp; evt.pageY &gt;= toggleOptionsOffset.top &amp;&amp;
-                evt.pageY &lt;= (toggleOptionsOffset.top + toggleOptions.height())) {
-                toggleOptions.one(&#039;mouseleave&#039;, function(e) {
-                    var groupElementOffset = menuItem.offset();
-                    if (e.pageX &gt;= groupElementOffset.left &amp;&amp; e.pageX &lt;= (groupElementOffset.left + menuItem.outerWidth()) &amp;&amp; e.pageY &gt;= groupElementOffset.top &amp;&amp;
-                        e.pageY &lt;= (groupElementOffset.top + menuItem.outerHeight())) return;
-                    toggle(toggleOptions, { duration: 200 });
-                });
-            }
-            else {
-                toggle(toggleOptions, { duration: 200 });
-            }
+        menuList.on(&#039;mouseleave&#039;, function columnToggleItemHoverHandler() {
+            var toggleOptions = $(&#039;#toggle_grid_id_&#039; + gridId);
+            toggle(toggleOptions, { duration: 200 });
         });
-        menuItem.append(menuAnchor);
-        return menuItem;
+        menuList.append(menuItem.append(menuAnchor));
+        return menuList;
     }
 
     function createGridFooter(gridData, gridElem) {
