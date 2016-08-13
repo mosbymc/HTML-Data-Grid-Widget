@@ -1,13 +1,13 @@
 function toggle(element, options) {
     element = $(element);
-    if (element.hasClass('sliding')) return;
-    else element.addClass('sliding');
     options = typeof options === 'object' ? options : {};
     options.duration = options.duration || 500;
     options.direction = options.direction || 'horizontal';
     options.callback = typeof options.callback === 'function' ? options.callback : function noop(){};
     options.slideDistance = options.direction === 'horizontal' ? element.width() : element.height();
     options.startTime = Date.now();
+    if (element.hasClass('sliding')) options.callback(false);
+    else element.addClass('sliding');
     var elemOffsets = element.offset();
     options.startLoc = options.direction === 'horizontal' ? (elemOffsets.left || parseFloat(element[0].style.left.replace('px', '')))
         : (elemOffsets.top || parseFloat(element[0].style.top.replace('px', '')));
@@ -24,8 +24,14 @@ function toggle(element, options) {
             style = options.direction === 'horizontal' ? 'left' : 'top';
 
         if(options.duration <= elapsedTicks) {
-            if(options.open) elem.css(style, (options.startLoc + options.slideDistance)).css('overflow', 'auto').removeClass('sliding');
-            else elem.css(style, (options.startLoc - options.slideDistance)).css('display', 'none').removeClass('sliding');
+            if(options.open) {
+                elem.css(style, (options.startLoc + options.slideDistance)).css('overflow', 'auto').removeClass('sliding');
+                options.callback(true);
+            }
+            else {
+                elem.css(style, (options.startLoc - options.slideDistance)).css('display', 'none').removeClass('sliding');
+                options.callback(true);
+            }
             return;
         }
 

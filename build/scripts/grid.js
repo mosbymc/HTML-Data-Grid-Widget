@@ -1732,8 +1732,16 @@ var grid = (function _grid($) {
                 }});
             }
         });
-        menuList.on('mouseleave', function excelMenuItemHoverHandler() {
-            toggle($('#excel_grid_id_' + gridId), { duration: 200 });
+        menuList.on('mouseleave', function excelMenuItemHoverHandler(evt) {
+            var excelOptions = $('#excel_grid_id_' + gridId),
+                excelOptionsOffset = excelOptions.offset();
+            if (evt.pageX >= excelOptionsOffset.left && evt.pageX <= (excelOptionsOffset.left + excelOptions.width()) && evt.pageY >= excelOptionsOffset.top &&
+                evt.pageY <= (excelOptionsOffset.top + excelOptions.height())) {
+                return;
+            }
+            setTimeout(function toggleTimeout() {
+                toggle($('#excel_grid_id_' + gridId), { duration: 200 });
+            }, 200);
         });
         menuList.append(menuItem.append(menuAnchor));
         return menuList;
@@ -1840,13 +1848,31 @@ var grid = (function _grid($) {
                     newMenuOffset = menu.offset();
                 toggleOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
                 toggleOptions.css('left', newMenuOffset.left + (menu.outerWidth() - toggleOptions.outerWidth()));
-                toggle(toggleOptions, {duration: 200, callback: function checkForMouseOver() {
-
-                }});
+                toggle(toggleOptions, {duration: 200 });
             }
         });
-        menuList.on('mouseleave', function columnToggleItemHoverHandler() {
-            toggle($('#toggle_grid_id_' + gridId), { duration: 200 });
+        menuList.on('mouseleave', function columnToggleItemHoverHandler(evt) {
+            var toggleOptions = $('#toggle_grid_id_' + gridId),
+                toggleOptionsOffset = toggleOptions.offset();
+            if (evt.pageX >= toggleOptionsOffset.left && evt.pageX <= (toggleOptionsOffset.left + toggleOptions.width()) && evt.pageY >= toggleOptionsOffset.top &&
+                evt.pageY <= (toggleOptionsOffset.top + toggleOptions.height())) {
+                console.log('evt.pageX: ' + evt.pageX);
+                console.log('toggleOptionsOffset.left: ' + toggleOptionsOffset.left);
+                console.log('toggleOptions.width(): ' + toggleOptions.width());
+                console.log('evt.pageY: ' + evt.pageY);
+                console.log('toggleOptionsOffset.top: ' + toggleOptionsOffset.top);
+                console.log('toggleOptions.height(): ' + toggleOptions.height());
+                return;
+            }
+            console.log('evt.pageX: ' + evt.pageX);
+            console.log('toggleOptionsOffset.left: ' + toggleOptionsOffset.left);
+            console.log('toggleOptions.width(): ' + toggleOptions.width());
+            console.log('evt.pageY: ' + evt.pageY);
+            console.log('toggleOptionsOffset.top: ' + toggleOptionsOffset.top);
+            console.log('toggleOptions.height(): ' + toggleOptions.height());
+            setTimeout(function toggleTimeout() {
+                toggle($('#toggle_grid_id_' + gridId), { duration: 200 });
+            }, 215);
         });
         menuList.append(menuItem.append(menuAnchor));
         return menuList;
@@ -2437,8 +2463,7 @@ var grid = (function _grid($) {
         gridData.grid.find('.grid-content-div').empty();
 
         callGridEventHandlers(gridState[id].events.pageRequested, gridData.grid, { element: gridData.grid });
-        if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function')
-            gridData.dataSource.get(requestObj, getPageDataRequestCallback);
+        if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function') gridData.dataSource.get(requestObj, getPageDataRequestCallback);
         else {
             if (!gridData.alteredData) gridData.alteredData = cloneGridData(gridData.originalData);
             getPageData(requestObj, id, getPageDataRequestCallback);
