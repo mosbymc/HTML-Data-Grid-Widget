@@ -2228,14 +2228,14 @@ var grid = (function _grid($) {
             }
         });
         menuList.on('mouseleave', function excelMenuItemHoverHandler(evt) {
-            var excelOptions = $('#excel_grid_id_' + gridId),
-                excelOptionsOffset = excelOptions.offset();
-            if (evt.pageX >= excelOptionsOffset.left && evt.pageX <= (excelOptionsOffset.left + excelOptions.width()) && evt.pageY >= excelOptionsOffset.top &&
-                evt.pageY <= (excelOptionsOffset.top + excelOptions.height())) {
-                return;
-            }
-            setTimeout(function toggleTimeout() {
-                toggle($('#excel_grid_id_' + gridId), { duration: 200 });
+            setTimeout(function detectMouseLeave() {
+                var excelOptions = $('#excel_grid_id_' + gridId),
+                    excelOptionsOffset = excelOptions.offset();
+                if (evt.pageX >= excelOptionsOffset.left && evt.pageX <= (excelOptionsOffset.left + excelOptions.width()) && evt.pageY >= excelOptionsOffset.top &&
+                    evt.pageY <= (excelOptionsOffset.top + excelOptions.height())) {
+                    return;
+                }
+                toggle(excelOptions, { duration: 200 });
             }, 200);
         });
         menuList.append(menuItem.append(menuAnchor));
@@ -2347,28 +2347,15 @@ var grid = (function _grid($) {
             }
         });
         menuList.on('mouseleave', function columnToggleItemHoverHandler(evt) {
-            var toggleOptions = $('#toggle_grid_id_' + gridId),
-                toggleOptionsOffset = toggleOptions.offset();
-            if (evt.pageX >= toggleOptionsOffset.left && evt.pageX <= (toggleOptionsOffset.left + toggleOptions.width()) && evt.pageY >= toggleOptionsOffset.top &&
-                evt.pageY <= (toggleOptionsOffset.top + toggleOptions.height())) {
-                console.log('evt.pageX: ' + evt.pageX);
-                console.log('toggleOptionsOffset.left: ' + toggleOptionsOffset.left);
-                console.log('toggleOptions.width(): ' + toggleOptions.width());
-                console.log('evt.pageY: ' + evt.pageY);
-                console.log('toggleOptionsOffset.top: ' + toggleOptionsOffset.top);
-                console.log('toggleOptions.height(): ' + toggleOptions.height());
-                return;
-            }
-            console.log('evt.pageX: ' + evt.pageX);
-            console.log('toggleOptionsOffset.left: ' + toggleOptionsOffset.left);
-            console.log('toggleOptions.width(): ' + toggleOptions.width());
-            console.log('evt.pageY: ' + evt.pageY);
-            console.log('toggleOptionsOffset.top: ' + toggleOptionsOffset.top);
-            console.log('toggleOptions.height(): ' + toggleOptions.height());
-            //TODO: now that the options div is no longer a child, a simple mouse leave won't work anymore; need to check mouse position
-            setTimeout(function toggleTimeout() {
-                toggle($('#toggle_grid_id_' + gridId), { duration: 200 });
-            }, 215);
+            setTimeout(function detectMouseLeave() {
+                var toggleOptions = $('#toggle_grid_id_' + gridId),
+                    toggleOptionsOffset = toggleOptions.offset();
+                if (evt.pageX >= toggleOptionsOffset.left && evt.pageX <= (toggleOptionsOffset.left + toggleOptions.width()) && evt.pageY >= toggleOptionsOffset.top &&
+                    evt.pageY <= (toggleOptionsOffset.top + toggleOptions.height())) {
+                    return;
+                }
+                toggle(toggleOptions, { duration: 200 });
+            }, 200);
         });
         menuList.append(menuItem.append(menuAnchor));
         return menuList;
