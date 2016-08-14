@@ -1829,7 +1829,7 @@ var grid = (function _grid($) {
                 toggleOptions = $('<div id="toggle_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '" style="display: none;"></div>');
                 var columnList = $('<ul class="menu-list"></ul>');
                 for (var col in gridState[gridId].columns) {
-                    var fieldName = gridState[gridId].columns.field || col;
+                    var fieldName = gridState[gridId].columns[col].title || col;
                     var columnOption = $('<li data-value="' + col + '" class="menu_item">');
                     var columnToggle = $('<span class="excel_span"><input type="checkbox" data-field="' + col + '"> ' + fieldName + '</span>');
                     columnToggle.appendTo(columnOption);
