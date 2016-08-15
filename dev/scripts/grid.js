@@ -2087,46 +2087,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /*var menuOptions = {
-        editable: {
-            items: {
-                save: {
-                    text: 'Save Grid Changes'
-                },
-                delete: {
-                    text: 'Delete Grid Changes'
-                }
-            },
-            type: 'click'
-        },
-        excelExport: {
-            items: {
-                export: {
-                    text: 'Export to Excel'
-                }
-            },
-            type: 'submenu'
-        },
-        sortable: {
-            type: 'click',
-            items: {
-                removeSort: 'Remove Grid Sort'
-            }
-        },
-        filterable: {
-            type: 'click',
-            items: {
-                removeFilter: 'Remove Grid Filter'
-            }
-        },
-        selectable: {
-            type: 'click',
-            items: {
-                removeSelection: 'Remove Grid Selection'
-            }
-        }
-    };*/
-
     /**
      * Creates the menu for the grid's toolbar
      * @param {object} menuAnchor - A DOM anchor element to attach the click handler to
@@ -2137,13 +2097,9 @@ var grid = (function _grid($) {
             e.stopPropagation();	//stop event bubbling so that the click won't bubble to document click handler
             e.preventDefault();
             var menu = gridState[gridId].grid.find('#menu_model_grid_id_' + gridId),
-                //grid = menuAnchor.parents('.grid-wrapper'),
-                //menu = grid.find('#menu_model_grid_id_' + gridId),
-                //menuOptions = ['excelExport'],  //TODO: change this to an object so click or mouseover action can be mapped to each option
                 newMenu;
 
             if (!menu.length) {
-                //TODO: this needs to eventually be pushed into its own function and check all grid config options to display in the menu
                 newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu" data-grid_id="' + gridId + '"></div>');
                 if (gridState[gridId].editable) {
                     newMenu.append($('<ul class="menu-list"></ul>').append(createSaveDeleteMenuItems(gridId)));
@@ -3004,16 +2960,13 @@ var grid = (function _grid($) {
         function getPageDataRequestCallback(response) {
             if (response) {
                 //TODO: create a generic function to validate grid-data data types
-                //TODO: see if the closure will preserve the known values above - might have tried this before because I can't imagine why I wouldn't already be making use of the closure.
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
                 gridData.pageNum = requestObj.pageNum;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy;
-                gridData.groupSortDirection = requestObj.groupSortDirection;
                 gridData.sortedOn = requestObj.sortedOn;
                 gridData.filteredOn = requestObj.filteredOn;
-                gridData.groupingStatusChanged = false;
 
                 if (gridData.pageRequest.eventType === 'newGrid' || 'group')
                     setColWidth(gridData, gridState[id].grid);
@@ -3095,19 +3048,12 @@ var grid = (function _grid($) {
             gridState[id].alteredData = fullGridData;
         }
 
-        if (requestObj.groupedBy && requestObj.groupedBy.length) {
-            var groupedData;
-            if (requestObj.sortedOn && requestObj.sortedOn.length) {
-                groupedData = sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
-            }
-            else groupedData = sortGridData(requestObj.groupedBy, fullGridData || cloneGridData(gridState[id].originalData), id);
-            gridState[id].alteredData = groupedData;
-            limitPageData(requestObj, groupedData, callback);
+        if (requestObj.groupedBy.length || requestObj.sortedOn.length) {
+            var sortedData = sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
+            gridState[id].alteredData = sortedData;
+            limitPageData(requestObj, sortedData, callback);
             return;
         }
-
-        if (requestObj.sortedOn && requestObj.sortedOn.length && (!requestObj.groupedBy || !requestObj.groupedBy.length))
-            fullGridData = sortGridData(requestObj.sortedOn, fullGridData || cloneGridData(gridState[id].originalData), id);
         gridState[id].alteredData = fullGridData;
         limitPageData(requestObj, fullGridData, callback);
     }

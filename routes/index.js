@@ -60,18 +60,11 @@ function determinePageData(requestObj, fullGridData, callback) {
         }
     }
 
-    if (requestObj.groupedBy && requestObj.groupedBy.length) {
-        var groupedData;
-        if (requestObj.sortedOn && requestObj.sortedOn.length) {
-            groupedData = gridDataHelpers.sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData, columns);
-        }
-        else groupedData = gridDataHelpers.sortGridData(requestObj.groupedBy, fullGridData, columns);
-        limitPageData(requestObj, groupedData, callback);
+    if (requestObj.groupedBy.length || requestObj.sortedOn.length) {
+        var sortedData = gridDataHelpers.sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData, columns);
+        limitPageData(requestObj, sortedData, callback);
         return;
     }
-
-    if (requestObj.sortedOn && requestObj.sortedOn.length && !requestObj.groupedBy)
-        fullGridData = gridDataHelpers.sortGridData(requestObj.sortedOn, fullGridData, columns);
     limitPageData(requestObj, fullGridData, callback);
 }
 

@@ -1646,7 +1646,6 @@ var grid = (function _grid($) {
         });
     }
 
-
     function attachMenuClickHandler(menuAnchor, gridId) {
         menuAnchor.on('click', function menuAnchorClickHandler(e) {
             e.stopPropagation();	
@@ -2464,10 +2463,8 @@ var grid = (function _grid($) {
                 gridData.pageNum = requestObj.pageNum;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy;
-                gridData.groupSortDirection = requestObj.groupSortDirection;
                 gridData.sortedOn = requestObj.sortedOn;
                 gridData.filteredOn = requestObj.filteredOn;
-                gridData.groupingStatusChanged = false;
 
                 if (gridData.pageRequest.eventType === 'newGrid' || 'group')
                     setColWidth(gridData, gridState[id].grid);
@@ -2537,19 +2534,12 @@ var grid = (function _grid($) {
             gridState[id].alteredData = fullGridData;
         }
 
-        if (requestObj.groupedBy && requestObj.groupedBy.length) {
-            var groupedData;
-            if (requestObj.sortedOn && requestObj.sortedOn.length) {
-                groupedData = sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
-            }
-            else groupedData = sortGridData(requestObj.groupedBy, fullGridData || cloneGridData(gridState[id].originalData), id);
-            gridState[id].alteredData = groupedData;
-            limitPageData(requestObj, groupedData, callback);
+        if (requestObj.groupedBy.length || requestObj.sortedOn.length) {
+            var sortedData = sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
+            gridState[id].alteredData = sortedData;
+            limitPageData(requestObj, sortedData, callback);
             return;
         }
-
-        if (requestObj.sortedOn && requestObj.sortedOn.length && (!requestObj.groupedBy || !requestObj.groupedBy.length))
-            fullGridData = sortGridData(requestObj.sortedOn, fullGridData || cloneGridData(gridState[id].originalData), id);
         gridState[id].alteredData = fullGridData;
         limitPageData(requestObj, fullGridData, callback);
     }
