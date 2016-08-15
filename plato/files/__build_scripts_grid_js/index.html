@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.87</p>
+      <p class="stat">55.88</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3161</p>
+      <p class="stat">3172</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">203.60</p>
+      <p class="stat">204.12</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">68.93</p>
+      <p class="stat">69.30</p>
     </div>
   </div>
 </div>
@@ -292,9 +292,10 @@
                 },
                 &#039;hideColumn&#039;: {
                     value: function _hideColumn(col) {
-                        if (~gridState[gridId].columns[col]) {
+                        if (gridState[gridId].columns[col]) {
                             gridState[gridId].columns[col].isHidden = true;
                             gridState[gridId].grid.find(&#039;.grid-header-wrapper&#039;).find(&#039;[data-field=&quot;&#039; + col + &#039;&quot;]&#039;).css(&#039;display&#039;, &#039;none&#039;);
+                            gridState[gridId].grid.find(&#039;.grid-content-div&#039;).find(&#039;[data-field=&quot;&#039; + col + &#039;&quot;]&#039;).css(&#039;display&#039;, &#039;none&#039;);
                             var colGroups = gridState[gridId].grid.find(&#039;colgroup&#039;);
                             var group1 = $(colGroups[0]).find(&#039;col&#039;);
                             var group2 = $(colGroups[1]).find(&#039;col&#039;);
@@ -320,6 +321,7 @@
                         if (~gridState[gridId].columns[col] &amp;&amp; gridState[gridId].columns[col].isHidden) {
                             gridState[gridId].columns[col].isHidden = false;
                             gridState[gridId].grid.find(&#039;.grid-header-wrapper&#039;).find(&#039;[data-field=&quot;&#039; + col + &#039;&quot;]&#039;).css(&#039;display&#039;, &#039;&#039;);
+                            gridState[gridId].grid.find(&#039;.grid-content-div&#039;).find(&#039;[data-field=&quot;&#039; + col + &#039;&quot;]&#039;).css(&#039;display&#039;, &#039;&#039;);
                             gridState[gridId].grid.find(&#039;colgroup&#039;).append(&#039;col&#039;);
                             setColWidth(gridState[gridId], gridState[gridId].grid);
                         }
@@ -1771,6 +1773,7 @@
                         if (!elem.parents(&#039;.grid_menu&#039;).length &amp;&amp; !elem.parents(&#039;.menu_item_options&#039;).length) {
                             var gridMenu = $(&#039;.grid_menu&#039;);
                             gridMenu.addClass(&#039;hiddenMenu&#039;);
+                            gridState[gridId].grid.find(&#039;.menu_item_options&#039;).css(&#039;display&#039;, &#039;none&#039;);
                         }
                     }
                 });
@@ -1927,7 +1930,15 @@
                 }
                 var options = columnList.find(&#039;input&#039;);
                 options.on(&#039;click&#039;, function excelExportItemClickHandler() {
-                    if (this.checked) gridState[gridId].grid[0].grid.hideColumn($(this).data(&#039;field&#039;));
+                    var uncheckedCol = false;
+                    $(this).parents(&#039;ul&#039;).find(&#039;input&#039;).each(function findTotalCheckedColumns() {
+                        if (!this.checked) {
+                            uncheckedCol = true;
+                            return false;
+                        }
+                    });
+                    if (uncheckedCol &amp;&amp; this.checked) gridState[gridId].grid[0].grid.hideColumn($(this).data(&#039;field&#039;));
+                    else if (this.checked) this.checked = false;
                     else gridState[gridId].grid[0].grid.showColumn($(this).data(&#039;field&#039;));
                 });
                 toggleOptions.append(columnList);

@@ -388,9 +388,10 @@ var grid = (function _grid($) {
                 },
                 'hideColumn': {
                     value: function _hideColumn(col) {
-                        if (~gridState[gridId].columns[col]) {
+                        if (gridState[gridId].columns[col]) {
                             gridState[gridId].columns[col].isHidden = true;
                             gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', 'none');
+                            gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', 'none');
                             var colGroups = gridState[gridId].grid.find('colgroup');
                             var group1 = $(colGroups[0]).find('col');
                             var group2 = $(colGroups[1]).find('col');
@@ -416,6 +417,7 @@ var grid = (function _grid($) {
                         if (~gridState[gridId].columns[col] && gridState[gridId].columns[col].isHidden) {
                             gridState[gridId].columns[col].isHidden = false;
                             gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
+                            gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
                             gridState[gridId].grid.find('colgroup').append('col');
                             setColWidth(gridState[gridId], gridState[gridId].grid);
                         }
@@ -2126,6 +2128,7 @@ var grid = (function _grid($) {
                         if (!elem.parents('.grid_menu').length && !elem.parents('.menu_item_options').length) {
                             var gridMenu = $('.grid_menu');
                             gridMenu.addClass('hiddenMenu');
+                            gridState[gridId].grid.find('.menu_item_options').css('display', 'none');
                         }
                     }
                 });
@@ -2288,7 +2291,15 @@ var grid = (function _grid($) {
                 }
                 var options = columnList.find('input');
                 options.on('click', function excelExportItemClickHandler() {
-                    if (this.checked) gridState[gridId].grid[0].grid.hideColumn($(this).data('field'));
+                    var uncheckedCol = false;
+                    $(this).parents('ul').find('input').each(function findTotalCheckedColumns() {
+                        if (!this.checked) {
+                            uncheckedCol = true;
+                            return false;
+                        }
+                    });
+                    if (uncheckedCol && this.checked) gridState[gridId].grid[0].grid.hideColumn($(this).data('field'));
+                    else if (this.checked) this.checked = false;
                     else gridState[gridId].grid[0].grid.showColumn($(this).data('field'));
                 });
                 toggleOptions.append(columnList);
