@@ -135,8 +135,6 @@ var grid = (function _grid($) {
             }
         );
 
-
-
         Object.defineProperties(
             gridElem[0].grid, {
                 'bindEvents': {
@@ -227,12 +225,24 @@ var grid = (function _grid($) {
                 },
                 'showColumn': {
                     value: function _showColumn(col) {
-                        if (~gridState[gridId].columns[col] && gridState[gridId].columns[col].isHidden) {
+                        if (gridState[gridId].columns[col] && gridState[gridId].columns[col].isHidden) {
                             gridState[gridId].columns[col].isHidden = false;
                             gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
                             gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
                             gridState[gridId].grid.find('colgroup').append('col');
                             setColWidth(gridState[gridId], gridState[gridId].grid);
+                        }
+                    },
+                    writable: false,
+                    configurable: false
+                },
+                'addColumn': {
+                    value: function _addColumn(column, data) {
+                        if (typeof column !== 'object' || typeof column !== 'string')
+                            return;
+                        var field = typeof column === 'object' ? column.field || '' : column;
+                        if (!gridState[gridId].columns[field]) {
+                            gridState[gridId].dataSource.data.concat(data);
                         }
                     },
                     writable: false,
@@ -1383,6 +1393,8 @@ var grid = (function _grid($) {
                 saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
                 break;
             case 'date':
+                re = new RegExp(dataTypes.date);
+                if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
                 saveVal = displayVal;   
                 break;
             case 'time':
@@ -2902,7 +2914,7 @@ var grid = (function _grid($) {
         '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\22|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\25)((?:1[6-9]|[2-9]\\d)?\\d{2}))))' +
         '|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\29)(29))))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)' +
         '(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$',
-        dateChar: '[\\d\-\\.\\\]'
+        dateChar: '\\d|\\-|\\\|\\.'
     };
 
     events = ['cellEditChange', 'beforeCellEdit', 'afterCellEdit', 'pageRequested', 'beforeDataBind', 'afterDataBind', 'columnReorder'];
