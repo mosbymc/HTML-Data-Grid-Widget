@@ -238,11 +238,29 @@ var grid = (function _grid($) {
                 },
                 'addColumn': {
                     value: function _addColumn(column, data) {
-                        if (typeof column !== 'object' || typeof column !== 'string')
+                        if (typeof column !== 'object' || typeof column !== 'string' || !data || !data.length)
                             return;
-                        var field = typeof column === 'object' ? column.field || '' : column;
+                        var field = typeof column === 'object' ? column.field || 'field' : column;
                         if (!gridState[gridId].columns[field]) {
-                            gridState[gridId].dataSource.data.concat(data);
+                            for (var i = 0; i < gridState[gridId].dataSource.data.length; i++) {
+                                gridState[gridId].dataSource.data[i][field] = data[i] ? data[i] : null;
+                            }
+                            if (typeof column === 'object') gridState[gridId].columns[field] = column;
+                            else {
+                                var newCol = gridState[gridId].columns[field] = {};
+                                newCol.filterable = false;
+                                newCol.editable = false;
+                                newCol.selectable = false;
+                                newCol.title = field;
+                                newCol.type = 'string';
+                            }
+
+                            setColWidth(gridState[gridId], gridState[gridId].grid);
+                            createGridContent(gridState[gridId], gridState[gridId].grid);
+                            gridState[gridId].grid.find('.grid-footer-div').empty();
+                            createGridFooter(gridState[gridId], gridState[gridId].grid);
+                            buildHeaderAggregations(gridId);
+                            gridState[gridId].pageRequest = {};
                         }
                     },
                     writable: false,
