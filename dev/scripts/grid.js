@@ -385,6 +385,10 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'hideColumn': {
+                    /**
+                     * Hides a column that is being displayed in the grid
+                     * @param {string} col - The name of the column to hide
+                     */
                     value: function _hideColumn(col) {
                         if (gridState[gridId].columns[col]) {
                             gridState[gridId].columns[col].isHidden = true;
@@ -411,6 +415,10 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'showColumn': {
+                    /**
+                     * Displays a column that was previously hidden from view in the grid
+                     * @param {string} col - The name of the hidden column
+                     */
                     value: function _showColumn(col) {
                         if (gridState[gridId].columns[col] && gridState[gridId].columns[col].isHidden) {
                             gridState[gridId].columns[col].isHidden = false;
@@ -424,6 +432,13 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'addColumn': {
+                    /**
+                     * Adds a new column to the grid
+                     * @param {string|Object} column - Either the name of the column to be added to the grid,
+                     * or a column object akin to what is passed into the grid to initialize the widget.
+                     * @param {Array} data - A collection of values for the new column. Need to match the existing
+                     * rows in the grid because they will be paired with them; both in the display and in the model.
+                     */
                     value: function _addColumn(column, data) {
                         if (typeof column !== 'object' || typeof column !== 'string' || !data || !data.length)
                             return;
@@ -442,12 +457,36 @@ var grid = (function _grid($) {
                                 newCol.type = 'string';
                             }
 
+                            gridState[gridId].grid.find('.grid-content-div').empty();
                             setColWidth(gridState[gridId], gridState[gridId].grid);
                             createGridContent(gridState[gridId], gridState[gridId].grid);
                             gridState[gridId].grid.find('.grid-footer-div').empty();
                             createGridFooter(gridState[gridId], gridState[gridId].grid);
                             buildHeaderAggregations(gridId);
-                            gridState[gridId].pageRequest = {};
+                        }
+                    },
+                    writable: false,
+                    configurable: false
+                },
+                'addRow': {
+                    value: function _addRow(data) {
+                        //TODO: need to update rowCount for both paths
+                        if (!data) {
+                            //TODO: just append a new row to the grid widget and insert a new 'empty' object model into the dataSource collection
+                            var newModel2 = {};
+                            for (var prop2 in gridState[gridId].dataSource.data[0]) {
+                                if (data[prop2]) newModel2[prop2] = data[prop2];
+                            }
+                        }
+                        else if (typeof data === 'object') {
+                            var newModel = {};
+                            for (var prop in gridState[gridId].dataSource.data[0]) {
+                                if (data[prop]) newModel[prop] = data[prop];
+                            }
+                            newModel._initialRowIndex = gridState[gridId].dataSource.data.length;
+                            gridState[gridId].dataSource.data.push(newModel);
+                            gridState[gridId].dataSource.rowCount++;
+                            //TODO: similar to above, except need to populate new row and model object with values passed
                         }
                     },
                     writable: false,
@@ -802,31 +841,6 @@ var grid = (function _grid($) {
         createGridFooter(storageData, gridElem);
         createGridContent(storageData, gridElem);
         callGridEventHandlers(storageData.events.afterDataBind, storageData.grid, eventObj);
-    }
-
-    /**
-     * Adds new columns to the grid based on a collection of objects passed to the function
-     * @param {Array} newData - A collection of new column names and values to add to the grid
-     * @param {object} gridElem - The grid DOM widget
-     */
-    function addNewColumns(newData, gridElem) {
-        var oldGrid = $(gridElem).find('.grid-wrapper');
-        var id = oldGrid.data('grid_id');
-        var oldData = gridState[id].data;
-
-        for (var i = 0; i < newData.length; i++) {
-            for (var col in newData[i]) {
-                if (!oldData.data[i][col]) {
-                    oldData.data[i][col] = newData[i][col];
-                }
-                if (!oldData.columns[col]) {
-                    oldData.columns[col] = { field: col, title: col, index: Object.keys(oldData.columns).length };
-                }
-            }
-        }
-
-        gridElem.removeChild(oldGrid);
-        create(oldData, gridElem);
     }
 
     /**
@@ -3851,11 +3865,6 @@ var grid = (function _grid($) {
             'createGrid': {
                 get: function _createGrid() {
                     return create;
-                }
-            },
-            'addNewColumns': {
-                get: function _addNewColumns() {
-                    return addNewColumns;
                 }
             }
         }

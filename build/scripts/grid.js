@@ -255,12 +255,33 @@ var grid = (function _grid($) {
                                 newCol.type = 'string';
                             }
 
+                            gridState[gridId].grid.find('.grid-content-div').empty();
                             setColWidth(gridState[gridId], gridState[gridId].grid);
                             createGridContent(gridState[gridId], gridState[gridId].grid);
                             gridState[gridId].grid.find('.grid-footer-div').empty();
                             createGridFooter(gridState[gridId], gridState[gridId].grid);
                             buildHeaderAggregations(gridId);
-                            gridState[gridId].pageRequest = {};
+                        }
+                    },
+                    writable: false,
+                    configurable: false
+                },
+                'addRow': {
+                    value: function _addRow(data) {
+                        if (!data) {
+                            var newModel2 = {};
+                            for (var prop2 in gridState[gridId].dataSource.data[0]) {
+                                if (data[prop2]) newModel2[prop2] = data[prop2];
+                            }
+                        }
+                        else if (typeof data === 'object') {
+                            var newModel = {};
+                            for (var prop in gridState[gridId].dataSource.data[0]) {
+                                if (data[prop]) newModel[prop] = data[prop];
+                            }
+                            newModel._initialRowIndex = gridState[gridId].dataSource.data.length;
+                            gridState[gridId].dataSource.data.push(newModel);
+                            gridState[gridId].dataSource.rowCount++;
                         }
                     },
                     writable: false,
@@ -534,26 +555,6 @@ var grid = (function _grid($) {
         createGridFooter(storageData, gridElem);
         createGridContent(storageData, gridElem);
         callGridEventHandlers(storageData.events.afterDataBind, storageData.grid, eventObj);
-    }
-
-    function addNewColumns(newData, gridElem) {
-        var oldGrid = $(gridElem).find('.grid-wrapper');
-        var id = oldGrid.data('grid_id');
-        var oldData = gridState[id].data;
-
-        for (var i = 0; i < newData.length; i++) {
-            for (var col in newData[i]) {
-                if (!oldData.data[i][col]) {
-                    oldData.data[i][col] = newData[i][col];
-                }
-                if (!oldData.columns[col]) {
-                    oldData.columns[col] = { field: col, title: col, index: Object.keys(oldData.columns).length };
-                }
-            }
-        }
-
-        gridElem.removeChild(oldGrid);
-        create(oldData, gridElem);
     }
 
     function createGridHeaders(gridData, gridElem) {
@@ -3190,11 +3191,6 @@ var grid = (function _grid($) {
             'createGrid': {
                 get: function _createGrid() {
                     return create;
-                }
-            },
-            'addNewColumns': {
-                get: function _addNewColumns() {
-                    return addNewColumns;
                 }
             }
         }

@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.81</p>
+      <p class="stat">55.75</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3202</p>
+      <p class="stat">3198</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">206.01</p>
+      <p class="stat">206.24</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">70.13</p>
+      <p class="stat">70.10</p>
     </div>
   </div>
 </div>
@@ -346,12 +346,33 @@
                                 newCol.type = &#039;string&#039;;
                             }
 
+                            gridState[gridId].grid.find(&#039;.grid-content-div&#039;).empty();
                             setColWidth(gridState[gridId], gridState[gridId].grid);
                             createGridContent(gridState[gridId], gridState[gridId].grid);
                             gridState[gridId].grid.find(&#039;.grid-footer-div&#039;).empty();
                             createGridFooter(gridState[gridId], gridState[gridId].grid);
                             buildHeaderAggregations(gridId);
-                            gridState[gridId].pageRequest = {};
+                        }
+                    },
+                    writable: false,
+                    configurable: false
+                },
+                &#039;addRow&#039;: {
+                    value: function _addRow(data) {
+                        if (!data) {
+                            var newModel2 = {};
+                            for (var prop2 in gridState[gridId].dataSource.data[0]) {
+                                if (data[prop2]) newModel2[prop2] = data[prop2];
+                            }
+                        }
+                        else if (typeof data === &#039;object&#039;) {
+                            var newModel = {};
+                            for (var prop in gridState[gridId].dataSource.data[0]) {
+                                if (data[prop]) newModel[prop] = data[prop];
+                            }
+                            newModel._initialRowIndex = gridState[gridId].dataSource.data.length;
+                            gridState[gridId].dataSource.data.push(newModel);
+                            gridState[gridId].dataSource.rowCount++;
                         }
                     },
                     writable: false,
@@ -625,26 +646,6 @@
         createGridFooter(storageData, gridElem);
         createGridContent(storageData, gridElem);
         callGridEventHandlers(storageData.events.afterDataBind, storageData.grid, eventObj);
-    }
-
-    function addNewColumns(newData, gridElem) {
-        var oldGrid = $(gridElem).find(&#039;.grid-wrapper&#039;);
-        var id = oldGrid.data(&#039;grid_id&#039;);
-        var oldData = gridState[id].data;
-
-        for (var i = 0; i &lt; newData.length; i++) {
-            for (var col in newData[i]) {
-                if (!oldData.data[i][col]) {
-                    oldData.data[i][col] = newData[i][col];
-                }
-                if (!oldData.columns[col]) {
-                    oldData.columns[col] = { field: col, title: col, index: Object.keys(oldData.columns).length };
-                }
-            }
-        }
-
-        gridElem.removeChild(oldGrid);
-        create(oldData, gridElem);
     }
 
     function createGridHeaders(gridData, gridElem) {
@@ -3281,11 +3282,6 @@
             &#039;createGrid&#039;: {
                 get: function _createGrid() {
                     return create;
-                }
-            },
-            &#039;addNewColumns&#039;: {
-                get: function _addNewColumns() {
-                    return addNewColumns;
                 }
             }
         }
