@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.75</p>
+      <p class="stat">55.70</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3198</p>
+      <p class="stat">3210</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">206.24</p>
+      <p class="stat">208.15</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">70.10</p>
+      <p class="stat">70.46</p>
     </div>
   </div>
 </div>
@@ -329,23 +329,31 @@
                 },
                 &#039;addColumn&#039;: {
                     value: function _addColumn(column, data) {
-                        if (typeof column !== &#039;object&#039; || typeof column !== &#039;string&#039; || !data || !data.length)
+                        if (typeof column !== &#039;object&#039; &amp;&amp; typeof column !== &#039;string&#039; || !data || !data.length)
                             return;
-                        var field = typeof column === &#039;object&#039; ? column.field || &#039;field&#039; : column;
+                        var field = typeof column === &#039;object&#039; ? column.field || &#039;field&#039; : column,
+                            newCol;
                         if (!gridState[gridId].columns[field]) {
                             for (var i = 0; i &lt; gridState[gridId].dataSource.data.length; i++) {
                                 gridState[gridId].dataSource.data[i][field] = data[i] ? data[i] : null;
                             }
-                            if (typeof column === &#039;object&#039;) gridState[gridId].columns[field] = column;
+                            if (typeof column === &#039;object&#039;) newCol = column;
                             else {
-                                var newCol = gridState[gridId].columns[field] = {};
-                                newCol.filterable = false;
-                                newCol.editable = false;
-                                newCol.selectable = false;
-                                newCol.title = field;
-                                newCol.type = &#039;string&#039;;
+                                newCol = {};
                             }
+                            newCol.filterable = newCol.filterable || false;
+                            newCol.editable = newCol.editable || false;
+                            newCol.selectable = newCol.selectable ||false;
+                            newCol.title = newCol.title || field;
+                            newCol.type = newCol.type || &#039;string&#039;;
 
+                            gridState[gridId].columns[field] = newCol;
+                            if (gridState[gridId].aggregates) gridState[gridId].aggregates[field] = {
+                                type: newCol.type
+                            };
+
+                            gridState[gridId].grid.find(&#039;.grid-header-wrapper&#039;).empty();
+                            createGridHeaders(gridState[gridId], gridElem);
                             gridState[gridId].grid.find(&#039;.grid-content-div&#039;).empty();
                             setColWidth(gridState[gridId], gridState[gridId].grid);
                             createGridContent(gridState[gridId], gridState[gridId].grid);
@@ -359,21 +367,27 @@
                 },
                 &#039;addRow&#039;: {
                     value: function _addRow(data) {
+                        var newModel = {}, prop;
                         if (!data) {
-                            var newModel2 = {};
-                            for (var prop2 in gridState[gridId].dataSource.data[0]) {
-                                if (data[prop2]) newModel2[prop2] = data[prop2];
+                            for (prop in gridState[gridId].dataSource.data[0]) {
+                                newModel[prop] = null;
                             }
                         }
                         else if (typeof data === &#039;object&#039;) {
-                            var newModel = {};
-                            for (var prop in gridState[gridId].dataSource.data[0]) {
-                                if (data[prop]) newModel[prop] = data[prop];
+                            for (prop in gridState[gridId].dataSource.data[0]) {
+                                if (typeof data[prop] !== &#039;undefined&#039;) newModel[prop] = data[prop];
+                                else newModel[prop] = null;
                             }
-                            newModel._initialRowIndex = gridState[gridId].dataSource.data.length;
-                            gridState[gridId].dataSource.data.push(newModel);
-                            gridState[gridId].dataSource.rowCount++;
                         }
+                        newModel._initialRowIndex = gridState[gridId].dataSource.data.length;
+                        gridState[gridId].dataSource.data.push(newModel);
+                        gridState[gridId].dataSource.rowCount++;
+
+                        gridState[gridId].grid.find(&#039;.grid-content-div&#039;).empty();
+                        createGridContent(gridState[gridId], gridState[gridId].grid);
+                        gridState[gridId].grid.find(&#039;.grid-footer-div&#039;).empty();
+                        createGridFooter(gridState[gridId], gridState[gridId].grid);
+                        buildHeaderAggregations(gridId);
                     },
                     writable: false,
                     configurable: false
@@ -658,10 +672,6 @@
         var headerRow = $(&#039;&lt;tr class=grid-headerRow&gt;&lt;/tr&gt;&#039;).appendTo(headerTHead);
         var index = 0;
 
-        if (gridData.groupedBy &amp;&amp; gridData.groupedBy !== &#039;none&#039;) {
-            colgroup.append(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
-            headerRow.append(&#039;&lt;th class=&quot;grid-header-cell grouped_cell&quot;&gt;&lt;/th&gt;&#039;);
-        }
 
         for (var col in gridData.columns) {
             if (typeof gridData.columns[col] !== &#039;object&#039;) continue;
@@ -2003,19 +2013,21 @@
         var id = gridFooter.data(&#039;grid_footer_id&#039;);
         var count = gridState[id].dataSource.rowCount;
         var displayedRows = (count - gridState[id].pageSize) &gt; 0 ? gridState[id].pageSize : count;
-        var remainingPages = (count - displayedRows) &gt; 0 ? Math.ceil((count - displayedRows)/displayedRows) : 0;
+        var totalPages = (count - displayedRows) &gt; 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 0;
         var pageNum = gridState[parseInt(gridFooter.data(&#039;grid_footer_id&#039;))].pageNum;
 
-        var first = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link link-disabled&quot; data-link=&quot;first&quot; data-pagenum=&quot;1&quot; title=&quot;First Page&quot;&gt;&lt;span class=&quot;grid-page-span span-first&quot;&gt;First Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
-        var prev = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link link-disabled&quot; data-link=&quot;prev&quot; data-pagenum=&quot;1&quot; title=&quot;Previous Page&quot;&gt;&lt;span class=&quot;grid-page-span span-prev&quot;&gt;Prev Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
-        var text = &#039;Page &#039; + gridState[parseInt(gridFooter.data(&#039;grid_footer_id&#039;))].pageNum + &#039;/&#039; + (remainingPages + 1);
+        var first = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;first&quot; data-pagenum=&quot;1&quot; title=&quot;First Page&quot;&gt;&lt;span class=&quot;grid-page-span span-first&quot;&gt;First Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
+        var prev = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;prev&quot; data-pagenum=&quot;1&quot; title=&quot;Previous Page&quot;&gt;&lt;span class=&quot;grid-page-span span-prev&quot;&gt;Prev Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
+        var text = &#039;Page &#039; + gridState[parseInt(gridFooter.data(&#039;grid_footer_id&#039;))].pageNum + &#039;/&#039; + (totalPages);
         gridFooter.append(&#039;&lt;span class=&quot;grid-pagenum-span page-counter&quot;&gt;&#039; + text + &#039;&lt;/span&gt;&#039;);
         var next = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;next&quot; data-pagenum=&quot;2&quot; title=&quot;Next Page&quot;&gt;&lt;span class=&quot;grid-page-span span-next&quot;&gt;Next Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
-        var last = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;last&quot; data-pagenum=&quot;&#039; + (remainingPages + 1) + &#039;&quot; title=&quot;Last Page&quot;&gt;&lt;span class=&quot;grid-page-span span-last&quot;&gt;Last Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
+        var last = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;last&quot; data-pagenum=&quot;&#039; + (totalPages) + &#039;&quot; title=&quot;Last Page&quot;&gt;&lt;span class=&quot;grid-page-span span-last&quot;&gt;Last Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
 
-        if (!remainingPages) {
+        if (pageNum === 1) {
             first.addClass(&#039;link-disabled&#039;);
             prev.addClass(&#039;link-disabled&#039;);
+        }
+        if (pageNum === totalPages) {
             next.addClass(&#039;link-disabled&#039;);
             last.addClass(&#039;link-disabled&#039;);
         }
@@ -2046,8 +2058,8 @@
             });
         }
 
-        var rowStart = 1 + (displayedRows*(pageNum-1));
-        var rowEnd = displayedRows*pageNum;
+        var rowStart = 1 + (displayedRows * (pageNum - 1));
+        var rowEnd = gridData.dataSource.rowCount &lt; gridData.pageSize * pageNum ? gridData.dataSource.rowCount : gridData.pageSize * pageNum;
         text = rowStart + &#039; - &#039; + rowEnd + &#039; of &#039; + count + &#039; rows&#039;;
         gridFooter.append(&#039;&lt;span class=&quot;pageinfo&quot;&gt;&#039; + text + &#039;&lt;/span&gt;&#039;);
 
@@ -2599,7 +2611,7 @@
                 gridData.sortedOn = requestObj.sortedOn;
                 gridData.filteredOn = requestObj.filteredOn;
 
-                if (gridData.pageRequest.eventType === &#039;newGrid&#039; || &#039;group&#039;)
+                if (gridData.pageRequest.eventType === &#039;newGrid&#039; || gridData.pageRequest.eventType === &#039;group&#039;)
                     setColWidth(gridData, gridState[id].grid);
 
                 createGridContent(gridData, gridState[id].grid);
@@ -2874,17 +2886,17 @@
         var hours = timeGroups[1] ? +timeGroups[1] : +timeGroups[6];
         var minutes, seconds, meridiem, retVal = [];
         if (timeGroups[2]) {
-            minutes = +timeGroups[3] || 0;
-            seconds = +timeGroups[4]  || 0;
+            minutes = timeGroups[3] || &#039;00&#039;;
+            seconds = timeGroups[4]  || &#039;00&#039;;
             meridiem = timeGroups[5].replace(&#039; &#039;, &#039;&#039;) || null;
         }
         else if (timeGroups[6]) {
-            minutes = +timeGroups[8] || 0;
-            seconds = +timeGroups[9] || 0;
+            minutes = timeGroups[8] || &#039;00&#039;;
+            seconds = timeGroups[9] || &#039;00&#039;;
         }
         else{
-            minutes = 0;
-            seconds = 0;
+            minutes = &#039;00&#039;;
+            seconds = &#039;00&#039;;
         }
         retVal.push(hours);
         retVal.push(minutes);
@@ -3040,9 +3052,9 @@
         if (timeArray.length &lt; 2) return &#039;&#039;;
 
         if (timeFormat &amp;&amp; timeFormat == &#039;24&#039; &amp;&amp; timeArray.length === 4 &amp;&amp; timeArray[3] === &#039;PM&#039;)
-            timeArray[0] = timeArray[0] === 12 ? 0 : (timeArray[0] + 12);
-        else if (timeFormat &amp;&amp; timeFormat === &#039;12&#039; &amp;&amp; timeArray[0] &gt; 12) {
-            timeArray[0] = (timeArray[0] - 12);
+            timeArray[0] = timeArray[0] === &#039;12&#039; ? &#039;00&#039; : (parseInt(timeArray[0]) + 12).toString();
+        else if (timeFormat &amp;&amp; timeFormat === &#039;12&#039; &amp;&amp; parseInt(timeArray[0]) &gt; 12) {
+            timeArray[0] = (parseInt(timeArray[0]) - 12).toString();
             timeArray[3] = &#039;PM&#039;;
         }
         else if (timeFormat &amp;&amp; timeFormat === &#039;12&#039; &amp;&amp; timeArray.length &lt; 4)

@@ -93,6 +93,7 @@
  - Re-work how aggregates are calculated - DONE
  - Add functionality to show/hide columns - DONE
  - Dynamically add new columns - DONE
+ - Implement reorderable group items to support 're-grouping'
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
@@ -440,23 +441,31 @@ var grid = (function _grid($) {
                      * rows in the grid because they will be paired with them; both in the display and in the model.
                      */
                     value: function _addColumn(column, data) {
-                        if (typeof column !== 'object' || typeof column !== 'string' || !data || !data.length)
+                        if (typeof column !== 'object' && typeof column !== 'string' || !data || !data.length)
                             return;
-                        var field = typeof column === 'object' ? column.field || 'field' : column;
+                        var field = typeof column === 'object' ? column.field || 'field' : column,
+                            newCol;
                         if (!gridState[gridId].columns[field]) {
                             for (var i = 0; i < gridState[gridId].dataSource.data.length; i++) {
                                 gridState[gridId].dataSource.data[i][field] = data[i] ? data[i] : null;
                             }
-                            if (typeof column === 'object') gridState[gridId].columns[field] = column;
+                            if (typeof column === 'object') newCol = column;
                             else {
-                                var newCol = gridState[gridId].columns[field] = {};
-                                newCol.filterable = false;
-                                newCol.editable = false;
-                                newCol.selectable = false;
-                                newCol.title = field;
-                                newCol.type = 'string';
+                                newCol = {};
                             }
+                            newCol.filterable = newCol.filterable || false;
+                            newCol.editable = newCol.editable || false;
+                            newCol.selectable = newCol.selectable ||false;
+                            newCol.title = newCol.title || field;
+                            newCol.type = newCol.type || 'string';
 
+                            gridState[gridId].columns[field] = newCol;
+                            if (gridState[gridId].aggregates) gridState[gridId].aggregates[field] = {
+                                type: newCol.type
+                            };
+
+                            gridState[gridId].grid.find('.grid-header-wrapper').empty();
+                            createGridHeaders(gridState[gridId], gridElem);
                             gridState[gridId].grid.find('.grid-content-div').empty();
                             setColWidth(gridState[gridId], gridState[gridId].grid);
                             createGridContent(gridState[gridId], gridState[gridId].grid);
@@ -469,25 +478,32 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'addRow': {
+                    /**
+                     * Adds a new row to the table; with either 'null' values if no data was passed in, or with the values given
+                     * @param {Object} data - A javascript model object with the same properties as the grid's model collection objects.
+                     */
                     value: function _addRow(data) {
-                        //TODO: need to update rowCount for both paths
+                        var newModel = {}, prop;
                         if (!data) {
-                            //TODO: just append a new row to the grid widget and insert a new 'empty' object model into the dataSource collection
-                            var newModel2 = {};
-                            for (var prop2 in gridState[gridId].dataSource.data[0]) {
-                                if (data[prop2]) newModel2[prop2] = data[prop2];
+                            for (prop in gridState[gridId].dataSource.data[0]) {
+                                newModel[prop] = null;
                             }
                         }
                         else if (typeof data === 'object') {
-                            var newModel = {};
-                            for (var prop in gridState[gridId].dataSource.data[0]) {
-                                if (data[prop]) newModel[prop] = data[prop];
+                            for (prop in gridState[gridId].dataSource.data[0]) {
+                                if (typeof data[prop] !== 'undefined') newModel[prop] = data[prop];
+                                else newModel[prop] = null;
                             }
-                            newModel._initialRowIndex = gridState[gridId].dataSource.data.length;
-                            gridState[gridId].dataSource.data.push(newModel);
-                            gridState[gridId].dataSource.rowCount++;
-                            //TODO: similar to above, except need to populate new row and model object with values passed
                         }
+                        newModel._initialRowIndex = gridState[gridId].dataSource.data.length;
+                        gridState[gridId].dataSource.data.push(newModel);
+                        gridState[gridId].dataSource.rowCount++;
+
+                        gridState[gridId].grid.find('.grid-content-div').empty();
+                        createGridContent(gridState[gridId], gridState[gridId].grid);
+                        gridState[gridId].grid.find('.grid-footer-div').empty();
+                        createGridFooter(gridState[gridId], gridState[gridId].grid);
+                        buildHeaderAggregations(gridId);
                     },
                     writable: false,
                     configurable: false
@@ -861,10 +877,12 @@ var grid = (function _grid($) {
         var headerRow = $('<tr class=grid-headerRow></tr>').appendTo(headerTHead);
         var index = 0;
 
-        if (gridData.groupedBy && gridData.groupedBy !== 'none') {
+        //TODO: may need to do something like this when grid starts allowing data to be displayed as grouped on grid widget creation;
+        //TODO: for now though, this is not needed
+        /*if (gridData.groupedBy && gridData.groupedBy.length) {
             colgroup.append('<col class="group_col"/>');
             headerRow.append('<th class="grid-header-cell grouped_cell"></th>');
-        }
+        }*/
 
         for (var col in gridData.columns) {
             if (typeof gridData.columns[col] !== 'object') continue;
@@ -1930,7 +1948,7 @@ var grid = (function _grid($) {
                 var groupId = $(e.currentTarget).data('grid_id');
                 var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
                 if (groupId == null || droppedId == null || groupId !== droppedId) return;
-                if (gridState[id].updating) return;		//can't resort columns if grid is updating
+                if (gridState[id].updating) return;		//can't group columns if grid is updating
                 if (!groupMenuBar.children().length) groupMenuBar.text('');
                 var field = droppedCol.data('field'),
                     title = gridState[groupId].columns[field].title || field,
@@ -2382,19 +2400,21 @@ var grid = (function _grid($) {
         var id = gridFooter.data('grid_footer_id');
         var count = gridState[id].dataSource.rowCount;
         var displayedRows = (count - gridState[id].pageSize) > 0 ? gridState[id].pageSize : count;
-        var remainingPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) : 0;
+        var totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 0;
         var pageNum = gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum;
 
-        var first = $('<a href="#" class="grid-page-link link-disabled" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridFooter);
-        var prev = $('<a href="#" class="grid-page-link link-disabled" data-link="prev" data-pagenum="1" title="Previous Page"><span class="grid-page-span span-prev">Prev Page</span></a>').appendTo(gridFooter);
-        var text = 'Page ' + gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum + '/' + (remainingPages + 1);
+        var first = $('<a href="#" class="grid-page-link" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridFooter);
+        var prev = $('<a href="#" class="grid-page-link" data-link="prev" data-pagenum="1" title="Previous Page"><span class="grid-page-span span-prev">Prev Page</span></a>').appendTo(gridFooter);
+        var text = 'Page ' + gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum + '/' + (totalPages);
         gridFooter.append('<span class="grid-pagenum-span page-counter">' + text + '</span>');
         var next = $('<a href="#" class="grid-page-link" data-link="next" data-pagenum="2" title="Next Page"><span class="grid-page-span span-next">Next Page</span></a>').appendTo(gridFooter);
-        var last = $('<a href="#" class="grid-page-link" data-link="last" data-pagenum="' + (remainingPages + 1) + '" title="Last Page"><span class="grid-page-span span-last">Last Page</span></a>').appendTo(gridFooter);
+        var last = $('<a href="#" class="grid-page-link" data-link="last" data-pagenum="' + (totalPages) + '" title="Last Page"><span class="grid-page-span span-last">Last Page</span></a>').appendTo(gridFooter);
 
-        if (!remainingPages) {
+        if (pageNum === 1) {
             first.addClass('link-disabled');
             prev.addClass('link-disabled');
+        }
+        if (pageNum === totalPages) {
             next.addClass('link-disabled');
             last.addClass('link-disabled');
         }
@@ -2425,8 +2445,8 @@ var grid = (function _grid($) {
             });
         }
 
-        var rowStart = 1 + (displayedRows*(pageNum-1));
-        var rowEnd = displayedRows*pageNum;
+        var rowStart = 1 + (displayedRows * (pageNum - 1));
+        var rowEnd = gridData.dataSource.rowCount < gridData.pageSize * pageNum ? gridData.dataSource.rowCount : gridData.pageSize * pageNum;
         text = rowStart + ' - ' + rowEnd + ' of ' + count + ' rows';
         gridFooter.append('<span class="pageinfo">' + text + '</span>');
 
@@ -3022,7 +3042,7 @@ var grid = (function _grid($) {
                 gridData.sortedOn = requestObj.sortedOn;
                 gridData.filteredOn = requestObj.filteredOn;
 
-                if (gridData.pageRequest.eventType === 'newGrid' || 'group')
+                if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group')
                     setColWidth(gridData, gridState[id].grid);
 
                 createGridContent(gridData, gridState[id].grid);
@@ -3363,17 +3383,17 @@ var grid = (function _grid($) {
         var hours = timeGroups[1] ? +timeGroups[1] : +timeGroups[6];
         var minutes, seconds, meridiem, retVal = [];
         if (timeGroups[2]) {
-            minutes = +timeGroups[3] || 0;
-            seconds = +timeGroups[4]  || 0;
+            minutes = timeGroups[3] || '00';
+            seconds = timeGroups[4]  || '00';
             meridiem = timeGroups[5].replace(' ', '') || null;
         }
         else if (timeGroups[6]) {
-            minutes = +timeGroups[8] || 0;
-            seconds = +timeGroups[9] || 0;
+            minutes = timeGroups[8] || '00';
+            seconds = timeGroups[9] || '00';
         }
         else{
-            minutes = 0;
-            seconds = 0;
+            minutes = '00';
+            seconds = '00';
         }
         retVal.push(hours);
         retVal.push(minutes);
@@ -3570,9 +3590,9 @@ var grid = (function _grid($) {
         if (timeArray.length < 2) return '';
 
         if (timeFormat && timeFormat == '24' && timeArray.length === 4 && timeArray[3] === 'PM')
-            timeArray[0] = timeArray[0] === 12 ? 0 : (timeArray[0] + 12);
-        else if (timeFormat && timeFormat === '12' && timeArray[0] > 12) {
-            timeArray[0] = (timeArray[0] - 12);
+            timeArray[0] = timeArray[0] === '12' ? '00' : (parseInt(timeArray[0]) + 12).toString();
+        else if (timeFormat && timeFormat === '12' && parseInt(timeArray[0]) > 12) {
+            timeArray[0] = (parseInt(timeArray[0]) - 12).toString();
             timeArray[3] = 'PM';
         }
         else if (timeFormat && timeFormat === '12' && timeArray.length < 4)

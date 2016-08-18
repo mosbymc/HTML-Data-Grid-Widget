@@ -84,7 +84,7 @@ var gridData = {
                 customRules: {
                     maxValue: function maxValue(callback) {
                         if ($(this).val() >= 10)
-                            callback(false, "You must select a lower value.", 150);
+                            callback(false, "You must select a lower valufield'e.", 150);
                         else
                             callback(true);
                     }

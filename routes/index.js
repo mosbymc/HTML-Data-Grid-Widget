@@ -62,7 +62,11 @@ function determinePageData(requestObj, fullGridData, callback) {
 
     //TODO: figure out why node or jquery isn't preserving the empty [] sent from grid...
     if ((requestObj.groupedBy && requestObj.groupedBy.length) || (requestObj.sortedOn && requestObj.sortedOn.length)) {
-        var sortedData = gridDataHelpers.sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData, columns);
+        var groupSort;
+        if ((requestObj.groupedBy && requestObj.groupedBy.length) && (requestObj.sortedOn && requestObj.sortedOn.length)) groupSort = requestObj.groupedBy.concat(requestObj.sortedOn);
+        else if (requestObj.groupedBy && requestObj.groupedBy.length) groupSort = requestObj.groupedBy;
+        else groupSort = requestObj.sortedOnl
+        var sortedData = gridDataHelpers.sortGridData(groupSort, fullGridData, columns);
         limitPageData(requestObj, sortedData, callback);
         return;
     }
