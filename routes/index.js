@@ -65,7 +65,7 @@ function determinePageData(requestObj, fullGridData, callback) {
         var groupSort;
         if ((requestObj.groupedBy && requestObj.groupedBy.length) && (requestObj.sortedOn && requestObj.sortedOn.length)) groupSort = requestObj.groupedBy.concat(requestObj.sortedOn);
         else if (requestObj.groupedBy && requestObj.groupedBy.length) groupSort = requestObj.groupedBy;
-        else groupSort = requestObj.sortedOnl
+        else groupSort = requestObj.sortedOn;
         var sortedData = gridDataHelpers.sortGridData(groupSort, fullGridData, columns);
         limitPageData(requestObj, sortedData, callback);
         return;

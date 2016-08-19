@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.70</p>
+      <p class="stat">55.64</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3210</p>
+      <p class="stat">3225</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">208.15</p>
+      <p class="stat">208.77</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">70.46</p>
+      <p class="stat">70.71</p>
     </div>
   </div>
 </div>
@@ -352,6 +352,7 @@
                                 type: newCol.type
                             };
 
+                            gridState[gridId].hasAddedColumn = true;
                             gridState[gridId].grid.find(&#039;.grid-header-wrapper&#039;).empty();
                             createGridHeaders(gridState[gridId], gridElem);
                             gridState[gridId].grid.find(&#039;.grid-content-div&#039;).empty();
@@ -663,24 +664,32 @@
     }
 
     function createGridHeaders(gridData, gridElem) {
-        var gridHeader = gridElem.find(&#039;.grid-header-div&#039;);
-        var gridHeadWrap = gridHeader.find(&#039;.grid-header-wrapper&#039;);
-        var headerTable = $(&#039;&lt;table&gt;&lt;/table&gt;&#039;).appendTo(gridHeadWrap);
+        var gridHeader = gridElem.find(&#039;.grid-header-div&#039;),
+            gridHeadWrap = gridHeader.find(&#039;.grid-header-wrapper&#039;),
+            headerTable = $(&#039;&lt;table&gt;&lt;/table&gt;&#039;).appendTo(gridHeadWrap);
         headerTable.css(&#039;width&#039;,&#039;auto&#039;);
-        var colgroup = $(&#039;&lt;colgroup&gt;&lt;/colgroup&gt;&#039;).appendTo(headerTable);
-        var headerTHead = $(&#039;&lt;thead&gt;&lt;/thead&gt;&#039;).appendTo(headerTable);
-        var headerRow = $(&#039;&lt;tr class=grid-headerRow&gt;&lt;/tr&gt;&#039;).appendTo(headerTHead);
-        var index = 0;
+        var colgroup = $(&#039;&lt;colgroup&gt;&lt;/colgroup&gt;&#039;).appendTo(headerTable),
+            headerTHead = $(&#039;&lt;thead&gt;&lt;/thead&gt;&#039;).appendTo(headerTable),
+            headerRow = $(&#039;&lt;tr class=grid-headerRow&gt;&lt;/tr&gt;&#039;).appendTo(headerTHead),
+            index = 0,
+            id = gridHeader.data(&#039;grid_header_id&#039;), i;
 
+
+        if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) {
+            for (i = 0; i &lt; gridData.groupedBy.length; i++) {
+                colgroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
+                headerRow.prepend(&#039;&lt;th class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/th&gt;&#039;);
+            }
+        }
 
         for (var col in gridData.columns) {
             if (typeof gridData.columns[col] !== &#039;object&#039;) continue;
             $(&#039;&lt;col/&gt;&#039;).appendTo(colgroup);
             var text = gridData.columns[col].title || col;
-            var th = $(&#039;&lt;th id=&quot;&#039; + col + &#039;_grid_id_&#039; + gridHeader.data(&#039;grid_header_id&#039;) + &#039;&quot; data-field=&quot;&#039; + col + &#039;&quot; data-index=&quot;&#039; + index + &#039;&quot; class=grid-header-cell&gt;&lt;/th&gt;&#039;).appendTo(headerRow);
+            var th = $(&#039;&lt;th id=&quot;&#039; + col + &#039;_grid_id_&#039; + id + &#039;&quot; data-field=&quot;&#039; + col + &#039;&quot; data-index=&quot;&#039; + index + &#039;&quot; class=grid-header-cell&gt;&lt;/th&gt;&#039;).appendTo(headerRow);
 
             if (typeof gridData.columns[col].attributes === &#039;object&#039; &amp;&amp; gridData.columns[col].attributes.headerClasses &amp;&amp; gridData.columns[col].attributes.headerClasses.constructor ===  Array) {
-                for (var i = 0; i &lt; gridData.columns[col].attributes.headerClasses.length; i++) {
+                for (i = 0; i &lt; gridData.columns[col].attributes.headerClasses.length; i++) {
                     th.addClass(gridData.columns[col].attributes.headerClasses[i]);
                 }
             }
@@ -948,6 +957,7 @@
     function addValueToAggregations(gridId, field, value, aggregationObj) {
         var text, total;
         if (!aggregationObj[field]) aggregationObj[field] = {};
+        if (value == null) return;
         switch (gridState[gridId].aggregates[field].type) {
             case &#039;count&#039;:
                 aggregationObj[field].value =(aggregationObj[field].value || 0) + 1;
@@ -1597,7 +1607,10 @@
                     foundDupe = false;
 
                 groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupItemsCallback(idx, val) {
-                    if ($(val).data(&#039;field&#039;) === field) foundDupe = true;
+                    if ($(val).data(&#039;field&#039;) === field) {
+                        foundDupe = true;
+                        return false;
+                    }
                 });
                 if (foundDupe) return;  
 
@@ -1959,7 +1972,8 @@
         var menuAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Toggle Columns&lt;span class=&quot;menu_arrow&quot;/&gt;&lt;/span&gt;&lt;/a&gt;&#039;);
         menuItem.on(&#039;mouseover&#039;, function columnToggleMenuItemHoverHandler() {
             var toggleOptions = gridState[gridId].grid.find(&#039;#toggle_grid_id_&#039; + gridId);
-            if (!toggleOptions.length) {
+            if (!toggleOptions.length || gridState[gridId].hasAddedColumn) {
+                if (gridState[gridId].hasAddedColumn) gridState[gridId].hasAddedColumn = false;
                 toggleOptions = $(&#039;&lt;div id=&quot;toggle_grid_id_&#039; + gridId + &#039;&quot; class=&quot;menu_item_options&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot; style=&quot;display: none;&quot;&gt;&lt;/div&gt;&#039;);
                 var columnList = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
                 for (var col in gridState[gridId].columns) {
@@ -2850,6 +2864,7 @@
     function getFormattedCellText(gridId, column, value) {
         var text,
             type = gridState[gridId].columns[column].type || &#039;string&#039;;
+        if (value == null) return &#039; &#039;;
         switch(type) {
             case &#039;number&#039;:
                 text = formatNumericCellData(value, gridState[gridId].columns[column].format);

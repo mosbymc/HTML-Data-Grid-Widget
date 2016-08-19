@@ -464,6 +464,7 @@ var grid = (function _grid($) {
                                 type: newCol.type
                             };
 
+                            gridState[gridId].hasAddedColumn = true;
                             gridState[gridId].grid.find('.grid-header-wrapper').empty();
                             createGridHeaders(gridState[gridId], gridElem);
                             gridState[gridId].grid.find('.grid-content-div').empty();
@@ -868,14 +869,15 @@ var grid = (function _grid($) {
      * @param {object} gridElem
      */
     function createGridHeaders(gridData, gridElem) {
-        var gridHeader = gridElem.find('.grid-header-div');
-        var gridHeadWrap = gridHeader.find('.grid-header-wrapper');
-        var headerTable = $('<table></table>').appendTo(gridHeadWrap);
+        var gridHeader = gridElem.find('.grid-header-div'),
+            gridHeadWrap = gridHeader.find('.grid-header-wrapper'),
+            headerTable = $('<table></table>').appendTo(gridHeadWrap);
         headerTable.css('width','auto');
-        var colgroup = $('<colgroup></colgroup>').appendTo(headerTable);
-        var headerTHead = $('<thead></thead>').appendTo(headerTable);
-        var headerRow = $('<tr class=grid-headerRow></tr>').appendTo(headerTHead);
-        var index = 0;
+        var colgroup = $('<colgroup></colgroup>').appendTo(headerTable),
+            headerTHead = $('<thead></thead>').appendTo(headerTable),
+            headerRow = $('<tr class=grid-headerRow></tr>').appendTo(headerTHead),
+            index = 0,
+            id = gridHeader.data('grid_header_id'), i;
 
         //TODO: may need to do something like this when grid starts allowing data to be displayed as grouped on grid widget creation;
         //TODO: for now though, this is not needed
@@ -884,14 +886,23 @@ var grid = (function _grid($) {
             headerRow.append('<th class="grid-header-cell grouped_cell"></th>');
         }*/
 
+        //TODO: I think this will work for data that is already grouped; specifically when adding a new column. However, it may work or be
+        //TODO: adjusted to work with data coming from the server on widget creation
+        if (gridData.groupedBy && gridData.groupedBy.length) {
+            for (i = 0; i < gridData.groupedBy.length; i++) {
+                colgroup.prepend('<col class="group_col"/>');
+                headerRow.prepend('<th class="group_spacer">&nbsp</th>');
+            }
+        }
+
         for (var col in gridData.columns) {
             if (typeof gridData.columns[col] !== 'object') continue;
             $('<col/>').appendTo(colgroup);
             var text = gridData.columns[col].title || col;
-            var th = $('<th id="' + col + '_grid_id_' + gridHeader.data('grid_header_id') + '" data-field="' + col + '" data-index="' + index + '" class=grid-header-cell></th>').appendTo(headerRow);
+            var th = $('<th id="' + col + '_grid_id_' + id + '" data-field="' + col + '" data-index="' + index + '" class=grid-header-cell></th>').appendTo(headerRow);
 
             if (typeof gridData.columns[col].attributes === 'object' && gridData.columns[col].attributes.headerClasses && gridData.columns[col].attributes.headerClasses.constructor ===  Array) {
-                for (var i = 0; i < gridData.columns[col].attributes.headerClasses.length; i++) {
+                for (i = 0; i < gridData.columns[col].attributes.headerClasses.length; i++) {
                     th.addClass(gridData.columns[col].attributes.headerClasses[i]);
                 }
             }
@@ -1211,6 +1222,7 @@ var grid = (function _grid($) {
     function addValueToAggregations(gridId, field, value, aggregationObj) {
         var text, total;
         if (!aggregationObj[field]) aggregationObj[field] = {};
+        if (value == null) return;
         switch (gridState[gridId].aggregates[field].type) {
             case 'count':
                 aggregationObj[field].value =(aggregationObj[field].value || 0) + 1;
@@ -1955,7 +1967,10 @@ var grid = (function _grid($) {
                     foundDupe = false;
 
                 groupMenuBar.find('.group_item').each(function iterateGroupItemsCallback(idx, val) {
-                    if ($(val).data('field') === field) foundDupe = true;
+                    if ($(val).data('field') === field) {
+                        foundDupe = true;
+                        return false;
+                    }
                 });
                 if (foundDupe) return;  //can't group on the same column twice
 
@@ -2341,7 +2356,8 @@ var grid = (function _grid($) {
         var menuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Toggle Columns<span class="menu_arrow"/></span></a>');
         menuItem.on('mouseover', function columnToggleMenuItemHoverHandler() {
             var toggleOptions = gridState[gridId].grid.find('#toggle_grid_id_' + gridId);
-            if (!toggleOptions.length) {
+            if (!toggleOptions.length || gridState[gridId].hasAddedColumn) {
+                if (gridState[gridId].hasAddedColumn) gridState[gridId].hasAddedColumn = false;
                 toggleOptions = $('<div id="toggle_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '" style="display: none;"></div>');
                 var columnList = $('<ul class="menu-list"></ul>');
                 for (var col in gridState[gridId].columns) {
@@ -3341,6 +3357,7 @@ var grid = (function _grid($) {
     function getFormattedCellText(gridId, column, value) {
         var text,
             type = gridState[gridId].columns[column].type || 'string';
+        if (value == null) return ' ';
         switch(type) {
             case 'number':
                 text = formatNumericCellData(value, gridState[gridId].columns[column].format);
