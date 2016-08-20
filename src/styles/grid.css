@@ -245,6 +245,7 @@
   text-overflow: ellipsis;
   white-space: normal;
   line-height: 1.6em;
+  height: 1.6em;
 }
 .grid-content-div table tr.selected,
 .grid-content-div table td.selected {

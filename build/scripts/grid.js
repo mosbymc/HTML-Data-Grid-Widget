@@ -1212,7 +1212,7 @@ var grid = (function _grid($) {
             var index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
                 field = cell.data('field'),
                 type = gridState[id].columns[field].type || '',
-                val = gridState[id].dataSource.data[index][field],
+                val = gridState[id].dataSource.data[index][field] || '',
                 dataAttributes = '',
                 gridValidation = gridState[id].useValidator ? gridState[id].columns[field].validation : null,
                 dataType, input, inputVal;
@@ -1242,7 +1242,7 @@ var grid = (function _grid($) {
                     dataType = 'time';
                     break;
                 case 'date':
-                    var dateVal = val === undefined ? new Date(Date.now()) : new Date(Date.parse(val));
+                    var dateVal = val == null ? new Date(Date.now()) : new Date(Date.parse(val));
                     inputVal = dateVal.toISOString().split('T')[0];
                     input = $('<input type="date" value="' + inputVal + '" class="input textbox active-cell"' + dataAttributes + '/>').appendTo(cell);
                     dataType = 'date';
@@ -1303,7 +1303,7 @@ var grid = (function _grid($) {
             var select = $('<select class="input select active-cell"' + dataAttributes + '></select>').appendTo(cell);
             var options = [];
             var setVal = gridData.dataSource.data[index][field];
-            options.push(setVal);
+            if (null != setVal && '' !== setVal) options.push(setVal);
             for (var z = 0; z < gridData.columns[field].options.length; z++) {
                 if (setVal !== gridData.columns[field].options[z]) {
                     options.push(gridData.columns[field].options[z]);
@@ -1313,7 +1313,7 @@ var grid = (function _grid($) {
                 var opt = $('<option value="' + options[k] + '">' + options[k] + '</option>');
                 select.append(opt);
             }
-            select.val(setVal);
+            if (null != setVal && '' !== setVal) select.val(setVal);
             select[0].focus();
 
             if (gridValidation) select.addClass('inputValidate');
@@ -1422,14 +1422,18 @@ var grid = (function _grid($) {
             field = cell.data('field'),
             type = gridState[id].columns[field].type || '',
             saveVal, re,
-            displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field];
+            previousVal = gridState[id].dataSource.data[index][field],
+            requiredAndHasPreviousVal = gridState[id].columns[field].validation ? gridState[id].columns[field].validation.required && previousVal && previousVal !== 0 : false,
+            requiredOrHasPreviousVal = gridState[id].columns[field].validation ? gridState[id].columns[field].validation.required || (previousVal && previousVal !== 0) : previousVal && previousVal !== 0;
+        if (val == null || val === 'null') val = '';
+        var displayVal = !requiredAndHasPreviousVal ? getFormattedCellText(id, field, val) : gridState[id].dataSource.data[index][field];
 
         input.remove();
         switch (type) {
             case 'number':
                 re = new RegExp(dataTypes.number);
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
+                saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : isNumber(parseFloat(val.replace(',', ''))) ? parseFloat(val.replace(',', '')) : 0;
                 break;
             case 'date':
                 re = new RegExp(dataTypes.date);
@@ -1446,10 +1450,9 @@ var grid = (function _grid($) {
                 break;
         }
 
-        cell.text(displayVal);
+        cell.text(displayVal || '');
         gridState[id].currentEdit[field] = null;
-        var previousVal = gridState[id].dataSource.data[index][field];
-        if (previousVal !== saveVal && !('' === saveVal && undefined === previousVal)) {	
+        if (previousVal !== saveVal && requiredOrHasPreviousVal) {
             gridState[id].dataSource.data[index][field] = saveVal;
             cell.prepend('<span class="dirty"></span>');
         }
