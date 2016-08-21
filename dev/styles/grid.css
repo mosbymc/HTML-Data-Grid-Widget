@@ -771,6 +771,19 @@ input {
   display: block;
   box-sizing: content-box;
 }
+.dirty-blank {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 3px;
+  border-color: #ff0000 transparent transparent #ff0000;
+  margin: -0.45em 0 1.6em -0.6em;
+  padding: 0;
+  overflow: hidden;
+  vertical-align: top;
+  display: block;
+  box-sizing: content-box;
+}
 .toolbar {
   padding: 8px;
   background-color: #3343a4;

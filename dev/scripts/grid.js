@@ -100,6 +100,7 @@
     > and if that specific functionality has handled the added column or not
  - Fix dirty span display on empty grid cells
  - Implement reorderable group items to support 're-grouping'
+ - Make dirty cells check against original data, not the previous value in the cell/dataSource
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
@@ -1861,46 +1862,41 @@ var grid = (function _grid($) {
             field = cell.data('field'),
             type = gridState[id].columns[field].type || '',
             saveVal, re,
-            previousVal = gridState[id].dataSource.data[index][field],
-            requiredAndHasPreviousVal = gridState[id].columns[field].validation ? gridState[id].columns[field].validation.required && previousVal && previousVal !== 0 : false,
-            requiredOrHasPreviousVal = gridState[id].columns[field].validation ? gridState[id].columns[field].validation.required || (previousVal && previousVal !== 0) : previousVal && previousVal !== 0;
-        if (val == null || val === 'null') val = '';
-        var displayVal = !requiredAndHasPreviousVal ? getFormattedCellText(id, field, val) : gridState[id].dataSource.data[index][field];
+            formattedVal = getFormattedCellText(id, field, val),
+            displayVal = formattedVal == null ? '' : formattedVal;
 
         input.remove();
         switch (type) {
             case 'number':
                 re = new RegExp(dataTypes.number);
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : isNumber(parseFloat(val.replace(',', ''))) ? parseFloat(val.replace(',', '')) : 0;
+                saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
                 break;
             case 'date':
                 re = new RegExp(dataTypes.date);
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = displayVal;   //this and time are the only types that have the same displayVal and saveVel
+                saveVal = displayVal;
                 break;
             case 'time':
                 re = new RegExp(dataTypes.time);
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = displayVal;   //this and date are the only types that have the same displayVal and saveVal
+                saveVal = displayVal;
                 break;
-            default: 		//string, boolean
+            default:
                 saveVal = val;
                 break;
         }
 
         cell.text(displayVal || '');
         gridState[id].currentEdit[field] = null;
-        /*if (previousVal !== saveVal && !('' === saveVal && previousVal == null)) {	//if the value didn't change, don't "save" the new val, and don't apply the "dirty" span
+        var previousVal = gridState[id].dataSource.data[index][field];
+        if (previousVal !== saveVal) {
             gridState[id].dataSource.data[index][field] = saveVal;
-            cell.prepend('<span class="dirty"></span>');
-        }*/
-        if (previousVal !== saveVal && requiredOrHasPreviousVal) {
-            gridState[id].dataSource.data[index][field] = saveVal;
-            cell.prepend('<span class="dirty"></span>');
+            if ('' !== saveVal && previousVal != null)
+                cell.prepend('<span class="dirty"></span>');
+            else if (previousVal != null)
+                cell.prepend('<span class="dirty-blank"></span>');
         }
-        else
-            gridState[id].dataSource.data[index][field] = previousVal;
         callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
 
@@ -2114,7 +2110,7 @@ var grid = (function _grid($) {
                 $('.grid_menu').addClass('hiddenMenu');
             var dirtyCells = [],
                 pageNum = gridState[id].pageNum, i;
-            gridElem.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
+            gridElem.find('.dirty').add('.dirty-blank').each(function iterateDirtySpansCallback(idx, val) {
                 dirtyCells.push($(val).parents('td'));
             });
 
@@ -2125,7 +2121,7 @@ var grid = (function _grid($) {
                         var field = dirtyCells[i].data('field');
                         var origIndex = gridState[id].dataSource.data[index][field]._initialRowIndex;
                         gridState[id].originalData[origIndex][field] = gridState[id].dataSource.data[index][field];
-                        dirtyCells[i].find('.dirty').remove();
+                        dirtyCells[i].find('.dirty').add('.dirty-blank').remove();
                     }
                 }
                 else {
@@ -2158,7 +2154,7 @@ var grid = (function _grid($) {
             if (gridMenu.length)
                 $('.grid_menu').addClass('hiddenMenu');
             var dirtyCells = [];
-            gridElem.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
+            gridElem.find('.dirty').add('.dirty-blank').each(function iterateDirtySpansCallback(idx, val) {
                 dirtyCells.push($(val).parents('td'));
             });
 
@@ -2172,7 +2168,7 @@ var grid = (function _grid($) {
                     var cellVal = gridState[id].originalData[index][field] !== undefined ? gridState[id].originalData[index][field] : '';
                     var text = getFormattedCellText(id, field, cellVal) || cellVal;
                     dirtyCells[i].text(text);
-                    dirtyCells[i].find('.dirty').remove();
+                    dirtyCells[i].find('.dirty').add('.dirty-blank').remove();
                     gridState[id].dataSource.data[index][field] = gridState[id].originalData[index + addend][field];
                 }
             }
@@ -3104,7 +3100,7 @@ var grid = (function _grid($) {
         function updatePageDataPutRequestCallback(response) {
             gridState[id].updating = false;
             if (response) {
-                gridState[id].grid.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
+                gridState[id].grid.find('.dirty').add('.dirty-blank').each(function iterateDirtySpansCallback(idx, val) {
                     var index = $(val).parents('tr').index();
                     var field = $(val).parents('td').data('field');
                     var origIdx = gridState[id].dataSource.data[index]._initialRowIndex;
@@ -3113,7 +3109,7 @@ var grid = (function _grid($) {
                 });
             }
             else {
-                gridState[id].grid.find('.dirty').each(function iterateDirtySpansCallback(idx, val) {
+                gridState[id].grid.find('.dirty').add('.dirty-blank').each(function iterateDirtySpansCallback(idx, val) {
                     var cell = $(val).parents('td');
                     var index = cell.parents('tr').index();
                     var field = cell.data('field');

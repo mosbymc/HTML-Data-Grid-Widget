@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.59</p>
+      <p class="stat">55.61</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3228</p>
+      <p class="stat">3227</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">209.32</p>
+      <p class="stat">208.63</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">71.09</p>
+      <p class="stat">70.86</p>
     </div>
   </div>
 </div>
@@ -1513,42 +1513,41 @@
             field = cell.data(&#039;field&#039;),
             type = gridState[id].columns[field].type || &#039;&#039;,
             saveVal, re,
-            previousVal = gridState[id].dataSource.data[index][field],
-            requiredAndHasPreviousVal = gridState[id].columns[field].validation ? gridState[id].columns[field].validation.required &amp;&amp; previousVal &amp;&amp; previousVal !== 0 : false,
-            requiredOrHasPreviousVal = gridState[id].columns[field].validation ? gridState[id].columns[field].validation.required || (previousVal &amp;&amp; previousVal !== 0) : previousVal &amp;&amp; previousVal !== 0;
-        if (val == null || val === &#039;null&#039;) val = &#039;&#039;;
-        var displayVal = !requiredAndHasPreviousVal ? getFormattedCellText(id, field, val) : gridState[id].dataSource.data[index][field];
+            formattedVal = getFormattedCellText(id, field, val),
+            displayVal = formattedVal == null ? &#039;&#039; : formattedVal;
 
         input.remove();
         switch (type) {
             case &#039;number&#039;:
                 re = new RegExp(dataTypes.number);
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = typeof gridState[id].dataSource.data[index][field] === &#039;string&#039; ? val : isNumber(parseFloat(val.replace(&#039;,&#039;, &#039;&#039;))) ? parseFloat(val.replace(&#039;,&#039;, &#039;&#039;)) : 0;
+                saveVal = typeof gridState[id].dataSource.data[index][field] === &#039;string&#039; ? val : parseFloat(val.replace(&#039;,&#039;, &#039;&#039;));
                 break;
             case &#039;date&#039;:
                 re = new RegExp(dataTypes.date);
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = displayVal;   
+                saveVal = displayVal;
                 break;
             case &#039;time&#039;:
                 re = new RegExp(dataTypes.time);
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = displayVal;   
+                saveVal = displayVal;
                 break;
-            default: 		
+            default:
                 saveVal = val;
                 break;
         }
 
         cell.text(displayVal || &#039;&#039;);
         gridState[id].currentEdit[field] = null;
-        if (previousVal !== saveVal &amp;&amp; requiredOrHasPreviousVal) {
+        var previousVal = gridState[id].dataSource.data[index][field];
+        if (previousVal !== saveVal) {
             gridState[id].dataSource.data[index][field] = saveVal;
-            cell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
+            if (&#039;&#039; !== saveVal &amp;&amp; previousVal != null)
+                cell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
+            else if (previousVal != null)
+                cell.prepend(&#039;&lt;span class=&quot;dirty-blank&quot;&gt;&lt;/span&gt;&#039;);
         }
-        else
-            gridState[id].dataSource.data[index][field] = previousVal;
         callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
 
@@ -1731,7 +1730,7 @@
                 $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
             var dirtyCells = [],
                 pageNum = gridState[id].pageNum, i;
-            gridElem.find(&#039;.dirty&#039;).each(function iterateDirtySpansCallback(idx, val) {
+            gridElem.find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).each(function iterateDirtySpansCallback(idx, val) {
                 dirtyCells.push($(val).parents(&#039;td&#039;));
             });
 
@@ -1742,7 +1741,7 @@
                         var field = dirtyCells[i].data(&#039;field&#039;);
                         var origIndex = gridState[id].dataSource.data[index][field]._initialRowIndex;
                         gridState[id].originalData[origIndex][field] = gridState[id].dataSource.data[index][field];
-                        dirtyCells[i].find(&#039;.dirty&#039;).remove();
+                        dirtyCells[i].find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).remove();
                     }
                 }
                 else {
@@ -1775,7 +1774,7 @@
             if (gridMenu.length)
                 $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
             var dirtyCells = [];
-            gridElem.find(&#039;.dirty&#039;).each(function iterateDirtySpansCallback(idx, val) {
+            gridElem.find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).each(function iterateDirtySpansCallback(idx, val) {
                 dirtyCells.push($(val).parents(&#039;td&#039;));
             });
 
@@ -1789,7 +1788,7 @@
                     var cellVal = gridState[id].originalData[index][field] !== undefined ? gridState[id].originalData[index][field] : &#039;&#039;;
                     var text = getFormattedCellText(id, field, cellVal) || cellVal;
                     dirtyCells[i].text(text);
-                    dirtyCells[i].find(&#039;.dirty&#039;).remove();
+                    dirtyCells[i].find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).remove();
                     gridState[id].dataSource.data[index][field] = gridState[id].originalData[index + addend][field];
                 }
             }
@@ -2655,7 +2654,7 @@
         function updatePageDataPutRequestCallback(response) {
             gridState[id].updating = false;
             if (response) {
-                gridState[id].grid.find(&#039;.dirty&#039;).each(function iterateDirtySpansCallback(idx, val) {
+                gridState[id].grid.find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).each(function iterateDirtySpansCallback(idx, val) {
                     var index = $(val).parents(&#039;tr&#039;).index();
                     var field = $(val).parents(&#039;td&#039;).data(&#039;field&#039;);
                     var origIdx = gridState[id].dataSource.data[index]._initialRowIndex;
@@ -2664,7 +2663,7 @@
                 });
             }
             else {
-                gridState[id].grid.find(&#039;.dirty&#039;).each(function iterateDirtySpansCallback(idx, val) {
+                gridState[id].grid.find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).each(function iterateDirtySpansCallback(idx, val) {
                     var cell = $(val).parents(&#039;td&#039;);
                     var index = cell.parents(&#039;tr&#039;).index();
                     var field = cell.data(&#039;field&#039;);
