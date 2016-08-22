@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.58</p>
+      <p class="stat">55.55</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3227</p>
+      <p class="stat">3257</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">208.98</p>
+      <p class="stat">209.15</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">70.97</p>
+      <p class="stat">71.74</p>
     </div>
   </div>
 </div>
@@ -2340,17 +2340,47 @@
 
     function setDragAndDropListeners(elem) {
         elem.on(&#039;dragstart&#039;, function handleDragStartCallback(e) {
-            e.originalEvent.dataTransfer.setData(&#039;text&#039;, e.currentTarget.id);
+            e.originalEvent.dataTransfer.setData(&#039;text/plain&#039;, e.currentTarget.id);
+            $(e.currentTarget).data(&#039;dragging&#039;, true);
         });
         elem.on(&#039;drop&#039;, handleDropCallback);
         elem.on(&#039;dragover&#039;, function handleHeaderDragOverCallback(e) {
             e.preventDefault();
+            var column = $(&#039;#&#039; + e.currentTarget.id);
+            var gridId = column.parents(&#039;.grid-header-div&#039;).data(&#039;grid_header_id&#039;);
+            var dropIndicator = $(&#039;#drop_indicator_id_&#039; + gridId);
+            if (!dropIndicator.length) {
+                dropIndicator = $(&#039;&lt;div id=&quot;drop_indicator_id_&#039; + gridId + &#039;&quot; class=&quot;drop-indicator2&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&lt;/div&gt;&#039;);
+                dropIndicator.append(&#039;&lt;span class=&quot;drop-indicator2-top&quot;&gt;&lt;/span&gt;&lt;span class=&quot;drop-indicator2-bottom&quot;&gt;&lt;/span&gt;&#039;);
+                gridState[gridId].grid.append(dropIndicator);
+            }
+
+            var originalColumn;
+            gridState[gridId].grid.find(&#039;.grid-header-cell&#039;).each(function iterateGridHeadersCallback(idx, val) {
+                if ($(val).data(&#039;dragging&#039;)) originalColumn = $(val);
+            });
+
+            if (originalColumn &amp;&amp; originalColumn[0] !== column[0]) {
+                dropIndicator.css(&#039;display&#039;, &#039;block&#039;);
+                if (originalColumn.offset().left &lt; column.offset().left) {
+                    dropIndicator.css(&#039;left&#039;, elem.offset().left + elem.outerWidth());
+                    dropIndicator.css(&#039;top&#039;, elem.offset().top);
+                }
+                else {
+                    dropIndicator.css(&#039;left&#039;, elem.offset().left);
+                    dropIndicator.css(&#039;top&#039;, elem.offset().top);
+                }
+            }
+            else {
+                dropIndicator.css(&#039;display&#039;, &#039;none&#039;);
+            }
         });
         elem.on(&#039;mouseleave&#039;, mouseLeaveHandlerCallback);
     }
 
     function handleDropCallback(e) {
         var droppedCol = $(&#039;#&#039; + e.originalEvent.dataTransfer.getData(&#039;text&#039;));
+        droppedCol.data(&#039;dragging&#039;, false);
         var targetCol = $(e.currentTarget);
         var id = targetCol.parents(&#039;.grid-header-div&#039;).length ? targetCol.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;) : null;
         var droppedId = droppedCol.parents(&#039;.grid-header-div&#039;).length ? droppedCol.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;) : null;

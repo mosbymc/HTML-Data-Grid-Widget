@@ -818,6 +818,51 @@ input {
 .toolbarAnchor:hover {
   background-color: #4555b6;
 }
+.drop-indicator2 .drop-indicator2-top,
+.drop-indicator2 .drop-indicator2-bottom {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 4px;
+  border-color: transparent;
+  left: 0;
+  top: 0;
+}
+.drop-indicator2 .drop-indicator2-bottom {
+  top: auto;
+  bottom: 0;
+}
+.drop-indicator2 .drop-indicator2-top {
+  border-top-color: #2199e0;
+}
+.drop-indicator2 .drop-indicator2-bottom {
+  border-bottom-color: #2199e0;
+}
+.drop-indicator2 {
+  position: absolute;
+  z-index: 998;
+  margin-left: -4px;
+  *margin-right: 4px;
+}
+.drop-indicator {
+  border-radius: 2px;
+  color: #444444;
+  background-color: #ebebeb;
+  border-color: #ebebeb;
+  box-shadow: inset 0 0 0 1px #808080;
+  position: absolute;
+  z-index: 10003;
+  border-style: solid;
+  border-width: 1px;
+  /*font-size: .9em;*/
+  /*padding: .2em .4em;*/
+  white-space: nowrap;
+  cursor: default;
+  overflow: hidden;
+  font-size: 1em;
+  padding: .65em 1em;
+}
 .group_div {
   font-size: 14px;
   font-family: Arial, Helvetica, sans-serif;

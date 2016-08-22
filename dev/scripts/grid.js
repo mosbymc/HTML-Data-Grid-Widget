@@ -93,12 +93,12 @@
  - Re-work how aggregates are calculated - DONE
  - Add functionality to show/hide columns - DONE
  - Dynamically add new columns - DONE
- - Ensure 'null' does not display in row where no data is provided
+ - Ensure 'null' does not display in row where no data is provided - DONE
+ - Fix dirty span display on empty grid cells - DONE
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
     > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
     > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
-    > and if that specific functionality has handled the added column or not
- - Fix dirty span display on empty grid cells
+    > and if that specific functionality has handled the added column or not without repeating the same data for each functionality
  - Implement reorderable group items to support 're-grouping'
  - Make dirty cells check against original data, not the previous value in the cell/dataSource
  - Add integration tests if possible
@@ -2749,17 +2749,47 @@ var grid = (function _grid($) {
 
     function setDragAndDropListeners(elem) {
         elem.on('dragstart', function handleDragStartCallback(e) {
-            e.originalEvent.dataTransfer.setData('text', e.currentTarget.id);
+            e.originalEvent.dataTransfer.setData('text/plain', e.currentTarget.id);
+            $(e.currentTarget).data('dragging', true);
         });
         elem.on('drop', handleDropCallback);
         elem.on('dragover', function handleHeaderDragOverCallback(e) {
             e.preventDefault();
+            var column = $('#' + e.currentTarget.id);
+            var gridId = column.parents('.grid-header-div').data('grid_header_id');
+            var dropIndicator = $('#drop_indicator_id_' + gridId);
+            if (!dropIndicator.length) {
+                dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator2" data-grid_id="' + gridId + '"></div>');
+                dropIndicator.append('<span class="drop-indicator2-top"></span><span class="drop-indicator2-bottom"></span>');
+                gridState[gridId].grid.append(dropIndicator);
+            }
+
+            var originalColumn;
+            gridState[gridId].grid.find('.grid-header-cell').each(function iterateGridHeadersCallback(idx, val) {
+                if ($(val).data('dragging')) originalColumn = $(val);
+            });
+
+            if (originalColumn && originalColumn[0] !== column[0]) {
+                dropIndicator.css('display', 'block');
+                if (originalColumn.offset().left < column.offset().left) {
+                    dropIndicator.css('left', elem.offset().left + elem.outerWidth());
+                    dropIndicator.css('top', elem.offset().top);
+                }
+                else {
+                    dropIndicator.css('left', elem.offset().left);
+                    dropIndicator.css('top', elem.offset().top);
+                }
+            }
+            else {
+                dropIndicator.css('display', 'none');
+            }
         });
         elem.on('mouseleave', mouseLeaveHandlerCallback);
     }
 
     function handleDropCallback(e) {
         var droppedCol = $('#' + e.originalEvent.dataTransfer.getData('text'));
+        droppedCol.data('dragging', false);
         var targetCol = $(e.currentTarget);
         var id = targetCol.parents('.grid-header-div').length ? targetCol.parents('.grid-wrapper').data('grid_id') : null;
         var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
