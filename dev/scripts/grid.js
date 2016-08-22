@@ -507,6 +507,7 @@ var grid = (function _grid($) {
                         gridState[gridId].dataSource.data.push(newModel);
                         gridState[gridId].dataSource.rowCount++;
 
+                        gridState[gridId].pageSize = gridState[gridId].pageSize + 1;
                         gridState[gridId].grid.find('.grid-content-div').empty();
                         createGridContent(gridState[gridId], gridState[gridId].grid);
                         gridState[gridId].grid.find('.grid-footer-div').empty();
@@ -886,13 +887,6 @@ var grid = (function _grid($) {
             index = 0,
             id = gridHeader.data('grid_header_id'), i;
 
-        //TODO: may need to do something like this when grid starts allowing data to be displayed as grouped on grid widget creation;
-        //TODO: for now though, this is not needed
-        /*if (gridData.groupedBy && gridData.groupedBy.length) {
-            colgroup.append('<col class="group_col"/>');
-            headerRow.append('<th class="grid-header-cell grouped_cell"></th>');
-        }*/
-
         //TODO: I think this will work for data that is already grouped; specifically when adding a new column. However, it may work or be
         //TODO: adjusted to work with data coming from the server on widget creation
         if (gridData.groupedBy && gridData.groupedBy.length) {
@@ -1001,14 +995,13 @@ var grid = (function _grid($) {
                 columns.push($(val).data('field'));
         });
 
-        var rowStart = 0,
-            rowEnd = gridData.dataSource.data.length,
+        var rowEnd = gridData.pageSize > gridData.dataSource.data.length ? gridData.dataSource.data.length : gridData.pageSize,
             rows = gridData.rows,
             currentGroupingValues = {};
 
         if (gridData.groupAggregates) gridData.groupAggregations = {};
 
-        for (i = (rowStart); i < rowEnd; i++) {
+        for (i = 0; i < rowEnd; i++) {
             gridData.dataSource.data[i]._initialRowIndex = i;
             if (gridData.groupedBy && gridData.groupedBy.length) createGroupedRows(id, i, columns, currentGroupingValues, contentTBody);
 
@@ -1041,6 +1034,7 @@ var grid = (function _grid($) {
                     }
                 }
                 text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
+                text = text == null ? '' : text;
                 td.text(text);
                 if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
                 //attach event handlers to save data
