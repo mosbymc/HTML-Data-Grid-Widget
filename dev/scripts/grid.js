@@ -3634,18 +3634,18 @@ var grid = (function _grid($) {
     function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
             formattedTime,
-            format = gridState[gridId].columns[column].format,
+            format = gridState[gridId].columns[column].format || '24',
             timeFormat = gridState[gridId].columns[column].timeFormat;
 
         if (timeArray.length < 2) return '';
 
-        if (timeFormat && timeFormat == '24' && timeArray.length === 4 && timeArray[3] === 'PM')
+        if (timeFormat == '24' && timeArray.length === 4 && timeArray[3] === 'PM')
             timeArray[0] = timeArray[0] === '12' ? '00' : (parseInt(timeArray[0]) + 12).toString();
-        else if (timeFormat && timeFormat === '12' && parseInt(timeArray[0]) > 12) {
+        else if (timeFormat === '12' && parseInt(timeArray[0]) > 12) {
             timeArray[0] = (parseInt(timeArray[0]) - 12).toString();
             timeArray[3] = 'PM';
         }
-        else if (timeFormat && timeFormat === '12' && timeArray.length < 4)
+        else if (timeFormat === '12' && timeArray.length < 4)
             timeArray[3] = 'AM';
 
         timeArray[0] = timeArray[0] ? timeArray[0] : '00';

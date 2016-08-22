@@ -5,13 +5,14 @@ var gridData = {
     sortable: true,
     reorderable: true,
     groupable: true,
+    groupAggregates: true,
     filterable: true,
     selectable: 'multi-row',
     excelExport: true,
+    columnToggle: true,
     pagingOptions: [25, 50, 100],
     menu: ['filter', 'excel', 'save', 'sort', 'selection'],
-    //pageSize: 50,
-    summaryRow: {
+    aggregates: {
         Service: {
             type: "count"
         },
@@ -19,8 +20,7 @@ var gridData = {
             type: "average"
         },
         Cost: {
-            type: "max",
-            template: "${{data}}"
+            type: "max"
         },
         Date: {
             type: ""
@@ -38,8 +38,7 @@ var gridData = {
             type: ""
         },
         Billed: {
-            type: "total",
-            template: "${{data}}"
+            type: "total"
         },
         Markup: {
             type: ""
@@ -75,7 +74,7 @@ var gridData = {
         Labor: {
             type: "number",
             template: "{{data}} hour(s)",
-            format: '#',
+            format: 'n2',
             editable: 'drop-down',
             options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
             width: 160,

@@ -6,12 +6,11 @@ var gridData = {
     reorderable: true,
     groupable: true,
     groupAggregates: true,
-    filterable: true,
     selectable: 'multi-row',
     excelExport: true,
     columnToggle: true,
     pagingOptions: [25, 50, 100],
-    menu: ['filter', 'excel', 'save', 'sort', 'selection'],
+    //menu: ['filter', 'excel', 'save', 'sort', 'selection'],
     //pageSize: 50,
     aggregates: {
         Service: {
@@ -84,7 +83,7 @@ var gridData = {
                 customRules: {
                     maxValue: function maxValue(callback) {
                         if ($(this).val() >= 10)
-                            callback(false, "You must select a lower valufield'e.", 150);
+                            callback(false, "You must select a lower value.", 150);
                         else
                             callback(true);
                     }

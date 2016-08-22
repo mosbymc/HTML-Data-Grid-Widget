@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">209.15</p>
+      <p class="stat">209.11</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">71.74</p>
+      <p class="stat">71.72</p>
     </div>
   </div>
 </div>
@@ -3093,18 +3093,18 @@
     function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
             formattedTime,
-            format = gridState[gridId].columns[column].format,
+            format = gridState[gridId].columns[column].format || &#039;24&#039;,
             timeFormat = gridState[gridId].columns[column].timeFormat;
 
         if (timeArray.length &lt; 2) return &#039;&#039;;
 
-        if (timeFormat &amp;&amp; timeFormat == &#039;24&#039; &amp;&amp; timeArray.length === 4 &amp;&amp; timeArray[3] === &#039;PM&#039;)
+        if (timeFormat == &#039;24&#039; &amp;&amp; timeArray.length === 4 &amp;&amp; timeArray[3] === &#039;PM&#039;)
             timeArray[0] = timeArray[0] === &#039;12&#039; ? &#039;00&#039; : (parseInt(timeArray[0]) + 12).toString();
-        else if (timeFormat &amp;&amp; timeFormat === &#039;12&#039; &amp;&amp; parseInt(timeArray[0]) &gt; 12) {
+        else if (timeFormat === &#039;12&#039; &amp;&amp; parseInt(timeArray[0]) &gt; 12) {
             timeArray[0] = (parseInt(timeArray[0]) - 12).toString();
             timeArray[3] = &#039;PM&#039;;
         }
-        else if (timeFormat &amp;&amp; timeFormat === &#039;12&#039; &amp;&amp; timeArray.length &lt; 4)
+        else if (timeFormat === &#039;12&#039; &amp;&amp; timeArray.length &lt; 4)
             timeArray[3] = &#039;AM&#039;;
 
         timeArray[0] = timeArray[0] ? timeArray[0] : &#039;00&#039;;
