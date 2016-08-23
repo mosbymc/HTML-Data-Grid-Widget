@@ -44,7 +44,10 @@
 }
 .grid-wrapper {
   width: 100%;
-  border: 0 1px 1px 1px solid #e6e6e6;
+  border-top: 0;
+  border-right: 1px solid #e6e6e6;
+  border-bottom: 1px solid #e6e6e6;
+  border-left: 1px solid #e6e6e6;
   -webkit-user-select: none;
      -moz-user-select: none;
       -ms-user-select: none;
@@ -795,7 +798,7 @@ input {
   cursor: pointer;
   list-style: none outside none;
   -webkit-appearance: none;
-  /*-webkit-tap-highlight-color: @black;*/
+  -webkit-tap-highlight-color: #000000;
   padding: 8px;
   text-decoration: none;
   font-size: 14px;

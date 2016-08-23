@@ -50,7 +50,10 @@
 
 .grid-wrapper {
   width: 100%;
-  border: 0 1px 1px 1px solid @border-color;
+  border-top: 0;
+  border-right: 1px solid @border-color;
+  border-bottom: 1px solid @border-color;
+  border-left: 1px solid @border-color;
   user-select: none;
 }
 
@@ -313,6 +316,14 @@
 
 .span-first {
   margin-left: 10px;
+}
+
+.span-last {
+
+}
+
+.span-prev {
+
 }
 
 .span-next {
@@ -746,7 +757,7 @@ input {
   cursor: pointer;
   .list-styles;
   -webkit-appearance: none;
-  /*-webkit-tap-highlight-color: @black;*/
+  -webkit-tap-highlight-color: @black;
   padding: 8px;
   text-decoration: none;
   .font-settings(@base-font-size, 500);

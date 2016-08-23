@@ -95,11 +95,11 @@
  - Dynamically add new columns - DONE
  - Ensure 'null' does not display in row where no data is provided - DONE
  - Fix dirty span display on empty grid cells - DONE
+ - Implement reorderable group items to support 're-grouping' - DONE
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
     > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
     > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
     > and if that specific functionality has handled the added column or not without repeating the same data for each functionality
- - Implement reorderable group items to support 're-grouping'
  - Make dirty cells check against original data, not the previous value in the cell/dataSource
  - Add integration tests if possible
  - Add type checking - passed in grid data
