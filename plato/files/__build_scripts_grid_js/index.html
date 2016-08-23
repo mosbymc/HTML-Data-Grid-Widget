@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.55</p>
+      <p class="stat">55.50</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3257</p>
+      <p class="stat">3311</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">209.11</p>
+      <p class="stat">211.34</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">71.72</p>
+      <p class="stat">72.92</p>
     </div>
   </div>
 </div>
@@ -1596,11 +1596,15 @@
         if ($(&#039;#grid_&#039; + id + &#039;_toolbar&#039;).length) return;	
 
         if (gridData.groupable) {
-            var groupMenuBar = $(&#039;&lt;div id=&quot;grid_&#039; + id + &#039;group_div&quot; class=&quot;group_div clearfix&quot; data-grid_id=&quot;&#039; + id + &#039;&quot;&gt;&#039; + groupMenuText + &#039;&lt;/div&gt;&#039;).prependTo(gridElem);
+            var groupMenuBar = $(&#039;&lt;div id=&quot;grid_&#039; + id + &#039;_group_div&quot; class=&quot;group_div clearfix&quot; data-grid_id=&quot;&#039; + id + &#039;&quot;&gt;&#039; + groupMenuText + &#039;&lt;/div&gt;&#039;).prependTo(gridElem);
             groupMenuBar.on(&#039;drop&#039;, function handleDropCallback(e) {
                 var droppedCol = $(&#039;#&#039; + e.originalEvent.dataTransfer.getData(&#039;text&#039;));
-                var groupId = $(e.currentTarget).data(&#039;grid_id&#039;);
-                var droppedId = droppedCol.parents(&#039;.grid-header-div&#039;).length ? droppedCol.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;) : null;
+                droppedCol.data(&#039;dragging&#039;, false);
+                var dropIndicator = $(&#039;#drop_indicator_id_&#039; + id);
+                dropIndicator.css(&#039;display&#039;, &#039;none&#039;);
+                var groupId = $(e.currentTarget).data(&#039;grid_id&#039;),
+                    droppedId = droppedCol.parents(&#039;.grid-header-div&#039;).length ? droppedCol.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;) : null,
+                    groupedItems = {};
                 if (groupId == null || droppedId == null || groupId !== droppedId) return;
                 if (gridState[id].updating) return;		
                 if (!groupMenuBar.children().length) groupMenuBar.text(&#039;&#039;);
@@ -1609,18 +1613,24 @@
                     foundDupe = false;
 
                 groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupItemsCallback(idx, val) {
-                    if ($(val).data(&#039;field&#039;) === field) {
+                    var item = $(val);
+                    groupedItems[item.data(&#039;field&#039;)] = item;
+                    if (item.data(&#039;field&#039;) === field) {
                         foundDupe = true;
                         return false;
                     }
                 });
                 if (foundDupe) return;  
 
-                var groupItem = $(&#039;&lt;div class=&quot;group_item&quot; data-grid_id=&quot;&#039; + groupId + &#039;&quot; data-field=&quot;&#039; + field + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(groupMenuBar),
+                var groupItem = $(&#039;&lt;div class=&quot;group_item&quot; data-grid_id=&quot;&#039; + groupId + &#039;&quot; data-field=&quot;&#039; + field + &#039;&quot;&gt;&lt;/div&gt;&#039;),
                     groupDirSpan = $(&#039;&lt;span class=&quot;group_sort&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
                 groupDirSpan.append(&#039;&lt;span class=&quot;sort-asc-white groupSortSpan&quot;&gt;&lt;/span&gt;&#039;).append(&#039;&lt;span&gt;&#039; + title + &#039;&lt;/span&gt;&#039;);
                 var cancelButton = $(&#039;&lt;span class=&quot;remove&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem),
                     groupings = [];
+
+                if (dropIndicator.data(&#039;field&#039;)) groupItem.insertBefore(groupedItems[dropIndicator.data(&#039;field&#039;)]);
+                else groupItem.appendTo(groupMenuBar);
+
                 groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupedColumnsCallback(idx, val) {
                     var item = $(val);
                     groupings.push({
@@ -1654,6 +1664,50 @@
             });
             groupMenuBar.on(&#039;dragover&#039;, function handleHeaderDragOverCallback(e) {
                 e.preventDefault();
+                var gridId = groupMenuBar.data(&#039;grid_id&#039;);
+                var dropIndicator = $(&#039;#drop_indicator_id_&#039; + gridId);
+                if (!dropIndicator.length) {
+                    dropIndicator = $(&#039;&lt;div id=&quot;drop_indicator_id_&#039; + gridId + &#039;&quot; class=&quot;drop-indicator2&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&lt;/div&gt;&#039;);
+                    dropIndicator.append(&#039;&lt;span class=&quot;drop-indicator2-top&quot;&gt;&lt;/span&gt;&lt;span class=&quot;drop-indicator2-bottom&quot;&gt;&lt;/span&gt;&#039;);
+                    gridState[gridId].grid.append(dropIndicator);
+                }
+
+                var groupedItems = groupMenuBar.find(&#039;.group_item&#039;);
+                if (groupedItems.length) {
+                    var placedIndicator = false;
+
+                    groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupedColumnsCallback(idx, val) {
+                        var groupItem = $(val);
+                        var groupItemOffset = groupItem.offset();
+                        if (groupItemOffset.left &lt; e.originalEvent.x &amp;&amp; groupItemOffset.left + groupItem.width() &gt; e.originalEvent.x) {
+                            dropIndicator.css(&#039;left&#039;, groupItemOffset.left);
+                            dropIndicator.css(&#039;top&#039;, groupItemOffset.top);
+                            dropIndicator.css(&#039;height&#039;, groupItem.outerHeight());
+                            dropIndicator.data(&#039;field&#039;, groupItem.data(&#039;field&#039;));
+                            placedIndicator = true;
+                            return false;
+                        }
+                    });
+
+                    if (!placedIndicator) {
+                        var lastItem = groupMenuBar.find(&#039;.group_item&#039;).last();
+                        dropIndicator.css(&#039;left&#039;, lastItem.offset().left + lastItem.outerWidth());
+                        dropIndicator.css(&#039;top&#039;, lastItem.offset().top);
+                        dropIndicator.css(&#039;height&#039;, lastItem.outerHeight());
+                        dropIndicator.data(&#039;field&#039;, lastItem.data(&#039;field&#039;));
+                    }
+                }
+                else {
+                    dropIndicator.css(&#039;height&#039;, groupMenuBar.outerHeight());
+                    dropIndicator.css(&#039;left&#039;, groupMenuBar.offset().left);
+                    dropIndicator.css(&#039;top&#039;, groupMenuBar.offset().top);
+                }
+                dropIndicator.css(&#039;display&#039;, &#039;block&#039;);
+            });
+
+            groupMenuBar.on(&#039;dragexit&#039;, function handleHeaderDragOverCallback(e) {
+                e.preventDefault();
+                $(&#039;#drop_indicator_id_&#039; + groupMenuBar.data(&#039;grid_id&#039;)).css(&#039;display&#039;, &#039;none&#039;);
             });
         }
 
@@ -2346,8 +2400,7 @@
         elem.on(&#039;drop&#039;, handleDropCallback);
         elem.on(&#039;dragover&#039;, function handleHeaderDragOverCallback(e) {
             e.preventDefault();
-            var column = $(&#039;#&#039; + e.currentTarget.id);
-            var gridId = column.parents(&#039;.grid-header-div&#039;).data(&#039;grid_header_id&#039;);
+            var gridId = elem.parents(&#039;.grid-header-div&#039;).data(&#039;grid_header_id&#039;);
             var dropIndicator = $(&#039;#drop_indicator_id_&#039; + gridId);
             if (!dropIndicator.length) {
                 dropIndicator = $(&#039;&lt;div id=&quot;drop_indicator_id_&#039; + gridId + &#039;&quot; class=&quot;drop-indicator2&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&lt;/div&gt;&#039;);
@@ -2360,9 +2413,10 @@
                 if ($(val).data(&#039;dragging&#039;)) originalColumn = $(val);
             });
 
-            if (originalColumn &amp;&amp; originalColumn[0] !== column[0]) {
+            if (originalColumn &amp;&amp; originalColumn[0] !== elem[0]) {
                 dropIndicator.css(&#039;display&#039;, &#039;block&#039;);
-                if (originalColumn.offset().left &lt; column.offset().left) {
+                dropIndicator.css(&#039;height&#039;, elem.outerHeight());
+                if (originalColumn.offset().left &lt; elem.offset().left) {
                     dropIndicator.css(&#039;left&#039;, elem.offset().left + elem.outerWidth());
                     dropIndicator.css(&#039;top&#039;, elem.offset().top);
                 }

@@ -1505,11 +1505,15 @@ var grid = (function _grid($) {
         if ($('#grid_' + id + '_toolbar').length) return;	
 
         if (gridData.groupable) {
-            var groupMenuBar = $('<div id="grid_' + id + 'group_div" class="group_div clearfix" data-grid_id="' + id + '">' + groupMenuText + '</div>').prependTo(gridElem);
+            var groupMenuBar = $('<div id="grid_' + id + '_group_div" class="group_div clearfix" data-grid_id="' + id + '">' + groupMenuText + '</div>').prependTo(gridElem);
             groupMenuBar.on('drop', function handleDropCallback(e) {
                 var droppedCol = $('#' + e.originalEvent.dataTransfer.getData('text'));
-                var groupId = $(e.currentTarget).data('grid_id');
-                var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
+                droppedCol.data('dragging', false);
+                var dropIndicator = $('#drop_indicator_id_' + id);
+                dropIndicator.css('display', 'none');
+                var groupId = $(e.currentTarget).data('grid_id'),
+                    droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null,
+                    groupedItems = {};
                 if (groupId == null || droppedId == null || groupId !== droppedId) return;
                 if (gridState[id].updating) return;		
                 if (!groupMenuBar.children().length) groupMenuBar.text('');
@@ -1518,18 +1522,24 @@ var grid = (function _grid($) {
                     foundDupe = false;
 
                 groupMenuBar.find('.group_item').each(function iterateGroupItemsCallback(idx, val) {
-                    if ($(val).data('field') === field) {
+                    var item = $(val);
+                    groupedItems[item.data('field')] = item;
+                    if (item.data('field') === field) {
                         foundDupe = true;
                         return false;
                     }
                 });
                 if (foundDupe) return;  
 
-                var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>').appendTo(groupMenuBar),
+                var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>'),
                     groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
                 groupDirSpan.append('<span class="sort-asc-white groupSortSpan"></span>').append('<span>' + title + '</span>');
                 var cancelButton = $('<span class="remove"></span>').appendTo(groupItem),
                     groupings = [];
+
+                if (dropIndicator.data('field')) groupItem.insertBefore(groupedItems[dropIndicator.data('field')]);
+                else groupItem.appendTo(groupMenuBar);
+
                 groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
                     var item = $(val);
                     groupings.push({
@@ -1563,6 +1573,50 @@ var grid = (function _grid($) {
             });
             groupMenuBar.on('dragover', function handleHeaderDragOverCallback(e) {
                 e.preventDefault();
+                var gridId = groupMenuBar.data('grid_id');
+                var dropIndicator = $('#drop_indicator_id_' + gridId);
+                if (!dropIndicator.length) {
+                    dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator2" data-grid_id="' + gridId + '"></div>');
+                    dropIndicator.append('<span class="drop-indicator2-top"></span><span class="drop-indicator2-bottom"></span>');
+                    gridState[gridId].grid.append(dropIndicator);
+                }
+
+                var groupedItems = groupMenuBar.find('.group_item');
+                if (groupedItems.length) {
+                    var placedIndicator = false;
+
+                    groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
+                        var groupItem = $(val);
+                        var groupItemOffset = groupItem.offset();
+                        if (groupItemOffset.left < e.originalEvent.x && groupItemOffset.left + groupItem.width() > e.originalEvent.x) {
+                            dropIndicator.css('left', groupItemOffset.left);
+                            dropIndicator.css('top', groupItemOffset.top);
+                            dropIndicator.css('height', groupItem.outerHeight());
+                            dropIndicator.data('field', groupItem.data('field'));
+                            placedIndicator = true;
+                            return false;
+                        }
+                    });
+
+                    if (!placedIndicator) {
+                        var lastItem = groupMenuBar.find('.group_item').last();
+                        dropIndicator.css('left', lastItem.offset().left + lastItem.outerWidth());
+                        dropIndicator.css('top', lastItem.offset().top);
+                        dropIndicator.css('height', lastItem.outerHeight());
+                        dropIndicator.data('field', lastItem.data('field'));
+                    }
+                }
+                else {
+                    dropIndicator.css('height', groupMenuBar.outerHeight());
+                    dropIndicator.css('left', groupMenuBar.offset().left);
+                    dropIndicator.css('top', groupMenuBar.offset().top);
+                }
+                dropIndicator.css('display', 'block');
+            });
+
+            groupMenuBar.on('dragexit', function handleHeaderDragOverCallback(e) {
+                e.preventDefault();
+                $('#drop_indicator_id_' + groupMenuBar.data('grid_id')).css('display', 'none');
             });
         }
 
@@ -2255,8 +2309,7 @@ var grid = (function _grid($) {
         elem.on('drop', handleDropCallback);
         elem.on('dragover', function handleHeaderDragOverCallback(e) {
             e.preventDefault();
-            var column = $('#' + e.currentTarget.id);
-            var gridId = column.parents('.grid-header-div').data('grid_header_id');
+            var gridId = elem.parents('.grid-header-div').data('grid_header_id');
             var dropIndicator = $('#drop_indicator_id_' + gridId);
             if (!dropIndicator.length) {
                 dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator2" data-grid_id="' + gridId + '"></div>');
@@ -2269,9 +2322,10 @@ var grid = (function _grid($) {
                 if ($(val).data('dragging')) originalColumn = $(val);
             });
 
-            if (originalColumn && originalColumn[0] !== column[0]) {
+            if (originalColumn && originalColumn[0] !== elem[0]) {
                 dropIndicator.css('display', 'block');
-                if (originalColumn.offset().left < column.offset().left) {
+                dropIndicator.css('height', elem.outerHeight());
+                if (originalColumn.offset().left < elem.offset().left) {
                     dropIndicator.css('left', elem.offset().left + elem.outerWidth());
                     dropIndicator.css('top', elem.offset().top);
                 }

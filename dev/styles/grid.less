@@ -50,7 +50,7 @@
 
 .grid-wrapper {
   width: 100%;
-  border: 1px solid @border-color;
+  border: 0 1px 1px 1px solid @border-color;
   user-select: none;
 }
 
@@ -164,9 +164,7 @@
 
 .sortSpan {
   margin-left: 7px;
-  /*background: @black no-repeat;*/
   border-collapse: separate;
-  border-color: @black;
   box-sizing: content-box;
   color: rgb(168, 168, 168);
   cursor: pointer;
@@ -184,10 +182,6 @@
   vertical-align: bottom;
   white-space: nowrap;
   width: 16px;
-
-  &:visited {
-    color: @black;
-  }
 }
 
 .sort-desc {
@@ -208,13 +202,9 @@
 
 .filterSpan {
   float: right;
-  background: @black url('../images/menu.svg') no-repeat;
+  background: url('../images/menu.svg') no-repeat;
   width: 12px;
   height: 12px;
-
-  &:visited {
-    color: @black;
-  }
 }
 
 .grid-content-div {
@@ -299,10 +289,6 @@
   height: @base-em-height;
   line-height: @base-em-line-height;
 
-  &:visited {
-    color: @black;
-  }
-
   &:disabled > i {
     color: #009900;
   }
@@ -327,14 +313,6 @@
 
 .span-first {
   margin-left: 10px;
-}
-
-.span-last {
-
-}
-
-.span-prev {
-
 }
 
 .span-next {
@@ -385,7 +363,7 @@
   color: #000;
   -webkit-appearance: none;
   -webkit-rtl-ordering: logical;
-  -webkit-tap-highlight-color: @black;
+  /*-webkit-tap-highlight-color: @black;*/
   -webkit-user-select: text;
   .font-settings;
   font-stretch: normal;
@@ -412,7 +390,7 @@
 
   -webkit-appearance: none;
   -webkit-rtl-ordering: logical;
-  -webkit-tap-highlight-color: @black;
+  /*-webkit-tap-highlight-color: @black;*/
   -webkit-user-select: text;
   background-color: @white;
   color: @dark-grey;
@@ -501,8 +479,8 @@
 .cell-edit-wrap {
   width: 100%;
   -webkit-appearance: none;
-  -webkit-tap-highlight-color: @black;
-  background: @black none;
+  /*-webkit-tap-highlight-color: @black;*/
+  /*background: @black none;*/
   border-collapse: separate;
   border-radius: 2px;
   border: 0 solid @border-color;
@@ -528,7 +506,7 @@
 
   -webkit-appearance: none;
   -webkit-rtl-ordering: logical;
-  -webkit-tap-highlight-color: @black;
+  /*-webkit-tap-highlight-color: @black;*/
   -webkit-user-select: text;
   background-color: @white;
   /*border-color: rgb(68, 68, 68);
@@ -596,7 +574,7 @@
 }
 
 .cell-edit-arrow-wrap > span > span {
-  background: @black no-repeat;
+  /*background: @black no-repeat;*/
   border-collapse: separate;
   border-color: @black;
   box-sizing: content-box;
@@ -768,7 +746,7 @@ input {
   cursor: pointer;
   .list-styles;
   -webkit-appearance: none;
-  -webkit-tap-highlight-color: @black;
+  /*-webkit-tap-highlight-color: @black;*/
   padding: 8px;
   text-decoration: none;
   .font-settings(@base-font-size, 500);
@@ -783,43 +761,42 @@ input {
   position: absolute;
   width: 0;
   height: 0;
-  border-style: solid;
-  border-width: 4px;
-  border-color: transparent;
+  border: 4px solid transparent;
   left: 0;
-  top: 0
+  top: 0;
 }
 
 .drop-indicator2 .drop-indicator2-bottom {
   top: auto;
-  bottom: 0
+  bottom: 0;
 }
 
 .drop-indicator2 .drop-indicator2-top {
-  border-top-color: #2199e0
+  border-top-color: @black;
 }
 .drop-indicator2 .drop-indicator2-bottom {
-  border-bottom-color: #2199e0
+  border-bottom-color: @black;
 }
 
 .drop-indicator2 {
   position: absolute;
   z-index: 998;
   margin-left: -4px;
-  *margin-right: 4px
+  margin-right: 4px;
 }
 
 .drop-indicator {
   border-radius: 2px;
   color: #444444;
   background-color: #ebebeb;
-  border-color: #ebebeb;
+  border: 1px solid #ebebeb;
+  /*border-color: #ebebeb;*/
   -webkit-box-shadow: inset 0 0 0 1px #808080;
   box-shadow: inset 0 0 0 1px #808080;
   position: absolute;
   z-index: 10003;
-  border-style: solid;
-  border-width: 1px;
+  /*border-style: solid;*/
+  /*border-width: 1px;*/
   /*font-size: .9em;*/
   /*padding: .2em .4em;*/
   white-space: nowrap;
@@ -858,7 +835,7 @@ input {
 }
 
 .remove {
-  background: @black url('../images/close-white.png') no-repeat;
+  background: url('../images/close-white.png') no-repeat;
   float: right;
   width: 12px;
   height: 12px;
@@ -881,10 +858,8 @@ input {
 }
 
 .groupSortSpan {
-  /*background: @black no-repeat;*/
   margin-right: 5px;
   border-collapse: separate;
-  border-color: @black;
   box-sizing: content-box;
   color: rgb(168, 168, 168);
   cursor: pointer;
@@ -902,10 +877,6 @@ input {
   vertical-align: bottom;
   white-space: nowrap;
   width: 12px;
-
-  &:visited {
-    color: @black;
-  }
 }
 
 .sliderDiv {
@@ -1027,7 +998,7 @@ input {
 
 .menuSpan {
   float: left;
-  background: @black url('../images/menu.svg') no-repeat;
+  background: url('../images/menu.svg') no-repeat;
   width: 12px;
   height: 12px;
   margin-right: 10px;
@@ -1079,7 +1050,7 @@ input {
 .menu_arrow {
   margin-top: 4px;
   float: right;
-  background: @black url('../images/arrowRight.svg') no-repeat;
+  background: url('../images/arrowRight.svg') no-repeat;
   width: 12px;
   height: 12px;
 }
