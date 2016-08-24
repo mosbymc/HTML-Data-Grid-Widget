@@ -1888,6 +1888,10 @@ var grid = (function _grid($) {
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
                 saveVal = displayVal;
                 break;
+            case 'boolean':
+                displayVal = val.toString();
+                saveVal = val;
+                break;
             default:
                 saveVal = val;
                 break;
@@ -2525,7 +2529,7 @@ var grid = (function _grid($) {
                 sizeSelectorSpan.appendTo(gridFooter);
                 sizeSelect.appendTo(sizeSelectorSpan);
             }
-            sizeSelect.val(gridState[id].pageSize);
+            sizeSelect.val(~pageOptions.indexOf(gridState[id].pageSize) ? gridState[id].pageSize : pageOptions[0]);
             sizeSelectorSpan.append('Rows per page');
 
             sizeSelect.on('change', function pageSizeSelectorClickHandler() {
