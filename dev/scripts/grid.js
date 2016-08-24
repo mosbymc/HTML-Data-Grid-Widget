@@ -494,7 +494,7 @@ var grid = (function _grid($) {
                         var newModel = {}, prop;
                         if (!data) {
                             for (prop in gridState[gridId].dataSource.data[0]) {
-                                newModel[prop] = null;
+                                if (prop !== '_initialRowIndex') newModel[prop] = null;
                             }
                         }
                         else if (typeof data === 'object') {
@@ -503,8 +503,10 @@ var grid = (function _grid($) {
                                 else newModel[prop] = null;
                             }
                         }
-                        newModel._initialRowIndex = gridState[gridId].dataSource.data.length;
-                        gridState[gridId].dataSource.data.push(newModel);
+                        gridState[gridId].originalData.push(newModel);
+                        var dataSourceModel = cloneGridData(newModel);
+                        dataSourceModel._initialRowIndex = gridState[gridId].dataSource.data.length;
+                        gridState[gridId].dataSource.data.push(dataSourceModel);
                         gridState[gridId].dataSource.rowCount++;
 
                         gridState[gridId].pageSize = gridState[gridId].pageSize + 1;
@@ -1617,10 +1619,15 @@ var grid = (function _grid($) {
             switch (type) {
                 case 'boolean':
                     input = $('<input type="checkbox" class="input checkbox active-cell"' + dataAttributes + '/>').appendTo(cell);
-                    input[0].checked = typeof val === 'string' ? val === 'true' : !!val;
+                    val = typeof gridState[id].dataSource.data[index][field] === 'string' ? gridState[id].dataSource.data[index][field] === 'true' : !!val;
+                    input[0].checked = val;
                     dataType = 'boolean';
                     break;
                 case 'number':
+                    if (typeof gridState[id].dataSource.data[index][field] === 'string')
+                        val = isNumber(parseFloat(gridState[id].dataSource.data[index][field])) ? isNumber(parseFloat(gridState[id].dataSource.data[index][field])) : 0;
+                    else
+                        val = isNumber(gridState[id].dataSource.data[index][field]) ? gridState[id].dataSource.data[index][field] : 0;
                     inputVal = val;
                     input = $('<input type="text" value="' + inputVal + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
                     dataType = 'number';
@@ -1864,7 +1871,12 @@ var grid = (function _grid($) {
             case 'number':
                 re = new RegExp(dataTypes.number);
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
+                if (typeof gridState[id].dataSource.data[index][field] === 'string') saveVal = val;
+                else {
+                    var tmpVal = parseFloat(val.replace(',', ''));
+                    tmpVal === tmpVal ? saveVal = tmpVal : saveVal = 0;
+                }
+                //saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
                 break;
             case 'date':
                 re = new RegExp(dataTypes.date);
@@ -1886,10 +1898,12 @@ var grid = (function _grid($) {
         var previousVal = gridState[id].dataSource.data[index][field];
         if (previousVal !== saveVal) {
             gridState[id].dataSource.data[index][field] = saveVal;
-            if ('' !== saveVal && previousVal != null)
-                cell.prepend('<span class="dirty"></span>');
-            else if (previousVal != null)
-                cell.prepend('<span class="dirty-blank"></span>');
+            if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
+                if ('' !== saveVal)
+                    cell.prepend('<span class="dirty"></span>');
+                else if (previousVal != null)
+                    cell.prepend('<span class="dirty-blank"></span>');
+            }
         }
         callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
@@ -1937,7 +1951,10 @@ var grid = (function _grid($) {
         parentCell.text(displayVal);
         var previousVal = gridState[id].dataSource.data[index][field];
         if (previousVal !== saveVal) {	//if the value didn't change, don't "save" the new val, and don't apply the "dirty" span
-            parentCell.prepend('<span class="dirty"></span>');
+            gridState[id].dataSource.data[index][field] = saveVal;
+            if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
+                parentCell.prepend('<span class="dirty"></span>');
+            }
             gridState[id].dataSource.data[index][field] = saveVal;
         }
         callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
@@ -2981,6 +2998,7 @@ var grid = (function _grid($) {
                             return item.field !== field;
                         });
                         elem.find('.sortSpan').remove();
+                        //TODO: why am I doing this here?
                         gridState[id].alteredData = cloneGridData(gridState[id].originalData);
                     }
                 }
