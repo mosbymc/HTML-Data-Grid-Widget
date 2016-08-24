@@ -48,7 +48,7 @@
  - Add "undo" filter/sort/group ability in toolbar - DONE
  - During paging, grouped and/or sorted data is being un-grouped (filtered data too likely) - DONE
  - Fix paging on filtered data - DONE
- - Redo summary row so that it works with server-side paging as well - DONE
+ - Refactor aggregates row so that it works with server-side paging as well - DONE
  - Fix reordering on grouped grid - DONE
  - See about only giving the dataSource.data the needed data for the current grid page - DONE
  - Add a template field for column data - DONE
@@ -65,7 +65,7 @@
  - Implement true aggregates + fix naming of row grouping - DONE
  - Check aggregations for existence of column before trying to build row's aggregates - DONE
  - Fix filtering/sorting on time - DONE
- - Rework setting column widths - DONE
+ - Refactor column width calculations - DONE
  - Fix sorting chevron to not display on top of filter icon when column name is same size as column - DONE
  - Examine headers and fix DOM structure - DONE
  - Remove unused regex values & update 'inputTypes' to use validateCharacter function - DONE
@@ -90,17 +90,22 @@
  - Add multiple-grouping capability - DONE
  - Add number formatting (n) - DONE
  - Add group-aggregate calculations - DONE
- - Re-work how aggregates are calculated - DONE
+ - Refactor aggregate calculations - DONE
  - Add functionality to show/hide columns - DONE
  - Dynamically add new columns - DONE
  - Ensure 'null' does not display in row where no data is provided - DONE
  - Fix dirty span display on empty grid cells - DONE
  - Implement reorderable group items to support 're-grouping' - DONE
+ - Make dirty cells check against original data, not the previous value in the cell/dataSource - DONE
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
     > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
     > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
     > and if that specific functionality has handled the added column or not without repeating the same data for each functionality
- - Make dirty cells check against original data, not the previous value in the cell/dataSource
+ - Fix drop-downs from populating options with same value twice when cell value is same an provided option
+ - Fix grid from forgetting a cell has changed values
+    > happens with selectable cells for sure; change value, click again, but don't change value; it will forget
+ - Ensure DELETE operation happens on all dirty cells
+ - Add menu option to specify OR, AND, NOT filters
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
@@ -2050,8 +2055,8 @@ var grid = (function _grid($) {
                 var dropIndicator = $('#drop_indicator_id_' + gridId);
                 //TODO: I believe I can just reuse the existing group indicator, but I may need to change where it lives as a child of the grid
                 if (!dropIndicator.length) {
-                    dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator2" data-grid_id="' + gridId + '"></div>');
-                    dropIndicator.append('<span class="drop-indicator2-top"></span><span class="drop-indicator2-bottom"></span>');
+                    dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator" data-grid_id="' + gridId + '"></div>');
+                    dropIndicator.append('<span class="drop-indicator-top"></span><span class="drop-indicator-bottom"></span>');
                     gridState[gridId].grid.append(dropIndicator);
                 }
 
@@ -2834,8 +2839,8 @@ var grid = (function _grid($) {
             var gridId = elem.parents('.grid-header-div').data('grid_header_id');
             var dropIndicator = $('#drop_indicator_id_' + gridId);
             if (!dropIndicator.length) {
-                dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator2" data-grid_id="' + gridId + '"></div>');
-                dropIndicator.append('<span class="drop-indicator2-top"></span><span class="drop-indicator2-bottom"></span>');
+                dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator" data-grid_id="' + gridId + '"></div>');
+                dropIndicator.append('<span class="drop-indicator-top"></span><span class="drop-indicator-bottom"></span>');
                 gridState[gridId].grid.append(dropIndicator);
             }
 

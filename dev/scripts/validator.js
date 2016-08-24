@@ -13,7 +13,7 @@
  Group functionality in dom traversal code - DONE
  Add user defined offset for error displays - DONE
  Add data types for validation rules sets - DONE
- Add "callBefore" functonality - DONE
+ Add "callBefore" functionality - DONE
  Encapsulate the library of validation rules - DONE
  Add ability to show error messages inside a new "all errors" div - DONE
 
@@ -117,9 +117,9 @@
  Refactor attributes on the validation event - DONE
  Fix helptext modal scrolling - error modal scroll works - DONE
  */
-//The starting point of valdation
-"use strict";
+//The starting point of validation
 var validator = (function validator($) {
+    'use strict';
     var validationState = {},
         inputEvents = [];
     $(document).on("click", "input, button", function clickHandler(event) {  //Bind form event listener and create "options" object when an input or button with the "formValidate" class is clicked.
@@ -833,8 +833,8 @@ var validator = (function validator($) {
             callback(validationRules.regexTester($(this), re), "Password must be at least 8 characters and include both upper and lower case letters and a number.", 300);
         },
         regexTester: function regexTester(obj, regEx) {
-            if (obj.val() !== "" && !regEx.test(obj.val())) return false;
-            return true;
+            var val = obj.val();
+            return val === '' || regEx.test(val);
         }
     };
     return {    //exposed functions

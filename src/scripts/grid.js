@@ -1596,8 +1596,8 @@ var grid = (function _grid($) {
                 var gridId = groupMenuBar.data('grid_id');
                 var dropIndicator = $('#drop_indicator_id_' + gridId);
                 if (!dropIndicator.length) {
-                    dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator2" data-grid_id="' + gridId + '"></div>');
-                    dropIndicator.append('<span class="drop-indicator2-top"></span><span class="drop-indicator2-bottom"></span>');
+                    dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator" data-grid_id="' + gridId + '"></div>');
+                    dropIndicator.append('<span class="drop-indicator-top"></span><span class="drop-indicator-bottom"></span>');
                     gridState[gridId].grid.append(dropIndicator);
                 }
 
@@ -2332,8 +2332,8 @@ var grid = (function _grid($) {
             var gridId = elem.parents('.grid-header-div').data('grid_header_id');
             var dropIndicator = $('#drop_indicator_id_' + gridId);
             if (!dropIndicator.length) {
-                dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator2" data-grid_id="' + gridId + '"></div>');
-                dropIndicator.append('<span class="drop-indicator2-top"></span><span class="drop-indicator2-bottom"></span>');
+                dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator" data-grid_id="' + gridId + '"></div>');
+                dropIndicator.append('<span class="drop-indicator-top"></span><span class="drop-indicator-bottom"></span>');
                 gridState[gridId].grid.append(dropIndicator);
             }
 

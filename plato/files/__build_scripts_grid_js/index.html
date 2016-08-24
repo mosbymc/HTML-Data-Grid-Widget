@@ -1687,8 +1687,8 @@
                 var gridId = groupMenuBar.data(&#039;grid_id&#039;);
                 var dropIndicator = $(&#039;#drop_indicator_id_&#039; + gridId);
                 if (!dropIndicator.length) {
-                    dropIndicator = $(&#039;&lt;div id=&quot;drop_indicator_id_&#039; + gridId + &#039;&quot; class=&quot;drop-indicator2&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&lt;/div&gt;&#039;);
-                    dropIndicator.append(&#039;&lt;span class=&quot;drop-indicator2-top&quot;&gt;&lt;/span&gt;&lt;span class=&quot;drop-indicator2-bottom&quot;&gt;&lt;/span&gt;&#039;);
+                    dropIndicator = $(&#039;&lt;div id=&quot;drop_indicator_id_&#039; + gridId + &#039;&quot; class=&quot;drop-indicator&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&lt;/div&gt;&#039;);
+                    dropIndicator.append(&#039;&lt;span class=&quot;drop-indicator-top&quot;&gt;&lt;/span&gt;&lt;span class=&quot;drop-indicator-bottom&quot;&gt;&lt;/span&gt;&#039;);
                     gridState[gridId].grid.append(dropIndicator);
                 }
 
@@ -2423,8 +2423,8 @@
             var gridId = elem.parents(&#039;.grid-header-div&#039;).data(&#039;grid_header_id&#039;);
             var dropIndicator = $(&#039;#drop_indicator_id_&#039; + gridId);
             if (!dropIndicator.length) {
-                dropIndicator = $(&#039;&lt;div id=&quot;drop_indicator_id_&#039; + gridId + &#039;&quot; class=&quot;drop-indicator2&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&lt;/div&gt;&#039;);
-                dropIndicator.append(&#039;&lt;span class=&quot;drop-indicator2-top&quot;&gt;&lt;/span&gt;&lt;span class=&quot;drop-indicator2-bottom&quot;&gt;&lt;/span&gt;&#039;);
+                dropIndicator = $(&#039;&lt;div id=&quot;drop_indicator_id_&#039; + gridId + &#039;&quot; class=&quot;drop-indicator&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&lt;/div&gt;&#039;);
+                dropIndicator.append(&#039;&lt;span class=&quot;drop-indicator-top&quot;&gt;&lt;/span&gt;&lt;span class=&quot;drop-indicator-bottom&quot;&gt;&lt;/span&gt;&#039;);
                 gridState[gridId].grid.append(dropIndicator);
             }
 
