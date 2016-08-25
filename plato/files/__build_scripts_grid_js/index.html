@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3331</p>
+      <p class="stat">3356</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">212.89</p>
+      <p class="stat">213.36</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">73.68</p>
+      <p class="stat">74.29</p>
     </div>
   </div>
 </div>
@@ -1299,6 +1299,9 @@
             if (e.target !== e.currentTarget) return;
             if (gridContent.find(&#039;.invalid&#039;).length) return;
             var cell = $(e.currentTarget);
+            if (cell.children(&#039;span&#039;).hasClass(&#039;dirty&#039;))
+                cell.data(&#039;dirty&#039;, true);
+            else cell.data(&#039;dirty&#039;, false);
             cell.text(&#039;&#039;);
 
             if (gridState[id].updating) return;
@@ -1384,6 +1387,9 @@
             if (e.target !== e.currentTarget) return;
             if (gridContent.find(&#039;.invalid&#039;).length) return;
             var cell = $(e.currentTarget);
+            if (cell.children(&#039;span&#039;).hasClass(&#039;dirty&#039;))
+                cell.data(&#039;dirty&#039;, true);
+            else cell.data(&#039;dirty&#039;, false);
             cell.text(&#039;&#039;);
             var index = cell.parents(&#039;tr&#039;).index(&#039;#&#039; + gridContent[0].id + &#039; .data-row&#039;);
             var field = cell.data(&#039;field&#039;);
@@ -1403,7 +1409,7 @@
             var setVal = gridData.dataSource.data[index][field];
             if (null != setVal &amp;&amp; &#039;&#039; !== setVal) options.push(setVal);
             for (var z = 0; z &lt; gridData.columns[field].options.length; z++) {
-                if (setVal !== gridData.columns[field].options[z]) {
+                if (!compareValuesByType(setVal, gridData.columns[field].options[z], (gridData.columns[field].type || &#039;string&#039;))) {
                     options.push(gridData.columns[field].options[z]);
                 }
             }
@@ -1519,7 +1525,7 @@
             index = cell.parents(&#039;tr&#039;).index(&#039;#&#039; + gridContent[0].id + &#039; .data-row&#039;),
             field = cell.data(&#039;field&#039;),
             type = gridState[id].columns[field].type || &#039;&#039;,
-            saveVal, re,
+            saveVal, re, setDirtyFlag = false,
             formattedVal = getFormattedCellText(id, field, val),
             displayVal = formattedVal == null ? &#039;&#039; : formattedVal;
 
@@ -1559,11 +1565,14 @@
         if (previousVal !== saveVal) {
             gridState[id].dataSource.data[index][field] = saveVal;
             if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
-                if (&#039;&#039; !== saveVal)
-                    cell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
-                else if (previousVal != null)
-                    cell.prepend(&#039;&lt;span class=&quot;dirty-blank&quot;&gt;&lt;/span&gt;&#039;);
+                setDirtyFlag = true;
+                if (&#039;&#039; !== saveVal) cell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
+                else if (previousVal != null) cell.prepend(&#039;&lt;span class=&quot;dirty-blank&quot;&gt;&lt;/span&gt;&#039;);
             }
+        }
+        if (!setDirtyFlag &amp;&amp; cell.data(&#039;dirty&#039;)) {
+            if (&#039;&#039; !== saveVal) cell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
+            else cell.prepend(&#039;&lt;span class=&quot;dirty-blank&quot;&gt;&lt;/span&gt;&#039;);
         }
         callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
@@ -1578,7 +1587,7 @@
             field = parentCell.data(&#039;field&#039;),
             type = gridState[id].columns[field].type || &#039;&#039;,
             displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field],
-            re, saveVal;
+            re, saveVal, setDirtyFlag = false;
 
         switch (type) {
             case &#039;number&#039;:
@@ -1605,8 +1614,13 @@
             gridState[id].dataSource.data[index][field] = saveVal;
             if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
                 parentCell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
+                setDirtyFlag = true;
             }
             gridState[id].dataSource.data[index][field] = saveVal;
+        }
+        if (!setDirtyFlag &amp;&amp; parentCell.data(&#039;dirty&#039;)) {
+            if (&#039;&#039; !== saveVal) parentCell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
+            else parentCell.prepend(&#039;&lt;span class=&quot;dirty-blank&quot;&gt;&lt;/span&gt;&#039;);
         }
         callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
@@ -1888,7 +1902,10 @@
                 if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable || gridState[gridId].groupable) {
                     newMenu.append($(&#039;&lt;hr/&gt;&#039;));
                     if (gridState[gridId].sortable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createSortMenuItem()));
-                    if (gridState[gridId].filterable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createFilterMenuItems()));
+                    if (gridState[gridId].filterable) {
+                        newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createFilterMenuItems()));
+                        newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createFilterModalMenuItem(gridId)));
+                    }
                     if (gridState[gridId].groupable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createGroupMenuItem()));
                     if (gridState[gridId].selectable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createDeselectMenuOption(gridId)));
                 }
@@ -2002,6 +2019,13 @@
         var filterMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;).append($(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Remove All Grid Filters&lt;/a&gt;&#039;));
         filterMenuItem.on(&#039;click&#039;, resetAllFilters);
         return filterMenuItem;
+    }
+
+    function createFilterModalMenuItem() {
+        var filterModalMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;).append($(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Advanced Filters&lt;/a&gt;&#039;));
+        filterModalMenuItem.on(&#039;click&#039;, function openAdvancedFilterModal() {
+        });
+        return filterModalMenuItem;
     }
 
     function RemoveAllColumnSorts(e) {
@@ -3051,8 +3075,9 @@
             case &#039;date&#039;:
                 var date1 = new Date(val1),
                     date2 = new Date(val2);
-                if (typeof date1 === &#039;object&#039; &amp;&amp; typeof date2 === &#039;object&#039; &amp;&amp; date1 !== date1 &amp;&amp; date2 !== date2)
-                    return true;    
+                if ((typeof date1 === &#039;object&#039; ||typeof date1 === &#039;number&#039;) &amp;&amp; (typeof date2 === &#039;object&#039; || typeof date2 === &#039;number&#039;)) {
+                    if (date1 !== date1 &amp;&amp; date2 !== date2) return true;
+                }
                 return date1 === date2;
             case &#039;time&#039;:
                 var value1 = getNumbersFromTime(val1);

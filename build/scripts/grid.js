@@ -1208,6 +1208,9 @@ var grid = (function _grid($) {
             if (e.target !== e.currentTarget) return;
             if (gridContent.find('.invalid').length) return;
             var cell = $(e.currentTarget);
+            if (cell.children('span').hasClass('dirty'))
+                cell.data('dirty', true);
+            else cell.data('dirty', false);
             cell.text('');
 
             if (gridState[id].updating) return;
@@ -1293,6 +1296,9 @@ var grid = (function _grid($) {
             if (e.target !== e.currentTarget) return;
             if (gridContent.find('.invalid').length) return;
             var cell = $(e.currentTarget);
+            if (cell.children('span').hasClass('dirty'))
+                cell.data('dirty', true);
+            else cell.data('dirty', false);
             cell.text('');
             var index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row');
             var field = cell.data('field');
@@ -1312,7 +1318,7 @@ var grid = (function _grid($) {
             var setVal = gridData.dataSource.data[index][field];
             if (null != setVal && '' !== setVal) options.push(setVal);
             for (var z = 0; z < gridData.columns[field].options.length; z++) {
-                if (setVal !== gridData.columns[field].options[z]) {
+                if (!compareValuesByType(setVal, gridData.columns[field].options[z], (gridData.columns[field].type || 'string'))) {
                     options.push(gridData.columns[field].options[z]);
                 }
             }
@@ -1428,7 +1434,7 @@ var grid = (function _grid($) {
             index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
             field = cell.data('field'),
             type = gridState[id].columns[field].type || '',
-            saveVal, re,
+            saveVal, re, setDirtyFlag = false,
             formattedVal = getFormattedCellText(id, field, val),
             displayVal = formattedVal == null ? '' : formattedVal;
 
@@ -1468,11 +1474,14 @@ var grid = (function _grid($) {
         if (previousVal !== saveVal) {
             gridState[id].dataSource.data[index][field] = saveVal;
             if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
-                if ('' !== saveVal)
-                    cell.prepend('<span class="dirty"></span>');
-                else if (previousVal != null)
-                    cell.prepend('<span class="dirty-blank"></span>');
+                setDirtyFlag = true;
+                if ('' !== saveVal) cell.prepend('<span class="dirty"></span>');
+                else if (previousVal != null) cell.prepend('<span class="dirty-blank"></span>');
             }
+        }
+        if (!setDirtyFlag && cell.data('dirty')) {
+            if ('' !== saveVal) cell.prepend('<span class="dirty"></span>');
+            else cell.prepend('<span class="dirty-blank"></span>');
         }
         callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
@@ -1487,7 +1496,7 @@ var grid = (function _grid($) {
             field = parentCell.data('field'),
             type = gridState[id].columns[field].type || '',
             displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field],
-            re, saveVal;
+            re, saveVal, setDirtyFlag = false;
 
         switch (type) {
             case 'number':
@@ -1514,8 +1523,13 @@ var grid = (function _grid($) {
             gridState[id].dataSource.data[index][field] = saveVal;
             if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
                 parentCell.prepend('<span class="dirty"></span>');
+                setDirtyFlag = true;
             }
             gridState[id].dataSource.data[index][field] = saveVal;
+        }
+        if (!setDirtyFlag && parentCell.data('dirty')) {
+            if ('' !== saveVal) parentCell.prepend('<span class="dirty"></span>');
+            else parentCell.prepend('<span class="dirty-blank"></span>');
         }
         callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
@@ -1797,7 +1811,10 @@ var grid = (function _grid($) {
                 if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable || gridState[gridId].groupable) {
                     newMenu.append($('<hr/>'));
                     if (gridState[gridId].sortable) newMenu.append($('<ul class="menu-list"></ul>').append(createSortMenuItem()));
-                    if (gridState[gridId].filterable) newMenu.append($('<ul class="menu-list"></ul>').append(createFilterMenuItems()));
+                    if (gridState[gridId].filterable) {
+                        newMenu.append($('<ul class="menu-list"></ul>').append(createFilterMenuItems()));
+                        newMenu.append($('<ul class="menu-list"></ul>').append(createFilterModalMenuItem(gridId)));
+                    }
                     if (gridState[gridId].groupable) newMenu.append($('<ul class="menu-list"></ul>').append(createGroupMenuItem()));
                     if (gridState[gridId].selectable) newMenu.append($('<ul class="menu-list"></ul>').append(createDeselectMenuOption(gridId)));
                 }
@@ -1911,6 +1928,13 @@ var grid = (function _grid($) {
         var filterMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove All Grid Filters</a>'));
         filterMenuItem.on('click', resetAllFilters);
         return filterMenuItem;
+    }
+
+    function createFilterModalMenuItem() {
+        var filterModalMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Advanced Filters</a>'));
+        filterModalMenuItem.on('click', function openAdvancedFilterModal() {
+        });
+        return filterModalMenuItem;
     }
 
     function RemoveAllColumnSorts(e) {
@@ -2960,8 +2984,9 @@ var grid = (function _grid($) {
             case 'date':
                 var date1 = new Date(val1),
                     date2 = new Date(val2);
-                if (typeof date1 === 'object' && typeof date2 === 'object' && date1 !== date1 && date2 !== date2)
-                    return true;    
+                if ((typeof date1 === 'object' ||typeof date1 === 'number') && (typeof date2 === 'object' || typeof date2 === 'number')) {
+                    if (date1 !== date1 && date2 !== date2) return true;
+                }
                 return date1 === date2;
             case 'time':
                 var value1 = getNumbersFromTime(val1);
