@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3356</p>
+      <p class="stat">3409</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">213.36</p>
+      <p class="stat">213.68</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">74.29</p>
+      <p class="stat">75.22</p>
     </div>
   </div>
 </div>
@@ -650,6 +650,7 @@
         storageData.filteredOn = [];
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
+        storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -706,9 +707,9 @@
             }
 
             if (gridData.columns[col].filterable === true) {
-                gridState[gridHeader.data(&#039;grid_header_id&#039;)].filterable = true;
                 setFilterableClickListener(th, gridData, col);
                 gridData.filterable = true;
+                gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
             }
 
             if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
@@ -1413,6 +1414,33 @@
                     options.push(gridData.columns[field].options[z]);
                 }
             }
+            options.sort(function comparator(first, second) {
+                switch (gridData.columns[field].type || &#039;string&#039;) {
+                    case &#039;number&#039;:
+                        var firstNum = parseFloat(first.toString());
+                        var secondNum = parseFloat(second.toString());
+                        return firstNum &gt; secondNum ?  1 : firstNum &lt; secondNum ? -1 : 0;
+                    case &#039;string&#039;:
+                    case &#039;boolean&#039;:
+                        return first &gt; second ? 1 : first &lt; second ? -1 : 0;
+                    case &#039;time&#039;:
+                        var firstTime = getNumbersFromTime(first);
+                        var secondTime = getNumbersFromTime(second);
+
+                        if (~first.indexOf(&#039;PM&#039;))
+                            firstTime[0] += 12;
+                        if (~second.indexOf(&#039;PM&#039;))
+                            secondTime[0] += 12;
+
+                        firstTime = convertTimeArrayToSeconds(firstTime);
+                        secondTime = convertTimeArrayToSeconds(secondTime);
+                        return firstTime &gt; secondTime ? 1 : firstTime &lt; secondTime ? -1 : 0;
+                    case &#039;date&#039;:
+                        var firstDate = new Date(first);
+                        var secondDate = new Date(second);
+                        return firstDate &gt; secondDate ? 1 : firstDate &lt; secondDate ? -1 : 0;
+                }
+            });
             for (var k = 0; k &lt; options.length; k++) {
                 var opt = $(&#039;&lt;option value=&quot;&#039; + options[k] + &#039;&quot;&gt;&#039; + options[k] + &#039;&lt;/option&gt;&#039;);
                 select.append(opt);
@@ -1904,7 +1932,9 @@
                     if (gridState[gridId].sortable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createSortMenuItem()));
                     if (gridState[gridId].filterable) {
                         newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createFilterMenuItems()));
-                        newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createFilterModalMenuItem(gridId)));
+                        if (gridState[gridId].advancedFiltering) {
+                            newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createFilterModalMenuItem(gridId)));
+                        }
                     }
                     if (gridState[gridId].groupable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createGroupMenuItem()));
                     if (gridState[gridId].selectable) newMenu.append($(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;).append(createDeselectMenuOption(gridId)));
@@ -2021,9 +2051,25 @@
         return filterMenuItem;
     }
 
-    function createFilterModalMenuItem() {
+    function createFilterModalMenuItem(gridId) {
         var filterModalMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;).append($(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Advanced Filters&lt;/a&gt;&#039;));
         filterModalMenuItem.on(&#039;click&#039;, function openAdvancedFilterModal() {
+            var advancedFiltersModal = gridState[gridId].grid.find(&#039;filter_modal&#039;);
+            if (!advancedFiltersModal.length) {
+                advancedFiltersModal = $(&#039;&lt;div class=&quot;filter_modal&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&#039;);
+                var advancedFiltersContainer = $(&#039;&lt;div class=&quot;filter_container&quot;&gt;&lt;/div&gt;&#039;).appendTo(advancedFiltersModal),
+                    columnSelector = $(&#039;&lt;select class=&quot;input select&quot;&gt;&lt;/select&gt;&#039;).appendTo(advancedFiltersContainer);
+
+                for (var column in gridState[gridId].columns) {
+                    var curCol = gridState[gridId].columns[column];
+                    if (curCol.filterable) {
+                        columnSelector.append(&#039;&lt;option value=&quot;&#039; + column + &#039;&quot;&gt;&#039; + (curCol.title || column) + &#039;&lt;/option&gt;&#039;);
+                    }
+                }
+
+                var filterTypeSelector = $(&#039;&lt;select class=&quot;input select&quot;&gt;&lt;/select&gt;&#039;);
+                createFilterOptionsByDataType(filterTypeSelector, (gridState[gridId].columns[column].type || &#039;string&#039;));
+            }
         });
         return filterModalMenuItem;
     }
@@ -2286,43 +2332,50 @@
         var filterDiv = $(&#039;&lt;div class=&quot;filter-div&quot; data-parentfield=&quot;&#039; + field + &#039;&quot; data-type=&quot;&#039; + type + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(grid);
         var domName = title ? title : type;
         var filterInput, resetButton, button,
-            span = $(&#039;&lt;span class=&quot;filterTextSpan&quot;&gt;Filter rows where &#039; + domName + &#039; is:&lt;/span&gt;&#039;).appendTo(filterDiv),
-            select = type !== &#039;boolean&#039; ? $(&#039;&lt;select class=&quot;filterSelect select input&quot;&gt;&lt;/select&gt;&#039;).appendTo(filterDiv)
-                .append(&#039;&lt;option value=&quot;eq&quot;&gt;Equal to:&lt;/option&gt;&#039;).append(&#039;&lt;option value=&quot;neq&quot;&gt;Not equal to:&lt;/option&gt;&#039;) : null;
+            select = $(&#039;&lt;select class=&quot;filterSelect select input&quot;&gt;&lt;/select&gt;&#039;).appendTo(filterDiv);
+        $(&#039;&lt;span class=&quot;filterTextSpan&quot;&gt;Filter rows where &#039; + domName + &#039; is:&lt;/span&gt;&#039;).appendTo(filterDiv);
 
-        switch (type) {
-            case &#039;number&#039;:
-                select.append(&#039;&lt;option value=&quot;gte&quot;&gt;Greater than or equal to:&lt;/option&gt;&#039;);
-                select.append(&#039;&lt;option value=&quot;gt&quot;&gt;Greater than:&lt;/option&gt;&#039;);
-                select.append(&#039;&lt;option value=&quot;lte&quot;&gt;Less than or equal to:&lt;/option&gt;&#039;);
-                select.append(&#039;&lt;option value=&quot;lt&quot;&gt;Less than:&lt;/option&gt;&#039;);
-                filterInput = $(&#039;&lt;input type=&quot;text&quot; class=&quot;filterInput input&quot; id=&quot;filterInput&#039; + type + field + &#039;&quot;/&gt;&#039;).appendTo(filterDiv);
-                break;
-            case &#039;date&#039;:
-            case &#039;time&#039;:
-                select.append(&#039;&lt;option value=&quot;gte&quot;&gt;Equal to or later than:&lt;/option&gt;&#039;);
-                select.append(&#039;&lt;option value=&quot;gt&quot;&gt;Later than:&lt;/option&gt;&#039;);
-                select.append(&#039;&lt;option value=&quot;lte&quot;&gt;Equal to or before:&lt;/option&gt;&#039;);
-                select.append(&#039;&lt;option value=&quot;lt&quot;&gt;Before:&lt;/option&gt;&#039;);
-                var inputType = type === &#039;date&#039; ? &#039;date&#039; : &#039;text&#039;;
-                filterInput = $(&#039;&lt;input type=&quot;&#039; + inputType + &#039;&quot; class=&quot;filterInput input&quot; id=&quot;filterInput&#039; + type + field + &#039;&quot;/&gt;&#039;).appendTo(filterDiv);
-                break;
-            case &#039;boolean&#039;:
-                var optSelect = $(&#039;&lt;select class=&quot;filterSelect select&quot;&gt;&lt;/select&gt;&#039;).appendTo(span);
-                optSelect.append(&#039;&lt;option value=&quot;true&quot;&gt;True&lt;/option&gt;&#039;);
-                optSelect.append(&#039;&lt;option value=&quot;false&quot;&gt;False&lt;/option&gt;&#039;);
-                break;
-            case &#039;string&#039;:
-                select.append(&#039;&lt;option value=&quot;ct&quot;&gt;Contains:&lt;/option&gt;&#039;);
-                select.append(&#039;&lt;option value=&quot;nct&quot;&gt;Does not contain:&lt;/option&gt;&#039;);
-                filterInput = $(&#039;&lt;input class=&quot;filterInput input&quot; type=&quot;text&quot; id=&quot;filterInput&#039; + type + field + &#039;&quot;/&gt;&#039;).appendTo(filterDiv);
-                break;
+        createFilterOptionsByDataType(select, type);
+        if (type !== &#039;boolean&#039;) {
+            filterInput = $(&#039;&lt;input type=&quot;text&quot; class=&quot;filterInput input&quot; id=&quot;filterInput&#039; + type + field + &#039;&quot;/&gt;&#039;).appendTo(filterDiv);
         }
         resetButton = $(&#039;&lt;input type=&quot;button&quot; value=&quot;Reset&quot; class=&quot;button resetButton&quot; data-field=&quot;&#039; + field + &#039;&quot;/&gt;&#039;).appendTo(filterDiv);
         button = $(&#039;&lt;input type=&quot;button&quot; value=&quot;Filter&quot; class=&quot;filterButton button&quot; data-field=&quot;&#039; + field + &#039;&quot;/&gt;&#039;).appendTo(filterDiv);
         resetButton.on(&#039;click&#039;, resetButtonClickHandler);
         button.on(&#039;click&#039;, filterButtonClickHandler);
         if (filterInput &amp;&amp; type !==&#039;time&#039; &amp;&amp; type !== &#039;date&#039;) filterInputValidation(filterInput);
+    }
+
+    function createFilterOptionsByDataType(select, type) {
+        switch (type) {
+            case &#039;number&#039;:
+                select.append(&#039;&lt;option value=&quot;gte&quot;&gt;Greater than or equal to:&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;gt&quot;&gt;Greater than:&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;lte&quot;&gt;Less than or equal to:&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;lt&quot;&gt;Less than:&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;eq&quot;&gt;Equal to:&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;neq&quot;&gt;Not equal to:&lt;/option&gt;&#039;);
+                break;
+            case &#039;date&#039;:
+            case &#039;time&#039;:
+                select.append(&#039;&lt;option value=&quot;gte&quot;&gt;Equal to or later than:&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;gt&quot;&gt;Later than:&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;lte&quot;&gt;Equal to or before:&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;lt&quot;&gt;Before:&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;eq&quot;&gt;Equal to:&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;neq&quot;&gt;Not equal to:&lt;/option&gt;&#039;);
+                break;
+            case &#039;boolean&#039;:
+                select.append(&#039;&lt;option value=&quot;true&quot;&gt;True&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;false&quot;&gt;False&lt;/option&gt;&#039;);
+                break;
+            case &#039;string&#039;:
+                select.append(&#039;&lt;option value=&quot;ct&quot;&gt;Contains:&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;nct&quot;&gt;Does not contain:&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;eq&quot;&gt;Equal to:&lt;/option&gt;&#039;)
+                    .append(&#039;&lt;option value=&quot;neq&quot;&gt;Not equal to:&lt;/option&gt;&#039;);
+                break;
+        }
     }
 
     function filterInputValidation(input) {

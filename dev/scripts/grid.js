@@ -104,6 +104,14 @@
     > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
     > and if that specific functionality has handled the added column or not without repeating the same data for each functionality
  - Add menu option to specify OR, AND, NOT filters
+    > open model to display advanced filters
+    > First drop down selects from available grid columns
+    > Second drop down selects filter type
+    > Then a text input for the value of filter to apply
+    > If filter row is not first:
+        - '+' and 'X' buttons to indicate adding or removing a filter
+        - First drop down will be to select filter conjunction (AND/OR)
+        - Need someplace to NOT the filter.... or maybe just not the conjunction
  - Add ability to lock/freeze columns
  - Add integration tests if possible
  - Add type checking - passed in grid data
@@ -858,6 +866,7 @@ var grid = (function _grid($) {
         storageData.filteredOn = [];
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
+        storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -924,9 +933,9 @@ var grid = (function _grid($) {
             }
 
             if (gridData.columns[col].filterable === true) {
-                gridState[gridHeader.data('grid_header_id')].filterable = true;
                 setFilterableClickListener(th, gridData, col);
                 gridData.filterable = true;
+                gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
             }
 
             if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
@@ -1720,6 +1729,33 @@ var grid = (function _grid($) {
                     options.push(gridData.columns[field].options[z]);
                 }
             }
+            options.sort(function comparator(first, second) {
+                switch (gridData.columns[field].type || 'string') {
+                    case 'number':
+                        var firstNum = parseFloat(first.toString());
+                        var secondNum = parseFloat(second.toString());
+                        return firstNum > secondNum ?  1 : firstNum < secondNum ? -1 : 0;
+                    case 'string':
+                    case 'boolean':
+                        return first > second ? 1 : first < second ? -1 : 0;
+                    case 'time':
+                        var firstTime = getNumbersFromTime(first);
+                        var secondTime = getNumbersFromTime(second);
+
+                        if (~first.indexOf('PM'))
+                            firstTime[0] += 12;
+                        if (~second.indexOf('PM'))
+                            secondTime[0] += 12;
+
+                        firstTime = convertTimeArrayToSeconds(firstTime);
+                        secondTime = convertTimeArrayToSeconds(secondTime);
+                        return firstTime > secondTime ? 1 : firstTime < secondTime ? -1 : 0;
+                    case 'date':
+                        var firstDate = new Date(first);
+                        var secondDate = new Date(second);
+                        return firstDate > secondDate ? 1 : firstDate < secondDate ? -1 : 0;
+                }
+            });
             for (var k = 0; k < options.length; k++) {
                 var opt = $('<option value="' + options[k] + '">' + options[k] + '</option>');
                 select.append(opt);
@@ -2289,7 +2325,9 @@ var grid = (function _grid($) {
                     if (gridState[gridId].sortable) newMenu.append($('<ul class="menu-list"></ul>').append(createSortMenuItem()));
                     if (gridState[gridId].filterable) {
                         newMenu.append($('<ul class="menu-list"></ul>').append(createFilterMenuItems()));
-                        newMenu.append($('<ul class="menu-list"></ul>').append(createFilterModalMenuItem(gridId)));
+                        if (gridState[gridId].advancedFiltering) {
+                            newMenu.append($('<ul class="menu-list"></ul>').append(createFilterModalMenuItem(gridId)));
+                        }
                     }
                     if (gridState[gridId].groupable) newMenu.append($('<ul class="menu-list"></ul>').append(createGroupMenuItem()));
                     if (gridState[gridId].selectable) newMenu.append($('<ul class="menu-list"></ul>').append(createDeselectMenuOption(gridId)));
@@ -2412,10 +2450,25 @@ var grid = (function _grid($) {
         return filterMenuItem;
     }
 
-    function createFilterModalMenuItem(/*gridId*/) {
+    function createFilterModalMenuItem(gridId) {
         var filterModalMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Advanced Filters</a>'));
         filterModalMenuItem.on('click', function openAdvancedFilterModal() {
-            //var advancedFiltersDiv = $('<div class="filter_model" data-grid_id="' + gridId + '">')
+            var advancedFiltersModal = gridState[gridId].grid.find('filter_modal');
+            if (!advancedFiltersModal.length) {
+                advancedFiltersModal = $('<div class="filter_modal" data-grid_id="' + gridId + '">');
+                var advancedFiltersContainer = $('<div class="filter_container"></div>').appendTo(advancedFiltersModal),
+                    columnSelector = $('<select class="input select"></select>').appendTo(advancedFiltersContainer);
+
+                for (var column in gridState[gridId].columns) {
+                    var curCol = gridState[gridId].columns[column];
+                    if (curCol.filterable) {
+                        columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
+                    }
+                }
+
+                var filterTypeSelector = $('<select class="input select"></select>');
+                createFilterOptionsByDataType(filterTypeSelector, (gridState[gridId].columns[column].type || 'string'));
+            }
         });
         return filterModalMenuItem;
     }
@@ -2698,43 +2751,50 @@ var grid = (function _grid($) {
         var filterDiv = $('<div class="filter-div" data-parentfield="' + field + '" data-type="' + type + '"></div>').appendTo(grid);
         var domName = title ? title : type;
         var filterInput, resetButton, button,
-            span = $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv),
-            select = type !== 'boolean' ? $('<select class="filterSelect select input"></select>').appendTo(filterDiv)
-                .append('<option value="eq">Equal to:</option>').append('<option value="neq">Not equal to:</option>') : null;
+            select = $('<select class="filterSelect select input"></select>').appendTo(filterDiv);
+        $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv);
 
-        switch (type) {
-            case 'number':
-                select.append('<option value="gte">Greater than or equal to:</option>');
-                select.append('<option value="gt">Greater than:</option>');
-                select.append('<option value="lte">Less than or equal to:</option>');
-                select.append('<option value="lt">Less than:</option>');
-                filterInput = $('<input type="text" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
-                break;
-            case 'date':
-            case 'time':
-                select.append('<option value="gte">Equal to or later than:</option>');
-                select.append('<option value="gt">Later than:</option>');
-                select.append('<option value="lte">Equal to or before:</option>');
-                select.append('<option value="lt">Before:</option>');
-                var inputType = type === 'date' ? 'date' : 'text';
-                filterInput = $('<input type="' + inputType + '" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
-                break;
-            case 'boolean':
-                var optSelect = $('<select class="filterSelect select"></select>').appendTo(span);
-                optSelect.append('<option value="true">True</option>');
-                optSelect.append('<option value="false">False</option>');
-                break;
-            case 'string':
-                select.append('<option value="ct">Contains:</option>');
-                select.append('<option value="nct">Does not contain:</option>');
-                filterInput = $('<input class="filterInput input" type="text" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
-                break;
+        createFilterOptionsByDataType(select, type);
+        if (type !== 'boolean') {
+            filterInput = $('<input type="text" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
         }
         resetButton = $('<input type="button" value="Reset" class="button resetButton" data-field="' + field + '"/>').appendTo(filterDiv);
         button = $('<input type="button" value="Filter" class="filterButton button" data-field="' + field + '"/>').appendTo(filterDiv);
         resetButton.on('click', resetButtonClickHandler);
         button.on('click', filterButtonClickHandler);
         if (filterInput && type !=='time' && type !== 'date') filterInputValidation(filterInput);
+    }
+
+    function createFilterOptionsByDataType(select, type) {
+        switch (type) {
+            case 'number':
+                select.append('<option value="gte">Greater than or equal to:</option>')
+                    .append('<option value="gt">Greater than:</option>')
+                    .append('<option value="lte">Less than or equal to:</option>')
+                    .append('<option value="lt">Less than:</option>')
+                    .append('<option value="eq">Equal to:</option>')
+                    .append('<option value="neq">Not equal to:</option>');
+                break;
+            case 'date':
+            case 'time':
+                select.append('<option value="gte">Equal to or later than:</option>')
+                    .append('<option value="gt">Later than:</option>')
+                    .append('<option value="lte">Equal to or before:</option>')
+                    .append('<option value="lt">Before:</option>')
+                    .append('<option value="eq">Equal to:</option>')
+                    .append('<option value="neq">Not equal to:</option>');
+                break;
+            case 'boolean':
+                select.append('<option value="true">True</option>')
+                    .append('<option value="false">False</option>');
+                break;
+            case 'string':
+                select.append('<option value="ct">Contains:</option>')
+                    .append('<option value="nct">Does not contain:</option>')
+                    .append('<option value="eq">Equal to:</option>')
+                    .append('<option value="neq">Not equal to:</option>');
+                break;
+        }
     }
 
     /**
