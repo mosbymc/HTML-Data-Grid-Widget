@@ -1976,11 +1976,30 @@ var grid = (function _grid($) {
                     }
                 }
 
-                var filterTypeSelector = $('<select class="input select"></select>');
-                createFilterOptionsByDataType(filterTypeSelector, (gridState[gridId].columns[column].type || 'string'));
+                var filterTypeSelector = $('<select class="input select"></select>').appendTo(advancedFiltersContainer);
+                filterTypeSelector.append('<option value="none">Please select a column first</option>');
+
+                var addFilterButton = $('<input type="button" value="+" class="button"/>').appendTo(advancedFiltersContainer);
+
+                addFilterButton.on('click', addNewAdvancedFilter);
             }
         });
         return filterModalMenuItem;
+    }
+
+    function addNewAdvancedFilter(e) {
+        var gridId = $(e.currentTarget).parents('.filter_modal').data('grid_id'),
+            advancedFiltersContainer = $(e.currentTarget).parents('.filter_container'),
+            columnSelector = $('<select class="input select"></select>').appendTo(advancedFiltersContainer);
+        for (var column in gridState[gridId].columns) {
+            var curCol = gridState[gridId].columns[column];
+            if (curCol.filterable) {
+                columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
+            }
+        }
+
+        var filterTypeSelector = $('<select class="input select"></select>').appendTo(advancedFiltersContainer);
+        filterTypeSelector.append('<option value="none">Please select a column first</option>');
     }
 
     function RemoveAllColumnSorts(e) {

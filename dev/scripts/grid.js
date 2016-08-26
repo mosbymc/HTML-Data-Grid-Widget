@@ -113,6 +113,7 @@
         - First drop down will be to select filter conjunction (AND/OR)
         - Need someplace to NOT the filter.... or maybe just not the conjunction
  - Add ability to lock/freeze columns
+ - Restrict handling of rapid-fire events: scroll, mouse move, mouse out, mouse leave, drag, etc
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
@@ -2466,11 +2467,41 @@ var grid = (function _grid($) {
                     }
                 }
 
-                var filterTypeSelector = $('<select class="input select"></select>');
-                createFilterOptionsByDataType(filterTypeSelector, (gridState[gridId].columns[column].type || 'string'));
+                var filterTypeSelector = $('<select class="input select"></select>').appendTo(advancedFiltersContainer);
+                filterTypeSelector.append('<option value="none">Please select a column first</option>');
+                //createFilterOptionsByDataType(filterTypeSelector, (gridState[gridId].columns[column].type || 'string'));
+
+                /*if (type !== 'boolean') {
+                    filterInput = $('<input type="text" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
+                }*/
+                var addFilterButton = $('<input type="button" value="+" class="button"/>').appendTo(advancedFiltersContainer);
+                //var clearFilterButton = $('<input type="button" value="X" class="button resetButton"/>').appendTo(advancedFiltersContainer);
+                //var applyFilterButton = $('<input type="button" value="Apply Filter(s)" class="button filterButton"/>').appendTo(advancedFiltersContainer);
+
+                addFilterButton.on('click', addNewAdvancedFilter);
+                //resetButton = $('<input type="button" value="Reset" class="button resetButton" data-field="' + field + '"/>').appendTo(filterDiv);
+                //button = $('<input type="button" value="Filter" class="filterButton button" data-field="' + field + '"/>').appendTo(filterDiv);
+                //resetButton.on('click', resetButtonClickHandler);
+                //button.on('click', filterButtonClickHandler);
+                //if (filterInput && type !=='time' && type !== 'date') filterInputValidation(filterInput);
             }
         });
         return filterModalMenuItem;
+    }
+
+    function addNewAdvancedFilter(e) {
+        var gridId = $(e.currentTarget).parents('.filter_modal').data('grid_id'),
+            advancedFiltersContainer = $(e.currentTarget).parents('.filter_container'),
+            columnSelector = $('<select class="input select"></select>').appendTo(advancedFiltersContainer);
+        for (var column in gridState[gridId].columns) {
+            var curCol = gridState[gridId].columns[column];
+            if (curCol.filterable) {
+                columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
+            }
+        }
+
+        var filterTypeSelector = $('<select class="input select"></select>').appendTo(advancedFiltersContainer);
+        filterTypeSelector.append('<option value="none">Please select a column first</option>');
     }
 
     function RemoveAllColumnSorts(e) {
