@@ -2457,42 +2457,67 @@ var grid = (function _grid($) {
             var advancedFiltersModal = gridState[gridId].grid.find('filter_modal');
             if (!advancedFiltersModal.length) {
                 advancedFiltersModal = $('<div class="filter_modal" data-grid_id="' + gridId + '">');
-                var advancedFiltersContainer = $('<div class="filter_container"></div>').appendTo(advancedFiltersModal),
-                    columnSelector = $('<select class="input select"></select>').appendTo(advancedFiltersContainer);
+                var advancedFiltersContainer = $('<div class="filter_container"></div>').appendTo(advancedFiltersModal);
+                addNewAdvancedFilter(advancedFiltersContainer);
+                advancedFiltersModal.append('<input type="button" value="Apply Filter(s)" class="button filterButton"/>')
+                    .on('click', function applyAdvancedFiltersHandler() {
+                        advancedFiltersContainer.find('.filter_row_div').each(function iterateFilterRowsCallback() {
 
-                for (var column in gridState[gridId].columns) {
-                    var curCol = gridState[gridId].columns[column];
-                    if (curCol.filterable) {
-                        columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
-                    }
-                }
+                        });
+                        /*
+                            var filterDiv = $(e.currentTarget).parents('.filter-div'),
+                                selected = filterDiv.find('.filterSelect').val(),
+                                value = filterDiv.find('.filterInput').val(),
+                                gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
+                             if (gridState[gridId].updating) return;		//can't filter if grid is updating
+                             var gridData = gridState[gridId],
+                                 type = filterDiv.data('type'),
+                                 errors = filterDiv.find('.filter-div-error'),
+                                 field = $(this).data('field'),
+                                 foundColumn = false,
+                                 tmpFilters = [],
+                                 updatedFilter, re;
 
-                var filterTypeSelector = $('<select class="input select"></select>').appendTo(advancedFiltersContainer);
-                filterTypeSelector.append('<option value="none">Please select a column first</option>');
-                //createFilterOptionsByDataType(filterTypeSelector, (gridState[gridId].columns[column].type || 'string'));
+                             if (dataTypes[type]) {
+                                 re = new RegExp(dataTypes[type]);
+                                 if (!re.test(value) && !errors.length) {
+                                    $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
+                                    return;
+                                 }
+                             }
 
-                /*if (type !== 'boolean') {
-                    filterInput = $('<input type="text" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
-                }*/
-                var addFilterButton = $('<input type="button" value="+" class="button"/>').appendTo(advancedFiltersContainer);
-                //var clearFilterButton = $('<input type="button" value="X" class="button resetButton"/>').appendTo(advancedFiltersContainer);
-                //var applyFilterButton = $('<input type="button" value="Apply Filter(s)" class="button filterButton"/>').appendTo(advancedFiltersContainer);
+                             if (errors.length) errors.remove();
+                             if (value === '' && !gridData.filteredOn.length) return;
 
-                addFilterButton.on('click', addNewAdvancedFilter);
-                //resetButton = $('<input type="button" value="Reset" class="button resetButton" data-field="' + field + '"/>').appendTo(filterDiv);
-                //button = $('<input type="button" value="Filter" class="filterButton button" data-field="' + field + '"/>').appendTo(filterDiv);
-                //resetButton.on('click', resetButtonClickHandler);
-                //button.on('click', filterButtonClickHandler);
-                //if (filterInput && type !=='time' && type !== 'date') filterInputValidation(filterInput);
+                             for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
+                                 if (gridState[gridId].filteredOn[i].field !== field) tmpFilters.push(gridState[gridId].filteredOn[i]);
+                                 else {
+                                     updatedFilter = gridState[gridId].filteredOn[i];
+                                     foundColumn = true;
+                                 }
+                             }
+
+                             tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, filterType: selected });
+                             gridState[gridId].filteredOn = tmpFilters;
+
+                             filterDiv.addClass('hiddenFilter');
+                             gridData.pageRequest.eventType = 'filter-add';
+                             preparePageDataGetRequest(gridId);
+                         */
+                    });
             }
         });
         return filterModalMenuItem;
     }
 
-    function addNewAdvancedFilter(e) {
-        var gridId = $(e.currentTarget).parents('.filter_modal').data('grid_id'),
-            advancedFiltersContainer = $(e.currentTarget).parents('.filter_container'),
-            columnSelector = $('<select class="input select"></select>').appendTo(advancedFiltersContainer);
+    function addFilterButtonHandler(e) {
+        addNewAdvancedFilter($(e.currentTarget).parents('.filter_container'));
+    }
+
+    function addNewAdvancedFilter(advancedFiltersContainer) {
+        var gridId = advancedFiltersContainer.parents('.filter_modal').data('grid_id'),
+            filterRowDiv = $('<div class="filter_row_div"></div>').appendTo(advancedFiltersContainer),
+            columnSelector = $('<select class="input select"></select>').appendTo(filterRowDiv);
         for (var column in gridState[gridId].columns) {
             var curCol = gridState[gridId].columns[column];
             if (curCol.filterable) {
@@ -2500,8 +2525,17 @@ var grid = (function _grid($) {
             }
         }
 
-        var filterTypeSelector = $('<select class="input select"></select>').appendTo(advancedFiltersContainer);
+        var filterTypeSelector = $('<select class="input select"></select>').appendTo(filterRowDiv);
         filterTypeSelector.append('<option value="none">Please select a column first</option>');
+        var addFilterButton = $('<input type="button" value="+" class="button"/>').appendTo(filterRowDiv);
+        var deleteFilterButton = $('<input type="button" value="X" class="button resetButton"/>').appendTo(advancedFiltersContainer);
+
+        addFilterButton.on('click', addFilterButtonHandler);
+        deleteFilterButton.on('click', deleteFilterButtonHandler);
+    }
+
+    function deleteFilterButtonHandler(e) {
+        $(e.currentTarget).parents('.filter_row_div').remove();
     }
 
     function RemoveAllColumnSorts(e) {
