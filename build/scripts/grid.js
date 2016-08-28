@@ -1974,7 +1974,18 @@ var grid = (function _grid($) {
 
                         });
                     });
+                gridState[gridId].grid.append(advancedFiltersModal);
             }
+            else advancedFiltersModal.css('display', 'block');
+
+            var gridOffset = gridState[gridId].grid.offset(),
+                gridWidth = gridState[gridId].grid.width(),
+                toolbarOffset = gridState[gridId].grid.find('.toolbar').offset();
+
+            advancedFiltersModal.css('top', toolbarOffset.top);
+            advancedFiltersModal.css('left', ((gridOffset.left + gridWidth) / 2));
+
+            gridState[gridId].grid.find('.grid_menu').css('display', 'none');
         });
         return filterModalMenuItem;
     }
@@ -1987,6 +1998,7 @@ var grid = (function _grid($) {
         var gridId = advancedFiltersContainer.parents('.filter_modal').data('grid_id'),
             filterRowDiv = $('<div class="filter_row_div"></div>').appendTo(advancedFiltersContainer),
             columnSelector = $('<select class="input select"></select>').appendTo(filterRowDiv);
+        columnSelector.append('<option value="">Select a column</option>');
         for (var column in gridState[gridId].columns) {
             var curCol = gridState[gridId].columns[column];
             if (curCol.filterable) {
@@ -1995,9 +2007,14 @@ var grid = (function _grid($) {
         }
 
         var filterTypeSelector = $('<select class="input select"></select>').appendTo(filterRowDiv);
-        filterTypeSelector.append('<option value="none">Please select a column first</option>');
         var addFilterButton = $('<input type="button" value="+" class="button"/>').appendTo(filterRowDiv);
         var deleteFilterButton = $('<input type="button" value="X" class="button resetButton"/>').appendTo(advancedFiltersContainer);
+
+        columnSelector.on('change', function columnSelectorCallback() {
+            columnSelector.find('option').first().remove();
+            filterTypeSelector.find('option').remove();
+            createFilterOptionsByDataType(filterTypeSelector, gridState[gridId].columns[columnSelector.val()].type || 'string');
+        });
 
         addFilterButton.on('click', addFilterButtonHandler);
         deleteFilterButton.on('click', deleteFilterButtonHandler);

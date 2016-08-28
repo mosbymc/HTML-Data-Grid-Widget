@@ -1092,3 +1092,15 @@ input {
 .hidden_menu_item {
   display: none;
 }
+.filter_modal {
+  position: absolute;
+  height: auto;
+  width: auto;
+  background-color: #ffffff;
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-variant: normal;
+  font-style: normal;
+  font-weight: normal;
+  border: 1px solid;
+}
