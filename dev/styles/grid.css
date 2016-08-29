@@ -1103,4 +1103,47 @@ input {
   font-style: normal;
   font-weight: normal;
   border: 1px solid;
+  padding: 15px;
+}
+.filter_modal .apply_filters_button {
+  border-radius: 5px;
+  padding: .177em 5px 0 5px;
+  margin: 5px;
+  display: block;
+}
+.filter_modal input {
+  height: 2em;
+  background: #ffffff;
+  color: #000000;
+}
+.filter_modal .filter_container {
+  padding: 5px 5px 0 5px;
+}
+.filter_modal .filter_container .advanced_filter_button {
+  border-radius: 5px;
+  padding: .177em 5px 0 5px;
+  margin: 5px;
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-variant: normal;
+  font-style: normal;
+  font-weight: normal;
+  text-rendering: auto;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-transform: none;
+  text-shadow: none;
+  text-align: start;
+  box-sizing: content-box;
+  background-color: #fff;
+  color: #444;
+  outline: none;
+  display: inline-block;
+}
+.filter_modal .filter_container .select {
+  margin: 0 5px 0 5px;
+  border-radius: 5px;
+  padding: .177em 0;
+  width: 13em;
+  height: 2em;
 }

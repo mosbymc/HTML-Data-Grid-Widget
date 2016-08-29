@@ -1968,7 +1968,7 @@ var grid = (function _grid($) {
                 advancedFiltersModal = $('<div class="filter_modal" data-grid_id="' + gridId + '">');
                 var advancedFiltersContainer = $('<div class="filter_container"></div>').appendTo(advancedFiltersModal);
                 addNewAdvancedFilter(advancedFiltersContainer);
-                advancedFiltersModal.append('<input type="button" value="Apply Filter(s)" class="button filterButton"/>')
+                advancedFiltersModal.append('<input type="button" value="Apply Filter(s)" class="apply_filters_button"/>')
                     .on('click', function applyAdvancedFiltersHandler() {
                         advancedFiltersContainer.find('.filter_row_div').each(function iterateFilterRowsCallback() {
 
@@ -1982,8 +1982,10 @@ var grid = (function _grid($) {
                 gridWidth = gridState[gridId].grid.width(),
                 toolbarOffset = gridState[gridId].grid.find('.toolbar').offset();
 
+            var leftLoc = gridOffset.left - (advancedFiltersModal.outerWidth() / 2) + (gridWidth / 2);
+
             advancedFiltersModal.css('top', toolbarOffset.top);
-            advancedFiltersModal.css('left', ((gridOffset.left + gridWidth) / 2));
+            advancedFiltersModal.css('left', leftLoc);
 
             gridState[gridId].grid.find('.grid_menu').css('display', 'none');
         });
@@ -2007,8 +2009,8 @@ var grid = (function _grid($) {
         }
 
         var filterTypeSelector = $('<select class="input select"></select>').appendTo(filterRowDiv);
-        var addFilterButton = $('<input type="button" value="+" class="button"/>').appendTo(filterRowDiv);
-        var deleteFilterButton = $('<input type="button" value="X" class="button resetButton"/>').appendTo(advancedFiltersContainer);
+        var addFilterButton = $('<input type="button" value="+" class="advanced_filter_button"/>').appendTo(filterRowDiv);
+        var deleteFilterButton = $('<input type="button" value="X" class="advanced_filter_button"/>').appendTo(filterRowDiv);
 
         columnSelector.on('change', function columnSelectorCallback() {
             columnSelector.find('option').first().remove();
@@ -2280,10 +2282,10 @@ var grid = (function _grid($) {
 
     function createFilterDiv(type, field, grid, title) {
         var filterDiv = $('<div class="filter-div" data-parentfield="' + field + '" data-type="' + type + '"></div>').appendTo(grid);
-        var domName = title ? title : type;
-        var filterInput, resetButton, button,
-            select = $('<select class="filterSelect select input"></select>').appendTo(filterDiv);
+        var domName = title ? title : type,
+            filterInput, resetButton, button;
         $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv);
+        var select = $('<select class="filterSelect select input"></select>').appendTo(filterDiv);
 
         createFilterOptionsByDataType(select, type);
         if (type !== 'boolean') {
