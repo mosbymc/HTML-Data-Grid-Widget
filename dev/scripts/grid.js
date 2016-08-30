@@ -2342,8 +2342,7 @@ var grid = (function _grid($) {
                     var elem = $(e.target);
                     if (!elem.hasClass('grid_menu') && !elem.hasClass('menu_item_options')) {
                         if (!elem.parents('.grid_menu').length && !elem.parents('.menu_item_options').length) {
-                            var gridMenu = $('.grid_menu');
-                            gridMenu.addClass('hiddenMenu');
+                            gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
                             gridState[gridId].grid.find('.menu_item_options').css('display', 'none');
                         }
                     }
@@ -2453,12 +2452,21 @@ var grid = (function _grid($) {
 
     function createFilterModalMenuItem(gridId) {
         var filterModalMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Advanced Filters</a>'));
-        filterModalMenuItem.on('click', function openAdvancedFilterModal() {
+        filterModalMenuItem.on('click', function openAdvancedFilterModal(e) {
+            e.stopPropagation();
             var advancedFiltersModal = gridState[gridId].grid.find('filter_modal');
             if (!advancedFiltersModal.length) {
                 advancedFiltersModal = $('<div class="filter_modal" data-grid_id="' + gridId + '">');
                 var advancedFiltersContainer = $('<div class="filter_container"></div>').appendTo(advancedFiltersModal);
                 addNewAdvancedFilter(advancedFiltersContainer, true /* isFirstFilter */);
+
+                /*$(document).on('click', function hideFilterModalHandler(e) {
+                    var ct = $(e.currentTarget);
+                    if (!ct.hasClass('.filter_modal') && !ct.parents('.filter_modal').length)
+                        gridState[gridId].grid.find('.filter_modal').css('display', 'none');
+                    else e.stopPropagation();
+                });*/
+
                 advancedFiltersModal.append('<input type="button" value="Apply Filter(s)" class="apply_filters_button"/>')
                     .on('click', function applyAdvancedFiltersHandler() {
                         advancedFiltersContainer.find('.filter_row_div').each(function iterateFilterRowsCallback() {
@@ -2514,11 +2522,9 @@ var grid = (function _grid($) {
                 toolbarOffset = gridState[gridId].grid.find('.toolbar').offset();
 
             var leftLoc = gridOffset.left - (advancedFiltersModal.outerWidth() / 2) + (gridWidth / 2);
-
             advancedFiltersModal.css('top', toolbarOffset.top);
             advancedFiltersModal.css('left', leftLoc);
-
-            gridState[gridId].grid.find('.grid_menu').css('display', 'none');
+            gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
         });
         return filterModalMenuItem;
     }
@@ -2546,6 +2552,10 @@ var grid = (function _grid($) {
             $('<input type="button" value="X" class="advanced_filter_button"/>')
                 .appendTo(filterRowDiv)
                 .on('click', deleteFilterButtonHandler);
+
+            var addNewFilterButton = filterRowDiv.prev().find('.new_filter');
+            addNewFilterButton.detach();
+            filterRowDiv.append(addNewFilterButton);
         }
         else {
             $('<input type="button" value="X" class="advanced_filter_button"/>')
@@ -2556,10 +2566,11 @@ var grid = (function _grid($) {
                     filterTypeSelector.find('option').remove().prop('disabled', true);
                     filterRowDiv.find('.advanced_filter_value').val('').prop('disabled', true);
                 });
+
+            $('<input type="button" value="+" class="advanced_filter_button new_filter"/>')
+                .appendTo(filterRowDiv)
+                .on('click', addFilterButtonHandler);
         }
-        $('<input type="button" value="+" class="advanced_filter_button"/>')
-            .appendTo(filterRowDiv)
-            .on('click', addFilterButtonHandler);
 
         columnSelector.on('change', function columnSelectorCallback() {
             columnSelector.find('option').first().remove();
@@ -2574,7 +2585,12 @@ var grid = (function _grid($) {
     }
 
     function deleteFilterButtonHandler(e) {
-        $(e.currentTarget).parents('.filter_row_div').remove();
+        var filterRowDiv = $(e.currentTarget).parents('.filter_row_div');
+        var addNewFilterButton = filterRowDiv.find('.new_filter');
+        if (addNewFilterButton.length) {
+            filterRowDiv.prev().append(addNewFilterButton.detach());
+        }
+        filterRowDiv.remove();
     }
 
     function RemoveAllColumnSorts(e) {
