@@ -2458,7 +2458,7 @@ var grid = (function _grid($) {
             if (!advancedFiltersModal.length) {
                 advancedFiltersModal = $('<div class="filter_modal" data-grid_id="' + gridId + '">');
                 var advancedFiltersContainer = $('<div class="filter_container"></div>').appendTo(advancedFiltersModal);
-                addNewAdvancedFilter(advancedFiltersContainer);
+                addNewAdvancedFilter(advancedFiltersContainer, true /* isFirstFilter */);
                 advancedFiltersModal.append('<input type="button" value="Apply Filter(s)" class="apply_filters_button"/>')
                     .on('click', function applyAdvancedFiltersHandler() {
                         advancedFiltersContainer.find('.filter_row_div').each(function iterateFilterRowsCallback() {
@@ -2524,13 +2524,13 @@ var grid = (function _grid($) {
     }
 
     function addFilterButtonHandler(e) {
-        addNewAdvancedFilter($(e.currentTarget).parents('.filter_container'));
+        addNewAdvancedFilter($(e.currentTarget).parents('.filter_container'), false /* isFirstFilter */);
     }
 
-    function addNewAdvancedFilter(advancedFiltersContainer) {
+    function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
         var gridId = advancedFiltersContainer.parents('.filter_modal').data('grid_id'),
             filterRowDiv = $('<div class="filter_row_div"></div>').appendTo(advancedFiltersContainer),
-            columnSelector = $('<select class="input select"></select>').appendTo(filterRowDiv);
+            columnSelector = $('<select class="input select filter_column_selector"></select>').appendTo(filterRowDiv);
         columnSelector.append('<option value="">Select a column</option>');
         for (var column in gridState[gridId].columns) {
             var curCol = gridState[gridId].columns[column];
@@ -2539,18 +2539,38 @@ var grid = (function _grid($) {
             }
         }
 
-        var filterTypeSelector = $('<select class="input select"></select>').appendTo(filterRowDiv);
-        var addFilterButton = $('<input type="button" value="+" class="advanced_filter_button"/>').appendTo(filterRowDiv);
-        var deleteFilterButton = $('<input type="button" value="X" class="advanced_filter_button"/>').appendTo(filterRowDiv);
+        var filterTypeSelector = $('<select class="input select" disabled></select>').appendTo(filterRowDiv);
+        $('<input type="text" class="advanced_filter_value" disabled />').appendTo(filterRowDiv);
+
+        if (!isFirstFilter) {
+            $('<input type="button" value="X" class="advanced_filter_button"/>')
+                .appendTo(filterRowDiv)
+                .on('click', deleteFilterButtonHandler);
+        }
+        else {
+            $('<input type="button" value="X" class="advanced_filter_button"/>')
+                .appendTo(filterRowDiv)
+                .on('click', function clearFirstFilterHandler() {
+                    columnSelector.find('option').remove();
+                    columnSelector.append('<option value="">Select a column</option>');
+                    filterTypeSelector.find('option').remove().prop('disabled', true);
+                    filterRowDiv.find('.advanced_filter_value').val('').prop('disabled', true);
+                });
+        }
+        $('<input type="button" value="+" class="advanced_filter_button"/>')
+            .appendTo(filterRowDiv)
+            .on('click', addFilterButtonHandler);
 
         columnSelector.on('change', function columnSelectorCallback() {
             columnSelector.find('option').first().remove();
             filterTypeSelector.find('option').remove();
+            filterTypeSelector.prop('disabled', false);
             createFilterOptionsByDataType(filterTypeSelector, gridState[gridId].columns[columnSelector.val()].type || 'string');
-        });
 
-        addFilterButton.on('click', addFilterButtonHandler);
-        deleteFilterButton.on('click', deleteFilterButtonHandler);
+            if (gridState[gridId].columns[columnSelector.val()].type !== 'boolean') {
+                filterRowDiv.find('.advanced_filter_value').prop('disabled', false);
+            }
+        });
     }
 
     function deleteFilterButtonHandler(e) {
