@@ -1965,7 +1965,11 @@ var grid = (function _grid($) {
             e.stopPropagation();
             var advancedFiltersModal = gridState[gridId].grid.find('filter_modal');
             if (!advancedFiltersModal.length) {
-                advancedFiltersModal = $('<div class="filter_modal" data-grid_id="' + gridId + '">');
+                var toolbar = gridState[gridId].grid.find('.toolbar'),
+                    footer = gridState[gridId].grid.find('.grid-footer-div'),
+                    footerBottom = footer.offset().top + footer.innerHeight();
+
+                advancedFiltersModal = $('<div class="filter_modal" data-grid_id="' + gridId + '">').css('max-height', footerBottom - toolbar.offset().top);
                 var advancedFiltersContainer = $('<div class="filter_container"></div>').appendTo(advancedFiltersModal);
                 addNewAdvancedFilter(advancedFiltersContainer, true );
 
@@ -1985,8 +1989,7 @@ var grid = (function _grid($) {
                 toolbarOffset = gridState[gridId].grid.find('.toolbar').offset();
 
             var leftLoc = gridOffset.left - (advancedFiltersModal.outerWidth() / 2) + (gridWidth / 2);
-            advancedFiltersModal.css('top', toolbarOffset.top);
-            advancedFiltersModal.css('left', leftLoc);
+            advancedFiltersModal.css('top', toolbarOffset.top).css('left', leftLoc);
             gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
         });
         return filterModalMenuItem;
@@ -1998,8 +2001,14 @@ var grid = (function _grid($) {
 
     function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
         var gridId = advancedFiltersContainer.parents('.filter_modal').data('grid_id'),
-            filterRowDiv = $('<div class="filter_row_div"></div>').appendTo(advancedFiltersContainer),
-            columnSelector = $('<select class="input select filter_column_selector"></select>').appendTo(filterRowDiv);
+            filterRowDiv = $('<div class="filter_row_div"></div>').appendTo(advancedFiltersContainer);
+        if (!isFirstFilter) {
+            var conjunctionSelector = $('<select class="input conjunction_selector"></select>').appendTo(filterRowDiv);
+            conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
+        }
+        var columnSelector = $('<select class="input filter_column_selector"></select>').appendTo(filterRowDiv);
+        if (!isFirstFilter) columnSelector.addClass('select');
+        else columnSelector.addClass('first-select');
         columnSelector.append('<option value="">Select a column</option>');
         for (var column in gridState[gridId].columns) {
             var curCol = gridState[gridId].columns[column];

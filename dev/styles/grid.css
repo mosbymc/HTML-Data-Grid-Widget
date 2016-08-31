@@ -1104,6 +1104,7 @@ input {
   font-weight: normal;
   border: 1px solid;
   padding: 15px;
+  overflow: auto;
 }
 .filter_modal .apply_filters_button {
   border-radius: 5px;
@@ -1143,6 +1144,13 @@ input {
   outline: none;
   display: inline-block;
 }
+.filter_modal .filter_container .first-select {
+  margin: 0 5px 0 68px;
+  border-radius: 5px;
+  padding: .177em 0;
+  width: 13em;
+  height: 2em;
+}
 .filter_modal .filter_container .select {
   margin: 0 5px 0 5px;
   border-radius: 5px;
@@ -1152,4 +1160,10 @@ input {
 }
 .filter_modal .filter_container .select:disabled {
   background-color: #B0B0B0;
+}
+.filter_modal .filter_container .conjunction_selector {
+  margin: 0 5px 0 5px;
+  border-radius: 5px;
+  padding: .177em 0;
+  height: 2em;
 }
