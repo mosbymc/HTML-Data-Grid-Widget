@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">212.04</p>
+      <p class="stat">212.25</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">77.15</p>
+      <p class="stat">77.09</p>
     </div>
   </div>
 </div>
@@ -2056,11 +2056,11 @@
             e.stopPropagation();
             var advancedFiltersModal = gridState[gridId].grid.find(&#039;filter_modal&#039;);
             if (!advancedFiltersModal.length) {
-                var toolbar = gridState[gridId].grid.find(&#039;.toolbar&#039;),
-                    footer = gridState[gridId].grid.find(&#039;.grid-footer-div&#039;),
-                    footerBottom = footer.offset().top + footer.innerHeight();
 
-                advancedFiltersModal = $(&#039;&lt;div class=&quot;filter_modal&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&#039;).css(&#039;max-height&#039;, footerBottom - toolbar.offset().top);
+                    var toolbarHeight = gridState[gridId].grid.find(&#039;.toolbar&#039;).height(),
+                    wrapperHeight = gridState[gridId].grid.find(&#039;.grid-wrapper&#039;).height();
+
+                advancedFiltersModal = $(&#039;&lt;div class=&quot;filter_modal&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&#039;).css(&#039;max-height&#039;, wrapperHeight + toolbarHeight);
                 var advancedFiltersContainer = $(&#039;&lt;div class=&quot;filter_container&quot;&gt;&lt;/div&gt;&#039;).appendTo(advancedFiltersModal);
                 addNewAdvancedFilter(advancedFiltersContainer, true );
 
