@@ -2456,17 +2456,11 @@ var grid = (function _grid($) {
             e.stopPropagation();
             var advancedFiltersModal = gridState[gridId].grid.find('filter_modal');
             if (!advancedFiltersModal.length) {
-                //var toolbar = gridState[gridId].grid.find('.toolbar');
-                    //footer = gridState[gridId].grid.find('.grid-footer-div'),
-                    //footerBottom = footer.offset().top + footer.innerHeight();
+                var toolbarHeight = gridState[gridId].grid.find('.toolbar').height(),
+                    groupHeight = gridState[gridId].grid.find('.group_div').height(),
+                    wrapperHeight = gridState[gridId].grid.find('.grid-wrapper').length ? gridState[gridId].grid.find('.grid-wrapper').height() : 0;
 
-                //var contentHeight = gridState[gridId].grid.find('.grid-content-div').height(),
-                  //  footerHeight = gridState[gridId].grid.find('.grid-footer-div').height(),
-                    //headerHeight = gridState[gridId].grid.find('.grid-header-div').height(),
-                    var toolbarHeight = gridState[gridId].grid.find('.toolbar').height(),
-                    wrapperHeight = gridState[gridId].grid.find('.grid-wrapper').height();
-
-                advancedFiltersModal = $('<div class="filter_modal" data-grid_id="' + gridId + '">').css('max-height', wrapperHeight + toolbarHeight);
+                advancedFiltersModal = $('<div class="filter_modal" data-grid_id="' + gridId + '">').css('max-height', wrapperHeight + toolbarHeight + groupHeight - 3);
                 var advancedFiltersContainer = $('<div class="filter_container"></div>').appendTo(advancedFiltersModal);
                 addNewAdvancedFilter(advancedFiltersContainer, true /* isFirstFilter */);
 
@@ -2591,6 +2585,7 @@ var grid = (function _grid($) {
             columnSelector.find('option').first().remove();
             filterTypeSelector.find('option').remove();
             filterTypeSelector.prop('disabled', false);
+            filterRowDiv.find('.advanced_filter_value').val('');
             createFilterOptionsByDataType(filterTypeSelector, gridState[gridId].columns[columnSelector.val()].type || 'string');
 
             if (gridState[gridId].columns[columnSelector.val()].type !== 'boolean') {

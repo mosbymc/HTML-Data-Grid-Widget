@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.59</p>
+      <p class="stat">55.58</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3491</p>
+      <p class="stat">3492</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">212.25</p>
+      <p class="stat">212.47</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">77.09</p>
+      <p class="stat">77.24</p>
     </div>
   </div>
 </div>
@@ -2056,11 +2056,11 @@
             e.stopPropagation();
             var advancedFiltersModal = gridState[gridId].grid.find(&#039;filter_modal&#039;);
             if (!advancedFiltersModal.length) {
+                var toolbarHeight = gridState[gridId].grid.find(&#039;.toolbar&#039;).height(),
+                    groupHeight = gridState[gridId].grid.find(&#039;.group_div&#039;).height(),
+                    wrapperHeight = gridState[gridId].grid.find(&#039;.grid-wrapper&#039;).length ? gridState[gridId].grid.find(&#039;.grid-wrapper&#039;).height() : 0;
 
-                    var toolbarHeight = gridState[gridId].grid.find(&#039;.toolbar&#039;).height(),
-                    wrapperHeight = gridState[gridId].grid.find(&#039;.grid-wrapper&#039;).height();
-
-                advancedFiltersModal = $(&#039;&lt;div class=&quot;filter_modal&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&#039;).css(&#039;max-height&#039;, wrapperHeight + toolbarHeight);
+                advancedFiltersModal = $(&#039;&lt;div class=&quot;filter_modal&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&#039;).css(&#039;max-height&#039;, wrapperHeight + toolbarHeight + groupHeight - 3);
                 var advancedFiltersContainer = $(&#039;&lt;div class=&quot;filter_container&quot;&gt;&lt;/div&gt;&#039;).appendTo(advancedFiltersModal);
                 addNewAdvancedFilter(advancedFiltersContainer, true );
 
@@ -2139,6 +2139,7 @@
             columnSelector.find(&#039;option&#039;).first().remove();
             filterTypeSelector.find(&#039;option&#039;).remove();
             filterTypeSelector.prop(&#039;disabled&#039;, false);
+            filterRowDiv.find(&#039;.advanced_filter_value&#039;).val(&#039;&#039;);
             createFilterOptionsByDataType(filterTypeSelector, gridState[gridId].columns[columnSelector.val()].type || &#039;string&#039;);
 
             if (gridState[gridId].columns[columnSelector.val()].type !== &#039;boolean&#039;) {
