@@ -901,7 +901,7 @@ var grid = (function _grid($) {
             headerTHead = $('<thead></thead>').appendTo(headerTable),
             headerRow = $('<tr class=grid-headerRow></tr>').appendTo(headerTHead),
             index = 0,
-            id = gridHeader.data('grid_header_id'), i;
+            id = gridHeader.data('grid_header_id'), i, columnCount = 0;
 
         //TODO: I think this will work for data that is already grouped; specifically when adding a new column. However, it may work or be
         //TODO: adjusted to work with data coming from the server on widget creation
@@ -913,6 +913,7 @@ var grid = (function _grid($) {
         }
 
         for (var col in gridData.columns) {
+            columnCount++;
             if (typeof gridData.columns[col] !== 'object') continue;
             $('<col/>').appendTo(colgroup);
             var text = gridData.columns[col].title || col;
@@ -945,6 +946,7 @@ var grid = (function _grid($) {
             index++;
         }
         headerTable.css('width','');
+        gridData.numColumns = columnCount;
         setColWidth(gridData, gridElem);
     }
 
@@ -2533,6 +2535,13 @@ var grid = (function _grid($) {
     }
 
     function addFilterButtonHandler(e) {
+        var filterContainer = $(e.currentTarget).parents('.filter_container'),
+            gridId = filterContainer.parents('.filter_modal').data('grid_id'),
+            numFiltersAllowed = 0;
+        if (typeof gridState[gridId].advancedFiltering === 'number') numFiltersAllowed = gridState[gridId].advancedFiltering;
+        else numFiltersAllowed = gridState[gridId].numColumns;
+
+        if (filterContainer.find('.filter_row_div').length >= numFiltersAllowed) return;
         addNewAdvancedFilter($(e.currentTarget).parents('.filter_container'), false /* isFirstFilter */);
     }
 
