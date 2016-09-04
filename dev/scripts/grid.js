@@ -2473,11 +2473,15 @@ var grid = (function _grid($) {
                     else e.stopPropagation();
                 });*/
 
-                advancedFiltersModal.append('<input type="button" value="New Filter Group" class="advanced_filters_button"/>')
+                $('<input type="button" value="New Filter Group" class="advanced_filters_button"/>').appendTo(advancedFiltersModal)
                     .on('click', function addNewFilterGroupHandler() {
+                        var conjunctionSelector = $('<select class="input group_conjunction"></select>');
+                        conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
+                        advancedFiltersModal.find('.filter_group_container').last().after(conjunctionSelector);
+
                         var filterGroupContainer = $('<div class="filter_group_container"></div>');
-                        advancedFiltersModal.find('.filter_group_container').last().after(filterGroupContainer);
-                        filterGroupContainer.append('<span class="remove_filter_group"></span>');
+                        advancedFiltersModal.find('.group_conjunction').last().after(filterGroupContainer);
+                        filterGroupContainer.append('<span class="remove_filter_group"></span></br>');
                         addNewAdvancedFilter(filterGroupContainer, true /* isFirstFilter */);
                     });
 
@@ -2560,6 +2564,7 @@ var grid = (function _grid($) {
             var conjunctionSelector = $('<select class="input conjunction_selector"></select>').appendTo(filterRowDiv);
             conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
         }
+
         var columnSelector = $('<select class="input filter_column_selector"></select>').appendTo(filterRowDiv);
         if (!isFirstFilter) columnSelector.addClass('select');
         else columnSelector.addClass('first-select');
@@ -2571,28 +2576,19 @@ var grid = (function _grid($) {
             }
         }
 
-        var filterTypeSelector = $('<select class="input select" disabled></select>').appendTo(filterRowDiv);
+        var filterTypeSelector = $('<select class="input select filterType" disabled></select>').appendTo(filterRowDiv);
         $('<input type="text" class="advanced_filter_value" disabled />').appendTo(filterRowDiv);
 
-        if (!isFirstFilter) {
-            $('<input type="button" value="X" class="filter_row_button"/>')
-                .appendTo(filterRowDiv)
-                .on('click', deleteFilterButtonHandler);
+        var deleteHandler = isFirstFilter ? clearFirstFilterButtonHandler : deleteFilterButtonHandler;
 
+        $('<input type="button" value="X" class="filter_row_button"/>').appendTo(filterRowDiv).on('click', deleteHandler);
+
+        if (!isFirstFilter) {
             var addNewFilterButton = filterRowDiv.prev().find('.new_filter');
             addNewFilterButton.detach();
             filterRowDiv.append(addNewFilterButton);
         }
         else {
-            $('<input type="button" value="X" class="filter_row_button"/>')
-                .appendTo(filterRowDiv)
-                .on('click', function clearFirstFilterHandler() {
-                    columnSelector.find('option').remove();
-                    columnSelector.append('<option value="">Select a column</option>');
-                    filterTypeSelector.find('option').remove().prop('disabled', true);
-                    filterRowDiv.find('.advanced_filter_value').val('').prop('disabled', true);
-                });
-
             $('<input type="button" value="+" class="filter_row_button new_filter"/>')
                 .appendTo(filterRowDiv)
                 .on('click', addFilterButtonHandler);
@@ -2618,6 +2614,22 @@ var grid = (function _grid($) {
             filterRowDiv.prev().append(addNewFilterButton.detach());
         }
         filterRowDiv.remove();
+    }
+
+    function clearFirstFilterButtonHandler(e) {
+        var filterRowDiv = $(e.currentTarget).parents('.filter_row_div'),
+            columnSelector = filterRowDiv.find('.filter_column_selector'),
+            gridId = filterRowDiv.parents('.filter_modal').data('grid_id');
+        columnSelector.find('option').remove();
+        columnSelector.append('<option value="">Select a column</option>');
+        for (var column in gridState[gridId].columns) {
+            var curCol = gridState[gridId].columns[column];
+            if (curCol.filterable) {
+                columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
+            }
+        }
+        filterRowDiv.find('.filterType').prop('disabled', true).find('option').remove();
+        filterRowDiv.find('.advanced_filter_value').val('').prop('disabled', true);
     }
 
     function RemoveAllColumnSorts(e) {

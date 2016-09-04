@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.58</p>
+      <p class="stat">55.53</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3509</p>
+      <p class="stat">3521</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">212.04</p>
+      <p class="stat">212.18</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">77.68</p>
+      <p class="stat">78.06</p>
     </div>
   </div>
 </div>
@@ -2067,11 +2067,15 @@
                 addNewAdvancedFilter(advancedFiltersContainer, true );
 
 
-                advancedFiltersModal.append(&#039;&lt;input type=&quot;button&quot; value=&quot;New Filter Group&quot; class=&quot;advanced_filters_button&quot;/&gt;&#039;)
+                $(&#039;&lt;input type=&quot;button&quot; value=&quot;New Filter Group&quot; class=&quot;advanced_filters_button&quot;/&gt;&#039;).appendTo(advancedFiltersModal)
                     .on(&#039;click&#039;, function addNewFilterGroupHandler() {
+                        var conjunctionSelector = $(&#039;&lt;select class=&quot;input group_conjunction&quot;&gt;&lt;/select&gt;&#039;);
+                        conjunctionSelector.append(&#039;&lt;option value=&quot;and&quot;&gt;AND&lt;/option&gt;&#039;).append(&#039;&lt;option value=&quot;or&quot;&gt;OR&lt;/option&gt;&#039;);
+                        advancedFiltersModal.find(&#039;.filter_group_container&#039;).last().after(conjunctionSelector);
+
                         var filterGroupContainer = $(&#039;&lt;div class=&quot;filter_group_container&quot;&gt;&lt;/div&gt;&#039;);
-                        advancedFiltersModal.find(&#039;.filter_group_container&#039;).last().after(filterGroupContainer);
-                        filterGroupContainer.append(&#039;&lt;span class=&quot;remove_filter_group&quot;&gt;&lt;/span&gt;&#039;);
+                        advancedFiltersModal.find(&#039;.group_conjunction&#039;).last().after(filterGroupContainer);
+                        filterGroupContainer.append(&#039;&lt;span class=&quot;remove_filter_group&quot;&gt;&lt;/span&gt;&lt;/br&gt;&#039;);
                         addNewAdvancedFilter(filterGroupContainer, true );
                     });
 
@@ -2114,6 +2118,7 @@
             var conjunctionSelector = $(&#039;&lt;select class=&quot;input conjunction_selector&quot;&gt;&lt;/select&gt;&#039;).appendTo(filterRowDiv);
             conjunctionSelector.append(&#039;&lt;option value=&quot;and&quot;&gt;AND&lt;/option&gt;&#039;).append(&#039;&lt;option value=&quot;or&quot;&gt;OR&lt;/option&gt;&#039;);
         }
+
         var columnSelector = $(&#039;&lt;select class=&quot;input filter_column_selector&quot;&gt;&lt;/select&gt;&#039;).appendTo(filterRowDiv);
         if (!isFirstFilter) columnSelector.addClass(&#039;select&#039;);
         else columnSelector.addClass(&#039;first-select&#039;);
@@ -2125,28 +2130,19 @@
             }
         }
 
-        var filterTypeSelector = $(&#039;&lt;select class=&quot;input select&quot; disabled&gt;&lt;/select&gt;&#039;).appendTo(filterRowDiv);
+        var filterTypeSelector = $(&#039;&lt;select class=&quot;input select filterType&quot; disabled&gt;&lt;/select&gt;&#039;).appendTo(filterRowDiv);
         $(&#039;&lt;input type=&quot;text&quot; class=&quot;advanced_filter_value&quot; disabled /&gt;&#039;).appendTo(filterRowDiv);
 
-        if (!isFirstFilter) {
-            $(&#039;&lt;input type=&quot;button&quot; value=&quot;X&quot; class=&quot;filter_row_button&quot;/&gt;&#039;)
-                .appendTo(filterRowDiv)
-                .on(&#039;click&#039;, deleteFilterButtonHandler);
+        var deleteHandler = isFirstFilter ? clearFirstFilterButtonHandler : deleteFilterButtonHandler;
 
+        $(&#039;&lt;input type=&quot;button&quot; value=&quot;X&quot; class=&quot;filter_row_button&quot;/&gt;&#039;).appendTo(filterRowDiv).on(&#039;click&#039;, deleteHandler);
+
+        if (!isFirstFilter) {
             var addNewFilterButton = filterRowDiv.prev().find(&#039;.new_filter&#039;);
             addNewFilterButton.detach();
             filterRowDiv.append(addNewFilterButton);
         }
         else {
-            $(&#039;&lt;input type=&quot;button&quot; value=&quot;X&quot; class=&quot;filter_row_button&quot;/&gt;&#039;)
-                .appendTo(filterRowDiv)
-                .on(&#039;click&#039;, function clearFirstFilterHandler() {
-                    columnSelector.find(&#039;option&#039;).remove();
-                    columnSelector.append(&#039;&lt;option value=&quot;&quot;&gt;Select a column&lt;/option&gt;&#039;);
-                    filterTypeSelector.find(&#039;option&#039;).remove().prop(&#039;disabled&#039;, true);
-                    filterRowDiv.find(&#039;.advanced_filter_value&#039;).val(&#039;&#039;).prop(&#039;disabled&#039;, true);
-                });
-
             $(&#039;&lt;input type=&quot;button&quot; value=&quot;+&quot; class=&quot;filter_row_button new_filter&quot;/&gt;&#039;)
                 .appendTo(filterRowDiv)
                 .on(&#039;click&#039;, addFilterButtonHandler);
@@ -2172,6 +2168,22 @@
             filterRowDiv.prev().append(addNewFilterButton.detach());
         }
         filterRowDiv.remove();
+    }
+
+    function clearFirstFilterButtonHandler(e) {
+        var filterRowDiv = $(e.currentTarget).parents(&#039;.filter_row_div&#039;),
+            columnSelector = filterRowDiv.find(&#039;.filter_column_selector&#039;),
+            gridId = filterRowDiv.parents(&#039;.filter_modal&#039;).data(&#039;grid_id&#039;);
+        columnSelector.find(&#039;option&#039;).remove();
+        columnSelector.append(&#039;&lt;option value=&quot;&quot;&gt;Select a column&lt;/option&gt;&#039;);
+        for (var column in gridState[gridId].columns) {
+            var curCol = gridState[gridId].columns[column];
+            if (curCol.filterable) {
+                columnSelector.append(&#039;&lt;option value=&quot;&#039; + column + &#039;&quot;&gt;&#039; + (curCol.title || column) + &#039;&lt;/option&gt;&#039;);
+            }
+        }
+        filterRowDiv.find(&#039;.filterType&#039;).prop(&#039;disabled&#039;, true).find(&#039;option&#039;).remove();
+        filterRowDiv.find(&#039;.advanced_filter_value&#039;).val(&#039;&#039;).prop(&#039;disabled&#039;, true);
     }
 
     function RemoveAllColumnSorts(e) {
