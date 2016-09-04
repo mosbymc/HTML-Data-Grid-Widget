@@ -1069,11 +1069,12 @@ input {
   padding: 15px;
   overflow: auto;
 
-  .apply_filters_button {
+  .advanced_filters_button {
     border-radius: 5px;
     padding: .177em 5px 0 5px;
     margin: 5px auto 5px auto;
-    display: block;
+    display: inline-block;
+    float: none;
   }
 
   input {
@@ -1082,14 +1083,23 @@ input {
     color: @black;
   }
 
-  .filter_container {
+  .filter_group_container {
     padding: 5px 5px 0 5px;
+    border: 1px solid @black;
+    margin-bottom: 5px;
+
+    .remove_filter_group {
+      float: right;
+      background: url('../images/close.png') no-repeat;
+      width: 12px;
+      height: 12px;
+    }
 
     .advanced_filter_value:disabled {
       background-color: @disabled;
     }
 
-    .advanced_filter_button {
+    .filter_row_button {
       border-radius: 5px;
       padding: .177em 5px 0 5px;
       margin: 5px;

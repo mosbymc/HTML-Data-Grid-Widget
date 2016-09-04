@@ -1106,24 +1106,33 @@ input {
   padding: 15px;
   overflow: auto;
 }
-.filter_modal .apply_filters_button {
+.filter_modal .advanced_filters_button {
   border-radius: 5px;
   padding: .177em 5px 0 5px;
   margin: 5px auto 5px auto;
-  display: block;
+  display: inline-block;
+  float: none;
 }
 .filter_modal input {
   height: 2em;
   background: #ffffff;
   color: #000000;
 }
-.filter_modal .filter_container {
+.filter_modal .filter_group_container {
   padding: 5px 5px 0 5px;
+  border: 1px solid #000000;
+  margin-bottom: 5px;
 }
-.filter_modal .filter_container .advanced_filter_value:disabled {
+.filter_modal .filter_group_container .remove_filter_group {
+  float: right;
+  background: url('../images/close.png') no-repeat;
+  width: 12px;
+  height: 12px;
+}
+.filter_modal .filter_group_container .advanced_filter_value:disabled {
   background-color: #B0B0B0;
 }
-.filter_modal .filter_container .advanced_filter_button {
+.filter_modal .filter_group_container .filter_row_button {
   border-radius: 5px;
   padding: .177em 5px 0 5px;
   margin: 5px;
@@ -1144,24 +1153,24 @@ input {
   outline: none;
   display: inline-block;
 }
-.filter_modal .filter_container .first-select {
+.filter_modal .filter_group_container .first-select {
   margin: 0 5px 0 68px;
   border-radius: 5px;
   padding: .177em 0;
   width: 13em;
   height: 2em;
 }
-.filter_modal .filter_container .select {
+.filter_modal .filter_group_container .select {
   margin: 0 5px 0 5px;
   border-radius: 5px;
   padding: .177em 0;
   width: 13em;
   height: 2em;
 }
-.filter_modal .filter_container .select:disabled {
+.filter_modal .filter_group_container .select:disabled {
   background-color: #B0B0B0;
 }
-.filter_modal .filter_container .conjunction_selector {
+.filter_modal .filter_group_container .conjunction_selector {
   margin: 0 5px 0 5px;
   border-radius: 5px;
   padding: .177em 0;

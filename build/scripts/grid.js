@@ -1972,11 +1972,19 @@ var grid = (function _grid($) {
                     wrapperHeight = gridState[gridId].grid.find('.grid-wrapper').length ? gridState[gridId].grid.find('.grid-wrapper').height() : 0;
 
                 advancedFiltersModal = $('<div class="filter_modal" data-grid_id="' + gridId + '">').css('max-height', wrapperHeight + toolbarHeight + groupHeight - 3);
-                var advancedFiltersContainer = $('<div class="filter_container"></div>').appendTo(advancedFiltersModal);
+                var advancedFiltersContainer = $('<div class="filter_group_container"></div>').appendTo(advancedFiltersModal);
                 addNewAdvancedFilter(advancedFiltersContainer, true );
 
 
-                advancedFiltersModal.append('<input type="button" value="Apply Filter(s)" class="apply_filters_button"/>')
+                advancedFiltersModal.append('<input type="button" value="New Filter Group" class="advanced_filters_button"/>')
+                    .on('click', function addNewFilterGroupHandler() {
+                        var filterGroupContainer = $('<div class="filter_group_container"></div>');
+                        advancedFiltersModal.find('.filter_group_container').last().after(filterGroupContainer);
+                        filterGroupContainer.append('<span class="remove_filter_group"></span>');
+                        addNewAdvancedFilter(filterGroupContainer, true );
+                    });
+
+                advancedFiltersModal.append('<input type="button" value="Apply Filter(s)" class="advanced_filters_button"/>')
                     .on('click', function applyAdvancedFiltersHandler() {
                         advancedFiltersContainer.find('.filter_row_div').each(function iterateFilterRowsCallback() {
 
@@ -1998,14 +2006,14 @@ var grid = (function _grid($) {
     }
 
     function addFilterButtonHandler(e) {
-        var filterContainer = $(e.currentTarget).parents('.filter_container'),
-            gridId = filterContainer.parents('.filter_modal').data('grid_id'),
+        var filterModal = $(e.currentTarget).parents('.filter_modal'),
+            gridId = filterModal.data('grid_id'),
             numFiltersAllowed = 0;
         if (typeof gridState[gridId].advancedFiltering === 'number') numFiltersAllowed = gridState[gridId].advancedFiltering;
         else numFiltersAllowed = gridState[gridId].numColumns;
 
-        if (filterContainer.find('.filter_row_div').length >= numFiltersAllowed) return;
-        addNewAdvancedFilter($(e.currentTarget).parents('.filter_container'), false );
+        if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
+        addNewAdvancedFilter($(e.currentTarget).parents('.filter_group_container'), false );
     }
 
     function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
@@ -2030,7 +2038,7 @@ var grid = (function _grid($) {
         $('<input type="text" class="advanced_filter_value" disabled />').appendTo(filterRowDiv);
 
         if (!isFirstFilter) {
-            $('<input type="button" value="X" class="advanced_filter_button"/>')
+            $('<input type="button" value="X" class="filter_row_button"/>')
                 .appendTo(filterRowDiv)
                 .on('click', deleteFilterButtonHandler);
 
@@ -2039,7 +2047,7 @@ var grid = (function _grid($) {
             filterRowDiv.append(addNewFilterButton);
         }
         else {
-            $('<input type="button" value="X" class="advanced_filter_button"/>')
+            $('<input type="button" value="X" class="filter_row_button"/>')
                 .appendTo(filterRowDiv)
                 .on('click', function clearFirstFilterHandler() {
                     columnSelector.find('option').remove();
@@ -2048,7 +2056,7 @@ var grid = (function _grid($) {
                     filterRowDiv.find('.advanced_filter_value').val('').prop('disabled', true);
                 });
 
-            $('<input type="button" value="+" class="advanced_filter_button new_filter"/>')
+            $('<input type="button" value="+" class="filter_row_button new_filter"/>')
                 .appendTo(filterRowDiv)
                 .on('click', addFilterButtonHandler);
         }
