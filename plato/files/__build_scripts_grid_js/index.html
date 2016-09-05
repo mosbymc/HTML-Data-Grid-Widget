@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.53</p>
+      <p class="stat">55.48</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3521</p>
+      <p class="stat">3534</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">212.18</p>
+      <p class="stat">212.46</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">78.06</p>
+      <p class="stat">78.52</p>
     </div>
   </div>
 </div>
@@ -2067,15 +2067,25 @@
                 addNewAdvancedFilter(advancedFiltersContainer, true );
 
 
-                $(&#039;&lt;input type=&quot;button&quot; value=&quot;New Filter Group&quot; class=&quot;advanced_filters_button&quot;/&gt;&#039;).appendTo(advancedFiltersModal)
+                $(&#039;&lt;input type=&quot;button&quot; value=&quot;New Filter Group&quot; class=&quot;advanced_filters_button add_filter&quot;/&gt;&#039;).appendTo(advancedFiltersModal)
                     .on(&#039;click&#039;, function addNewFilterGroupHandler() {
+                        var numGroupsAllowed = 0;
+                        if (typeof gridState[gridId].advancedFiltering === &#039;object&#039; &amp;&amp; typeof gridState[gridId].advancedFiltering.groupsCount === &#039;number&#039;)
+                            numGroupsAllowed = gridState[gridId].advancedFiltering.groupsCount;
+                        else numGroupsAllowed = 3;
+
+                        if (advancedFiltersModal.find(&#039;.filter_group_container&#039;).length &gt;= numGroupsAllowed) return;
+                        else if (advancedFiltersModal.find(&#039;.filter_group_container&#039;).length === numGroupsAllowed - 1)
+                            advancedFiltersModal.find(&#039;.add_filter&#039;).prop(&#039;disabled&#039;, true);
+
                         var conjunctionSelector = $(&#039;&lt;select class=&quot;input group_conjunction&quot;&gt;&lt;/select&gt;&#039;);
                         conjunctionSelector.append(&#039;&lt;option value=&quot;and&quot;&gt;AND&lt;/option&gt;&#039;).append(&#039;&lt;option value=&quot;or&quot;&gt;OR&lt;/option&gt;&#039;);
                         advancedFiltersModal.find(&#039;.filter_group_container&#039;).last().after(conjunctionSelector);
 
                         var filterGroupContainer = $(&#039;&lt;div class=&quot;filter_group_container&quot;&gt;&lt;/div&gt;&#039;);
                         advancedFiltersModal.find(&#039;.group_conjunction&#039;).last().after(filterGroupContainer);
-                        filterGroupContainer.append(&#039;&lt;span class=&quot;remove_filter_group&quot;&gt;&lt;/span&gt;&lt;/br&gt;&#039;);
+                        var removeGroup = $(&#039;&lt;span class=&quot;remove_filter_group&quot;&gt;&lt;/span&gt;&lt;/br&gt;&#039;).css(&#039;left&#039;, (filterGroupContainer.outerWidth()));
+                        filterGroupContainer.append(removeGroup);
                         addNewAdvancedFilter(filterGroupContainer, true );
                     });
 
@@ -2104,10 +2114,13 @@
         var filterModal = $(e.currentTarget).parents(&#039;.filter_modal&#039;),
             gridId = filterModal.data(&#039;grid_id&#039;),
             numFiltersAllowed = 0;
-        if (typeof gridState[gridId].advancedFiltering === &#039;number&#039;) numFiltersAllowed = gridState[gridId].advancedFiltering;
+        if (typeof gridState[gridId].advancedFiltering === &#039;object&#039; &amp;&amp; typeof gridState[gridId].advancedFiltering.filtersCount === &#039;number&#039;)
+            numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
         else numFiltersAllowed = gridState[gridId].numColumns;
 
         if (filterModal.find(&#039;.filter_row_div&#039;).length &gt;= numFiltersAllowed) return;
+        else if (filterModal.find(&#039;.filter_row_div&#039;).length === numFiltersAllowed - 1) filterModal.find(&#039;.add_filter&#039;).prop(&#039;disabled&#039;, true);
+
         addNewAdvancedFilter($(e.currentTarget).parents(&#039;.filter_group_container&#039;), false );
     }
 

@@ -2473,15 +2473,25 @@ var grid = (function _grid($) {
                     else e.stopPropagation();
                 });*/
 
-                $('<input type="button" value="New Filter Group" class="advanced_filters_button"/>').appendTo(advancedFiltersModal)
+                $('<input type="button" value="New Filter Group" class="advanced_filters_button add_filter"/>').appendTo(advancedFiltersModal)
                     .on('click', function addNewFilterGroupHandler() {
+                        var numGroupsAllowed = 0;
+                        if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.groupsCount === 'number')
+                            numGroupsAllowed = gridState[gridId].advancedFiltering.groupsCount;
+                        else numGroupsAllowed = 3;
+
+                        if (advancedFiltersModal.find('.filter_group_container').length >= numGroupsAllowed) return;
+                        else if (advancedFiltersModal.find('.filter_group_container').length === numGroupsAllowed - 1)
+                            advancedFiltersModal.find('.add_filter').prop('disabled', true);
+
                         var conjunctionSelector = $('<select class="input group_conjunction"></select>');
                         conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
                         advancedFiltersModal.find('.filter_group_container').last().after(conjunctionSelector);
 
                         var filterGroupContainer = $('<div class="filter_group_container"></div>');
                         advancedFiltersModal.find('.group_conjunction').last().after(filterGroupContainer);
-                        filterGroupContainer.append('<span class="remove_filter_group"></span></br>');
+                        var removeGroup = $('<span class="remove_filter_group"></span></br>').css('left', (filterGroupContainer.outerWidth()));
+                        filterGroupContainer.append(removeGroup);
                         addNewAdvancedFilter(filterGroupContainer, true /* isFirstFilter */);
                     });
 
@@ -2550,10 +2560,13 @@ var grid = (function _grid($) {
         var filterModal = $(e.currentTarget).parents('.filter_modal'),
             gridId = filterModal.data('grid_id'),
             numFiltersAllowed = 0;
-        if (typeof gridState[gridId].advancedFiltering === 'number') numFiltersAllowed = gridState[gridId].advancedFiltering;
+        if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.filtersCount === 'number')
+            numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
         else numFiltersAllowed = gridState[gridId].numColumns;
 
         if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
+        else if (filterModal.find('.filter_row_div').length === numFiltersAllowed - 1) filterModal.find('.add_filter').prop('disabled', true);
+
         addNewAdvancedFilter($(e.currentTarget).parents('.filter_group_container'), false /* isFirstFilter */);
     }
 

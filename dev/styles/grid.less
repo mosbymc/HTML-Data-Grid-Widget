@@ -1078,6 +1078,10 @@ input {
     float: none;
   }
 
+  .advanced_filters_button:disabled {
+    background-color: @disabled;
+  }
+
   input {
     height: 2em;
     background: @white;
@@ -1085,7 +1089,7 @@ input {
   }
 
   .group_conjunction {
-    margin: 0 5px 10px 5px;
+    margin: 0 5px 15px 5px;
     border-radius: 5px;
     padding: .177em 0;
     height: 2em;
@@ -1099,12 +1103,10 @@ input {
     text-align: start;
 
     .remove_filter_group {
-      float: right;
       background: url('../images/close.png') no-repeat;
       width: 12px;
       height: 12px;
-      margin-right: -12px;
-      margin-top: -3px;
+      position: absolute;
     }
 
     .advanced_filter_value:disabled {

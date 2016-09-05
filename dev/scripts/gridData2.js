@@ -9,7 +9,10 @@ var gridData = {
     selectable: 'multi-row',
     excelExport: true,
     columnToggle: true,
-    advancedFiltering: true,
+    advancedFiltering: {
+        groupsCount: 4,
+        filtersCount: 8
+    },
     pagingOptions: [25, 50, 100],
     //menu: ['filter', 'excel', 'save', 'sort', 'selection'],
     //pageSize: 50,
