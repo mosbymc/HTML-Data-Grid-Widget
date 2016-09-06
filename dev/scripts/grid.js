@@ -2456,7 +2456,7 @@ var grid = (function _grid($) {
         var filterModalMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Advanced Filters</a>'));
         filterModalMenuItem.on('click', function openAdvancedFilterModal(e) {
             e.stopPropagation();
-            var advancedFiltersModal = gridState[gridId].grid.find('filter_modal');
+            var advancedFiltersModal = gridState[gridId].grid.find('.filter_modal');
             if (!advancedFiltersModal.length) {
                 var toolbarHeight = gridState[gridId].grid.find('.toolbar').height(),
                     groupHeight = gridState[gridId].grid.find('.group_div').height(),
@@ -2473,7 +2473,7 @@ var grid = (function _grid($) {
                     else e.stopPropagation();
                 });*/
 
-                $('<input type="button" value="New Filter Group" class="advanced_filters_button add_filter"/>').appendTo(advancedFiltersModal)
+                $('<input type="button" value="New Filter Group" class="advanced_filters_button add_filter_group"/>').appendTo(advancedFiltersModal)
                     .on('click', function addNewFilterGroupHandler() {
                         var numGroupsAllowed = 0;
                         if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.groupsCount === 'number')
@@ -2482,7 +2482,7 @@ var grid = (function _grid($) {
 
                         if (advancedFiltersModal.find('.filter_group_container').length >= numGroupsAllowed) return;
                         else if (advancedFiltersModal.find('.filter_group_container').length === numGroupsAllowed - 1)
-                            advancedFiltersModal.find('.add_filter').prop('disabled', true);
+                            advancedFiltersModal.find('.add_filter_group').prop('disabled', true);
 
                         var conjunctionSelector = $('<select class="input group_conjunction"></select>');
                         conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
@@ -2559,13 +2559,12 @@ var grid = (function _grid($) {
     function addFilterButtonHandler(e) {
         var filterModal = $(e.currentTarget).parents('.filter_modal'),
             gridId = filterModal.data('grid_id'),
-            numFiltersAllowed = 0;
+            numFiltersAllowed = gridState[gridId].numColumns;
         if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.filtersCount === 'number')
             numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
-        else numFiltersAllowed = gridState[gridId].numColumns;
 
         if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
-        else if (filterModal.find('.filter_row_div').length === numFiltersAllowed - 1) filterModal.find('.add_filter').prop('disabled', true);
+        else if (filterModal.find('.filter_row_div').length === numFiltersAllowed - 1) filterModal.find('.add_filter_group').prop('disabled', true);
 
         addNewAdvancedFilter($(e.currentTarget).parents('.filter_group_container'), false /* isFirstFilter */);
     }
@@ -2621,12 +2620,21 @@ var grid = (function _grid($) {
     }
 
     function deleteFilterButtonHandler(e) {
-        var filterRowDiv = $(e.currentTarget).parents('.filter_row_div');
-        var addNewFilterButton = filterRowDiv.find('.new_filter');
+        var filterRowDiv = $(e.currentTarget).parents('.filter_row_div'),
+            addNewFilterButton = filterRowDiv.find('.new_filter'),
+            filterModal = $(e.currentTarget).parents('.filter_modal');
         if (addNewFilterButton.length) {
             filterRowDiv.prev().append(addNewFilterButton.detach());
         }
         filterRowDiv.remove();
+
+        var gridId = filterModal.data('grid_id'),
+            numFilters = filterModal.find('.filter_row_div').length,
+            allowedFilters = gridState[gridId].numColumns;
+        if (typeof gridState[gridId].advancedFiltering === 'object'&& typeof gridState[gridId].advancedFiltering.filtersCount === 'number')
+            allowedFilters = gridState[gridId].advancedFiltering.filtersCount;
+        if (allowedFilters > numFilters)
+            filterModal.find('.add_filter_group').prop('disabled', false);
     }
 
     function clearFirstFilterButtonHandler(e) {
