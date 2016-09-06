@@ -3573,7 +3573,7 @@ var grid = (function _grid($) {
     function filterGridData(filterType, value, field, dataType, gridData) {
         var filteredData = [], curVal, baseVal;
 
-        for (var i = 0, length = gridData.length; i < length; i++) {
+        for (var i = 0; i < gridData.length; i++) {
             if (dataType === 'time') {
                 curVal = getNumbersFromTime(gridData[i][field]);
                 baseVal = getNumbersFromTime(value);
