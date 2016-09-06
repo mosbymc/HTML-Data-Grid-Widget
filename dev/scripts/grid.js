@@ -103,6 +103,7 @@
     > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
     > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
     > and if that specific functionality has handled the added column or not without repeating the same data for each functionality
+ - Add null/empty string values to filtering selectors
  - Add menu option to specify OR, AND, NOT filters
     > open model to display advanced filters
     > First drop down selects from available grid columns
@@ -2463,7 +2464,7 @@ var grid = (function _grid($) {
                     wrapperHeight = gridState[gridId].grid.find('.grid-wrapper').length ? gridState[gridId].grid.find('.grid-wrapper').height() : 0;
 
                 advancedFiltersModal = $('<div class="filter_modal" data-grid_id="' + gridId + '">').css('max-height', wrapperHeight + toolbarHeight + groupHeight - 3);
-                var advancedFiltersContainer = $('<div class="filter_group_container"></div>').appendTo(advancedFiltersModal);
+                var advancedFiltersContainer = $('<div class="filter_group_container" data-filter_group_num="1"></div>').appendTo(advancedFiltersModal);
                 addNewAdvancedFilter(advancedFiltersContainer, true /* isFirstFilter */);
 
                 /*$(document).on('click', function hideFilterModalHandler(e) {
@@ -2475,22 +2476,33 @@ var grid = (function _grid($) {
 
                 $('<input type="button" value="New Filter Group" class="advanced_filters_button add_filter_group"/>').appendTo(advancedFiltersModal)
                     .on('click', function addNewFilterGroupHandler() {
-                        var numGroupsAllowed = 0;
+                        var numGroupsAllowed = 0,
+                            filterGroupCount = advancedFiltersModal.find('.filter_group_container').length;
                         if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.groupsCount === 'number')
                             numGroupsAllowed = gridState[gridId].advancedFiltering.groupsCount;
                         else numGroupsAllowed = 3;
 
-                        if (advancedFiltersModal.find('.filter_group_container').length >= numGroupsAllowed) return;
-                        else if (advancedFiltersModal.find('.filter_group_container').length === numGroupsAllowed - 1)
+                        if (filterGroupCount >= numGroupsAllowed) return;
+                        else if (filterGroupCount === numGroupsAllowed - 1)
                             advancedFiltersModal.find('.add_filter_group').prop('disabled', true);
 
                         var conjunctionSelector = $('<select class="input group_conjunction"></select>');
                         conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
                         advancedFiltersModal.find('.filter_group_container').last().after(conjunctionSelector);
 
-                        var filterGroupContainer = $('<div class="filter_group_container"></div>');
+                        var prevGroupCount = advancedFiltersModal.find('.filter_group_container').last().data('filter_group_num');
+                        var filterGroupContainer = $('<div class="filter_group_container" data-filter_group_num="' + prevGroupCount + '"></div>');
                         advancedFiltersModal.find('.group_conjunction').last().after(filterGroupContainer);
-                        var removeGroup = $('<span class="remove_filter_group"></span></br>').css('left', (filterGroupContainer.outerWidth()));
+                        var removeGroup = $('<span class="remove_filter_group"></span></br>').css('left', (filterGroupContainer.outerWidth()))
+                            .on('click', function closeFilterGroupHandler(e) {
+                                var filterContainerGroup = $(e.currentTarget).parents('.filter_group_container');
+                                filterContainerGroup.prev('select').remove();
+                                filterContainerGroup.remove();
+
+                                if (advancedFiltersModal.find('.group_conjunction').length < numGroupsAllowed)
+                                    advancedFiltersModal.find('.add_filter_group').prop('disabled', false);
+                            })
+                            .data('filter_group_num', filterGroupCount + 1);
                         filterGroupContainer.append(removeGroup);
                         addNewAdvancedFilter(filterGroupContainer, true /* isFirstFilter */);
                     });

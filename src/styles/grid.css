@@ -1110,7 +1110,7 @@ input {
 .filter_modal .advanced_filters_button {
   border-radius: 5px;
   padding: .177em 5px 0 5px;
-  margin: 5px auto 5px auto;
+  margin: 5px;
   display: inline-block;
   float: none;
 }
@@ -1140,6 +1140,10 @@ input {
   width: 12px;
   height: 12px;
   position: absolute;
+  cursor: pointer;
+}
+.filter_modal .filter_group_container .advanced_filter_value {
+  margin-left: 5px;
 }
 .filter_modal .filter_group_container .advanced_filter_value:disabled {
   background-color: #B0B0B0;
