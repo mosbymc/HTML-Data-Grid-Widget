@@ -118,6 +118,8 @@
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
+ - (AND|OR|NOT|XOR|\\|\\||^|&&|!)
+ - (AND|OR|NOT|XOR)
  */
 /*exported grid*/
 /**
@@ -2477,7 +2479,8 @@ var grid = (function _grid($) {
                 $('<input type="button" value="New Filter Group" class="advanced_filters_button add_filter_group"/>').appendTo(advancedFiltersModal)
                     .on('click', function addNewFilterGroupHandler() {
                         var numGroupsAllowed = 0,
-                            filterGroupCount = advancedFiltersModal.find('.filter_group_container').length;
+                            filterGroupCount = advancedFiltersModal.find('.filter_group_container').length,
+                            numFiltersAllowed = gridState[gridId].numColumns;
                         if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.groupsCount === 'number')
                             numGroupsAllowed = gridState[gridId].advancedFiltering.groupsCount;
                         else numGroupsAllowed = 3;
@@ -2485,6 +2488,12 @@ var grid = (function _grid($) {
                         if (filterGroupCount >= numGroupsAllowed) return;
                         else if (filterGroupCount === numGroupsAllowed - 1)
                             advancedFiltersModal.find('.add_filter_group').prop('disabled', true);
+
+                        if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.filtersCount === 'number')
+                            numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
+
+                        if (advancedFiltersModal.find('.filter_row_div').length >= numFiltersAllowed) return;
+                        else if (advancedFiltersModal.find('.filter_row_div').length === numFiltersAllowed - 1) advancedFiltersModal.find('.add_filter_group').prop('disabled', true);
 
                         var conjunctionSelector = $('<select class="input group_conjunction"></select>');
                         conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
