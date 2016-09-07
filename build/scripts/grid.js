@@ -1992,8 +1992,7 @@ var grid = (function _grid($) {
                         conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
                         advancedFiltersModal.find('.filter_group_container').last().after(conjunctionSelector);
 
-                        var prevGroupCount = advancedFiltersModal.find('.filter_group_container').last().data('filter_group_num');
-                        var filterGroupContainer = $('<div class="filter_group_container" data-filter_group_num="' + prevGroupCount + '"></div>');
+                        var filterGroupContainer = $('<div class="filter_group_container"></div>');
                         advancedFiltersModal.find('.group_conjunction').last().after(filterGroupContainer);
                         var removeGroup = $('<span class="remove_filter_group"></span></br>').css('left', (filterGroupContainer.outerWidth()))
                             .on('click', function closeFilterGroupHandler(e) {

@@ -2490,8 +2490,7 @@ var grid = (function _grid($) {
                         conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
                         advancedFiltersModal.find('.filter_group_container').last().after(conjunctionSelector);
 
-                        var prevGroupCount = advancedFiltersModal.find('.filter_group_container').last().data('filter_group_num');
-                        var filterGroupContainer = $('<div class="filter_group_container" data-filter_group_num="' + prevGroupCount + '"></div>');
+                        var filterGroupContainer = $('<div class="filter_group_container"></div>');
                         advancedFiltersModal.find('.group_conjunction').last().after(filterGroupContainer);
                         var removeGroup = $('<span class="remove_filter_group"></span></br>').css('left', (filterGroupContainer.outerWidth()))
                             .on('click', function closeFilterGroupHandler(e) {
@@ -3602,7 +3601,7 @@ var grid = (function _grid($) {
     }
 
     /**
-     * Using various equality operators, checks to for truth based on the type of the operator(s)
+     * Using various equality operators, checks for truth based on the type of the operator(s)
      * @param {string|number|boolean} val - The value that is being checked against a base value
      * @param {*} base - The based value against which values are compared
      * @param {string} type - The type of equality operator(s) to be used in the comparison
