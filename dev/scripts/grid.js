@@ -2479,7 +2479,8 @@ var grid = (function _grid($) {
                 $('<input type="button" value="New Filter Group" class="advanced_filters_button add_filter_group"/>').appendTo(advancedFiltersModal)
                     .on('click', function addNewFilterGroupHandler() {
                         var numGroupsAllowed = 0,
-                            filterGroupCount = advancedFiltersModal.find('.filter_group_container').length,
+                            filterGroups = advancedFiltersModal.find('.filter_group_container'),
+                            filterGroupCount = filterGroups.length,
                             numFiltersAllowed = gridState[gridId].numColumns;
                         if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.groupsCount === 'number')
                             numGroupsAllowed = gridState[gridId].advancedFiltering.groupsCount;
@@ -2495,11 +2496,13 @@ var grid = (function _grid($) {
                         if (advancedFiltersModal.find('.filter_row_div').length >= numFiltersAllowed) return;
                         else if (advancedFiltersModal.find('.filter_row_div').length === numFiltersAllowed - 1) advancedFiltersModal.find('.add_filter_group').prop('disabled', true);
 
-                        var conjunctionSelector = $('<select class="input group_conjunction"></select>');
+                        var previousGroupNum = parseInt(filterGroups.last().data('filter_group_num'));
+
+                        var conjunctionSelector = $('<select class="input group_conjunction" data-filter_group_num="' + (previousGroupNum + 1) + '"></select>');
                         conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
                         advancedFiltersModal.find('.filter_group_container').last().after(conjunctionSelector);
 
-                        var filterGroupContainer = $('<div class="filter_group_container"></div>');
+                        var filterGroupContainer = $('<div class="filter_group_container" data-filter_group_num="' + (previousGroupNum + 1) + '"></div>');
                         advancedFiltersModal.find('.group_conjunction').last().after(filterGroupContainer);
                         var removeGroup = $('<span class="remove_filter_group"></span></br>').css('left', (filterGroupContainer.outerWidth()))
                             .on('click', function closeFilterGroupHandler(e) {
@@ -2518,7 +2521,37 @@ var grid = (function _grid($) {
                 advancedFiltersModal.append('<input type="button" value="Apply Filter(s)" class="advanced_filters_button"/>')
                     .on('click', function applyAdvancedFiltersHandler() {
                         advancedFiltersContainer.find('.filter_row_div').each(function iterateFilterRowsCallback() {
+                            if (gridState[gridId].updating) return;		//can't filter if grid is updating
+                            gridState[gridId].grid.find('filterInput').val('');
+                            gridState[gridId].filteredOn = [];
 
+                            var advancedFilters = {};
+
+                            var orFilterConjunctIds = [],
+                                andFilterConjunctIds = [];
+                            advancedFiltersModal.find('.group_conjunction').each(function iterateFilterGroupConjunctsCallback() {
+                                var selector = $(this);
+                                if (selector.val() === 'or') orFilterConjunctIds.push(parseInt(selector.data('filter_group_num')));
+                                else andFilterConjunctIds.push(parseInt(selector.data('filter_group_num')));
+                            });
+
+                            if (orFilterConjunctIds.length) {
+                                advancedFilters.conjunct = 'or';
+                                advancedFilters.groups = [];
+                                orFilterConjunctIds.forEach(function createTopLevelFilters() {
+                                    //TODO: figure out how to build up the advanced filters object
+                                    advancedFilters.groups.push({
+                                        something: 'Not sure what I should do to proceed with the filter group creation'
+                                    });
+                                });
+                            }
+
+
+                            /*var filterGroups = advancedFiltersModal.find('.filter_group_container').each(function iterateFilterGroupsCallback(idx) {
+                                if (!idx) {
+
+                                }
+                            });*/
                         });
                         /*
                             var filterDiv = $(e.currentTarget).parents('.filter-div'),
