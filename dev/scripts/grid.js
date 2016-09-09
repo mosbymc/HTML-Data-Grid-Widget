@@ -105,6 +105,8 @@
     > and if that specific functionality has handled the added column or not without repeating the same data for each functionality
  - Add null/empty string values to filtering selectors
  - Add menu option to specify OR, AND, NOT filters
+ - Add ability to create an arbitrary number of nested filter groups
+ - Add grid config option to restrict number of nested filter groups
     > open model to display advanced filters
     > First drop down selects from available grid columns
     > Second drop down selects filter type
