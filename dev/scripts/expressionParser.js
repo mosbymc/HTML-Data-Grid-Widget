@@ -5,6 +5,9 @@
  - AND = 2 L-T-R
  - XOR = 3 L-T-R
  - OR = 3 L-T-R
+
+ - (AND|OR|NOT|XOR|\\|\\||^|&&|!)
+ - (AND|OR|NOT|XOR)
  */
 
 var stack = {
@@ -38,6 +41,7 @@ var operator = {
                 this.associtivity = 'LTR';
                 this.value = '!';
                 this.type = 'operator';
+                this.operands = 1;
                 break;
             case 'AND':
             case '&&':
@@ -45,6 +49,7 @@ var operator = {
                 this.associtivity = 'RTL';
                 this.value = '&&';
                 this.type = 'operator';
+                this.operands = 2;
                 break;
             case 'XOR':
             case '^':
@@ -52,6 +57,7 @@ var operator = {
                 this.associtivity = 'RTL';
                 this.value = '^';
                 this.type = 'operator';
+                this.operands = 2;
                 break;
             case 'OR':
             case '||':
@@ -59,18 +65,21 @@ var operator = {
                 this.associtivity = 'RTL';
                 this.value = '||';
                 this.type = 'operator';
+                this.operands = 2;
                 break;
             case ')':
                 this.precedence = null;
                 this.associtivity = null;
                 this.value = ')';
                 this.type = 'grouper';
+                this.operands = null;
                 break;
             case '(':
                 this.precedence = null;
                 this.associtivity = null;
                 this.value = '(';
                 this.type = 'grouper';
+                this.operands = null;
                 break;
         }
     }
@@ -167,13 +176,15 @@ var contextParser = {
                 continue;
 
             if (opIdx = operators.indexOf(nodes[i].trim()) > -1) {
-                //TODO: compare operators precedence and associtivity to top of stack
+                //TODO: compare operators precedence and associativity to top of stack
                 curOp = Object.create(operator).createNewOperator(operators[opIdx]);
                 while (this.stack.length()) {
                     var stacktop = this.stack.peek();
                     if ((stacktop.type === 'operator' && curOp.associtivity === 'R-T-L' && curOp.precedence <= stacktop.precedence)
                         || (curOp.associtivity === 'L-T-R' && curOp.precedence < stacktop.precedence))
                         this.queue.push(this.stack.pop());
+                    else
+                        break;
                 }
                 this.stack.push(curOp);
             }
@@ -188,8 +199,8 @@ var contextParser = {
                 }
             }
             else {
-                teIdx = this.truthEquations.indexOf(nodes[i].trim());
-                this.queue.push(this.truthEquations[teIdx]);
+                teIdx = this.truthStatements.indexOf(nodes[i].trim());
+                this.queue.push(this.truthStatements[teIdx]);
             }
 
         }

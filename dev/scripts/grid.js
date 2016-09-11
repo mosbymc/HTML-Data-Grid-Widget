@@ -99,29 +99,19 @@
  - Make dirty cells check against original data, not the previous value in the cell/dataSource - DONE
  - Fix grid from forgetting a cell has changed values - DONE
  - Fix drop-downs from populating options with same value twice when cell value is same an provided option - DONE
+ - Add menu option to specify OR, AND, NOT filters - DONE
+ - Add ability to create an arbitrary number of nested filter groups - DONE
+ - Add grid config option to restrict number of nested filter groups - DONE
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
     > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
     > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
     > and if that specific functionality has handled the added column or not without repeating the same data for each functionality
  - Add null/empty string values to filtering selectors
- - Add menu option to specify OR, AND, NOT filters
- - Add ability to create an arbitrary number of nested filter groups
- - Add grid config option to restrict number of nested filter groups
-    > open model to display advanced filters
-    > First drop down selects from available grid columns
-    > Second drop down selects filter type
-    > Then a text input for the value of filter to apply
-    > If filter row is not first:
-        - '+' and 'X' buttons to indicate adding or removing a filter
-        - First drop down will be to select filter conjunction (AND/OR)
-        - Need someplace to NOT the filter.... or maybe just not the conjunction
  - Add ability to lock/freeze columns
  - Restrict handling of rapid-fire events: scroll, mouse move, mouse out, mouse leave, drag, etc
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
- - (AND|OR|NOT|XOR|\\|\\||^|&&|!)
- - (AND|OR|NOT|XOR)
  */
 /*exported grid*/
 /**
