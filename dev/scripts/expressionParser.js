@@ -38,6 +38,11 @@ NAND = !(p AND q) = !p OR !q
 NOR = !(p OR q) = !p AND !q
 
 
+Post Evaluation
+c1.field1 >= someVal AND c1.field1 != c1.field2 OR c2.field1 <= c1.field1
+
+Inline Evaluation
+12 >= 15 AND 12 != 8 OR 6 <= 12
 
 
  */
@@ -63,6 +68,49 @@ var stack = {
         return this.top;
     }
 };
+
+function comparator(val, base, type) {
+    switch (type) {
+        case '==':
+            return val == base;
+        case '===':
+            return val === base;
+        case '<=':
+            return val <= base;
+        case '>=':
+            return val >= base;
+        case '!':
+            return !val;
+        case '':
+            return !!val;
+        case '!=':
+            return val != base;
+        case '!==':
+            return val !== base;
+        case '>':
+            return val > base;
+        case '<':
+            return val < base;
+        case 'eq':
+            return val === base;
+        case 'neq':
+            return val !== base;
+        case 'gte':
+            return val >= base;
+        case 'gt':
+            return val > base;
+        case 'lte':
+            return val <= base;
+        case 'lt':
+            return val < base;
+        case 'not':
+            return !!val;
+        case 'ct':
+            return !!~val.toLowerCase().indexOf(base.toLowerCase());
+        case 'nct':
+            return !~val.toLowerCase().indexOf(base.toLowerCase());
+    }
+}
 
 var operator = {
     createNewOperator: function _createNewOperator(token) {
@@ -133,7 +181,7 @@ var parser = {
             token = this.expression.substring(tail, head);
 
             if (token.indexOf('(') === 0 ) {
-                this.stack.push(Object.create(operator).createNewOperator('(');
+                this.stack.push(Object.create(operator).createNewOperator('('));
                 if (token.length > 1) {
                     token = token.substring(1, token.length - 1);
                 }
@@ -188,15 +236,15 @@ Object.defineProperties(expression, {
     }
 });
 
-var contextParser = {
-    init: function _init(expression, truthStatements) {
+var expressionParser = {
+    init: function _init(expression, evalType) {
         this.expression = expression;
         this.stack = Object.create(stack).init();
-        this.truthStatements = truthStatements;
+        this.evalType = evalType;
         this.queue = [];
     },
     parse: function _parse() {
-        var re = /(AND|OR|NOT|XOR|\)|\()/,
+        var re = /(AND|OR|NOT|XOR|\)|\()/,  ///(&&|\|\||!|^|\)|\(|<|>|<=|>=|==|===|!=|!==)/;
             nodes = this.expression.split(re),
             operators = ['AND', 'OR', 'NOT', 'XOR'],
             groupings = ['(', ')'],
@@ -206,8 +254,8 @@ var contextParser = {
         for (var i = 0; i < nodes.length; i++) {
             if (nodes[i] === '' || nodes[i] === ' ')
                 continue;
-
-            if (opIdx = operators.indexOf(nodes[i].trim()) > -1) {
+            var token = nodes[i].trim();
+            if (opIdx = operators.indexOf(token) > -1) {
                 //TODO: compare operators precedence and associativity to top of stack
                 curOp = Object.create(operator).createNewOperator(operators[opIdx]);
                 while (this.stack.length()) {
@@ -220,19 +268,23 @@ var contextParser = {
                 }
                 this.stack.push(curOp);
             }
-            else if (grpIdx = groupings.indexOf(nodes[i].trim()) > -1) {
+            else if (grpIdx = groupings.indexOf(token) > -1) {
                 if (grpIdx === 0)
                     this.stack.push(Object.create(operator).createNewOperator('('));
                 else {
                     while (this.stack.peek().value !== '(') {
                         this.queue.push(this.stack.pop());
                     }
-                    this.stack.pop();
+                    this.stack.pop();   //pop off the actual '(' item but don't push it into the queue
                 }
             }
-            else {
-                teIdx = this.truthStatements.indexOf(nodes[i].trim());
-                this.queue.push(this.truthStatements[teIdx]);
+            else {  //if the token is not an operator and it's not a grouper, then it is an expression
+                if (this.evalType === 'post-evaluation') {
+
+                }
+                else {
+                    this.queue.push(evaluateExpression(token));
+                }
             }
 
         }
@@ -240,6 +292,20 @@ var contextParser = {
         while (this.stack.length()) {
             this.queue.push(this.stack.pop());
         }
+    }
+};
+
+function evaluateExpression(expression) {
+    var re = /(<|>|<=|>=|==|===|!=|!==)/;
+    var tokens = expression.split(re);
+    return comparator(tokens[0], tokens[1], (tokens[2] || ''));
+}
+
+var expressionEvaluator = {
+    parseExpression: function _parseExpression(expression, evalType) {
+        this.expression = expression;
+        this.evalType = evalType || 'post-evaluation';
+        this.expressionParser = Object.create(expressionParser).init(expression, evalType);
     }
 };
 
