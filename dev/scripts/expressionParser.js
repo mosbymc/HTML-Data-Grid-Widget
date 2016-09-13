@@ -72,6 +72,40 @@
         - If the token is a paren
             - Use shunting-yard algorithm
 
+
+JavaScript Operators:
+- Post-increment: x++
+- Pre-increment: ++x
+- Post-decrement: x--
+- Pre-decrement: --x
+- Addition: +
+- Subtraction/Negation: -
+- Multiplication: *
+- Division: /
+- Bitwise not: ~
+- Logical not: !
+- Modulus: %
+- Exponentiation: **
+- In: in
+- Instance of: instanceOf
+- Less than: <
+- Less than or equal to: <=
+- Greater than: >
+- Greater than or equal to: >=
+- Loose equality: ==
+- Strict equality: ===
+- Loose inequality: !=
+- Strict inequality: !==
+- Bitwise XOR: ^
+- Logical AND: &&
+- Logical OR: ||
+- Ternary: ?
+- In-place multiplication: *=
+- In-place division: /=
+- In-place addition: +=
+- In-place subtraction: -=
+- In-place modulus: %=
+
  */
 
 var stack = {
@@ -244,13 +278,13 @@ var parser = {
 };
 
 var rootNode = {
-    init: function _init(config) {
-        this.field1 = config.field1 || null;
-        this.field2 = config.field2 || null;
-        this.value1 = config.value1 || null;
-        this.value2 = config.value2 || null;
+    createRootNode: function _createRootNode(config) {
         this.operator = config.operator || null;
 
+        //Here the root node will always be an operator, but due to the child nodes
+        //delegating to this object, we want to check if the current node is an operator
+        //or an operand before specifying the number of children it may have and
+        //initializing its children array.
         if (this.operator) {
             this.numberOfChildren = getNumberOfOperands(this.operator);
             this.children = [];
@@ -259,6 +293,22 @@ var rootNode = {
     addChild: function _addChild(child) {
         if (this.children && this.children.length < this.numberOfChildren)
             this.children.push(child);
+    },
+    evaluate: function _evaluate() {
+        if (this.children && this.children.length) {
+            var childEval = [],
+                idx = 0;
+
+            while (idx < this.children.length) {
+                childEval.push(this.children[idx].evaluate);
+                return comparator(childEval[0], childEval[1], this.operator);
+            }
+        }
+        else {
+            //TODO: need to update this; cannot count on node being a leaf; also need to pass
+            //TODO: any context or 'hard' values rather than just blindly passing field1, field2
+            return comparator(this.field1, this.field2);
+        }
     },
     get context1() {
         return this._context1;
@@ -274,7 +324,19 @@ var rootNode = {
     }
 };
 
-var childNode = Object.create(rootNode);
+var childNode = Object.create(rootNode, {
+    createChildNode: function _createChildNode(config) {
+        this.createRootNode(config);
+
+        if (!config.operator) {
+            this.field1 = config.field1 || null;
+            this.field2 = config.field2 || null;
+            this.value1 = config.value1 || null;
+            this.value2 = config.value2 || null;
+            this.requiresContext = this.field1 || this.field2 ? true : false;
+        }
+    }
+});
 
 Object.defineProperties(rootNode, {
     'evaluate': {
