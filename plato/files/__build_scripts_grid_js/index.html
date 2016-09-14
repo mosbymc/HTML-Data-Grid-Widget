@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.50</p>
+      <p class="stat">55.65</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3586</p>
+      <p class="stat">3671</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">212.44</p>
+      <p class="stat">212.36</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">79.87</p>
+      <p class="stat">81.21</p>
     </div>
   </div>
 </div>
@@ -2117,26 +2117,111 @@
                             gridState[gridId].filteredOn = [];
 
                             var advancedFilters = {};
+                            createFilterGroups(advancedFiltersModal, advancedFilters);
 
-                            var orFilterConjunctIds = [],
-                                andFilterConjunctIds = [];
-                            advancedFiltersModal.find(&#039;.group_conjunction&#039;).each(function iterateFilterGroupConjunctsCallback() {
-                                var selector = $(this);
-                                if (selector.val() === &#039;or&#039;) orFilterConjunctIds.push(parseInt(selector.data(&#039;filter_group_num&#039;)));
-                                else andFilterConjunctIds.push(parseInt(selector.data(&#039;filter_group_num&#039;)));
-                            });
 
-                            if (orFilterConjunctIds.length) {
-                                advancedFilters.conjunct = &#039;or&#039;;
-                                advancedFilters.groups = [];
-                                orFilterConjunctIds.forEach(function createTopLevelFilters() {
-                                    advancedFilters.groups.push({
-                                        something: &#039;Not sure what I should do to proceed with the filter group creation&#039;
-                                    });
+                            function createFilterGroups(groupParent, filterObject) {
+                                var orFilterConjunctIds = [],
+                                    andFilterConjunctIds = [];
+                                groupParent.find(&#039;.group_conjunction&#039;).each(function iterateFilterGroupConjunctsCallback() {
+                                    var conjunctSelector = $(this);
+                                    if (conjunctSelector.val() === &#039;or&#039;) orFilterConjunctIds.push(parseInt(conjunctSelector.data(&#039;filter_group_num&#039;)));
+                                    else andFilterConjunctIds.push(parseInt(conjunctSelector.data(&#039;filter_group_num&#039;)));
                                 });
+
+                                if (orFilterConjunctIds.length) {
+                                    filterObject.conjunct = &#039;or&#039;;
+                                    filterObject.filterGroup = [];
+                                    orFilterConjunctIds.forEach(function createTopLevelFilters(idx, val) {
+                                        $(groupParent).find(&#039;[data-filter_group_num=&quot;&#039; + val + &#039;&quot;]&#039;).each(function iterateOrFilterGroupsCallback(idx, val) {
+                                            createFilterGroupObjects($(val), filterObject.filterGroup, &#039;or&#039;);
+                                        });
+                                    });
+                                }
                             }
 
+                            function createFilterGroupObjects(groupContainer, filterGroupArr, filterConjunct) {
+                                var filterDivs = groupContainer.children(&#039;.filter_row_div&#039;),
+                                    orFilterDivs = [], andFilterDivs = [], i, groupArray, nestedGroups;
 
+                                    filterDivs.each(function retrieveOrFilters(idx, elem) {
+                                        elem = $(elem);
+                                        var filterConjuncts = elem.children(&#039;.conjunction_selector&#039;);
+                                        filterConjuncts.each(function separateByConjunct(idx, select) {
+                                            select = $(select);
+                                            if (select.val() === &#039;or&#039;)
+                                                orFilterDivs.push(select.parent());
+                                            else
+                                                andFilterDivs.push(select.parent());
+                                        });
+                                    });
+
+                                if (orFilterDivs.length) {
+                                    if (filterConjunct !== &#039;or&#039;) {
+                                        groupArray = [];
+                                        filterGroupArr.push({
+                                            conjunct: &#039;or&#039;,
+                                            filterGroup: groupArray
+                                        });
+                                    }
+                                    else groupArray = filterGroupArr;
+
+                                    for (i = 0; i &lt; orFilterDivs.length; i++) {
+                                        createFilterObjects(orFilterDivs[i], groupArray);
+                                    }
+
+                                    if (andFilterDivs.length) {
+                                        groupArray = [];
+                                        filterGroupArr.push({
+                                            conjunct: &#039;and&#039;,
+                                            filterGroup: groupArray
+                                        });
+
+                                        for (i = 0; i &lt; andFilterDivs.length; i++) {
+                                            createFilterObjects(andFilterDivs[i], groupArray);
+                                        }
+                                    }
+                                }
+                                else {
+                                    if (filterConjunct !== &#039;and&#039;) {
+                                        groupArray = [];
+                                        filterGroupArr.push({
+                                            conjunct: &#039;and&#039;,
+                                            filterGroup: groupArray
+                                        });
+                                    }
+                                    else
+                                        groupArray = filterGroupArr;
+
+                                    for (i = 0; i &lt; andFilterDivs.length; i++) {
+                                        createFilterObjects(andFilterDivs[i], groupArray);
+                                    }
+                                }
+
+                                if (nestedGroups = groupContainer.children(&#039;.group_conjunction&#039;)) {
+                                    nestedGroups.each(function createNestedFilterGroupsCallback(idx, val) {
+                                        var nestedGroup = {};
+                                        filterGroupArr.push(nestedGroup);
+                                        createFilterGroups($(val), nestedGroup);
+                                    });
+                                }
+                            }
+
+                            function createFilterObjects(filterDiv, filterGroupArr) {
+                                var field = filterDiv.find(&#039;.filter_column_selector&#039;).val(),
+                                    operation, value,
+                                    filterType = filterDiv.find(&#039;.filterType&#039;).val();
+                                if (filterType !== false &amp;&amp; filterType !== true) {
+                                    operation = filterType;
+                                    value = filterDiv.find(&#039;.advanced_filter_value&#039;).val();
+                                }
+                                else {
+                                    operation = &#039;strict-equal&#039;;
+                                    value = filterType;
+                                }
+
+                                filterGroupArr.push({ field: field, value: value, operation: operation });
+                            }
                         });
                     });
                 gridState[gridId].grid.append(advancedFiltersModal);

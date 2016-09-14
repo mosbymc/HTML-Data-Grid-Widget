@@ -74,37 +74,39 @@
 
 
 JavaScript Operators:
+TODO: Don't know that I want to support increment operators
 - Post-increment: x++
 - Pre-increment: ++x
 - Post-decrement: x--
 - Pre-decrement: --x
-- Addition: +
-- Subtraction/Negation: -
-- Multiplication: *
-- Division: /
-- Bitwise not: ~
-- Logical not: !
-- Modulus: %
-- Exponentiation: **
-- In: in
-- Instance of: instanceOf
-- Less than: <
-- Less than or equal to: <=
-- Greater than: >
-- Greater than or equal to: >=
-- Loose equality: ==
-- Strict equality: ===
-- Loose inequality: !=
-- Strict inequality: !==
-- Bitwise XOR: ^
-- Logical AND: &&
-- Logical OR: ||
+
+- Addition: +                       'add'
+- Subtraction/Negation: -           'subtract'
+- Multiplication: *                 'multiply'
+- Division: /                       'divide'
+- Bitwise not: ~                    'bitwise negate'
+- Logical not: !                    'not'
+- Modulus: %                        'mod'
+- Exponentiation: **                'exponent'
+- In: in                            'in'
+- Instance of: instanceOf           'instanceOf'
+- Less than: <                      'lt'
+- Less than or equal to: <=         'lte'
+- Greater than: >                   'gt'
+- Greater than or equal to: >=      'gte'
+- Loose equality: ==                'looseEqual'
+- Strict equality: ===              'strictEqual'
+- Loose inequality: !=              'loose-inequal'
+- Strict inequality: !==            'strict-inequal'
+- Bitwise XOR: ^                    'xor'
+- Logical AND: &&                   'and'
+- Logical OR: ||                    'or'
 - Ternary: ?
-- In-place multiplication: *=
-- In-place division: /=
-- In-place addition: +=
-- In-place subtraction: -=
-- In-place modulus: %=
+- In-place multiplication: *=       'in-place-multiply'
+- In-place division: /=             'in-place-divide'
+- In-place addition: +=             'in-place-add'
+- In-place subtraction: -=          'in-place-subtract'
+- In-place modulus: %=              'in-place-mod'
 
  */
 

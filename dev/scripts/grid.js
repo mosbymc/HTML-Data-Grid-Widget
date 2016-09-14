@@ -102,6 +102,7 @@
  - Add menu option to specify OR, AND, NOT filters - DONE
  - Add ability to create an arbitrary number of nested filter groups - DONE
  - Add grid config option to restrict number of nested filter groups - DONE
+ - Fix boolean filtering
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
     > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
     > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
@@ -2518,13 +2519,14 @@ var grid = (function _grid($) {
                             gridState[gridId].filteredOn = [];
 
                             var advancedFilters = {};
+                            createFilterGroups(advancedFiltersModal, advancedFilters);
 
-                            var orFilterConjunctIds = [],
+                            /*var orFilterConjunctIds = [],
                                 andFilterConjunctIds = [];
                             advancedFiltersModal.find('.group_conjunction').each(function iterateFilterGroupConjunctsCallback() {
-                                var selector = $(this);
-                                if (selector.val() === 'or') orFilterConjunctIds.push(parseInt(selector.data('filter_group_num')));
-                                else andFilterConjunctIds.push(parseInt(selector.data('filter_group_num')));
+                                var conjunctSelector = $(this);
+                                if (conjunctSelector.val() === 'or') orFilterConjunctIds.push(parseInt(conjunctSelector.data('filter_group_num')));
+                                else andFilterConjunctIds.push(parseInt(conjunctSelector.data('filter_group_num')));
                             });
 
                             if (orFilterConjunctIds.length) {
@@ -2536,14 +2538,110 @@ var grid = (function _grid($) {
                                         something: 'Not sure what I should do to proceed with the filter group creation'
                                     });
                                 });
+                            }*/
+
+                            function createFilterGroups(groupParent, filterObject) {
+                                var orFilterConjunctIds = [],
+                                    andFilterConjunctIds = [];
+                                groupParent.find('.group_conjunction').each(function iterateFilterGroupConjunctsCallback() {
+                                    var conjunctSelector = $(this);
+                                    if (conjunctSelector.val() === 'or') orFilterConjunctIds.push(parseInt(conjunctSelector.data('filter_group_num')));
+                                    else andFilterConjunctIds.push(parseInt(conjunctSelector.data('filter_group_num')));
+                                });
+
+                                if (orFilterConjunctIds.length) {
+                                    filterObject.conjunct = 'or';
+                                    filterObject.filterGroup = [];
+                                    orFilterConjunctIds.forEach(function createTopLevelFilters(idx, val) {
+                                        $(groupParent).find('[data-filter_group_num="' + val + '"]').each(function iterateOrFilterGroupsCallback(idx, val) {
+                                            createFilterGroupObjects($(val), filterObject.filterGroup, 'or');
+                                        });
+                                    });
+                                }
                             }
 
+                            function createFilterGroupObjects(groupContainer, filterGroupArr, filterConjunct) {
+                                var filterDivs = groupContainer.children('.filter_row_div'),
+                                    orFilterDivs = [], andFilterDivs = [], i, groupArray, nestedGroups;
 
-                            /*var filterGroups = advancedFiltersModal.find('.filter_group_container').each(function iterateFilterGroupsCallback(idx) {
-                                if (!idx) {
+                                    filterDivs.each(function retrieveOrFilters(idx, elem) {
+                                        elem = $(elem);
+                                        var filterConjuncts = elem.children('.conjunction_selector');
+                                        filterConjuncts.each(function separateByConjunct(idx, select) {
+                                            select = $(select);
+                                            if (select.val() === 'or')
+                                                orFilterDivs.push(select.parent());
+                                            else
+                                                andFilterDivs.push(select.parent());
+                                        });
+                                    });
 
+                                if (orFilterDivs.length) {
+                                    if (filterConjunct !== 'or') {
+                                        groupArray = [];
+                                        filterGroupArr.push({
+                                            conjunct: 'or',
+                                            filterGroup: groupArray
+                                        });
+                                    }
+                                    else groupArray = filterGroupArr;
+
+                                    for (i = 0; i < orFilterDivs.length; i++) {
+                                        createFilterObjects(orFilterDivs[i], groupArray);
+                                    }
+
+                                    if (andFilterDivs.length) {
+                                        groupArray = [];
+                                        filterGroupArr.push({
+                                            conjunct: 'and',
+                                            filterGroup: groupArray
+                                        });
+
+                                        for (i = 0; i < andFilterDivs.length; i++) {
+                                            createFilterObjects(andFilterDivs[i], groupArray);
+                                        }
+                                    }
                                 }
-                            });*/
+                                else {
+                                    if (filterConjunct !== 'and') {
+                                        groupArray = [];
+                                        filterGroupArr.push({
+                                            conjunct: 'and',
+                                            filterGroup: groupArray
+                                        });
+                                    }
+                                    else
+                                        groupArray = filterGroupArr;
+
+                                    for (i = 0; i < andFilterDivs.length; i++) {
+                                        createFilterObjects(andFilterDivs[i], groupArray);
+                                    }
+                                }
+
+                                if (nestedGroups = groupContainer.children('.group_conjunction')) {
+                                    nestedGroups.each(function createNestedFilterGroupsCallback(idx, val) {
+                                        var nestedGroup = {};
+                                        filterGroupArr.push(nestedGroup);
+                                        createFilterGroups($(val), nestedGroup);
+                                    });
+                                }
+                            }
+
+                            function createFilterObjects(filterDiv, filterGroupArr) {
+                                var field = filterDiv.find('.filter_column_selector').val(),
+                                    operation, value,
+                                    filterType = filterDiv.find('.filterType').val();
+                                if (filterType !== false && filterType !== true) {
+                                    operation = filterType;
+                                    value = filterDiv.find('.advanced_filter_value').val();
+                                }
+                                else {
+                                    operation = 'strict-equal';
+                                    value = filterType;
+                                }
+
+                                filterGroupArr.push({ field: field, value: value, operation: operation });
+                            }
                         });
                         /*
                             var filterDiv = $(e.currentTarget).parents('.filter-div'),
