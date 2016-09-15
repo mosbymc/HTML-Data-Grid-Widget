@@ -179,8 +179,47 @@ function getNumberOfOperands(operator) {
     switch (operator) {
         case '!':
             return 1;
+        case '(':
+        case ')':
+            return 0;
         default:
             return 2;
+    }
+}
+
+var associativity = {
+    RTL: 1,
+    LTR: 2
+};
+
+function getOperatorPrecedence(operator) {
+    switch (operator) {
+        case '!':
+            return {
+                precedence: 1,
+                associativity: associativity.LTR
+            };
+        case 'and':
+            return {
+                precedence: 2,
+                associativity: associativity.RTL
+            };
+        case 'xor':
+            return {
+                precedence: 3,
+                associativity: associativity.RTL
+            };
+        case 'or':
+            return {
+                precedence: 4,
+                associativity: associativity.RTL
+            };
+        case '(':
+        case ')':
+            return {
+                precedence: null,
+                associativity: null
+            };
     }
 }
 
@@ -190,7 +229,7 @@ var operator = {
             case '!':
             case 'NOT':
                 this.precedence = 1;
-                this.associtivity = 'LTR';
+                this.associativity = 'LTR';
                 this.value = '!';
                 this.type = 'operator';
                 this.operands = 1;
@@ -198,7 +237,7 @@ var operator = {
             case 'AND':
             case '&&':
                 this.precedence = 2;
-                this.associtivity = 'RTL';
+                this.associativity = 'RTL';
                 this.value = '&&';
                 this.type = 'operator';
                 this.operands = 2;
@@ -206,7 +245,7 @@ var operator = {
             case 'XOR':
             case '^':
                 this.precedence = 3;
-                this.associtivity = 'RTL';
+                this.associativity = 'RTL';
                 this.value = '^';
                 this.type = 'operator';
                 this.operands = 2;
@@ -214,21 +253,21 @@ var operator = {
             case 'OR':
             case '||':
                 this.precedence = 4;
-                this.associtivity = 'RTL';
+                this.associativity = 'RTL';
                 this.value = '||';
                 this.type = 'operator';
                 this.operands = 2;
                 break;
             case ')':
                 this.precedence = null;
-                this.associtivity = null;
+                this.associativity = null;
                 this.value = ')';
                 this.type = 'grouper';
                 this.operands = null;
                 break;
             case '(':
                 this.precedence = null;
-                this.associtivity = null;
+                this.associativity = null;
                 this.value = '(';
                 this.type = 'grouper';
                 this.operands = null;
@@ -644,3 +683,69 @@ var expressionEvaluator = {
 var operatorStack = Object.create(stack).init();
 
 var queue = [];
+
+
+var conjunct = {
+    createConjunct: function _createConjunct(conjunction) {
+        this.operator = conjunction;
+        this.numberOfOperands = getNumberOfOperands(this.operator);
+
+        var operatorCharacteristics = getOperatorPrecedence(this.operator);
+
+        this.precedence = operatorCharacteristics.precedence;
+        this.associativity = operatorCharacteristics.associativity;
+    }
+};
+
+function createFilterTreeFromFilterObject(filterObject) {
+    var operandStack = Object.create(stack).init(),
+        queue = [];
+
+    iterateFilterGroup(filterObject, operandStack, queue);
+}
+
+function iterateFilterGroup(filterObject, stack, queue) {
+    var conjunction = filterObject.conjunct,
+        idx = 0,
+        currConjunction = Object.create(conjunct).createConjunct(conjunction),
+        topOfStack;
+
+    while (idx < filterObject.filterGroup.length) {
+        if (idx > 0)
+            pushConjunctionOntoStack(currConjunction, stack, queue);
+        if (filterObject.filterGroup[idx].conjunct) {
+            stack.push(Object.create(conjunct).createConjunct('('));
+            iterateFilterGroup(filterObject.filterGroup[idx], stack, queue);
+            while (stack.length()) {
+                topOfStack = stack.peek();
+                if (topOfStack.operator !== '(')
+                    queue.push(stack.pop());
+                else {
+                    stack.pop();
+                    break;
+                }
+            }
+        }
+        else {
+            queue.push(filterObject.filterGroup[idx]);
+        }
+    }
+
+    while (stack.length()) {
+        topOfStack.peek();
+        if (topOfStack.operator !== '(')
+            queue.push(stack.pop());
+    }
+}
+
+function pushConjunctionOntoStack(conjunction, stack, queue) {
+    while (stack.length()) {
+        var topOfStack = stack.peek();
+        if ((conjunction.associativity === associativity.LTR && conjunction.precedence <= topOfStack.precedence)
+            || (conjunction.associativity === associativity.RTL && conjunction.precedence < topOfStack.precedence))
+            queue.push(stack.pop());
+        else
+            break;
+    }
+    stack.push(conjunction);
+}

@@ -2080,9 +2080,10 @@ var grid = (function _grid($) {
                                 secondFilterDiv = filterDivs.eq(1),
                                 orFilterDivs = [], andFilterDivs = [], i, groupArray;
 
-                            secondFilterDiv.length ?
-                                secondFilterDiv.find('.conjunction_selector').val() === 'or' ?
-                                    orFilterDivs.push(filterDivs.first()) : andFilterDivs.push(filterDivs.first()) : orFilterDivs.push(filterDivs.first());
+                            if ((secondFilterDiv.length && secondFilterDiv.find('.conjunction_selector').val() === 'or') || (!secondFilterDiv.length && filterConjunct === 'or'))
+                                orFilterDivs.push(filterDivs.first());
+                            else
+                                andFilterDivs.push(filterDivs.first());
 
                             filterDivs.each(function iterateFilterDivs(idx, elem) {
                                 elem = $(elem);
