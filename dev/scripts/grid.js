@@ -2520,6 +2520,26 @@ var grid = (function _grid($) {
                     var advancedFilters = {};
                     createFilterGroups(advancedFiltersModal, advancedFilters);
                     console.log(advancedFilters);
+                    console.log(' ');
+
+                    //TODO: uncomment this section and find out why the expressionParser.js file is included on the page, but neither
+                    //TODO: the browser console nor the other scripts seem to 'see' it.
+                    /*var t = createFilterTreeFromFilterObject(advancedFilters);
+
+                    for (var x = 0; x < t.length; x++){
+                        console.log('===========================================');
+                        if (conjunct.isPrototypeOf(t[x])) {
+                            console.log('-- OPERATION --');
+                            console.log('Operator: ' + t[x].operator);
+                        }
+                        else {
+                            console.log('-- EXPRESSION --');
+                            console.log('Field: ' + t[x].field);
+                            console.log('Value: ' + t[x].value);
+                            console.log('Operation: ' + t[x].operation);
+                        }
+                        console.log(' ');
+                    }*/
 
                     function createFilterGroups(groupParent, filterObject) {
                         var orFilterConjunctIds = [],
@@ -2533,45 +2553,41 @@ var grid = (function _grid($) {
                             else andFilterConjunctIds.push(parseInt(conjunctSelector.data('filter_group_num')));
                         });
 
+                        filterObject.filterGroup = [];
+
                         if (orFilterConjunctIds.length) {
                             filterObject.conjunct = 'or';
-                            filterObject.filterGroup = [];
-                            orFilterConjunctIds.forEach(function createTopLevelFilters(id) {
-                                $(groupParent).find('div[data-filter_group_num="' + id + '"]').each(function iterateOrFilterGroupsCallback(idx, val) {
-                                    createFilterGroupObjects($(val), filterObject.filterGroup, 'or');
-                                });
-                            });
-
-                            if (andFilterConjunctIds.length) {
-                                var andFilterGroup = {
-                                    conjunct: 'and',
-                                    filterGroup: []
-                                };
-                                filterObject.filterGroup.push(andFilterGroup);
-                                andFilterConjunctIds.forEach(function createTopLevelFilters(id) {
-                                    $(groupParent).find('div[data-filter_group_num="' + id + '"]').each(function iterateAndFilterGroupsCallback(idx, val) {
-                                        createFilterGroupObjects($(val), andFilterGroup.filterGroup, 'and');
-                                    });
-                                });
-                            }
+                            processFilterGroups(groupParent, orFilterConjunctIds, filterObject);
                         }
-                        else if (andFilterConjunctIds.length) {
-                            filterObject.conjunct = 'and';
-                            filterObject.filterGroup = [];
-                            andFilterConjunctIds.forEach(function createTopLevelFilters(id) {
-                                $(groupParent).find('[data-filter_group_num="' + id + '"]').each(function iterateAndFilterGroupsCallback(idx, val) {
-                                    createFilterGroupObjects($(val), filterObject.filterGroup, 'and');
-                                });
-                            });
+
+                        if (andFilterConjunctIds.length) {
+                            var andFilterGroup;
+                            if (!orFilterConjunctIds.length) {
+                                andFilterGroup = filterObject;
+                                andFilterGroup.conjunct = 'and';
+                            }
+                            else {
+                                andFilterGroup = { conjunct: 'and', filterGroup: [] };
+                                filterObject.filterGroup.push(andFilterGroup);
+                            }
+                            processFilterGroups(groupParent, andFilterConjunctIds, andFilterGroup);
                         }
                     }
 
-                    function createFilterGroupObjects(groupContainer, filterGroupArr, filterConjunct) {
+                    function processFilterGroups(groupParent, filterGroupIds, filterObject) {
+                        filterGroupIds.forEach(function createTopLevelFilters(id) {
+                            $(groupParent).find('div[data-filter_group_num="' + id + '"]').each(function iterateOrFilterGroupsCallback(idx, val) {
+                                findFilters($(val), filterObject);
+                            });
+                        });
+                    }
+
+                    function findFilters(groupContainer, filterObject) {
                         var filterDivs = groupContainer.children('.filter_row_div'),
                             secondFilterDiv = filterDivs.eq(1),
-                            orFilterDivs = [], andFilterDivs = [], i, groupArray;
+                            orFilterDivs = [], andFilterDivs = [];
 
-                        if ((secondFilterDiv.length && secondFilterDiv.find('.conjunction_selector').val() === 'or') || (!secondFilterDiv.length && filterConjunct === 'or'))
+                        if ((secondFilterDiv.length && secondFilterDiv.find('.conjunction_selector').val() === 'or') || (!secondFilterDiv.length && filterObject.conjunct === 'or'))
                             orFilterDivs.push(filterDivs.first());
                         else
                             andFilterDivs.push(filterDivs.first());
@@ -2588,53 +2604,28 @@ var grid = (function _grid($) {
                             });
                         });
 
-                        if (orFilterDivs.length) {
-                            if (filterConjunct !== 'or') {
-                                groupArray = [];
-                                filterGroupArr.push({
-                                    conjunct: 'or',
-                                    filterGroup: groupArray
-                                });
-                            }
-                            else groupArray = filterGroupArr;
-
-                            for (i = 0; i < orFilterDivs.length; i++) {
-                                createFilterObjects(orFilterDivs[i], groupArray);
-                            }
-
-                            if (andFilterDivs.length) {
-                                groupArray = [];
-                                filterGroupArr.push({
-                                    conjunct: 'and',
-                                    filterGroup: groupArray
-                                });
-
-                                for (i = 0; i < andFilterDivs.length; i++) {
-                                    createFilterObjects(andFilterDivs[i], groupArray);
-                                }
-                            }
-                        }
-                        else {
-                            if (filterConjunct !== 'and') {
-                                groupArray = [];
-                                filterGroupArr.push({
-                                    conjunct: 'and',
-                                    filterGroup: groupArray
-                                });
-                            }
-                            else
-                                groupArray = filterGroupArr;
-
-                            for (i = 0; i < andFilterDivs.length; i++) {
-                                createFilterObjects(andFilterDivs[i], groupArray);
-                            }
-                        }
+                        if (orFilterDivs.length) createFilterGroupObjects(orFilterDivs, filterObject, 'or');
+                        if (andFilterDivs.length) createFilterGroupObjects(andFilterDivs, filterObject, 'and');
 
                         groupContainer.children('.group_conjunction').each(function createNestedFilterGroupsCallback(idx, val) {
                             var nestedGroup = {};
-                            filterGroupArr.push(nestedGroup);
+                            filterObject.filterGroup.push(nestedGroup);
                             createFilterGroups($(val), nestedGroup);
                         });
+                    }
+
+                    function createFilterGroupObjects(filterDivs, filterObject, conjunctionType) {
+                        var groupArray, i;
+
+                        if (filterObject.conjunct !== conjunctionType) {
+                            groupArray = [];
+                            filterObject.filterGroup.push({ conjunct: conjunctionType, filterGroup: groupArray });
+                        }
+                        else groupArray = filterObject.filterGroup;
+
+                        for (i = 0; i < filterDivs.length; i++) {
+                            createFilterObjects(filterDivs[i], groupArray);
+                        }
                     }
 
                     function createFilterObjects(filterDiv, filterGroupArr) {

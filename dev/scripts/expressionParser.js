@@ -702,6 +702,7 @@ function createFilterTreeFromFilterObject(filterObject) {
         queue = [];
 
     iterateFilterGroup(filterObject, operandStack, queue);
+    return queue;
 }
 
 function iterateFilterGroup(filterObject, stack, queue) {
@@ -711,7 +712,7 @@ function iterateFilterGroup(filterObject, stack, queue) {
         topOfStack;
 
     while (idx < filterObject.filterGroup.length) {
-        if (idx > 0)
+        if (idx > 0 || filterObject.filterGroup.length === 1)
             pushConjunctionOntoStack(currConjunction, stack, queue);
         if (filterObject.filterGroup[idx].conjunct) {
             stack.push(Object.create(conjunct).createConjunct('('));
@@ -729,6 +730,7 @@ function iterateFilterGroup(filterObject, stack, queue) {
         else {
             queue.push(filterObject.filterGroup[idx]);
         }
+        ++idx;
     }
 
     while (stack.length()) {
