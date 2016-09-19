@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.63</p>
+      <p class="stat">55.62</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3693</p>
+      <p class="stat">3694</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">211.67</p>
+      <p class="stat">211.62</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">81.89</p>
+      <p class="stat">81.94</p>
     </div>
   </div>
 </div>
@@ -2231,7 +2231,8 @@
 
     function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
         var gridId = advancedFiltersContainer.parents(&#039;.filter_modal&#039;).data(&#039;grid_id&#039;),
-            filterRowDiv = $(&#039;&lt;div class=&quot;filter_row_div&quot;&gt;&lt;/div&gt;&#039;).appendTo(advancedFiltersContainer);
+            filterRowDiv = $(&#039;&lt;div class=&quot;filter_row_div&quot;&gt;&lt;/div&gt;&#039;);
+        isFirstFilter ? advancedFiltersContainer.append(filterRowDiv) : advancedFiltersContainer.children(&#039;.filter_row_div&#039;).last().after(filterRowDiv);
 
         var columnSelector = $(&#039;&lt;select class=&quot;input filter_column_selector&quot;&gt;&lt;/select&gt;&#039;).appendTo(filterRowDiv);
         columnSelector.addClass(&#039;select&#039;);
@@ -2251,8 +2252,8 @@
         $(&#039;&lt;input type=&quot;button&quot; value=&quot;X&quot; class=&quot;filter_row_button&quot;/&gt;&#039;).appendTo(filterRowDiv).on(&#039;click&#039;, deleteHandler);
 
         if (!isFirstFilter) {
-            var addNewFilterButton = filterRowDiv.parents(&#039;.filter_group_container&#039;).find(&#039;.new_filter&#039;),
-                addFilterGroup = filterRowDiv.parents(&#039;.filter_group_container&#039;).find(&#039;.add_filter_group&#039;);
+            var addNewFilterButton = filterRowDiv.prev().find(&#039;.new_filter&#039;),
+                addFilterGroup = filterRowDiv.prev().find(&#039;.add_filter_group&#039;);
             addNewFilterButton.detach();
             addFilterGroup.detach();
             filterRowDiv.append(addNewFilterButton).append(addFilterGroup);

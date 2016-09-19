@@ -2718,7 +2718,8 @@ var grid = (function _grid($) {
 
     function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
         var gridId = advancedFiltersContainer.parents('.filter_modal').data('grid_id'),
-            filterRowDiv = $('<div class="filter_row_div"></div>').appendTo(advancedFiltersContainer);
+            filterRowDiv = $('<div class="filter_row_div"></div>');//.appendTo(advancedFiltersContainer);
+        isFirstFilter ? advancedFiltersContainer.append(filterRowDiv) : advancedFiltersContainer.children('.filter_row_div').last().after(filterRowDiv);
         /*if (!isFirstFilter) {
             var conjunctionSelector = $('<select class="input conjunction_selector"></select>').appendTo(filterRowDiv);
             conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
@@ -2744,8 +2745,8 @@ var grid = (function _grid($) {
         $('<input type="button" value="X" class="filter_row_button"/>').appendTo(filterRowDiv).on('click', deleteHandler);
 
         if (!isFirstFilter) {
-            var addNewFilterButton = filterRowDiv.parents('.filter_group_container').find('.new_filter'),
-                addFilterGroup = filterRowDiv.parents('.filter_group_container').find('.add_filter_group');
+            var addNewFilterButton = filterRowDiv.prev().find('.new_filter'),
+                addFilterGroup = filterRowDiv.prev().find('.add_filter_group');
             addNewFilterButton.detach();
             addFilterGroup.detach();
             filterRowDiv.append(addNewFilterButton).append(addFilterGroup);
