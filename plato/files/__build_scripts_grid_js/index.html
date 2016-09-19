@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3694</p>
+      <p class="stat">3695</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">211.62</p>
+      <p class="stat">210.96</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">81.94</p>
+      <p class="stat">82.02</p>
     </div>
   </div>
 </div>
@@ -2226,7 +2226,7 @@
         if (filterModal.find(&#039;.filter_row_div&#039;).length &gt;= numFiltersAllowed) return;
         else if (filterModal.find(&#039;.filter_row_div&#039;).length === numFiltersAllowed - 1) filterModal.find(&#039;.add_filter_group&#039;).prop(&#039;disabled&#039;, true);
 
-        addNewAdvancedFilter($(e.currentTarget).parents(&#039;.filter_group_container&#039;), false );
+        addNewAdvancedFilter($(e.currentTarget).closest(&#039;.filter_group_container&#039;), false );
     }
 
     function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
@@ -2306,22 +2306,23 @@
         var previousGroupNum = parseInt(filterGroups.last().data(&#039;filter_group_num&#039;));
 
         var groupSelector = &#039;&lt;select class=&quot;input group_conjunction&quot;&gt;&lt;option value=&quot;and&quot;&gt;All&lt;/option&gt;&lt;option value=&quot;or&quot;&gt;Any&lt;/option&gt;&lt;/select&gt; of the following:&lt;/span&gt;&#039;;
-        parentGroup.append(&#039;&lt;span class=&quot;group-select&quot; data-filter_group_num=&quot;1&quot;&gt;Match&#039; + groupSelector);
+        parentGroup.append(&#039;&lt;span class=&quot;group-select&quot; data-filter_group_num=&quot;&#039; + (previousGroupNum + 1) + &#039;&quot;&gt;Match&#039; + groupSelector);
 
 
         var filterGroupContainer = $(&#039;&lt;div class=&quot;filter_group_container&quot; data-filter_group_num=&quot;&#039; + (previousGroupNum + 1) + &#039;&quot;&gt;&lt;/div&gt;&#039;);
         parentGroup.append(filterGroupContainer);
-        var removeGroup = $(&#039;&lt;span class=&quot;remove_filter_group&quot;&gt;&lt;/span&gt;&lt;/br&gt;&#039;).css(&#039;left&#039;, (filterGroupContainer.outerWidth()))
+        var removeGroup = $(&#039;&lt;span class=&quot;remove_filter_group&quot;&gt;&lt;/span&gt;&#039;)
             .on(&#039;click&#039;, function closeFilterGroupHandler(e) {
-                var filterContainerGroup = $(e.currentTarget).parents(&#039;.filter_group_container&#039;);
-                filterContainerGroup.prev(&#039;select&#039;).remove();
+                var filterContainerGroup = $(e.currentTarget).closest(&#039;.filter_group_container&#039;);
+                filterContainerGroup.prev(&#039;.group-select&#039;).remove();
                 filterContainerGroup.remove();
 
                 if (filterModal.find(&#039;.group_conjunction&#039;).length &lt; numGroupsAllowed)
                     filterModal.find(&#039;.add_filter_group&#039;).prop(&#039;disabled&#039;, false);
             })
-            .data(&#039;filter_group_num&#039;, filterGroupCount + 1);
-        filterGroupContainer.append(removeGroup);
+            .data(&#039;filter_group_num&#039;, filterGroupCount + 1)
+            .css(&#039;left&#039;, (filterGroupContainer.outerWidth()));
+        filterGroupContainer.append(removeGroup).append(&#039;&lt;/br&gt;&#039;);
         addNewAdvancedFilter(filterGroupContainer, true );
     }
 

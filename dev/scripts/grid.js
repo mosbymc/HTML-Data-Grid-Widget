@@ -2713,7 +2713,7 @@ var grid = (function _grid($) {
         if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
         else if (filterModal.find('.filter_row_div').length === numFiltersAllowed - 1) filterModal.find('.add_filter_group').prop('disabled', true);
 
-        addNewAdvancedFilter($(e.currentTarget).parents('.filter_group_container'), false /* isFirstFilter */);
+        addNewAdvancedFilter($(e.currentTarget).closest('.filter_group_container'), false /* isFirstFilter */);
     }
 
     function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
@@ -2799,7 +2799,7 @@ var grid = (function _grid($) {
         var previousGroupNum = parseInt(filterGroups.last().data('filter_group_num'));
 
         var groupSelector = '<select class="input group_conjunction"><option value="and">All</option><option value="or">Any</option></select> of the following:</span>';
-        parentGroup.append('<span class="group-select" data-filter_group_num="1">Match' + groupSelector);
+        parentGroup.append('<span class="group-select" data-filter_group_num="' + (previousGroupNum + 1) + '">Match' + groupSelector);
 
         //var conjunctionSelector = $('<select class="input group_conjunction" data-filter_group_num="' + (previousGroupNum + 1) + '"></select>');
         //conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
@@ -2809,17 +2809,18 @@ var grid = (function _grid($) {
         //advancedFiltersModal.find('.group_conjunction').last().after(filterGroupContainer);
         parentGroup.append(filterGroupContainer);
         //advancedFiltersModal.append(filterGroupContainer);
-        var removeGroup = $('<span class="remove_filter_group"></span></br>').css('left', (filterGroupContainer.outerWidth()))
+        var removeGroup = $('<span class="remove_filter_group"></span>')
             .on('click', function closeFilterGroupHandler(e) {
-                var filterContainerGroup = $(e.currentTarget).parents('.filter_group_container');
-                filterContainerGroup.prev('select').remove();
+                var filterContainerGroup = $(e.currentTarget).closest('.filter_group_container');
+                filterContainerGroup.prev('.group-select').remove();
                 filterContainerGroup.remove();
 
                 if (filterModal.find('.group_conjunction').length < numGroupsAllowed)
                     filterModal.find('.add_filter_group').prop('disabled', false);
             })
-            .data('filter_group_num', filterGroupCount + 1);
-        filterGroupContainer.append(removeGroup);
+            .data('filter_group_num', filterGroupCount + 1)
+            .css('left', (filterGroupContainer.outerWidth()));
+        filterGroupContainer.append(removeGroup).append('</br>');
         addNewAdvancedFilter(filterGroupContainer, true /* isFirstFilter */);
     }
 
