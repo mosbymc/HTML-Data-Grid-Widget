@@ -698,24 +698,37 @@ var conjunct = {
 };
 
 function createFilterTreeFromFilterObject(filterObject) {
-    var operandStack = Object.create(stack).init(),
-        queue = [];
+    var operandStack = Object.create(stack);
+    operandStack.init();
+    var queue = [],
+        topOfStack;
 
     iterateFilterGroup(filterObject, operandStack, queue);
+
+    while (operandStack.length()) {
+        topOfStack = operandStack.peek();
+        if (topOfStack.operator !== '(')
+            queue.push(operandStack.pop());
+        else operandStack.pop();
+    }
+
     return queue;
 }
 
 function iterateFilterGroup(filterObject, stack, queue) {
     var conjunction = filterObject.conjunct,
         idx = 0,
-        currConjunction = Object.create(conjunct).createConjunct(conjunction),
-        topOfStack;
+        topOfStack,
+        currConjunction = Object.create(conjunct);
+    currConjunction.createConjunct(conjunction);
 
     while (idx < filterObject.filterGroup.length) {
         if (idx > 0 || filterObject.filterGroup.length === 1)
             pushConjunctionOntoStack(currConjunction, stack, queue);
         if (filterObject.filterGroup[idx].conjunct) {
-            stack.push(Object.create(conjunct).createConjunct('('));
+            var paren = Object.create(conjunct);
+            paren.createConjunct('(');
+            stack.push(paren);
             iterateFilterGroup(filterObject.filterGroup[idx], stack, queue);
             while (stack.length()) {
                 topOfStack = stack.peek();
@@ -731,12 +744,6 @@ function iterateFilterGroup(filterObject, stack, queue) {
             queue.push(filterObject.filterGroup[idx]);
         }
         ++idx;
-    }
-
-    while (stack.length()) {
-        topOfStack.peek();
-        if (topOfStack.operator !== '(')
-            queue.push(stack.pop());
     }
 }
 

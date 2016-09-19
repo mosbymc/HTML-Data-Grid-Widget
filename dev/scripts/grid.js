@@ -2524,7 +2524,7 @@ var grid = (function _grid($) {
 
                     //TODO: uncomment this section and find out why the expressionParser.js file is included on the page, but neither
                     //TODO: the browser console nor the other scripts seem to 'see' it.
-                    /*var t = createFilterTreeFromFilterObject(advancedFilters);
+                    var t = createFilterTreeFromFilterObject(advancedFilters);
 
                     for (var x = 0; x < t.length; x++){
                         console.log('===========================================');
@@ -2539,7 +2539,7 @@ var grid = (function _grid($) {
                             console.log('Operation: ' + t[x].operation);
                         }
                         console.log(' ');
-                    }*/
+                    }
 
                     function createFilterGroups(groupParent, filterObject) {
                         var orFilterConjunctIds = [],
@@ -2749,7 +2749,7 @@ var grid = (function _grid($) {
                 .on('click', addFilterButtonHandler);
         }
 
-        columnSelector.on('change', function columnSelectorCallback() {
+        columnSelector.one('change', function columnSelectorCallback() {
             columnSelector.find('option').first().remove();
             filterTypeSelector.find('option').remove();
             filterTypeSelector.prop('disabled', false);

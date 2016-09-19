@@ -9,7 +9,7 @@
   "unused": true,
   "eqnull": true,
   "validthis": true,
-  "predef": ["require", "console", "window", "document", "validator", "formatter", "module", "process", "setTimeout", "Node", "Element", "excelExporter", "toggle"],
+  "predef": ["require", "console", "window", "document", "validator", "formatter", "module", "process", "setTimeout", "Node", "Element", "excelExporter", "toggle", "createFilterTreeFromFilterObject", "conjunct"],
   "loopfunc": true,
   "boss": true,
   "expr": true,

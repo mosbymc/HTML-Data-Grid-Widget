@@ -2029,6 +2029,22 @@ var grid = (function _grid($) {
                     console.log(advancedFilters);
                     console.log(' ');
 
+                    var t = createFilterTreeFromFilterObject(advancedFilters);
+
+                    for (var x = 0; x < t.length; x++){
+                        console.log('===========================================');
+                        if (conjunct.isPrototypeOf(t[x])) {
+                            console.log('-- OPERATION --');
+                            console.log('Operator: ' + t[x].operator);
+                        }
+                        else {
+                            console.log('-- EXPRESSION --');
+                            console.log('Field: ' + t[x].field);
+                            console.log('Value: ' + t[x].value);
+                            console.log('Operation: ' + t[x].operation);
+                        }
+                        console.log(' ');
+                    }
 
                     function createFilterGroups(groupParent, filterObject) {
                         var orFilterConjunctIds = [],
@@ -2198,7 +2214,7 @@ var grid = (function _grid($) {
                 .on('click', addFilterButtonHandler);
         }
 
-        columnSelector.on('change', function columnSelectorCallback() {
+        columnSelector.one('change', function columnSelectorCallback() {
             columnSelector.find('option').first().remove();
             filterTypeSelector.find('option').remove();
             filterTypeSelector.prop('disabled', false);
