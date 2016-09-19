@@ -2459,6 +2459,8 @@ var grid = (function _grid($) {
                     wrapperHeight = gridState[gridId].grid.find('.grid-wrapper').length ? gridState[gridId].grid.find('.grid-wrapper').height() : 0;
 
                 advancedFiltersModal = $('<div class="filter_modal" data-grid_id="' + gridId + '">').css('max-height', wrapperHeight + toolbarHeight + groupHeight - 3);
+                var groupSelector = '<select class="input group_conjunction"><option value="and">All</option><option value="or">Any</option></select> of the following:</span>';
+                advancedFiltersModal.append('<span class="group-select" data-filter_group_num="1">Match' + groupSelector);
                 var advancedFiltersContainer = $('<div class="filter_group_container" data-filter_group_num="1"></div>').appendTo(advancedFiltersModal);
                 addNewAdvancedFilter(advancedFiltersContainer, true /* isFirstFilter */);
 
@@ -2469,7 +2471,7 @@ var grid = (function _grid($) {
                     else e.stopPropagation();
                 });*/
 
-                var filterGroupButton = $('<input type="button" value="New Filter Group" class="advanced_filters_button add_filter_group"/>').appendTo(advancedFiltersModal);
+                /*var filterGroupButton = $('<input type="button" value="New Filter Group" class="advanced_filters_button add_filter_group"/>').appendTo(advancedFiltersContainer);
                 filterGroupButton.on('click', function addNewFilterGroupHandler() {
                     var numGroupsAllowed = 0,
                         filterGroups = advancedFiltersModal.find('.filter_group_container'),
@@ -2491,12 +2493,14 @@ var grid = (function _grid($) {
 
                     var previousGroupNum = parseInt(filterGroups.last().data('filter_group_num'));
 
-                    var conjunctionSelector = $('<select class="input group_conjunction" data-filter_group_num="' + (previousGroupNum + 1) + '"></select>');
-                    conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
-                    advancedFiltersModal.find('.filter_group_container').last().after(conjunctionSelector);
+                    //var conjunctionSelector = $('<select class="input group_conjunction" data-filter_group_num="' + (previousGroupNum + 1) + '"></select>');
+                    //conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
+                    //advancedFiltersModal.find('.filter_group_container').last().after(conjunctionSelector);
 
                     var filterGroupContainer = $('<div class="filter_group_container" data-filter_group_num="' + (previousGroupNum + 1) + '"></div>');
-                    advancedFiltersModal.find('.group_conjunction').last().after(filterGroupContainer);
+                    //advancedFiltersModal.find('.group_conjunction').last().after(filterGroupContainer);
+                    advancedFiltersModal.find('.filter_group_container').last().after(filterGroupContainer);
+                    //advancedFiltersModal.append(filterGroupContainer);
                     var removeGroup = $('<span class="remove_filter_group"></span></br>').css('left', (filterGroupContainer.outerWidth()))
                         .on('click', function closeFilterGroupHandler(e) {
                             var filterContainerGroup = $(e.currentTarget).parents('.filter_group_container');
@@ -2508,8 +2512,8 @@ var grid = (function _grid($) {
                         })
                         .data('filter_group_num', filterGroupCount + 1);
                     filterGroupContainer.append(removeGroup);
-                    addNewAdvancedFilter(filterGroupContainer, true /* isFirstFilter */);
-                });
+                    addNewAdvancedFilter(filterGroupContainer, true /* isFirstFilter );
+                });*/
 
                 var applyFiltersButton = $('<input type="button" value="Apply Filter(s)" class="advanced_filters_button"/>').appendTo(advancedFiltersModal);
                 applyFiltersButton.on('click', function applyAdvancedFiltersHandler() {
@@ -2715,14 +2719,15 @@ var grid = (function _grid($) {
     function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
         var gridId = advancedFiltersContainer.parents('.filter_modal').data('grid_id'),
             filterRowDiv = $('<div class="filter_row_div"></div>').appendTo(advancedFiltersContainer);
-        if (!isFirstFilter) {
+        /*if (!isFirstFilter) {
             var conjunctionSelector = $('<select class="input conjunction_selector"></select>').appendTo(filterRowDiv);
             conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
-        }
+        }*/
 
         var columnSelector = $('<select class="input filter_column_selector"></select>').appendTo(filterRowDiv);
-        if (!isFirstFilter) columnSelector.addClass('select');
-        else columnSelector.addClass('first-select');
+        //if (!isFirstFilter) columnSelector.addClass('select');
+        //else columnSelector.addClass('first-select');
+        columnSelector.addClass('select');
         columnSelector.append('<option value="">Select a column</option>');
         for (var column in gridState[gridId].columns) {
             var curCol = gridState[gridId].columns[column];
@@ -2739,14 +2744,20 @@ var grid = (function _grid($) {
         $('<input type="button" value="X" class="filter_row_button"/>').appendTo(filterRowDiv).on('click', deleteHandler);
 
         if (!isFirstFilter) {
-            var addNewFilterButton = filterRowDiv.prev().find('.new_filter');
+            var addNewFilterButton = filterRowDiv.parents('.filter_group_container').find('.new_filter'),
+                addFilterGroup = filterRowDiv.parents('.filter_group_container').find('.add_filter_group');
             addNewFilterButton.detach();
-            filterRowDiv.append(addNewFilterButton);
+            addFilterGroup.detach();
+            filterRowDiv.append(addNewFilterButton).append(addFilterGroup);
         }
         else {
             $('<input type="button" value="+" class="filter_row_button new_filter"/>')
                 .appendTo(filterRowDiv)
                 .on('click', addFilterButtonHandler);
+
+            $('<input type="button" value="+ Group" class="advanced_filters_button add_filter_group"/>')
+                .appendTo(filterRowDiv)
+                .on('click', addFilterGroupHandler);
         }
 
         columnSelector.one('change', function columnSelectorCallback() {
@@ -2760,6 +2771,55 @@ var grid = (function _grid($) {
                 filterRowDiv.find('.advanced_filter_value').prop('disabled', false);
             }
         });
+    }
+
+    function addFilterGroupHandler() {
+        var numGroupsAllowed = 0,
+            filterModal = $(this).parents('.filter_modal'),
+            gridId = filterModal.data('grid_id'),
+            filterGroups = filterModal.find('.filter_group_container'),
+            parentGroup = $(this).parents('.filter_group_container').first(),
+            filterGroupCount = filterGroups.length,
+            numFiltersAllowed = gridState[gridId].numColumns;
+        if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.groupsCount === 'number')
+            numGroupsAllowed = gridState[gridId].advancedFiltering.groupsCount;
+        else numGroupsAllowed = 3;
+
+        if (filterGroupCount >= numGroupsAllowed) return;
+        else if (filterGroupCount === numGroupsAllowed - 1)
+            filterModal.find('.add_filter_group').prop('disabled', true);
+
+        if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.filtersCount === 'number')
+            numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
+
+        if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
+        else if (filterModal.find('.filter_row_div').length === numFiltersAllowed - 1) filterModal.find('.add_filter_group').prop('disabled', true);
+
+        var previousGroupNum = parseInt(filterGroups.last().data('filter_group_num'));
+
+        var groupSelector = '<select class="input group_conjunction"><option value="and">All</option><option value="or">Any</option></select> of the following:</span>';
+        parentGroup.append('<span class="group-select" data-filter_group_num="1">Match' + groupSelector);
+
+        //var conjunctionSelector = $('<select class="input group_conjunction" data-filter_group_num="' + (previousGroupNum + 1) + '"></select>');
+        //conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
+        //advancedFiltersModal.find('.filter_group_container').last().after(conjunctionSelector);
+
+        var filterGroupContainer = $('<div class="filter_group_container" data-filter_group_num="' + (previousGroupNum + 1) + '"></div>');
+        //advancedFiltersModal.find('.group_conjunction').last().after(filterGroupContainer);
+        parentGroup.append(filterGroupContainer);
+        //advancedFiltersModal.append(filterGroupContainer);
+        var removeGroup = $('<span class="remove_filter_group"></span></br>').css('left', (filterGroupContainer.outerWidth()))
+            .on('click', function closeFilterGroupHandler(e) {
+                var filterContainerGroup = $(e.currentTarget).parents('.filter_group_container');
+                filterContainerGroup.prev('select').remove();
+                filterContainerGroup.remove();
+
+                if (filterModal.find('.group_conjunction').length < numGroupsAllowed)
+                    filterModal.find('.add_filter_group').prop('disabled', false);
+            })
+            .data('filter_group_num', filterGroupCount + 1);
+        filterGroupContainer.append(removeGroup);
+        addNewAdvancedFilter(filterGroupContainer, true /* isFirstFilter */);
     }
 
     function deleteFilterButtonHandler(e) {

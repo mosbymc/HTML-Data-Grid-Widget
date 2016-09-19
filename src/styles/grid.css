@@ -1122,6 +1122,10 @@ input {
   background: #ffffff;
   color: #000000;
 }
+.filter_modal .group-select {
+  float: left;
+  margin-top: 10px;
+}
 .filter_modal .group_conjunction {
   margin: 0 5px 15px 5px;
   border-radius: 5px;
@@ -1134,6 +1138,7 @@ input {
   border: 1px solid #000000;
   margin-bottom: 20px;
   text-align: start;
+  clear: left;
 }
 .filter_modal .filter_group_container .remove_filter_group {
   background: url('../images/close.png') no-repeat;

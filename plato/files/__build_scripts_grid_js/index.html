@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3687</p>
+      <p class="stat">3693</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">211.03</p>
+      <p class="stat">211.67</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">81.93</p>
+      <p class="stat">81.89</p>
     </div>
   </div>
 </div>
@@ -2063,51 +2063,12 @@
                     wrapperHeight = gridState[gridId].grid.find(&#039;.grid-wrapper&#039;).length ? gridState[gridId].grid.find(&#039;.grid-wrapper&#039;).height() : 0;
 
                 advancedFiltersModal = $(&#039;&lt;div class=&quot;filter_modal&quot; data-grid_id=&quot;&#039; + gridId + &#039;&quot;&gt;&#039;).css(&#039;max-height&#039;, wrapperHeight + toolbarHeight + groupHeight - 3);
+                var groupSelector = &#039;&lt;select class=&quot;input group_conjunction&quot;&gt;&lt;option value=&quot;and&quot;&gt;All&lt;/option&gt;&lt;option value=&quot;or&quot;&gt;Any&lt;/option&gt;&lt;/select&gt; of the following:&lt;/span&gt;&#039;;
+                advancedFiltersModal.append(&#039;&lt;span class=&quot;group-select&quot; data-filter_group_num=&quot;1&quot;&gt;Match&#039; + groupSelector);
                 var advancedFiltersContainer = $(&#039;&lt;div class=&quot;filter_group_container&quot; data-filter_group_num=&quot;1&quot;&gt;&lt;/div&gt;&#039;).appendTo(advancedFiltersModal);
                 addNewAdvancedFilter(advancedFiltersContainer, true );
 
 
-                var filterGroupButton = $(&#039;&lt;input type=&quot;button&quot; value=&quot;New Filter Group&quot; class=&quot;advanced_filters_button add_filter_group&quot;/&gt;&#039;).appendTo(advancedFiltersModal);
-                filterGroupButton.on(&#039;click&#039;, function addNewFilterGroupHandler() {
-                    var numGroupsAllowed = 0,
-                        filterGroups = advancedFiltersModal.find(&#039;.filter_group_container&#039;),
-                        filterGroupCount = filterGroups.length,
-                        numFiltersAllowed = gridState[gridId].numColumns;
-                    if (typeof gridState[gridId].advancedFiltering === &#039;object&#039; &amp;&amp; typeof gridState[gridId].advancedFiltering.groupsCount === &#039;number&#039;)
-                        numGroupsAllowed = gridState[gridId].advancedFiltering.groupsCount;
-                    else numGroupsAllowed = 3;
-
-                    if (filterGroupCount &gt;= numGroupsAllowed) return;
-                    else if (filterGroupCount === numGroupsAllowed - 1)
-                        advancedFiltersModal.find(&#039;.add_filter_group&#039;).prop(&#039;disabled&#039;, true);
-
-                    if (typeof gridState[gridId].advancedFiltering === &#039;object&#039; &amp;&amp; typeof gridState[gridId].advancedFiltering.filtersCount === &#039;number&#039;)
-                        numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
-
-                    if (advancedFiltersModal.find(&#039;.filter_row_div&#039;).length &gt;= numFiltersAllowed) return;
-                    else if (advancedFiltersModal.find(&#039;.filter_row_div&#039;).length === numFiltersAllowed - 1) advancedFiltersModal.find(&#039;.add_filter_group&#039;).prop(&#039;disabled&#039;, true);
-
-                    var previousGroupNum = parseInt(filterGroups.last().data(&#039;filter_group_num&#039;));
-
-                    var conjunctionSelector = $(&#039;&lt;select class=&quot;input group_conjunction&quot; data-filter_group_num=&quot;&#039; + (previousGroupNum + 1) + &#039;&quot;&gt;&lt;/select&gt;&#039;);
-                    conjunctionSelector.append(&#039;&lt;option value=&quot;and&quot;&gt;AND&lt;/option&gt;&#039;).append(&#039;&lt;option value=&quot;or&quot;&gt;OR&lt;/option&gt;&#039;);
-                    advancedFiltersModal.find(&#039;.filter_group_container&#039;).last().after(conjunctionSelector);
-
-                    var filterGroupContainer = $(&#039;&lt;div class=&quot;filter_group_container&quot; data-filter_group_num=&quot;&#039; + (previousGroupNum + 1) + &#039;&quot;&gt;&lt;/div&gt;&#039;);
-                    advancedFiltersModal.find(&#039;.group_conjunction&#039;).last().after(filterGroupContainer);
-                    var removeGroup = $(&#039;&lt;span class=&quot;remove_filter_group&quot;&gt;&lt;/span&gt;&lt;/br&gt;&#039;).css(&#039;left&#039;, (filterGroupContainer.outerWidth()))
-                        .on(&#039;click&#039;, function closeFilterGroupHandler(e) {
-                            var filterContainerGroup = $(e.currentTarget).parents(&#039;.filter_group_container&#039;);
-                            filterContainerGroup.prev(&#039;select&#039;).remove();
-                            filterContainerGroup.remove();
-
-                            if (advancedFiltersModal.find(&#039;.group_conjunction&#039;).length &lt; numGroupsAllowed)
-                                advancedFiltersModal.find(&#039;.add_filter_group&#039;).prop(&#039;disabled&#039;, false);
-                        })
-                        .data(&#039;filter_group_num&#039;, filterGroupCount + 1);
-                    filterGroupContainer.append(removeGroup);
-                    addNewAdvancedFilter(filterGroupContainer, true );
-                });
 
                 var applyFiltersButton = $(&#039;&lt;input type=&quot;button&quot; value=&quot;Apply Filter(s)&quot; class=&quot;advanced_filters_button&quot;/&gt;&#039;).appendTo(advancedFiltersModal);
                 applyFiltersButton.on(&#039;click&#039;, function applyAdvancedFiltersHandler() {
@@ -2271,14 +2232,9 @@
     function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
         var gridId = advancedFiltersContainer.parents(&#039;.filter_modal&#039;).data(&#039;grid_id&#039;),
             filterRowDiv = $(&#039;&lt;div class=&quot;filter_row_div&quot;&gt;&lt;/div&gt;&#039;).appendTo(advancedFiltersContainer);
-        if (!isFirstFilter) {
-            var conjunctionSelector = $(&#039;&lt;select class=&quot;input conjunction_selector&quot;&gt;&lt;/select&gt;&#039;).appendTo(filterRowDiv);
-            conjunctionSelector.append(&#039;&lt;option value=&quot;and&quot;&gt;AND&lt;/option&gt;&#039;).append(&#039;&lt;option value=&quot;or&quot;&gt;OR&lt;/option&gt;&#039;);
-        }
 
         var columnSelector = $(&#039;&lt;select class=&quot;input filter_column_selector&quot;&gt;&lt;/select&gt;&#039;).appendTo(filterRowDiv);
-        if (!isFirstFilter) columnSelector.addClass(&#039;select&#039;);
-        else columnSelector.addClass(&#039;first-select&#039;);
+        columnSelector.addClass(&#039;select&#039;);
         columnSelector.append(&#039;&lt;option value=&quot;&quot;&gt;Select a column&lt;/option&gt;&#039;);
         for (var column in gridState[gridId].columns) {
             var curCol = gridState[gridId].columns[column];
@@ -2295,14 +2251,20 @@
         $(&#039;&lt;input type=&quot;button&quot; value=&quot;X&quot; class=&quot;filter_row_button&quot;/&gt;&#039;).appendTo(filterRowDiv).on(&#039;click&#039;, deleteHandler);
 
         if (!isFirstFilter) {
-            var addNewFilterButton = filterRowDiv.prev().find(&#039;.new_filter&#039;);
+            var addNewFilterButton = filterRowDiv.parents(&#039;.filter_group_container&#039;).find(&#039;.new_filter&#039;),
+                addFilterGroup = filterRowDiv.parents(&#039;.filter_group_container&#039;).find(&#039;.add_filter_group&#039;);
             addNewFilterButton.detach();
-            filterRowDiv.append(addNewFilterButton);
+            addFilterGroup.detach();
+            filterRowDiv.append(addNewFilterButton).append(addFilterGroup);
         }
         else {
             $(&#039;&lt;input type=&quot;button&quot; value=&quot;+&quot; class=&quot;filter_row_button new_filter&quot;/&gt;&#039;)
                 .appendTo(filterRowDiv)
                 .on(&#039;click&#039;, addFilterButtonHandler);
+
+            $(&#039;&lt;input type=&quot;button&quot; value=&quot;+ Group&quot; class=&quot;advanced_filters_button add_filter_group&quot;/&gt;&#039;)
+                .appendTo(filterRowDiv)
+                .on(&#039;click&#039;, addFilterGroupHandler);
         }
 
         columnSelector.one(&#039;change&#039;, function columnSelectorCallback() {
@@ -2316,6 +2278,50 @@
                 filterRowDiv.find(&#039;.advanced_filter_value&#039;).prop(&#039;disabled&#039;, false);
             }
         });
+    }
+
+    function addFilterGroupHandler() {
+        var numGroupsAllowed = 0,
+            filterModal = $(this).parents(&#039;.filter_modal&#039;),
+            gridId = filterModal.data(&#039;grid_id&#039;),
+            filterGroups = filterModal.find(&#039;.filter_group_container&#039;),
+            parentGroup = $(this).parents(&#039;.filter_group_container&#039;).first(),
+            filterGroupCount = filterGroups.length,
+            numFiltersAllowed = gridState[gridId].numColumns;
+        if (typeof gridState[gridId].advancedFiltering === &#039;object&#039; &amp;&amp; typeof gridState[gridId].advancedFiltering.groupsCount === &#039;number&#039;)
+            numGroupsAllowed = gridState[gridId].advancedFiltering.groupsCount;
+        else numGroupsAllowed = 3;
+
+        if (filterGroupCount &gt;= numGroupsAllowed) return;
+        else if (filterGroupCount === numGroupsAllowed - 1)
+            filterModal.find(&#039;.add_filter_group&#039;).prop(&#039;disabled&#039;, true);
+
+        if (typeof gridState[gridId].advancedFiltering === &#039;object&#039; &amp;&amp; typeof gridState[gridId].advancedFiltering.filtersCount === &#039;number&#039;)
+            numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
+
+        if (filterModal.find(&#039;.filter_row_div&#039;).length &gt;= numFiltersAllowed) return;
+        else if (filterModal.find(&#039;.filter_row_div&#039;).length === numFiltersAllowed - 1) filterModal.find(&#039;.add_filter_group&#039;).prop(&#039;disabled&#039;, true);
+
+        var previousGroupNum = parseInt(filterGroups.last().data(&#039;filter_group_num&#039;));
+
+        var groupSelector = &#039;&lt;select class=&quot;input group_conjunction&quot;&gt;&lt;option value=&quot;and&quot;&gt;All&lt;/option&gt;&lt;option value=&quot;or&quot;&gt;Any&lt;/option&gt;&lt;/select&gt; of the following:&lt;/span&gt;&#039;;
+        parentGroup.append(&#039;&lt;span class=&quot;group-select&quot; data-filter_group_num=&quot;1&quot;&gt;Match&#039; + groupSelector);
+
+
+        var filterGroupContainer = $(&#039;&lt;div class=&quot;filter_group_container&quot; data-filter_group_num=&quot;&#039; + (previousGroupNum + 1) + &#039;&quot;&gt;&lt;/div&gt;&#039;);
+        parentGroup.append(filterGroupContainer);
+        var removeGroup = $(&#039;&lt;span class=&quot;remove_filter_group&quot;&gt;&lt;/span&gt;&lt;/br&gt;&#039;).css(&#039;left&#039;, (filterGroupContainer.outerWidth()))
+            .on(&#039;click&#039;, function closeFilterGroupHandler(e) {
+                var filterContainerGroup = $(e.currentTarget).parents(&#039;.filter_group_container&#039;);
+                filterContainerGroup.prev(&#039;select&#039;).remove();
+                filterContainerGroup.remove();
+
+                if (filterModal.find(&#039;.group_conjunction&#039;).length &lt; numGroupsAllowed)
+                    filterModal.find(&#039;.add_filter_group&#039;).prop(&#039;disabled&#039;, false);
+            })
+            .data(&#039;filter_group_num&#039;, filterGroupCount + 1);
+        filterGroupContainer.append(removeGroup);
+        addNewAdvancedFilter(filterGroupContainer, true );
     }
 
     function deleteFilterButtonHandler(e) {
