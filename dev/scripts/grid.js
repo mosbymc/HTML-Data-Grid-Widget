@@ -2471,50 +2471,6 @@ var grid = (function _grid($) {
                     else e.stopPropagation();
                 });*/
 
-                /*var filterGroupButton = $('<input type="button" value="New Filter Group" class="advanced_filters_button add_filter_group"/>').appendTo(advancedFiltersContainer);
-                filterGroupButton.on('click', function addNewFilterGroupHandler() {
-                    var numGroupsAllowed = 0,
-                        filterGroups = advancedFiltersModal.find('.filter_group_container'),
-                        filterGroupCount = filterGroups.length,
-                        numFiltersAllowed = gridState[gridId].numColumns;
-                    if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.groupsCount === 'number')
-                        numGroupsAllowed = gridState[gridId].advancedFiltering.groupsCount;
-                    else numGroupsAllowed = 3;
-
-                    if (filterGroupCount >= numGroupsAllowed) return;
-                    else if (filterGroupCount === numGroupsAllowed - 1)
-                        advancedFiltersModal.find('.add_filter_group').prop('disabled', true);
-
-                    if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.filtersCount === 'number')
-                        numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
-
-                    if (advancedFiltersModal.find('.filter_row_div').length >= numFiltersAllowed) return;
-                    else if (advancedFiltersModal.find('.filter_row_div').length === numFiltersAllowed - 1) advancedFiltersModal.find('.add_filter_group').prop('disabled', true);
-
-                    var previousGroupNum = parseInt(filterGroups.last().data('filter_group_num'));
-
-                    //var conjunctionSelector = $('<select class="input group_conjunction" data-filter_group_num="' + (previousGroupNum + 1) + '"></select>');
-                    //conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
-                    //advancedFiltersModal.find('.filter_group_container').last().after(conjunctionSelector);
-
-                    var filterGroupContainer = $('<div class="filter_group_container" data-filter_group_num="' + (previousGroupNum + 1) + '"></div>');
-                    //advancedFiltersModal.find('.group_conjunction').last().after(filterGroupContainer);
-                    advancedFiltersModal.find('.filter_group_container').last().after(filterGroupContainer);
-                    //advancedFiltersModal.append(filterGroupContainer);
-                    var removeGroup = $('<span class="remove_filter_group"></span></br>').css('left', (filterGroupContainer.outerWidth()))
-                        .on('click', function closeFilterGroupHandler(e) {
-                            var filterContainerGroup = $(e.currentTarget).parents('.filter_group_container');
-                            filterContainerGroup.prev('select').remove();
-                            filterContainerGroup.remove();
-
-                            if (advancedFiltersModal.find('.group_conjunction').length < numGroupsAllowed)
-                                advancedFiltersModal.find('.add_filter_group').prop('disabled', false);
-                        })
-                        .data('filter_group_num', filterGroupCount + 1);
-                    filterGroupContainer.append(removeGroup);
-                    addNewAdvancedFilter(filterGroupContainer, true /* isFirstFilter );
-                });*/
-
                 var applyFiltersButton = $('<input type="button" value="Apply Filter(s)" class="advanced_filters_button"/>').appendTo(advancedFiltersModal);
                 applyFiltersButton.on('click', function applyAdvancedFiltersHandler() {
                     if (gridState[gridId].updating) return;		//can't filter if grid is updating
@@ -2522,7 +2478,7 @@ var grid = (function _grid($) {
                     gridState[gridId].filteredOn = [];
 
                     var advancedFilters = {};
-                    createFilterGroups(advancedFiltersModal, advancedFilters);
+                    createFilterGroups(advancedFiltersContainer, advancedFilters);
                     console.log(advancedFilters);
                     console.log(' ');
 
@@ -2545,91 +2501,23 @@ var grid = (function _grid($) {
                         console.log(' ');
                     }
 
-                    function createFilterGroups(groupParent, filterObject) {
-                        var orFilterConjunctIds = [],
-                            andFilterConjunctIds = [],
-                            groupConjunctionSelectors = groupParent.find('.group_conjunction');
-                        groupConjunctionSelectors.first().val() === 'and' ? andFilterConjunctIds.push(1) : orFilterConjunctIds.push(1);
-
-                        groupConjunctionSelectors.each(function iterateFilterGroupConjunctsCallback() {
-                            var conjunctSelector = $(this);
-                            if (conjunctSelector.val() === 'or') orFilterConjunctIds.push(parseInt(conjunctSelector.data('filter_group_num')));
-                            else andFilterConjunctIds.push(parseInt(conjunctSelector.data('filter_group_num')));
-                        });
-
+                    function createFilterGroups(groupContainer, filterObject) {
+                        var groupConjunct = groupContainer.parents('.filter_modal').find('span[data-filter_group_num="' + groupContainer.data('filter_group_num') + '"]').children('select');
                         filterObject.filterGroup = [];
-
-                        if (orFilterConjunctIds.length) {
-                            filterObject.conjunct = 'or';
-                            processFilterGroups(groupParent, orFilterConjunctIds, filterObject);
-                        }
-
-                        if (andFilterConjunctIds.length) {
-                            var andFilterGroup;
-                            if (!orFilterConjunctIds.length) {
-                                andFilterGroup = filterObject;
-                                andFilterGroup.conjunct = 'and';
-                            }
-                            else {
-                                andFilterGroup = { conjunct: 'and', filterGroup: [] };
-                                filterObject.filterGroup.push(andFilterGroup);
-                            }
-                            processFilterGroups(groupParent, andFilterConjunctIds, andFilterGroup);
-                        }
-                    }
-
-                    function processFilterGroups(groupParent, filterGroupIds, filterObject) {
-                        filterGroupIds.forEach(function createTopLevelFilters(id) {
-                            $(groupParent).find('div[data-filter_group_num="' + id + '"]').each(function iterateOrFilterGroupsCallback(idx, val) {
-                                findFilters($(val), filterObject);
-                            });
-                        });
+                        filterObject.conjunct = groupConjunct.val();
+                        findFilters(groupContainer, filterObject);
                     }
 
                     function findFilters(groupContainer, filterObject) {
-                        var filterDivs = groupContainer.children('.filter_row_div'),
-                            secondFilterDiv = filterDivs.eq(1),
-                            orFilterDivs = [], andFilterDivs = [];
-
-                        if ((secondFilterDiv.length && secondFilterDiv.find('.conjunction_selector').val() === 'or') || (!secondFilterDiv.length && filterObject.conjunct === 'or'))
-                            orFilterDivs.push(filterDivs.first());
-                        else
-                            andFilterDivs.push(filterDivs.first());
-
-                        filterDivs.each(function iterateFilterDivs(idx, elem) {
-                            elem = $(elem);
-                            var filterConjuncts = elem.children('.conjunction_selector');
-                            filterConjuncts.each(function separateByConjunct(idx, select) {
-                                select = $(select);
-                                if (select.val() === 'or')
-                                    orFilterDivs.push(select.parent());
-                                else
-                                    andFilterDivs.push(select.parent());
-                            });
+                        groupContainer.children('.filter_row_div').each(function iterateFilterDivsCallback() {
+                            createFilterObjects($(this), filterObject.filterGroup);
                         });
 
-                        if (orFilterDivs.length) createFilterGroupObjects(orFilterDivs, filterObject, 'or');
-                        if (andFilterDivs.length) createFilterGroupObjects(andFilterDivs, filterObject, 'and');
-
-                        groupContainer.children('.group_conjunction').each(function createNestedFilterGroupsCallback(idx, val) {
+                        groupContainer.children('.filter_group_container').each(function createNestedFilterGroupsCallback(idx, val) {
                             var nestedGroup = {};
                             filterObject.filterGroup.push(nestedGroup);
                             createFilterGroups($(val), nestedGroup);
                         });
-                    }
-
-                    function createFilterGroupObjects(filterDivs, filterObject, conjunctionType) {
-                        var groupArray, i;
-
-                        if (filterObject.conjunct !== conjunctionType) {
-                            groupArray = [];
-                            filterObject.filterGroup.push({ conjunct: conjunctionType, filterGroup: groupArray });
-                        }
-                        else groupArray = filterObject.filterGroup;
-
-                        for (i = 0; i < filterDivs.length; i++) {
-                            createFilterObjects(filterDivs[i], groupArray);
-                        }
                     }
 
                     function createFilterObjects(filterDiv, filterGroupArr) {
@@ -2718,16 +2606,10 @@ var grid = (function _grid($) {
 
     function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
         var gridId = advancedFiltersContainer.parents('.filter_modal').data('grid_id'),
-            filterRowDiv = $('<div class="filter_row_div"></div>');//.appendTo(advancedFiltersContainer);
+            filterRowDiv = $('<div class="filter_row_div"></div>');
         isFirstFilter ? advancedFiltersContainer.append(filterRowDiv) : advancedFiltersContainer.children('.filter_row_div').last().after(filterRowDiv);
-        /*if (!isFirstFilter) {
-            var conjunctionSelector = $('<select class="input conjunction_selector"></select>').appendTo(filterRowDiv);
-            conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
-        }*/
 
         var columnSelector = $('<select class="input filter_column_selector"></select>').appendTo(filterRowDiv);
-        //if (!isFirstFilter) columnSelector.addClass('select');
-        //else columnSelector.addClass('first-select');
         columnSelector.addClass('select');
         columnSelector.append('<option value="">Select a column</option>');
         for (var column in gridState[gridId].columns) {
@@ -2761,8 +2643,7 @@ var grid = (function _grid($) {
                 .on('click', addFilterGroupHandler);
         }
 
-        columnSelector.one('change', function columnSelectorCallback() {
-            columnSelector.find('option').first().remove();
+        columnSelector.on('change', function columnSelectorCallback() {
             filterTypeSelector.find('option').remove();
             filterTypeSelector.prop('disabled', false);
             filterRowDiv.find('.advanced_filter_value').val('');
@@ -2771,6 +2652,7 @@ var grid = (function _grid($) {
             if (gridState[gridId].columns[columnSelector.val()].type !== 'boolean') {
                 filterRowDiv.find('.advanced_filter_value').prop('disabled', false);
             }
+            else filterRowDiv.find('.advanced_filter_value').prop('disabled', true);
         });
     }
 
@@ -2801,14 +2683,8 @@ var grid = (function _grid($) {
         var groupSelector = '<select class="input group_conjunction"><option value="and">All</option><option value="or">Any</option></select> of the following:</span>';
         parentGroup.append('<span class="group-select" data-filter_group_num="' + (previousGroupNum + 1) + '">Match' + groupSelector);
 
-        //var conjunctionSelector = $('<select class="input group_conjunction" data-filter_group_num="' + (previousGroupNum + 1) + '"></select>');
-        //conjunctionSelector.append('<option value="and">AND</option>').append('<option value="or">OR</option>');
-        //advancedFiltersModal.find('.filter_group_container').last().after(conjunctionSelector);
-
         var filterGroupContainer = $('<div class="filter_group_container" data-filter_group_num="' + (previousGroupNum + 1) + '"></div>');
-        //advancedFiltersModal.find('.group_conjunction').last().after(filterGroupContainer);
         parentGroup.append(filterGroupContainer);
-        //advancedFiltersModal.append(filterGroupContainer);
         var removeGroup = $('<span class="remove_filter_group"></span>')
             .on('click', function closeFilterGroupHandler(e) {
                 var filterContainerGroup = $(e.currentTarget).closest('.filter_group_container');

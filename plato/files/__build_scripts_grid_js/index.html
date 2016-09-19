@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.62</p>
+      <p class="stat">55.50</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3695</p>
+      <p class="stat">3625</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">210.96</p>
+      <p class="stat">211.65</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">82.02</p>
+      <p class="stat">80.73</p>
     </div>
   </div>
 </div>
@@ -2069,7 +2069,6 @@
                 addNewAdvancedFilter(advancedFiltersContainer, true );
 
 
-
                 var applyFiltersButton = $(&#039;&lt;input type=&quot;button&quot; value=&quot;Apply Filter(s)&quot; class=&quot;advanced_filters_button&quot;/&gt;&#039;).appendTo(advancedFiltersModal);
                 applyFiltersButton.on(&#039;click&#039;, function applyAdvancedFiltersHandler() {
                     if (gridState[gridId].updating) return;		
@@ -2077,7 +2076,7 @@
                     gridState[gridId].filteredOn = [];
 
                     var advancedFilters = {};
-                    createFilterGroups(advancedFiltersModal, advancedFilters);
+                    createFilterGroups(advancedFiltersContainer, advancedFilters);
                     console.log(advancedFilters);
                     console.log(&#039; &#039;);
 
@@ -2098,91 +2097,23 @@
                         console.log(&#039; &#039;);
                     }
 
-                    function createFilterGroups(groupParent, filterObject) {
-                        var orFilterConjunctIds = [],
-                            andFilterConjunctIds = [],
-                            groupConjunctionSelectors = groupParent.find(&#039;.group_conjunction&#039;);
-                        groupConjunctionSelectors.first().val() === &#039;and&#039; ? andFilterConjunctIds.push(1) : orFilterConjunctIds.push(1);
-
-                        groupConjunctionSelectors.each(function iterateFilterGroupConjunctsCallback() {
-                            var conjunctSelector = $(this);
-                            if (conjunctSelector.val() === &#039;or&#039;) orFilterConjunctIds.push(parseInt(conjunctSelector.data(&#039;filter_group_num&#039;)));
-                            else andFilterConjunctIds.push(parseInt(conjunctSelector.data(&#039;filter_group_num&#039;)));
-                        });
-
+                    function createFilterGroups(groupContainer, filterObject) {
+                        var groupConjunct = groupContainer.parents(&#039;.filter_modal&#039;).find(&#039;span[data-filter_group_num=&quot;&#039; + groupContainer.data(&#039;filter_group_num&#039;) + &#039;&quot;]&#039;).children(&#039;select&#039;);
                         filterObject.filterGroup = [];
-
-                        if (orFilterConjunctIds.length) {
-                            filterObject.conjunct = &#039;or&#039;;
-                            processFilterGroups(groupParent, orFilterConjunctIds, filterObject);
-                        }
-
-                        if (andFilterConjunctIds.length) {
-                            var andFilterGroup;
-                            if (!orFilterConjunctIds.length) {
-                                andFilterGroup = filterObject;
-                                andFilterGroup.conjunct = &#039;and&#039;;
-                            }
-                            else {
-                                andFilterGroup = { conjunct: &#039;and&#039;, filterGroup: [] };
-                                filterObject.filterGroup.push(andFilterGroup);
-                            }
-                            processFilterGroups(groupParent, andFilterConjunctIds, andFilterGroup);
-                        }
-                    }
-
-                    function processFilterGroups(groupParent, filterGroupIds, filterObject) {
-                        filterGroupIds.forEach(function createTopLevelFilters(id) {
-                            $(groupParent).find(&#039;div[data-filter_group_num=&quot;&#039; + id + &#039;&quot;]&#039;).each(function iterateOrFilterGroupsCallback(idx, val) {
-                                findFilters($(val), filterObject);
-                            });
-                        });
+                        filterObject.conjunct = groupConjunct.val();
+                        findFilters(groupContainer, filterObject);
                     }
 
                     function findFilters(groupContainer, filterObject) {
-                        var filterDivs = groupContainer.children(&#039;.filter_row_div&#039;),
-                            secondFilterDiv = filterDivs.eq(1),
-                            orFilterDivs = [], andFilterDivs = [];
-
-                        if ((secondFilterDiv.length &amp;&amp; secondFilterDiv.find(&#039;.conjunction_selector&#039;).val() === &#039;or&#039;) || (!secondFilterDiv.length &amp;&amp; filterObject.conjunct === &#039;or&#039;))
-                            orFilterDivs.push(filterDivs.first());
-                        else
-                            andFilterDivs.push(filterDivs.first());
-
-                        filterDivs.each(function iterateFilterDivs(idx, elem) {
-                            elem = $(elem);
-                            var filterConjuncts = elem.children(&#039;.conjunction_selector&#039;);
-                            filterConjuncts.each(function separateByConjunct(idx, select) {
-                                select = $(select);
-                                if (select.val() === &#039;or&#039;)
-                                    orFilterDivs.push(select.parent());
-                                else
-                                    andFilterDivs.push(select.parent());
-                            });
+                        groupContainer.children(&#039;.filter_row_div&#039;).each(function iterateFilterDivsCallback() {
+                            createFilterObjects($(this), filterObject.filterGroup);
                         });
 
-                        if (orFilterDivs.length) createFilterGroupObjects(orFilterDivs, filterObject, &#039;or&#039;);
-                        if (andFilterDivs.length) createFilterGroupObjects(andFilterDivs, filterObject, &#039;and&#039;);
-
-                        groupContainer.children(&#039;.group_conjunction&#039;).each(function createNestedFilterGroupsCallback(idx, val) {
+                        groupContainer.children(&#039;.filter_group_container&#039;).each(function createNestedFilterGroupsCallback(idx, val) {
                             var nestedGroup = {};
                             filterObject.filterGroup.push(nestedGroup);
                             createFilterGroups($(val), nestedGroup);
                         });
-                    }
-
-                    function createFilterGroupObjects(filterDivs, filterObject, conjunctionType) {
-                        var groupArray, i;
-
-                        if (filterObject.conjunct !== conjunctionType) {
-                            groupArray = [];
-                            filterObject.filterGroup.push({ conjunct: conjunctionType, filterGroup: groupArray });
-                        }
-                        else groupArray = filterObject.filterGroup;
-
-                        for (i = 0; i &lt; filterDivs.length; i++) {
-                            createFilterObjects(filterDivs[i], groupArray);
-                        }
                     }
 
                     function createFilterObjects(filterDiv, filterGroupArr) {
@@ -2268,8 +2199,7 @@
                 .on(&#039;click&#039;, addFilterGroupHandler);
         }
 
-        columnSelector.one(&#039;change&#039;, function columnSelectorCallback() {
-            columnSelector.find(&#039;option&#039;).first().remove();
+        columnSelector.on(&#039;change&#039;, function columnSelectorCallback() {
             filterTypeSelector.find(&#039;option&#039;).remove();
             filterTypeSelector.prop(&#039;disabled&#039;, false);
             filterRowDiv.find(&#039;.advanced_filter_value&#039;).val(&#039;&#039;);
@@ -2278,6 +2208,7 @@
             if (gridState[gridId].columns[columnSelector.val()].type !== &#039;boolean&#039;) {
                 filterRowDiv.find(&#039;.advanced_filter_value&#039;).prop(&#039;disabled&#039;, false);
             }
+            else filterRowDiv.find(&#039;.advanced_filter_value&#039;).prop(&#039;disabled&#039;, true);
         });
     }
 
@@ -2307,7 +2238,6 @@
 
         var groupSelector = &#039;&lt;select class=&quot;input group_conjunction&quot;&gt;&lt;option value=&quot;and&quot;&gt;All&lt;/option&gt;&lt;option value=&quot;or&quot;&gt;Any&lt;/option&gt;&lt;/select&gt; of the following:&lt;/span&gt;&#039;;
         parentGroup.append(&#039;&lt;span class=&quot;group-select&quot; data-filter_group_num=&quot;&#039; + (previousGroupNum + 1) + &#039;&quot;&gt;Match&#039; + groupSelector);
-
 
         var filterGroupContainer = $(&#039;&lt;div class=&quot;filter_group_container&quot; data-filter_group_num=&quot;&#039; + (previousGroupNum + 1) + &#039;&quot;&gt;&lt;/div&gt;&#039;);
         parentGroup.append(filterGroupContainer);
