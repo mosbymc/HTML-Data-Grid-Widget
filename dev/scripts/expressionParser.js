@@ -110,119 +110,7 @@ TODO: Don't know that I want to support increment operators
 
  */
 
-var stack = {
-    init: function _init() {
-        this.data = [];
-        this.top = 0;
-    },
-    push: function _push(item) {
-        this.data[this.top++] = item;
-    },
-    pop: function _pop() {
-        return this.data[--this.top];
-    },
-    peek: function _peek() {
-        return this.data[this.top - 1];
-    },
-    clear: function _clear() {
-        this.top = 0;
-    },
-    length: function _length() {
-        return this.top;
-    }
-};
-
-function comparator(val, base, type) {
-    switch (type) {
-        case '==':
-            return val == base;
-        case '===':
-            return val === base;
-        case '<=':
-            return val <= base;
-        case '>=':
-            return val >= base;
-        case '!':
-            return !val;
-        case '':
-            return !!val;
-        case '!=':
-            return val != base;
-        case '!==':
-            return val !== base;
-        case '>':
-            return val > base;
-        case '<':
-            return val < base;
-        case 'eq':
-            return val === base;
-        case 'neq':
-            return val !== base;
-        case 'gte':
-            return val >= base;
-        case 'gt':
-            return val > base;
-        case 'lte':
-            return val <= base;
-        case 'lt':
-            return val < base;
-        case 'not':
-            return !!val;
-        case 'ct':
-            return !!~val.toLowerCase().indexOf(base.toLowerCase());
-        case 'nct':
-            return !~val.toLowerCase().indexOf(base.toLowerCase());
-    }
-}
-
-function getNumberOfOperands(operator) {
-    switch (operator) {
-        case '!':
-            return 1;
-        case '(':
-        case ')':
-            return 0;
-        default:
-            return 2;
-    }
-}
-
-var associativity = {
-    RTL: 1,
-    LTR: 2
-};
-
-function getOperatorPrecedence(operator) {
-    switch (operator) {
-        case '!':
-            return {
-                precedence: 1,
-                associativity: associativity.LTR
-            };
-        case 'and':
-            return {
-                precedence: 2,
-                associativity: associativity.RTL
-            };
-        case 'xor':
-            return {
-                precedence: 3,
-                associativity: associativity.RTL
-            };
-        case 'or':
-            return {
-                precedence: 4,
-                associativity: associativity.RTL
-            };
-        case '(':
-        case ')':
-            return {
-                precedence: null,
-                associativity: null
-            };
-    }
-}
-
+/*
 var operator = {
     createNewOperator: function _createNewOperator(token) {
         switch (token) {
@@ -683,78 +571,296 @@ var expressionEvaluator = {
 var operatorStack = Object.create(stack).init();
 
 var queue = [];
+*/
 
 
-var conjunct = {
-    createConjunct: function _createConjunct(conjunction) {
-        this.operator = conjunction;
-        this.numberOfOperands = getNumberOfOperands(this.operator);
+var expressionParser = (function _expressionParser() {
+    var booleanExpressionTree = {
+        createTree: function _createTree() {
+            this.tree = null;
+            this.context = null;
+            this.rootNode = null;
+            return this;
+        }
+    };
 
-        var operatorCharacteristics = getOperatorPrecedence(this.operator);
+    booleanExpressionTree.setTree = function _setTree(tree) {
+        this.tree = tree.reverse();
+        this.rootNode = tree[0];
+        return this;
+    };
+    booleanExpressionTree.filterCollection = function _filterCollection(collection) {
+        return collection.filter(function collectionMap(curr) {
+            this.context = curr;
+            console.log(this.rootNode.evaluate);
+            return this.rootNode.evaluate(curr);
+        });
+    };
+    booleanExpressionTree.internalGetContext = function _internalGetContext() {
+        return this.context;
+    };
+    booleanExpressionTree.getContext = function _getContext() {
+        return this.internalGetContext.bind(this);
+    };
 
-        this.precedence = operatorCharacteristics.precedence;
-        this.associativity = operatorCharacteristics.associativity;
-    }
-};
+    var conjunct = {
+        createConjunct: function _createConjunct(conjunction) {
+            this.operator = conjunction;
+            this.numberOfOperands = getNumberOfOperands(this.operator);
 
-function createFilterTreeFromFilterObject(filterObject) {
-    var operandStack = Object.create(stack);
-    operandStack.init();
-    var queue = [],
-        topOfStack;
+            var operatorCharacteristics = getOperatorPrecedence(this.operator);
 
-    iterateFilterGroup(filterObject, operandStack, queue);
+            this.precedence = operatorCharacteristics.precedence;
+            this.associativity = operatorCharacteristics.associativity;
+        }
+    };
 
-    while (operandStack.length()) {
-        topOfStack = operandStack.peek();
-        if (topOfStack.operator !== '(')
-            queue.push(operandStack.pop());
-        else operandStack.pop();
-    }
+    var astNode = {
+        createNode: function _createNode(node) {
+            var operatorCharacteristics = getOperatorPrecedence(node);
+            if (operatorCharacteristics) {
+                this.operator = node;
+                this.numberOfOperands = getNumberOfOperands(this.operator);
+                this.precedence = operatorCharacteristics.precedence;
+                this.associativity = operatorCharacteristics.associativity;
+                this.children = [];
+            }
+            else {
+                this.field = node.field;
+                this.standard = node.value;
+                this.operation = node.operation;
+                this.context = null;
+            }
+            this.value = null;
+            this.getContext = null;
+        }
+    };
 
-    return queue;
-}
+    astNode.createTree = function _createTree(tree) {
 
-function iterateFilterGroup(filterObject, stack, queue) {
-    var conjunction = filterObject.conjunct,
-        idx = 0,
-        topOfStack,
-        currConjunction = Object.create(conjunct);
-    currConjunction.createConjunct(conjunction);
+    };
 
-    while (idx < filterObject.filterGroup.length) {
-        if (idx > 0 || filterObject.filterGroup.length === 1)
-            pushConjunctionOntoStack(currConjunction, stack, queue);
-        if (filterObject.filterGroup[idx].conjunct) {
-            var paren = Object.create(conjunct);
-            paren.createConjunct('(');
-            stack.push(paren);
-            iterateFilterGroup(filterObject.filterGroup[idx], stack, queue);
-            while (stack.length()) {
-                topOfStack = stack.peek();
-                if (topOfStack.operator !== '(')
-                    queue.push(stack.pop());
-                else {
-                    stack.pop();
-                    break;
-                }
+    astNode.addChild = function _addChild(child) {
+        if (this.children && this.children.length < this.numberOfOperands)
+            this.children.push(child);
+    };
+
+    astNode.evaluate = function _evaluate() {
+        console.log('made it here');
+        if (this.children && this.children.length) {
+            switch (this.operator) {
+                case 'or':
+                    return this.children[0].evaluate() || this.children[1].evaluate();
+                case 'and':
+                    return this.children[0].evaluate() && this.children[1].evaluate();
+                case 'xor':
+                    return !!(this.children[0].evaluate() ^ this.children[1].evaluate());
+                case 'nor':
+                    return !(this.children[0].evaluate() || this.children[1].evaluate());
+                case 'nand':
+                    return !(this.children[0].evaluate() && this.children[1].evaluate());
+                case 'xnor':
+                    return !(this.children[0].evaluate() ^ this.children[1].evaluate());
             }
         }
         else {
-            queue.push(filterObject.filterGroup[idx]);
+            this.value = comparator(this.getContext()[this.field], this.standard, this.operation);
+            return this.value;
         }
-        ++idx;
-    }
-}
+    };
 
-function pushConjunctionOntoStack(conjunction, stack, queue) {
-    while (stack.length()) {
-        var topOfStack = stack.peek();
-        if ((conjunction.associativity === associativity.LTR && conjunction.precedence <= topOfStack.precedence)
-            || (conjunction.associativity === associativity.RTL && conjunction.precedence < topOfStack.precedence))
-            queue.push(stack.pop());
-        else
-            break;
+    astNode.getValue = function _getValue() {
+        if (this.value == null)
+            this.value = this.evaluate();
+        return this.value;
+    };
+
+    function createFilterTreeFromFilterObject(filterObject) {
+        var ret = Object.create(booleanExpressionTree);
+        ret.createTree();
+        var operandStack = Object.create(stack);
+        operandStack.init();
+        var queue = [],
+            topOfStack;
+
+        iterateFilterGroup(filterObject, operandStack, queue, ret.getContext);
+
+        while (operandStack.length()) {
+            topOfStack = operandStack.peek();
+            if (topOfStack.operator !== '(')
+                queue.push(operandStack.pop());
+            else operandStack.pop();
+        }
+
+        ret.setTree(queue);
+        return ret;
     }
-    stack.push(conjunction);
-}
+
+    function iterateFilterGroup(filterObject, stack, queue, contextGetter) {
+        var conjunction = filterObject.conjunct,
+            idx = 0,
+            topOfStack,
+            currConjunction = Object.create(conjunct);
+        currConjunction.createConjunct(conjunction);
+        var face = Object.create(astNode);
+        face.createNode(conjunction);
+
+        while (idx < filterObject.filterGroup.length) {
+            if (idx > 0 || filterObject.filterGroup.length === 1)
+                pushConjunctionOntoStack(face, stack, queue);
+            if (filterObject.filterGroup[idx].conjunct) {
+                //var paren = Object.create(conjunct);
+                //paren.createConjunct('(');
+                var parens = Object.create(astNode);
+                parens.createNode('(');
+                stack.push(parens);
+                iterateFilterGroup(filterObject.filterGroup[idx], stack, queue, contextGetter);
+                while (stack.length()) {
+                    topOfStack = stack.peek();
+                    if (topOfStack.operator !== '(')
+                        queue.push(stack.pop());
+                    else {
+                        stack.pop();
+                        break;
+                    }
+                }
+            }
+            else {
+                var leafNode = Object.create(astNode);
+                leafNode.createNode(filterObject.filterGroup[idx]);
+                leafNode.getContext = contextGetter;
+                queue.push(leafNode);
+                //queue.push(filterObject.filterGroup[idx]);
+            }
+            ++idx;
+        }
+    }
+
+    function pushConjunctionOntoStack(conjunction, stack, queue) {
+        while (stack.length()) {
+            var topOfStack = stack.peek();
+            if ((conjunction.associativity === associativity.LTR && conjunction.precedence <= topOfStack.precedence)
+                || (conjunction.associativity === associativity.RTL && conjunction.precedence < topOfStack.precedence))
+                queue.push(stack.pop());
+            else
+                break;
+        }
+        stack.push(conjunction);
+    }
+
+    var stack = {
+        init: function _init() {
+            this.data = [];
+            this.top = 0;
+        },
+        push: function _push(item) {
+            this.data[this.top++] = item;
+        },
+        pop: function _pop() {
+            return this.data[--this.top];
+        },
+        peek: function _peek() {
+            return this.data[this.top - 1];
+        },
+        clear: function _clear() {
+            this.top = 0;
+        },
+        length: function _length() {
+            return this.top;
+        }
+    };
+
+    function comparator(val, base, type) {
+        switch (type) {
+            case '==':
+                return val == base;
+            case '===':
+                return val === base;
+            case '<=':
+                return val <= base;
+            case '>=':
+                return val >= base;
+            case '!':
+                return !val;
+            case '':
+                return !!val;
+            case '!=':
+                return val != base;
+            case '!==':
+                return val !== base;
+            case '>':
+                return val > base;
+            case '<':
+                return val < base;
+            case 'eq':
+                return val === base;
+            case 'neq':
+                return val !== base;
+            case 'gte':
+                return val >= base;
+            case 'gt':
+                return val > base;
+            case 'lte':
+                return val <= base;
+            case 'lt':
+                return val < base;
+            case 'not':
+                return !!val;
+            case 'ct':
+                return !!~val.toLowerCase().indexOf(base.toLowerCase());
+            case 'nct':
+                return !~val.toLowerCase().indexOf(base.toLowerCase());
+        }
+    }
+
+    function getNumberOfOperands(operator) {
+        switch (operator) {
+            case '!':
+                return 1;
+            case '(':
+            case ')':
+                return 0;
+            default:
+                return 2;
+        }
+    }
+
+    var associativity = { RTL: 1, LTR: 2 };
+
+    function getOperatorPrecedence(operator) {
+        switch (operator) {
+            case '!':
+                return {
+                    precedence: 1,
+                    associativity: associativity.LTR
+                };
+            case 'and':
+                return {
+                    precedence: 2,
+                    associativity: associativity.RTL
+                };
+            case 'xor':
+                return {
+                    precedence: 3,
+                    associativity: associativity.RTL
+                };
+            case 'or':
+                return {
+                    precedence: 4,
+                    associativity: associativity.RTL
+                };
+            case '(':
+            case ')':
+                return {
+                    precedence: null,
+                    associativity: null
+                };
+            default:
+                return null;
+        }
+    }
+
+    return {
+        createFilterTreeFromFilterObject: createFilterTreeFromFilterObject
+    };
+})();

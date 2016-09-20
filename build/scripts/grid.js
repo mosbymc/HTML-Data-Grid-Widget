@@ -1989,7 +1989,7 @@ var grid = (function _grid($) {
                     console.log(advancedFilters);
                     console.log(' ');
 
-                    var t = createFilterTreeFromFilterObject(advancedFilters);
+                    var t = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
 
                     for (var x = 0; x < t.length; x++){
                         console.log('===========================================');
