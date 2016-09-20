@@ -2484,8 +2484,13 @@ var grid = (function _grid($) {
 
                     //TODO: uncomment this section and find out why the expressionParser.js file is included on the page, but neither
                     //TODO: the browser console nor the other scripts seem to 'see' it.
-                    //var t = createFilterTreeFromFilterObject(advancedFilters);
-                    /*var t =*/ expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                    var expressionTree = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                    var truth = expressionTree.filterCollection(gridState[gridId].dataSource.data);
+
+                    if (truth)
+                        console.log('hizzy!');
+                    else
+                        console.log('fo shizzy');
 
                     /*for (var x = 0; x < t.length; x++){
                         console.log('===========================================');

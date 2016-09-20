@@ -590,6 +590,7 @@ var expressionParser = (function _expressionParser() {
         return this;
     };
     booleanExpressionTree.createTree = function _createTree() {
+        this.queue.pop();
         this.rootNode.addChildren(this.queue);
     };
     booleanExpressionTree.filterCollection = function _filterCollection(collection) {
@@ -597,7 +598,7 @@ var expressionParser = (function _expressionParser() {
             this.context = curr;
             console.log(this.rootNode.evaluate);
             return this.rootNode.evaluate(curr);
-        });
+        }, this);
     };
     booleanExpressionTree.internalGetContext = function _internalGetContext() {
         return this.context;
@@ -694,6 +695,10 @@ var expressionParser = (function _expressionParser() {
         return this.value;
     };
 
+    function getNodeContext(bet) {
+        return bet.internalGetContext.bind(bet);
+    }
+
     function createFilterTreeFromFilterObject(filterObject) {
         var ret = Object.create(booleanExpressionTree);
         ret.init();
@@ -702,7 +707,7 @@ var expressionParser = (function _expressionParser() {
         var queue = [],
             topOfStack;
 
-        iterateFilterGroup(filterObject, operandStack, queue, ret.getContext);
+        iterateFilterGroup(filterObject, operandStack, queue, getNodeContext(ret));
 
         while (operandStack.length()) {
             topOfStack = operandStack.peek();
@@ -726,8 +731,11 @@ var expressionParser = (function _expressionParser() {
         face.createNode(conjunction);
 
         while (idx < filterObject.filterGroup.length) {
-            if (idx > 0 || filterObject.filterGroup.length === 1)
-                pushConjunctionOntoStack(face, stack, queue);
+            if (idx > 0 || filterObject.filterGroup.length === 1) {
+                var conjunctObj = Object.create(astNode);
+                conjunctObj.createNode(conjunction);
+                pushConjunctionOntoStack(conjunctObj, stack, queue);
+            }
             if (filterObject.filterGroup[idx].conjunct) {
                 //var paren = Object.create(conjunct);
                 //paren.createConjunct('(');

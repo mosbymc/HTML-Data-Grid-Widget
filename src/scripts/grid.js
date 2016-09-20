@@ -1989,7 +1989,13 @@ var grid = (function _grid($) {
                     console.log(advancedFilters);
                     console.log(' ');
 
- expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                    var expressionTree = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                    var truth = expressionTree.filterCollection(gridState[gridId].dataSource.data);
+
+                    if (truth)
+                        console.log('hizzy!');
+                    else
+                        console.log('fo shizzy');
 
 
                     function createFilterGroups(groupContainer, filterObject) {
