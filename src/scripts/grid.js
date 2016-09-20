@@ -1989,22 +1989,8 @@ var grid = (function _grid($) {
                     console.log(advancedFilters);
                     console.log(' ');
 
-                    var t = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+ expressionParser.createFilterTreeFromFilterObject(advancedFilters);
 
-                    for (var x = 0; x < t.length; x++){
-                        console.log('===========================================');
-                        if (conjunct.isPrototypeOf(t[x])) {
-                            console.log('-- OPERATION --');
-                            console.log('Operator: ' + t[x].operator);
-                        }
-                        else {
-                            console.log('-- EXPRESSION --');
-                            console.log('Field: ' + t[x].field);
-                            console.log('Value: ' + t[x].value);
-                            console.log('Operation: ' + t[x].operation);
-                        }
-                        console.log(' ');
-                    }
 
                     function createFilterGroups(groupContainer, filterObject) {
                         var groupConjunct = groupContainer.parents('.filter_modal').find('span[data-filter_group_num="' + groupContainer.data('filter_group_num') + '"]').children('select');

@@ -576,7 +576,7 @@ var queue = [];
 
 var expressionParser = (function _expressionParser() {
     var booleanExpressionTree = {
-        createTree: function _createTree() {
+        init: function _init() {
             this.tree = null;
             this.context = null;
             this.rootNode = null;
@@ -585,9 +585,12 @@ var expressionParser = (function _expressionParser() {
     };
 
     booleanExpressionTree.setTree = function _setTree(tree) {
-        this.tree = tree.reverse();
-        this.rootNode = tree[0];
+        this.queue = tree;
+        this.rootNode = tree[this.queue.length - 1];
         return this;
+    };
+    booleanExpressionTree.createTree = function _createTree() {
+        this.rootNode.addChildren(this.queue);
     };
     booleanExpressionTree.filterCollection = function _filterCollection(collection) {
         return collection.filter(function collectionMap(curr) {
@@ -633,16 +636,32 @@ var expressionParser = (function _expressionParser() {
             }
             this.value = null;
             this.getContext = null;
+            this.queue = null;
         }
     };
 
-    astNode.createTree = function _createTree(tree) {
+    astNode.createTree = function _createTree(queue) {
+        this.queue = queue.reverse();
+        this.tree = this.queue;
+        this.addChildren(this.queue);
+    };
 
+    astNode.addChildren = function _addChildren(tree) {
+        if (this.children && this.children.length < this.numberOfOperands) {
+            var child = tree.pop();
+            child.addChildren(tree);
+            this.children.push(child);
+            child = tree.pop();
+            child.addChildren(tree);
+            this.children.push(child);
+        }
+        return this;
     };
 
     astNode.addChild = function _addChild(child) {
         if (this.children && this.children.length < this.numberOfOperands)
             this.children.push(child);
+        return this;
     };
 
     astNode.evaluate = function _evaluate() {
@@ -650,17 +669,17 @@ var expressionParser = (function _expressionParser() {
         if (this.children && this.children.length) {
             switch (this.operator) {
                 case 'or':
-                    return this.children[0].evaluate() || this.children[1].evaluate();
+                    return this.children[1].evaluate() || this.children[0].evaluate();
                 case 'and':
-                    return this.children[0].evaluate() && this.children[1].evaluate();
+                    return this.children[1].evaluate() && this.children[0].evaluate();
                 case 'xor':
-                    return !!(this.children[0].evaluate() ^ this.children[1].evaluate());
+                    return !!(this.children[1].evaluate() ^ this.children[0].evaluate());
                 case 'nor':
-                    return !(this.children[0].evaluate() || this.children[1].evaluate());
+                    return !(this.children[1].evaluate() || this.children[0].evaluate());
                 case 'nand':
-                    return !(this.children[0].evaluate() && this.children[1].evaluate());
+                    return !(this.children[1].evaluate() && this.children[0].evaluate());
                 case 'xnor':
-                    return !(this.children[0].evaluate() ^ this.children[1].evaluate());
+                    return !(this.children[1].evaluate() ^ this.children[0].evaluate());
             }
         }
         else {
@@ -677,7 +696,7 @@ var expressionParser = (function _expressionParser() {
 
     function createFilterTreeFromFilterObject(filterObject) {
         var ret = Object.create(booleanExpressionTree);
-        ret.createTree();
+        ret.init();
         var operandStack = Object.create(stack);
         operandStack.init();
         var queue = [],
@@ -693,6 +712,7 @@ var expressionParser = (function _expressionParser() {
         }
 
         ret.setTree(queue);
+        ret.createTree();
         return ret;
     }
 
