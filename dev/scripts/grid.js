@@ -2464,12 +2464,12 @@ var grid = (function _grid($) {
                 var advancedFiltersContainer = $('<div class="filter_group_container" data-filter_group_num="1"></div>').appendTo(advancedFiltersModal);
                 addNewAdvancedFilter(advancedFiltersContainer, true /* isFirstFilter */);
 
-                /*$(document).on('click', function hideFilterModalHandler(e) {
-                    var ct = $(e.currentTarget);
-                    if (!ct.hasClass('.filter_modal') && !ct.parents('.filter_modal').length)
+                $(document).on('click', function hideFilterModalHandler(e) {
+                    var ct = $(e.target);
+                    if (!ct.hasClass('filter_modal') && !ct.parents('.filter_modal').length)
                         gridState[gridId].grid.find('.filter_modal').css('display', 'none');
                     else e.stopPropagation();
-                });*/
+                });
 
                 var applyFiltersButton = $('<input type="button" value="Apply Filter(s)" class="advanced_filters_button"/>').appendTo(advancedFiltersModal);
                 applyFiltersButton.on('click', function applyAdvancedFiltersHandler() {
@@ -2477,35 +2477,23 @@ var grid = (function _grid($) {
                     gridState[gridId].grid.find('filterInput').val('');
                     gridState[gridId].filteredOn = [];
 
+                    /*
+                     if (dataTypes[type]) {
+                         re = new RegExp(dataTypes[type]);
+                         if (!re.test(value) && !errors.length) {
+                             $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
+                             return;
+                         }
+                     }
+                     */
+
                     var advancedFilters = {};
                     createFilterGroups(advancedFiltersContainer, advancedFilters);
-                    console.log(advancedFilters);
-                    console.log(' ');
-
-                    //TODO: uncomment this section and find out why the expressionParser.js file is included on the page, but neither
-                    //TODO: the browser console nor the other scripts seem to 'see' it.
-                    var expressionTree = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
-                    var truth = expressionTree.filterCollection(gridState[gridId].dataSource.data);
-
-                    if (truth)
-                        console.log('hizzy!');
-                    else
-                        console.log('fo shizzy');
-
-                    /*for (var x = 0; x < t.length; x++){
-                        console.log('===========================================');
-                        if (conjunct.isPrototypeOf(t[x])) {
-                            console.log('-- OPERATION --');
-                            console.log('Operator: ' + t[x].operator);
-                        }
-                        else {
-                            console.log('-- EXPRESSION --');
-                            console.log('Field: ' + t[x].field);
-                            console.log('Value: ' + t[x].value);
-                            console.log('Operation: ' + t[x].operation);
-                        }
-                        console.log(' ');
-                    }*/
+                    if (advancedFilters.filterGroup.length) {
+                        //var expressionTree = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                        expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                        //var truth = expressionTree.filterCollection(gridState[gridId].dataSource.data);
+                    }
 
                     function createFilterGroups(groupContainer, filterObject) {
                         var groupConjunct = groupContainer.parents('.filter_modal').find('span[data-filter_group_num="' + groupContainer.data('filter_group_num') + '"]').children('select');
@@ -2626,7 +2614,16 @@ var grid = (function _grid($) {
         }
 
         var filterTypeSelector = $('<select class="input select filterType" disabled></select>').appendTo(filterRowDiv);
-        $('<input type="text" class="advanced_filter_value" disabled />').appendTo(filterRowDiv);
+        var filterValue = $('<input type="text" class="advanced_filter_value" disabled />');
+        filterValue.appendTo(filterRowDiv);
+        filterValue.on('keypress', function validateFilterValueHandler(e) {
+            var code = e.charCode? e.charCode : e.keyCode,
+                type = $(this).data('type');
+            if (!validateCharacter.call(this, code, type)) {
+                e.preventDefault();
+                return false;
+            }
+        });
 
         var deleteHandler = isFirstFilter ? clearFirstFilterButtonHandler : deleteFilterButtonHandler;
 
@@ -2656,9 +2653,12 @@ var grid = (function _grid($) {
             createFilterOptionsByDataType(filterTypeSelector, gridState[gridId].columns[columnSelector.val()].type || 'string');
 
             if (gridState[gridId].columns[columnSelector.val()].type !== 'boolean') {
-                filterRowDiv.find('.advanced_filter_value').prop('disabled', false);
+                filterValue.prop('disabled', false);
+                filterValue.data('type', (gridState[gridId].columns[columnSelector.val()].type || 'string'));
             }
-            else filterRowDiv.find('.advanced_filter_value').prop('disabled', true);
+            else {
+                filterValue.prop('disabled', true);
+            }
         });
     }
 
@@ -2699,6 +2699,7 @@ var grid = (function _grid($) {
 
                 if (filterModal.find('.group_conjunction').length < numGroupsAllowed)
                     filterModal.find('.add_filter_group').prop('disabled', false);
+                e.stopPropagation();
             })
             .data('filter_group_num', filterGroupCount + 1)
             .css('left', (filterGroupContainer.outerWidth()));
@@ -3029,6 +3030,7 @@ var grid = (function _grid($) {
         button = $('<input type="button" value="Filter" class="filterButton button" data-field="' + field + '"/>').appendTo(filterDiv);
         resetButton.on('click', resetButtonClickHandler);
         button.on('click', filterButtonClickHandler);
+        //TODO: why I am not validating date and time types here? Is it because the regular expressions were ready at the time?
         if (filterInput && type !=='time' && type !== 'date') filterInputValidation(filterInput);
     }
 

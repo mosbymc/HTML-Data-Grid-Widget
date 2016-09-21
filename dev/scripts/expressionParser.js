@@ -737,11 +737,9 @@ var expressionParser = (function _expressionParser() {
                 pushConjunctionOntoStack(conjunctObj, stack, queue);
             }
             if (filterObject.filterGroup[idx].conjunct) {
-                //var paren = Object.create(conjunct);
-                //paren.createConjunct('(');
-                var parens = Object.create(astNode);
-                parens.createNode('(');
-                stack.push(parens);
+                var paren = Object.create(astNode);
+                paren.createNode('(');
+                stack.push(paren);
                 iterateFilterGroup(filterObject.filterGroup[idx], stack, queue, contextGetter);
                 while (stack.length()) {
                     topOfStack = stack.peek();
@@ -758,7 +756,6 @@ var expressionParser = (function _expressionParser() {
                 leafNode.createNode(filterObject.filterGroup[idx]);
                 leafNode.getContext = contextGetter;
                 queue.push(leafNode);
-                //queue.push(filterObject.filterGroup[idx]);
             }
             ++idx;
         }

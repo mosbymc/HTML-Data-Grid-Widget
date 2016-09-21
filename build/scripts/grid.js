@@ -1977,6 +1977,12 @@ var grid = (function _grid($) {
                 var advancedFiltersContainer = $('<div class="filter_group_container" data-filter_group_num="1"></div>').appendTo(advancedFiltersModal);
                 addNewAdvancedFilter(advancedFiltersContainer, true );
 
+                $(document).on('click', function hideFilterModalHandler(e) {
+                    var ct = $(e.target);
+                    if (!ct.hasClass('filter_modal') && !ct.parents('.filter_modal').length)
+                        gridState[gridId].grid.find('.filter_modal').css('display', 'none');
+                    else e.stopPropagation();
+                });
 
                 var applyFiltersButton = $('<input type="button" value="Apply Filter(s)" class="advanced_filters_button"/>').appendTo(advancedFiltersModal);
                 applyFiltersButton.on('click', function applyAdvancedFiltersHandler() {
@@ -1984,19 +1990,12 @@ var grid = (function _grid($) {
                     gridState[gridId].grid.find('filterInput').val('');
                     gridState[gridId].filteredOn = [];
 
+
                     var advancedFilters = {};
                     createFilterGroups(advancedFiltersContainer, advancedFilters);
-                    console.log(advancedFilters);
-                    console.log(' ');
-
-                    var expressionTree = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
-                    var truth = expressionTree.filterCollection(gridState[gridId].dataSource.data);
-
-                    if (truth)
-                        console.log('hizzy!');
-                    else
-                        console.log('fo shizzy');
-
+                    if (advancedFilters.filterGroup.length) {
+                        expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                    }
 
                     function createFilterGroups(groupContainer, filterObject) {
                         var groupConjunct = groupContainer.parents('.filter_modal').find('span[data-filter_group_num="' + groupContainer.data('filter_group_num') + '"]').children('select');
@@ -2077,7 +2076,16 @@ var grid = (function _grid($) {
         }
 
         var filterTypeSelector = $('<select class="input select filterType" disabled></select>').appendTo(filterRowDiv);
-        $('<input type="text" class="advanced_filter_value" disabled />').appendTo(filterRowDiv);
+        var filterValue = $('<input type="text" class="advanced_filter_value" disabled />');
+        filterValue.appendTo(filterRowDiv);
+        filterValue.on('keypress', function validateFilterValueHandler(e) {
+            var code = e.charCode? e.charCode : e.keyCode,
+                type = $(this).data('type');
+            if (!validateCharacter.call(this, code, type)) {
+                e.preventDefault();
+                return false;
+            }
+        });
 
         var deleteHandler = isFirstFilter ? clearFirstFilterButtonHandler : deleteFilterButtonHandler;
 
@@ -2107,9 +2115,12 @@ var grid = (function _grid($) {
             createFilterOptionsByDataType(filterTypeSelector, gridState[gridId].columns[columnSelector.val()].type || 'string');
 
             if (gridState[gridId].columns[columnSelector.val()].type !== 'boolean') {
-                filterRowDiv.find('.advanced_filter_value').prop('disabled', false);
+                filterValue.prop('disabled', false);
+                filterValue.data('type', (gridState[gridId].columns[columnSelector.val()].type || 'string'));
             }
-            else filterRowDiv.find('.advanced_filter_value').prop('disabled', true);
+            else {
+                filterValue.prop('disabled', true);
+            }
         });
     }
 
@@ -2150,6 +2161,7 @@ var grid = (function _grid($) {
 
                 if (filterModal.find('.group_conjunction').length < numGroupsAllowed)
                     filterModal.find('.add_filter_group').prop('disabled', false);
+                e.stopPropagation();
             })
             .data('filter_group_num', filterGroupCount + 1)
             .css('left', (filterGroupContainer.outerWidth()));

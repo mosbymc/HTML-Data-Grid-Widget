@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.52</p>
+      <p class="stat">55.60</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3617</p>
+      <p class="stat">3629</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">211.57</p>
+      <p class="stat">212.64</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">80.51</p>
+      <p class="stat">80.79</p>
     </div>
   </div>
 </div>
@@ -2068,6 +2068,12 @@
                 var advancedFiltersContainer = $(&#039;&lt;div class=&quot;filter_group_container&quot; data-filter_group_num=&quot;1&quot;&gt;&lt;/div&gt;&#039;).appendTo(advancedFiltersModal);
                 addNewAdvancedFilter(advancedFiltersContainer, true );
 
+                $(document).on(&#039;click&#039;, function hideFilterModalHandler(e) {
+                    var ct = $(e.target);
+                    if (!ct.hasClass(&#039;filter_modal&#039;) &amp;&amp; !ct.parents(&#039;.filter_modal&#039;).length)
+                        gridState[gridId].grid.find(&#039;.filter_modal&#039;).css(&#039;display&#039;, &#039;none&#039;);
+                    else e.stopPropagation();
+                });
 
                 var applyFiltersButton = $(&#039;&lt;input type=&quot;button&quot; value=&quot;Apply Filter(s)&quot; class=&quot;advanced_filters_button&quot;/&gt;&#039;).appendTo(advancedFiltersModal);
                 applyFiltersButton.on(&#039;click&#039;, function applyAdvancedFiltersHandler() {
@@ -2075,19 +2081,12 @@
                     gridState[gridId].grid.find(&#039;filterInput&#039;).val(&#039;&#039;);
                     gridState[gridId].filteredOn = [];
 
+
                     var advancedFilters = {};
                     createFilterGroups(advancedFiltersContainer, advancedFilters);
-                    console.log(advancedFilters);
-                    console.log(&#039; &#039;);
-
-                    var expressionTree = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
-                    var truth = expressionTree.filterCollection(gridState[gridId].dataSource.data);
-
-                    if (truth)
-                        console.log(&#039;hizzy!&#039;);
-                    else
-                        console.log(&#039;fo shizzy&#039;);
-
+                    if (advancedFilters.filterGroup.length) {
+                        expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                    }
 
                     function createFilterGroups(groupContainer, filterObject) {
                         var groupConjunct = groupContainer.parents(&#039;.filter_modal&#039;).find(&#039;span[data-filter_group_num=&quot;&#039; + groupContainer.data(&#039;filter_group_num&#039;) + &#039;&quot;]&#039;).children(&#039;select&#039;);
@@ -2168,7 +2167,16 @@
         }
 
         var filterTypeSelector = $(&#039;&lt;select class=&quot;input select filterType&quot; disabled&gt;&lt;/select&gt;&#039;).appendTo(filterRowDiv);
-        $(&#039;&lt;input type=&quot;text&quot; class=&quot;advanced_filter_value&quot; disabled /&gt;&#039;).appendTo(filterRowDiv);
+        var filterValue = $(&#039;&lt;input type=&quot;text&quot; class=&quot;advanced_filter_value&quot; disabled /&gt;&#039;);
+        filterValue.appendTo(filterRowDiv);
+        filterValue.on(&#039;keypress&#039;, function validateFilterValueHandler(e) {
+            var code = e.charCode? e.charCode : e.keyCode,
+                type = $(this).data(&#039;type&#039;);
+            if (!validateCharacter.call(this, code, type)) {
+                e.preventDefault();
+                return false;
+            }
+        });
 
         var deleteHandler = isFirstFilter ? clearFirstFilterButtonHandler : deleteFilterButtonHandler;
 
@@ -2198,9 +2206,12 @@
             createFilterOptionsByDataType(filterTypeSelector, gridState[gridId].columns[columnSelector.val()].type || &#039;string&#039;);
 
             if (gridState[gridId].columns[columnSelector.val()].type !== &#039;boolean&#039;) {
-                filterRowDiv.find(&#039;.advanced_filter_value&#039;).prop(&#039;disabled&#039;, false);
+                filterValue.prop(&#039;disabled&#039;, false);
+                filterValue.data(&#039;type&#039;, (gridState[gridId].columns[columnSelector.val()].type || &#039;string&#039;));
             }
-            else filterRowDiv.find(&#039;.advanced_filter_value&#039;).prop(&#039;disabled&#039;, true);
+            else {
+                filterValue.prop(&#039;disabled&#039;, true);
+            }
         });
     }
 
@@ -2241,6 +2252,7 @@
 
                 if (filterModal.find(&#039;.group_conjunction&#039;).length &lt; numGroupsAllowed)
                     filterModal.find(&#039;.add_filter_group&#039;).prop(&#039;disabled&#039;, false);
+                e.stopPropagation();
             })
             .data(&#039;filter_group_num&#039;, filterGroupCount + 1)
             .css(&#039;left&#039;, (filterGroupContainer.outerWidth()));
