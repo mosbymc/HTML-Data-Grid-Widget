@@ -2467,8 +2467,48 @@ var grid = (function _grid($) {
 
                 $(document).on('click', function hideFilterModalHandler(e) {
                     var ct = $(e.target);
-                    if (!ct.hasClass('filter_modal') && !ct.parents('.filter_modal').length)
-                        gridState[gridId].grid.find('.filter_modal').css('display', 'none');
+                    if (!ct.hasClass('filter_modal') && !ct.parents('.filter_modal').length) {
+                        var filterModal = gridState[gridId].grid.find('.filter_modal');
+                        filterModal.find('.advanced_filter_value')
+                            .filter(':disabled').add('.invalid-grid-input').each(function removeEmptyFilters(idx, val) {
+                                var filterVal = $(val);
+                                var filterRow = filterVal.parent('.filter_row_div');
+                                if (filterVal.data('type') === 'boolean' && filterRow.children('.filterType').val() !== null)
+                                    return true;
+                                else if (filterRow.data('filter_idx') === 1) {
+                                    if (filterVal.hasClass('invalid-grid-input')) {
+                                        filterVal.removeClass('invalid-grid-input');
+                                        filterModal.find('span[data-filter_idx="' + filterModal.data('filter_idx') + '"]').remove();
+                                        filterVal.val('');
+                                        var columnSelector = filterRow.children('.filter_column_selector');
+                                        columnSelector.find('option').remove();
+                                        columnSelector.append('<option value="">Select a column</option>');
+                                        for (var column in gridState[gridId].columns) {
+                                            var curCol = gridState[gridId].columns[column];
+                                            if (curCol.filterable) {
+                                                columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
+                                            }
+                                        }
+                                        filterVal.prop('disabled', true);
+                                        filterRow.children('.filterType').prop('disabled', true).find('option').remove();
+                                    }
+                                    return true;
+                                }
+                                else
+                                    filterRow.remove();
+                            });
+
+                        filterModal.find('.filter_group_container').each(function removeEmptyFilterGroups(idx, val) {
+                            var filterGrp = $(val);
+                            if (!filterGrp.children('.filter_row_div').length) {
+                                var filterGrpNum = filterGrp.data('filter_group_num');
+                                filterModal.find('span[data-filter_group_num="' + filterGrpNum + '"]').remove();
+                                filterGrp.remove();
+                            }
+                        });
+
+                        filterModal.css('display', 'none');
+                    }
                     else e.stopPropagation();
                 });
 
@@ -2677,14 +2717,11 @@ var grid = (function _grid($) {
             filterRowDiv.find('.advanced_filter_value').val('');
             createFilterOptionsByDataType(filterTypeSelector, gridState[gridId].columns[columnSelector.val()].type || 'string');
 
-            if (gridState[gridId].columns[columnSelector.val()].type !== 'boolean') {
+            if (gridState[gridId].columns[columnSelector.val()].type !== 'boolean')
                 filterValue.prop('disabled', false);
-                filterValue.data('type', (gridState[gridId].columns[columnSelector.val()].type || 'string'));
-            }
-            else {
+            else
                 filterValue.prop('disabled', true);
-                filterValue.data('type', null);
-            }
+            filterValue.data('type', (gridState[gridId].columns[columnSelector.val()].type || 'string'));
         });
     }
 

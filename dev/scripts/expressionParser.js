@@ -827,7 +827,7 @@ var expressionParser = (function _expressionParser() {
             case 'lt':
                 return val < base;
             case 'not':
-                return !!val;
+                return !val;
             case 'ct':
                 return !!~val.toLowerCase().indexOf(base.toLowerCase());
             case 'nct':
