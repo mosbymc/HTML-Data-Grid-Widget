@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.60</p>
+      <p class="stat">55.72</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3629</p>
+      <p class="stat">3667</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">212.64</p>
+      <p class="stat">212.43</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">80.79</p>
+      <p class="stat">81.79</p>
     </div>
   </div>
 </div>
@@ -2081,6 +2081,32 @@
                     gridState[gridId].grid.find(&#039;filterInput&#039;).val(&#039;&#039;);
                     gridState[gridId].filteredOn = [];
 
+                    advancedFiltersModal.find(&#039;.advanced_filter_value&#039;).each(function checkFilterValuesForValidContent(idx, val) {
+                        var currValue = $(val),
+                            dataType = currValue.data(&#039;type&#039;);
+                        if (dataType) {
+                            if (dataTypes[dataType]) {
+                                var parentDiv = currValue.parent(&#039;.filter_row_div&#039;),
+                                    parentIdx = parentDiv.data(&#039;filter_idx&#039;);
+                                var re = new RegExp(dataTypes[dataType]);
+                                if (!re.test(currValue.val()) &amp;&amp; !parentDiv.find(&#039;.filter_error_span&#039;).length) {
+                                    currValue.addClass(&#039;invalid-grid-input&#039;);
+                                    if (!parentDiv.find(&#039;span[data-filter_idx=&quot;&#039; + parentIdx + &#039;&quot;]&#039;).length) {
+                                        var errorSpan = $(&#039;&lt;span class=&quot;filter_error_span hidden_error&quot; data-filter_idx=&quot;&#039; + parentIdx + &#039;&quot;&gt;Invalid &#039; + dataType + &#039;&lt;/span&gt;&#039;);
+                                        parentDiv.append(errorSpan);
+                                        errorSpan.css(&#039;top&#039;, parentDiv.offset().top / 2);
+                                        errorSpan.css(&#039;left&#039;, parentDiv.width() - errorSpan.width());
+                                    }
+                                }
+                                else {
+                                    parentDiv.find(&#039;.filter_error_span&#039;).remove();
+                                    currValue.removeClass(&#039;invalid-grid-input&#039;);
+                                }
+                            }
+                        }
+                    });
+
+                    if (advancedFiltersModal.find(&#039;.filter_error_span&#039;).length) return;
 
                     var advancedFilters = {};
                     createFilterGroups(advancedFiltersContainer, advancedFilters);
@@ -2153,7 +2179,8 @@
 
     function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
         var gridId = advancedFiltersContainer.parents(&#039;.filter_modal&#039;).data(&#039;grid_id&#039;),
-            filterRowDiv = $(&#039;&lt;div class=&quot;filter_row_div&quot;&gt;&lt;/div&gt;&#039;);
+            filterRowIdx = getFilterRowIdx(advancedFiltersContainer.parents(&#039;.filter_modal&#039;)),
+            filterRowDiv = $(&#039;&lt;div class=&quot;filter_row_div&quot; data-filter_idx=&quot;&#039; + filterRowIdx + &#039;&quot;&gt;&lt;/div&gt;&#039;);
         isFirstFilter ? advancedFiltersContainer.append(filterRowDiv) : advancedFiltersContainer.children(&#039;.filter_row_div&#039;).last().after(filterRowDiv);
 
         var columnSelector = $(&#039;&lt;select class=&quot;input filter_column_selector&quot;&gt;&lt;/select&gt;&#039;).appendTo(filterRowDiv);
@@ -2176,7 +2203,13 @@
                 e.preventDefault();
                 return false;
             }
-        });
+        })
+            .on(&#039;mouseover&#039;, function displayErrorMessageHandler() {
+                filterRowDiv.find(&#039;span[data-filter_idx=&quot;&#039; + filterRowDiv.data(&#039;filter_idx&#039;) + &#039;&quot;]&#039;).removeClass(&#039;hidden_error&#039;);
+            })
+            .on(&#039;mouseout&#039;, function hideErrorMessageHandler() {
+                filterRowDiv.find(&#039;span[data-filter_idx=&quot;&#039; + filterRowDiv.data(&#039;filter_idx&#039;) + &#039;&quot;]&#039;).addClass(&#039;hidden_error&#039;);
+            });
 
         var deleteHandler = isFirstFilter ? clearFirstFilterButtonHandler : deleteFilterButtonHandler;
 
@@ -2211,6 +2244,7 @@
             }
             else {
                 filterValue.prop(&#039;disabled&#039;, true);
+                filterValue.data(&#039;type&#039;, null);
             }
         });
     }
@@ -2292,6 +2326,10 @@
         }
         filterRowDiv.find(&#039;.filterType&#039;).prop(&#039;disabled&#039;, true).find(&#039;option&#039;).remove();
         filterRowDiv.find(&#039;.advanced_filter_value&#039;).val(&#039;&#039;).prop(&#039;disabled&#039;, true);
+    }
+
+    function getFilterRowIdx(filterModal) {
+        return filterModal.find(&#039;.filter_row_div&#039;).length ? filterModal.find(&#039;.filter_row_div&#039;).last().data(&#039;filter_idx&#039;) + 1 : 1;
     }
 
     function RemoveAllColumnSorts(e) {

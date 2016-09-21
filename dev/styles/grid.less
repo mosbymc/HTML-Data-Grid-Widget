@@ -1059,6 +1059,10 @@ input {
   display: none;
 }
 
+.invalid-grid-input {
+  border: 2px @invalid inset;
+}
+
 .filter_modal {
   position: absolute;
   height: auto;
@@ -1107,6 +1111,18 @@ input {
     margin-bottom: 20px;
     text-align: start;
     clear: left;
+
+    .filter_error_span {
+      position: absolute;
+      background-color: @white;
+      border: 2px solid @invalid;
+      padding: 5px;
+      border-radius: 5px;
+    }
+
+    .hidden_error {
+      display: none;
+    }
 
     .remove_filter_group {
       background: url('../images/close.png') no-repeat;

@@ -591,7 +591,8 @@ var expressionParser = (function _expressionParser() {
     };
     booleanExpressionTree.createTree = function _createTree() {
         this.queue.pop();
-        this.rootNode.addChildren(this.queue);
+        if (this.queue.length)
+            this.rootNode.addChildren(this.queue);
     };
     booleanExpressionTree.filterCollection = function _filterCollection(collection) {
         return collection.filter(function collectionMap(curr) {
@@ -724,11 +725,7 @@ var expressionParser = (function _expressionParser() {
     function iterateFilterGroup(filterObject, stack, queue, contextGetter) {
         var conjunction = filterObject.conjunct,
             idx = 0,
-            topOfStack,
-            currConjunction = Object.create(conjunct);
-        currConjunction.createConjunct(conjunction);
-        var face = Object.create(astNode);
-        face.createNode(conjunction);
+            topOfStack;
 
         while (idx < filterObject.filterGroup.length) {
             if (idx > 0 || filterObject.filterGroup.length === 1) {

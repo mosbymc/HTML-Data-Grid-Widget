@@ -1092,6 +1092,9 @@ input {
 .hidden_menu_item {
   display: none;
 }
+.invalid-grid-input {
+  border: 2px #FF0000 inset;
+}
 .filter_modal {
   position: absolute;
   height: auto;
@@ -1139,6 +1142,16 @@ input {
   margin-bottom: 20px;
   text-align: start;
   clear: left;
+}
+.filter_modal .filter_group_container .filter_error_span {
+  position: absolute;
+  background-color: #ffffff;
+  border: 2px solid #FF0000;
+  padding: 5px;
+  border-radius: 5px;
+}
+.filter_modal .filter_group_container .hidden_error {
+  display: none;
 }
 .filter_modal .filter_group_container .remove_filter_group {
   background: url('../images/close.png') no-repeat;

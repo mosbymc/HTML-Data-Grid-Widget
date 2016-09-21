@@ -102,6 +102,7 @@
  - Add menu option to specify OR, AND, NOT filters - DONE
  - Add ability to create an arbitrary number of nested filter groups - DONE
  - Add grid config option to restrict number of nested filter groups - DONE
+ - Remove all empty filter rows from DOM when closing advanced filters modal
  - Fix boolean filtering
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
     > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
@@ -2477,15 +2478,32 @@ var grid = (function _grid($) {
                     gridState[gridId].grid.find('filterInput').val('');
                     gridState[gridId].filteredOn = [];
 
-                    /*
-                     if (dataTypes[type]) {
-                         re = new RegExp(dataTypes[type]);
-                         if (!re.test(value) && !errors.length) {
-                             $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
-                             return;
-                         }
-                     }
-                     */
+                    advancedFiltersModal.find('.advanced_filter_value').each(function checkFilterValuesForValidContent(idx, val) {
+                        var currValue = $(val),
+                            dataType = currValue.data('type');
+                        if (dataType) {
+                            if (dataTypes[dataType]) {
+                                var parentDiv = currValue.parent('.filter_row_div'),
+                                    parentIdx = parentDiv.data('filter_idx');
+                                var re = new RegExp(dataTypes[dataType]);
+                                if (!re.test(currValue.val()) && !parentDiv.find('.filter_error_span').length) {
+                                    currValue.addClass('invalid-grid-input');
+                                    if (!parentDiv.find('span[data-filter_idx="' + parentIdx + '"]').length) {
+                                        var errorSpan = $('<span class="filter_error_span hidden_error" data-filter_idx="' + parentIdx + '">Invalid ' + dataType + '</span>');
+                                        parentDiv.append(errorSpan);
+                                        errorSpan.css('top', parentDiv.offset().top / 2);
+                                        errorSpan.css('left', parentDiv.width() - errorSpan.width());
+                                    }
+                                }
+                                else {
+                                    parentDiv.find('.filter_error_span').remove();
+                                    currValue.removeClass('invalid-grid-input');
+                                }
+                            }
+                        }
+                    });
+
+                    if (advancedFiltersModal.find('.filter_error_span').length) return;
 
                     var advancedFilters = {};
                     createFilterGroups(advancedFiltersContainer, advancedFilters);
@@ -2600,7 +2618,8 @@ var grid = (function _grid($) {
 
     function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
         var gridId = advancedFiltersContainer.parents('.filter_modal').data('grid_id'),
-            filterRowDiv = $('<div class="filter_row_div"></div>');
+            filterRowIdx = getFilterRowIdx(advancedFiltersContainer.parents('.filter_modal')),
+            filterRowDiv = $('<div class="filter_row_div" data-filter_idx="' + filterRowIdx + '"></div>');
         isFirstFilter ? advancedFiltersContainer.append(filterRowDiv) : advancedFiltersContainer.children('.filter_row_div').last().after(filterRowDiv);
 
         var columnSelector = $('<select class="input filter_column_selector"></select>').appendTo(filterRowDiv);
@@ -2623,7 +2642,13 @@ var grid = (function _grid($) {
                 e.preventDefault();
                 return false;
             }
-        });
+        })
+            .on('mouseover', function displayErrorMessageHandler() {
+                filterRowDiv.find('span[data-filter_idx="' + filterRowDiv.data('filter_idx') + '"]').removeClass('hidden_error');
+            })
+            .on('mouseout', function hideErrorMessageHandler() {
+                filterRowDiv.find('span[data-filter_idx="' + filterRowDiv.data('filter_idx') + '"]').addClass('hidden_error');
+            });
 
         var deleteHandler = isFirstFilter ? clearFirstFilterButtonHandler : deleteFilterButtonHandler;
 
@@ -2658,6 +2683,7 @@ var grid = (function _grid($) {
             }
             else {
                 filterValue.prop('disabled', true);
+                filterValue.data('type', null);
             }
         });
     }
@@ -2739,6 +2765,10 @@ var grid = (function _grid($) {
         }
         filterRowDiv.find('.filterType').prop('disabled', true).find('option').remove();
         filterRowDiv.find('.advanced_filter_value').val('').prop('disabled', true);
+    }
+
+    function getFilterRowIdx(filterModal) {
+        return filterModal.find('.filter_row_div').length ? filterModal.find('.filter_row_div').last().data('filter_idx') + 1 : 1;
     }
 
     function RemoveAllColumnSorts(e) {
