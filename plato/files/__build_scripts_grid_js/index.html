@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.72</p>
+      <p class="stat">55.69</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3704</p>
+      <p class="stat">3714</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">213.42</p>
+      <p class="stat">213.75</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">82.67</p>
+      <p class="stat">82.88</p>
     </div>
   </div>
 </div>
@@ -2125,9 +2125,9 @@
                         var currValue = $(val),
                             dataType = currValue.data(&#039;type&#039;);
                         if (dataType) {
+                            var parentDiv = currValue.parent(&#039;.filter_row_div&#039;),
+                                parentIdx = parentDiv.data(&#039;filter_idx&#039;);
                             if (dataTypes[dataType]) {
-                                var parentDiv = currValue.parent(&#039;.filter_row_div&#039;),
-                                    parentIdx = parentDiv.data(&#039;filter_idx&#039;);
                                 var re = new RegExp(dataTypes[dataType]);
                                 if (!re.test(currValue.val()) &amp;&amp; !parentDiv.find(&#039;.filter_error_span&#039;).length) {
                                     currValue.addClass(&#039;invalid-grid-input&#039;);
@@ -2141,6 +2141,14 @@
                                 else {
                                     parentDiv.find(&#039;.filter_error_span&#039;).remove();
                                     currValue.removeClass(&#039;invalid-grid-input&#039;);
+                                }
+                            }
+                            if (currValue.val() === &#039;&#039; &amp;&amp; currValue.data(&#039;type&#039;) !== &#039;boolean&#039;) {
+                                parentDiv.remove();
+                                var filterGrp = currValue.parents(&#039;.filter_group_container&#039;);
+                                if (!filterGrp.find(&#039;.filter_row_div&#039;).length) {
+                                    advancedFiltersModal.find(&#039;span[data-filter_group_num=&quot;&#039; + filterGrp.data(&#039;filter_group_num&#039;) + &#039;&quot;]&#039;).remove();
+                                    filterGrp.remove();
                                 }
                             }
                         }
@@ -2177,7 +2185,7 @@
                         var field = filterDiv.find(&#039;.filter_column_selector&#039;).val(),
                             operation, value,
                             filterType = filterDiv.find(&#039;.filterType&#039;).val();
-                        if (filterType !== false &amp;&amp; filterType !== true) {
+                        if (filterType !== &#039;false&#039; &amp;&amp; filterType !== &#039;true&#039;) {
                             operation = filterType;
                             value = filterDiv.find(&#039;.advanced_filter_value&#039;).val();
                         }
@@ -2186,7 +2194,9 @@
                             value = filterType;
                         }
 
-                        filterGroupArr.push({ field: field, value: value, operation: operation });
+                        if (value) {
+                            filterGroupArr.push({ field: field, value: value, operation: operation });
+                        }
                     }
                     });
                 gridState[gridId].grid.append(advancedFiltersModal);
@@ -3530,7 +3540,7 @@
         &#039;|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\22|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\25)((?:1[6-9]|[2-9]\\d)?\\d{2}))))&#039; +
         &#039;|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\29)(29))))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)&#039; +
         &#039;(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$&#039;,
-        dateChar: &#039;\\d|\\-|\\\|\\.&#039;
+        dateChar: &#039;\\d|\\-|\\/|\\.&#039;
     };
 
     events = [&#039;cellEditChange&#039;, &#039;beforeCellEdit&#039;, &#039;afterCellEdit&#039;, &#039;pageRequested&#039;, &#039;beforeDataBind&#039;, &#039;afterDataBind&#039;, &#039;columnReorder&#039;];

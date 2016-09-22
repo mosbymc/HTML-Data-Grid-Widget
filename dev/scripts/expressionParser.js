@@ -608,7 +608,7 @@ var expressionParser = (function _expressionParser() {
         return this.internalGetContext.bind(this);
     };
 
-    var conjunct = {
+    /*var conjunct = {
         createConjunct: function _createConjunct(conjunction) {
             this.operator = conjunction;
             this.numberOfOperands = getNumberOfOperands(this.operator);
@@ -618,7 +618,7 @@ var expressionParser = (function _expressionParser() {
             this.precedence = operatorCharacteristics.precedence;
             this.associativity = operatorCharacteristics.associativity;
         }
-    };
+    };*/
 
     var astNode = {
         createNode: function _createNode(node) {
@@ -667,7 +667,6 @@ var expressionParser = (function _expressionParser() {
     };
 
     astNode.evaluate = function _evaluate() {
-        console.log('made it here');
         if (this.children && this.children.length) {
             switch (this.operator) {
                 case 'or':
@@ -728,7 +727,7 @@ var expressionParser = (function _expressionParser() {
             topOfStack;
 
         while (idx < filterObject.filterGroup.length) {
-            if (idx > 0 || filterObject.filterGroup.length === 1) {
+            if (idx > 0) {
                 var conjunctObj = Object.create(astNode);
                 conjunctObj.createNode(conjunction);
                 pushConjunctionOntoStack(conjunctObj, stack, queue);

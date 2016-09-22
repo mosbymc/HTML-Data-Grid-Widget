@@ -2034,9 +2034,9 @@ var grid = (function _grid($) {
                         var currValue = $(val),
                             dataType = currValue.data('type');
                         if (dataType) {
+                            var parentDiv = currValue.parent('.filter_row_div'),
+                                parentIdx = parentDiv.data('filter_idx');
                             if (dataTypes[dataType]) {
-                                var parentDiv = currValue.parent('.filter_row_div'),
-                                    parentIdx = parentDiv.data('filter_idx');
                                 var re = new RegExp(dataTypes[dataType]);
                                 if (!re.test(currValue.val()) && !parentDiv.find('.filter_error_span').length) {
                                     currValue.addClass('invalid-grid-input');
@@ -2050,6 +2050,14 @@ var grid = (function _grid($) {
                                 else {
                                     parentDiv.find('.filter_error_span').remove();
                                     currValue.removeClass('invalid-grid-input');
+                                }
+                            }
+                            if (currValue.val() === '' && currValue.data('type') !== 'boolean') {
+                                parentDiv.remove();
+                                var filterGrp = currValue.parents('.filter_group_container');
+                                if (!filterGrp.find('.filter_row_div').length) {
+                                    advancedFiltersModal.find('span[data-filter_group_num="' + filterGrp.data('filter_group_num') + '"]').remove();
+                                    filterGrp.remove();
                                 }
                             }
                         }
@@ -2086,7 +2094,7 @@ var grid = (function _grid($) {
                         var field = filterDiv.find('.filter_column_selector').val(),
                             operation, value,
                             filterType = filterDiv.find('.filterType').val();
-                        if (filterType !== false && filterType !== true) {
+                        if (filterType !== 'false' && filterType !== 'true') {
                             operation = filterType;
                             value = filterDiv.find('.advanced_filter_value').val();
                         }
@@ -2095,7 +2103,9 @@ var grid = (function _grid($) {
                             value = filterType;
                         }
 
-                        filterGroupArr.push({ field: field, value: value, operation: operation });
+                        if (value) {
+                            filterGroupArr.push({ field: field, value: value, operation: operation });
+                        }
                     }
                     });
                 gridState[gridId].grid.append(advancedFiltersModal);
@@ -3439,7 +3449,7 @@ var grid = (function _grid($) {
         '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\22|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\25)((?:1[6-9]|[2-9]\\d)?\\d{2}))))' +
         '|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\29)(29))))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)' +
         '(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$',
-        dateChar: '\\d|\\-|\\\|\\.'
+        dateChar: '\\d|\\-|\\/|\\.'
     };
 
     events = ['cellEditChange', 'beforeCellEdit', 'afterCellEdit', 'pageRequested', 'beforeDataBind', 'afterDataBind', 'columnReorder'];
