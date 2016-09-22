@@ -557,6 +557,9 @@ var grid = (function _grid($) {
         storageData.resizing = false;
         storageData.sortedOn = [];
         storageData.filteredOn = [];
+        storageData.basicFilters = {};
+        storageData.advancedFilters = {};
+        storageData.filters = {};
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
@@ -2545,8 +2548,10 @@ var grid = (function _grid($) {
     function createFilterDiv(type, field, grid, title) {
         var filterDiv = $('<div class="filter-div" data-parentfield="' + field + '" data-type="' + type + '"></div>').appendTo(grid);
         var domName = title ? title : type,
-            filterInput, resetButton, button;
-        $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv);
+            filterInput, resetButton, button,
+            modalText = 'Filter rows where ' + domName;
+        modalText = type !== 'string' ? modalText + ' is:' : modalText + ':';
+        $('<span class="filterTextSpan">' + modalText + '</span>').appendTo(filterDiv);
         var select = $('<select class="filterSelect select input"></select>').appendTo(filterDiv);
 
         createFilterOptionsByDataType(select, type);
@@ -2664,6 +2669,7 @@ var grid = (function _grid($) {
 
         if (errors.length) errors.remove();
         if (value === '' && !gridData.filteredOn.length) return;
+
 
         for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
             if (gridState[gridId].filteredOn[i].field !== field) tmpFilters.push(gridState[gridId].filteredOn[i]);

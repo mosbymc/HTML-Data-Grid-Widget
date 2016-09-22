@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.69</p>
+      <p class="stat">55.67</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3714</p>
+      <p class="stat">3720</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">213.75</p>
+      <p class="stat">213.62</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">82.88</p>
+      <p class="stat">83.03</p>
     </div>
   </div>
 </div>
@@ -648,6 +648,9 @@
         storageData.resizing = false;
         storageData.sortedOn = [];
         storageData.filteredOn = [];
+        storageData.basicFilters = {};
+        storageData.advancedFilters = {};
+        storageData.filters = {};
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
@@ -2636,8 +2639,10 @@
     function createFilterDiv(type, field, grid, title) {
         var filterDiv = $(&#039;&lt;div class=&quot;filter-div&quot; data-parentfield=&quot;&#039; + field + &#039;&quot; data-type=&quot;&#039; + type + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(grid);
         var domName = title ? title : type,
-            filterInput, resetButton, button;
-        $(&#039;&lt;span class=&quot;filterTextSpan&quot;&gt;Filter rows where &#039; + domName + &#039; is:&lt;/span&gt;&#039;).appendTo(filterDiv);
+            filterInput, resetButton, button,
+            modalText = &#039;Filter rows where &#039; + domName;
+        modalText = type !== &#039;string&#039; ? modalText + &#039; is:&#039; : modalText + &#039;:&#039;;
+        $(&#039;&lt;span class=&quot;filterTextSpan&quot;&gt;&#039; + modalText + &#039;&lt;/span&gt;&#039;).appendTo(filterDiv);
         var select = $(&#039;&lt;select class=&quot;filterSelect select input&quot;&gt;&lt;/select&gt;&#039;).appendTo(filterDiv);
 
         createFilterOptionsByDataType(select, type);
@@ -2755,6 +2760,7 @@
 
         if (errors.length) errors.remove();
         if (value === &#039;&#039; &amp;&amp; !gridData.filteredOn.length) return;
+
 
         for (var i = 0; i &lt; gridState[gridId].filteredOn.length; i++) {
             if (gridState[gridId].filteredOn[i].field !== field) tmpFilters.push(gridState[gridId].filteredOn[i]);

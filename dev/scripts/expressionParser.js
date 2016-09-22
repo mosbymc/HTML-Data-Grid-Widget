@@ -793,40 +793,34 @@ var expressionParser = (function _expressionParser() {
 
     function comparator(val, base, type) {
         switch (type) {
-            case '==':
-                return val == base;
+            case 'eq':
             case '===':
                 return val === base;
-            case '<=':
-                return val <= base;
-            case '>=':
-                return val >= base;
-            case '!':
-                return !val;
-            case '':
-                return !!val;
-            case '!=':
-                return val != base;
+            case '==':
+                return val == base;
+            case 'neq':
             case '!==':
                 return val !== base;
-            case '>':
-                return val > base;
-            case '<':
-                return val < base;
-            case 'eq':
-                return val === base;
-            case 'neq':
-                return val !== base;
+            case '!=':
+                return val != base;
             case 'gte':
+            case '>=':
                 return val >= base;
             case 'gt':
+            case '>':
                 return val > base;
             case 'lte':
+            case '<=':
                 return val <= base;
             case 'lt':
+            case '<':
                 return val < base;
             case 'not':
+            case '!':
+            case 'falsey':
                 return !val;
+            case 'truthy':
+                return !!val;
             case 'ct':
                 return !!~val.toLowerCase().indexOf(base.toLowerCase());
             case 'nct':

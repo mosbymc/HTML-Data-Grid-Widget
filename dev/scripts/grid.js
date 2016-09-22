@@ -103,6 +103,7 @@
  - Add ability to create an arbitrary number of nested filter groups - DONE
  - Add grid config option to restrict number of nested filter groups - DONE
  - Remove all empty filter rows from DOM when closing advanced filters modal - DONE
+ - Update existing filtering to new filter object model
  - Fix boolean filtering
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
     > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
@@ -862,6 +863,9 @@ var grid = (function _grid($) {
         storageData.resizing = false;
         storageData.sortedOn = [];
         storageData.filteredOn = [];
+        storageData.basicFilters = {};
+        storageData.advancedFilters = {};
+        storageData.filters = {};
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
@@ -3096,8 +3100,10 @@ var grid = (function _grid($) {
     function createFilterDiv(type, field, grid, title) {
         var filterDiv = $('<div class="filter-div" data-parentfield="' + field + '" data-type="' + type + '"></div>').appendTo(grid);
         var domName = title ? title : type,
-            filterInput, resetButton, button;
-        $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv);
+            filterInput, resetButton, button,
+            modalText = 'Filter rows where ' + domName;
+        modalText = type !== 'string' ? modalText + ' is:' : modalText + ':';
+        $('<span class="filterTextSpan">' + modalText + '</span>').appendTo(filterDiv);
         var select = $('<select class="filterSelect select input"></select>').appendTo(filterDiv);
 
         createFilterOptionsByDataType(select, type);
@@ -3220,6 +3226,16 @@ var grid = (function _grid($) {
 
         if (errors.length) errors.remove();
         if (value === '' && !gridData.filteredOn.length) return;
+
+        //TODO: finish changing this section of code out with the new filter structure
+        /*var extantFilters = gridState[gridId].basicFilters.filterGroup || [];
+        for (var i = 0; i < extantFilters.length; i++) {
+            if (extantFilters[i].field !== field) tmpFilters.push(extantFilters[i]);
+            else {
+                updatedFilter = extantFilters[i];
+                foundColumn = true;
+            }
+        }*/
 
         for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
             if (gridState[gridId].filteredOn[i].field !== field) tmpFilters.push(gridState[gridId].filteredOn[i]);
