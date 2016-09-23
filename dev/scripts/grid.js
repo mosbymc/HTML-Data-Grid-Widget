@@ -865,6 +865,7 @@ var grid = (function _grid($) {
         storageData.putRequest = {};
         storageData.resizing = false;
         storageData.sortedOn = [];
+        //MCM
         storageData.filteredOn = [];
         storageData.basicFilters = { conjunct: 'and', filterGroup: null };
         storageData.advancedFilters = {};
@@ -2524,7 +2525,6 @@ var grid = (function _grid($) {
                 applyFiltersButton.on('click', function applyAdvancedFiltersHandler() {
                     if (gridState[gridId].updating) return;		//can't filter if grid is updating
                     gridState[gridId].grid.find('filterInput').val('');
-                    gridState[gridId].filteredOn = [];
 
                     advancedFiltersModal.find('.advanced_filter_value').each(function checkFilterValuesForValidContent(idx, val) {
                         var currValue = $(val),
@@ -2565,10 +2565,18 @@ var grid = (function _grid($) {
                     var advancedFilters = {};
                     createFilterGroups(advancedFiltersContainer, advancedFilters);
                     if (advancedFilters.filterGroup.length) {
+                        //MCM
+                        gridState[gridId].filters = advancedFilters;
+                        gridState[gridId].advancedFilters = advancedFilters;
+                        gridState[gridId].basicFilters.filterGroup = [];
                         //var expressionTree = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
                         //expressionParser.createFilterTreeFromFilterObject(advancedFilters);
                         var truth = expressionParser.createFilterTreeFromFilterObject(advancedFilters).filterCollection(gridState[gridId].dataSource.data);
+                        var g = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                        var f = g.isTrue(gridState[gridId].dataSource.data[0]);
                         console.log(truth);
+                        console.log(' ');
+                        console.log(f);
                     }
 
                     function createFilterGroups(groupContainer, filterObject) {
@@ -3178,7 +3186,37 @@ var grid = (function _grid($) {
         $('.grid_menu').addClass('hiddenMenu');
         gridState[gridId].grid.find('filterInput').val('');
 
+        var filterModal = gridState[gridId].grid.find('.filter_modal');
+        filterModal.find('.filter_group_container').each(function removeFilterGroups() {
+            var grpContainer = $(this);
+            if (grpContainer.data('filter_group_num') !== 1) grpContainer.remove();
+            else {
+                grpContainer.find('.filter_row_div').each(function removeFilterRows() {
+                    var filterRow = $(this);
+                    if (filterRow.data('filter_idx') !== 1) filterRow.remove();
+                    else {
+                        var columnSelector = filterRow.find('.filter_column_selector');
+                        columnSelector.find('option').remove();
+                        columnSelector.append('<option value="">Select a column</option>');
+                        for (var column in gridState[gridId].columns) {
+                            var curCol = gridState[gridId].columns[column];
+                            if (curCol.filterable) {
+                                columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
+                            }
+                        }
+
+                        filterRow.find('.filterType').prop('disabled', true).find('option').remove();
+                        filterRow.find('.advanced_filter_value').prop('disabled', true).removeClass('invalid-grid-input').val('');
+                    }
+                });
+            }
+        });
+
+        filterModal.find('filter_error').remove();
+
         if (gridState[gridId].updating) return;		//can't filter if grid is updating
+        //MCM
+        gridState[gridId].filters = {};
         gridState[gridId].filteredOn = [];
         gridState[gridId].pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
@@ -3193,10 +3231,23 @@ var grid = (function _grid($) {
         if (gridState[gridId].updating) return;		//can't filter if grid is updating
         var gridData = gridState[gridId];
 
+        //MCM
+        //if (value === '' && !gridData.filters.filterGroup.length) return;
         if (value === '' && !gridData.filteredOn.length) return;
         filterDiv.find('.filterInput').val('');
-
         filterDiv.addClass('hiddenFilter');
+
+        /*
+         for (var i = 0; i < gridState[gridId].filters.groupFilters; i++) {
+             if (gridState[gridId].filters.groupFilters[i].field !== field) {
+                remainingFilters.push(gridState[gridId].filters.groupFilters[i]);
+             }
+         }
+
+         gridData.filters.groupFilters = remainingFilters;
+         gridData.pageRequest.eventType = 'filter-rem';
+         preparePageDataGetRequest(gridId);
+         */
 
         for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
             if (gridState[gridId].filteredOn[i].field !== field) {
@@ -3231,6 +3282,7 @@ var grid = (function _grid($) {
             }
         }
 
+        //MCM
         if (errors.length) errors.remove();
         if (value === '' && !gridData.filteredOn.length) return;
 
@@ -3251,6 +3303,7 @@ var grid = (function _grid($) {
          tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, operation: selected });
          gridState[gridId].filters = { conjunct: 'and', filterGroup: tmpFilters };
          gridState[gridId].basicFilters.filterGroup = tmpFilters;
+         gridState[gridId].advancedFilters = {};
 
          filterDiv.addClass('hiddenFilter');
          gridData.pageRequest.eventType = 'filter-add';
@@ -3615,7 +3668,8 @@ var grid = (function _grid($) {
 
         var requestObj = {};
         if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        //if (gridData.filterable) requestObj.filters = gridData.filters.length? gridData.filters : [];
+        //if (gridData.filterable) requestObj.filters = gridData.filters.filterGroup.length? gridData.filters : { conjunct: null, filterGroup: [] };
+        //MCM
         if (gridData.filterable) requestObj.filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
         if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
@@ -3640,6 +3694,7 @@ var grid = (function _grid($) {
                 gridData.groupedBy = requestObj.groupedBy;
                 gridData.sortedOn = requestObj.sortedOn;
                 //gridData.filters = requestObj.filters;
+                //MCM
                 gridData.filteredOn = requestObj.filteredOn;
 
                 if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group')
@@ -3711,13 +3766,15 @@ var grid = (function _grid($) {
             return;
         }
 
+        //MCM
+        //if ((requestObj.filters && requestObj.filters.filterGroup.length) || eventType === 'filter-rem') {
         if ((requestObj.filteredOn && requestObj.filteredOn.length) || eventType === 'filter-rem') {
             fullGridData = eventType === 'filter-add' ? cloneGridData(gridState[id].alteredData) : cloneGridData(gridState[id].originalData);
             //TODO: this section where I am only running the last filter if the event type was a 'filter-add', will not work
             //TODO: without either caching the previous number of filters or something to that effect; will likely have to remove
             //TODO: Also note that the above statement wherein I either take the full data or the existing filtered data will
             //TODO: have to be changed as well if I can't cache the last applied filters; full data will have to be taken every time.
-            //var startIdx = eventType === 'filter-add' ? requestObj.filters.length - 1 : 0;
+            //var startIdx = eventType === 'filter-add' ? requestObj.filters..filterGroup.length - 1 : 0;
             var startIdx = eventType === 'filter-add' ? requestObj.filteredOn.length - 1 : 0;
 
             //TODO: With the expression parser, I should be able to just let it run the filtering. But then, that means I MUST
@@ -4141,9 +4198,12 @@ var grid = (function _grid($) {
         return cols;
     }
 
+    //TODO: why am I creating the request object differently here than in the normal grid page get request?
     function createExcelRequestObject(gridId) {
+        //MCM
         var gridData = gridState[gridId];
         var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
+        //var filters = gridData.pageRequest.filters || gridData.filters || null;
         var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
         var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
         var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
@@ -4154,6 +4214,7 @@ var grid = (function _grid($) {
         if (gridData.sortable) requestObj.sortedOn = sortedOn;
 
         if (gridData.filterable) {
+            //request.filters = filters;
             requestObj.filteredOn = filteredOn;
             requestObj.filterVal = filterVal;
             requestObj.filterType = filterType;

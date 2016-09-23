@@ -15,6 +15,7 @@ module.exports = function (router) {
 var reqObj = {
     filterType: null,
     filterVal: null,
+    //MCM
     filteredOn: null,
     groupedBy: null,
     pageNum: 1,
@@ -53,6 +54,7 @@ var getInitialGridDataSource = function _getInitialGridDataSource(req, res) {
 function determinePageData(requestObj, fullGridData, callback) {
     //TODO: I can make this much smarter and faster by checking to see if a filter has been added or removed. If added, just take the existing data
     //TODO: and filter it again. If removed, need to take the original data and apply all remaining filters.
+    //MCM
     if (requestObj.filteredOn && requestObj.filteredOn.length) {
         for (var i = 0; i <  requestObj.filteredOn.length; i++) {
             var dataType = columns[requestObj.filteredOn[i].field].type || 'string';

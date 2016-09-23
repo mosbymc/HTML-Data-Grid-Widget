@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3723</p>
+      <p class="stat">3758</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">213.49</p>
+      <p class="stat">214.60</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">83.24</p>
+      <p class="stat">84.09</p>
     </div>
   </div>
 </div>
@@ -2122,7 +2122,6 @@
                 applyFiltersButton.on(&#039;click&#039;, function applyAdvancedFiltersHandler() {
                     if (gridState[gridId].updating) return;		
                     gridState[gridId].grid.find(&#039;filterInput&#039;).val(&#039;&#039;);
-                    gridState[gridId].filteredOn = [];
 
                     advancedFiltersModal.find(&#039;.advanced_filter_value&#039;).each(function checkFilterValuesForValidContent(idx, val) {
                         var currValue = $(val),
@@ -2162,8 +2161,15 @@
                     var advancedFilters = {};
                     createFilterGroups(advancedFiltersContainer, advancedFilters);
                     if (advancedFilters.filterGroup.length) {
+                        gridState[gridId].filters = advancedFilters;
+                        gridState[gridId].advancedFilters = advancedFilters;
+                        gridState[gridId].basicFilters.filterGroup = [];
                         var truth = expressionParser.createFilterTreeFromFilterObject(advancedFilters).filterCollection(gridState[gridId].dataSource.data);
+                        var g = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                        var f = g.isTrue(gridState[gridId].dataSource.data[0]);
                         console.log(truth);
+                        console.log(&#039; &#039;);
+                        console.log(f);
                     }
 
                     function createFilterGroups(groupContainer, filterObject) {
@@ -2707,7 +2713,36 @@
         $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
         gridState[gridId].grid.find(&#039;filterInput&#039;).val(&#039;&#039;);
 
+        var filterModal = gridState[gridId].grid.find(&#039;.filter_modal&#039;);
+        filterModal.find(&#039;.filter_group_container&#039;).each(function removeFilterGroups() {
+            var grpContainer = $(this);
+            if (grpContainer.data(&#039;filter_group_num&#039;) !== 1) grpContainer.remove();
+            else {
+                grpContainer.find(&#039;.filter_row_div&#039;).each(function removeFilterRows() {
+                    var filterRow = $(this);
+                    if (filterRow.data(&#039;filter_idx&#039;) !== 1) filterRow.remove();
+                    else {
+                        var columnSelector = filterRow.find(&#039;.filter_column_selector&#039;);
+                        columnSelector.find(&#039;option&#039;).remove();
+                        columnSelector.append(&#039;&lt;option value=&quot;&quot;&gt;Select a column&lt;/option&gt;&#039;);
+                        for (var column in gridState[gridId].columns) {
+                            var curCol = gridState[gridId].columns[column];
+                            if (curCol.filterable) {
+                                columnSelector.append(&#039;&lt;option value=&quot;&#039; + column + &#039;&quot;&gt;&#039; + (curCol.title || column) + &#039;&lt;/option&gt;&#039;);
+                            }
+                        }
+
+                        filterRow.find(&#039;.filterType&#039;).prop(&#039;disabled&#039;, true).find(&#039;option&#039;).remove();
+                        filterRow.find(&#039;.advanced_filter_value&#039;).prop(&#039;disabled&#039;, true).removeClass(&#039;invalid-grid-input&#039;).val(&#039;&#039;);
+                    }
+                });
+            }
+        });
+
+        filterModal.find(&#039;filter_error&#039;).remove();
+
         if (gridState[gridId].updating) return;		
+        gridState[gridId].filters = {};
         gridState[gridId].filteredOn = [];
         gridState[gridId].pageRequest.eventType = &#039;filter-rem&#039;;
         preparePageDataGetRequest(gridId);
@@ -2724,8 +2759,8 @@
 
         if (value === &#039;&#039; &amp;&amp; !gridData.filteredOn.length) return;
         filterDiv.find(&#039;.filterInput&#039;).val(&#039;&#039;);
-
         filterDiv.addClass(&#039;hiddenFilter&#039;);
+
 
         for (var i = 0; i &lt; gridState[gridId].filteredOn.length; i++) {
             if (gridState[gridId].filteredOn[i].field !== field) {

@@ -606,6 +606,10 @@ var expressionParser = (function _expressionParser() {
     booleanExpressionTree.getContext = function _getContext() {
         return this.internalGetContext.bind(this);
     };
+    booleanExpressionTree.isTrue = function _isTrue(item) {
+        this.context = item;
+        return this.rootNode.value;
+    };
 
     /*var conjunct = {
         createConjunct: function _createConjunct(conjunction) {
@@ -636,7 +640,7 @@ var expressionParser = (function _expressionParser() {
                 this.dataType = node.dataType;
                 this.context = null;
             }
-            this.value = null;
+            this._value = null;
             this.getContext = null;
             this.queue = null;
         }
@@ -713,16 +717,25 @@ var expressionParser = (function _expressionParser() {
                     break;
             }
 
-            this.value = comparator(curVal, baseVal, this.operation);
-            return this.value;
+            this._value = comparator(curVal, baseVal, this.operation);
+            return this._value;
         }
     };
 
     astNode.getValue = function _getValue() {
-        if (this.value == null)
-            this.value = this.evaluate();
-        return this.value;
+        if (this._value == null)
+            this._value = this.evaluate();
+        return this._value;
     };
+
+    Object.defineProperty(astNode, 'value', {
+        get: function _getValue() {
+            if (!this._value) {
+                this._value = this.evaluate();
+            }
+            return this._value;
+        }
+    });
 
     function getNodeContext(bet) {
         return bet.internalGetContext.bind(bet);

@@ -2031,7 +2031,6 @@ var grid = (function _grid($) {
                 applyFiltersButton.on('click', function applyAdvancedFiltersHandler() {
                     if (gridState[gridId].updating) return;		
                     gridState[gridId].grid.find('filterInput').val('');
-                    gridState[gridId].filteredOn = [];
 
                     advancedFiltersModal.find('.advanced_filter_value').each(function checkFilterValuesForValidContent(idx, val) {
                         var currValue = $(val),
@@ -2071,8 +2070,15 @@ var grid = (function _grid($) {
                     var advancedFilters = {};
                     createFilterGroups(advancedFiltersContainer, advancedFilters);
                     if (advancedFilters.filterGroup.length) {
+                        gridState[gridId].filters = advancedFilters;
+                        gridState[gridId].advancedFilters = advancedFilters;
+                        gridState[gridId].basicFilters.filterGroup = [];
                         var truth = expressionParser.createFilterTreeFromFilterObject(advancedFilters).filterCollection(gridState[gridId].dataSource.data);
+                        var g = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                        var f = g.isTrue(gridState[gridId].dataSource.data[0]);
                         console.log(truth);
+                        console.log(' ');
+                        console.log(f);
                     }
 
                     function createFilterGroups(groupContainer, filterObject) {
@@ -2616,7 +2622,36 @@ var grid = (function _grid($) {
         $('.grid_menu').addClass('hiddenMenu');
         gridState[gridId].grid.find('filterInput').val('');
 
+        var filterModal = gridState[gridId].grid.find('.filter_modal');
+        filterModal.find('.filter_group_container').each(function removeFilterGroups() {
+            var grpContainer = $(this);
+            if (grpContainer.data('filter_group_num') !== 1) grpContainer.remove();
+            else {
+                grpContainer.find('.filter_row_div').each(function removeFilterRows() {
+                    var filterRow = $(this);
+                    if (filterRow.data('filter_idx') !== 1) filterRow.remove();
+                    else {
+                        var columnSelector = filterRow.find('.filter_column_selector');
+                        columnSelector.find('option').remove();
+                        columnSelector.append('<option value="">Select a column</option>');
+                        for (var column in gridState[gridId].columns) {
+                            var curCol = gridState[gridId].columns[column];
+                            if (curCol.filterable) {
+                                columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
+                            }
+                        }
+
+                        filterRow.find('.filterType').prop('disabled', true).find('option').remove();
+                        filterRow.find('.advanced_filter_value').prop('disabled', true).removeClass('invalid-grid-input').val('');
+                    }
+                });
+            }
+        });
+
+        filterModal.find('filter_error').remove();
+
         if (gridState[gridId].updating) return;		
+        gridState[gridId].filters = {};
         gridState[gridId].filteredOn = [];
         gridState[gridId].pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
@@ -2633,8 +2668,8 @@ var grid = (function _grid($) {
 
         if (value === '' && !gridData.filteredOn.length) return;
         filterDiv.find('.filterInput').val('');
-
         filterDiv.addClass('hiddenFilter');
+
 
         for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
             if (gridState[gridId].filteredOn[i].field !== field) {
