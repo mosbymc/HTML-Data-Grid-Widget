@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.67</p>
+      <p class="stat">55.66</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3720</p>
+      <p class="stat">3723</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">213.62</p>
+      <p class="stat">213.49</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">83.03</p>
+      <p class="stat">83.24</p>
     </div>
   </div>
 </div>
@@ -648,7 +648,7 @@
         storageData.resizing = false;
         storageData.sortedOn = [];
         storageData.filteredOn = [];
-        storageData.basicFilters = {};
+        storageData.basicFilters = { conjunct: &#039;and&#039;, filterGroup: null };
         storageData.advancedFilters = {};
         storageData.filters = {};
         storageData.groupedBy = [];
@@ -2162,7 +2162,8 @@
                     var advancedFilters = {};
                     createFilterGroups(advancedFiltersContainer, advancedFilters);
                     if (advancedFilters.filterGroup.length) {
-                        expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                        var truth = expressionParser.createFilterTreeFromFilterObject(advancedFilters).filterCollection(gridState[gridId].dataSource.data);
+                        console.log(truth);
                     }
 
                     function createFilterGroups(groupContainer, filterObject) {
@@ -2173,8 +2174,9 @@
                     }
 
                     function findFilters(groupContainer, filterObject) {
+                        var gridId = groupContainer.parents(&#039;.filter_modal&#039;).data(&#039;grid_id&#039;);
                         groupContainer.children(&#039;.filter_row_div&#039;).each(function iterateFilterDivsCallback() {
-                            createFilterObjects($(this), filterObject.filterGroup);
+                            createFilterObjects($(this), filterObject.filterGroup, gridId);
                         });
 
                         groupContainer.children(&#039;.filter_group_container&#039;).each(function createNestedFilterGroupsCallback(idx, val) {
@@ -2184,7 +2186,7 @@
                         });
                     }
 
-                    function createFilterObjects(filterDiv, filterGroupArr) {
+                    function createFilterObjects(filterDiv, filterGroupArr, gridId) {
                         var field = filterDiv.find(&#039;.filter_column_selector&#039;).val(),
                             operation, value,
                             filterType = filterDiv.find(&#039;.filterType&#039;).val();
@@ -2193,12 +2195,12 @@
                             value = filterDiv.find(&#039;.advanced_filter_value&#039;).val();
                         }
                         else {
-                            operation = &#039;strict-equal&#039;;
+                            operation = &#039;eq&#039;;
                             value = filterType;
                         }
 
                         if (value) {
-                            filterGroupArr.push({ field: field, value: value, operation: operation });
+                            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || &#039;string&#039;) });
                         }
                     }
                     });
@@ -3179,6 +3181,7 @@
         if ((requestObj.filteredOn &amp;&amp; requestObj.filteredOn.length) || eventType === &#039;filter-rem&#039;) {
             fullGridData = eventType === &#039;filter-add&#039; ? cloneGridData(gridState[id].alteredData) : cloneGridData(gridState[id].originalData);
             var startIdx = eventType === &#039;filter-add&#039; ? requestObj.filteredOn.length - 1 : 0;
+
             for (var i = startIdx; i &lt;  requestObj.filteredOn.length; i++) {
                 var dataType = gridState[id].columns[requestObj.filteredOn[i].field].type || &#039;string&#039;;
                 fullGridData = filterGridData(requestObj.filteredOn[i].filterType, requestObj.filteredOn[i].value, requestObj.filteredOn[i].field, dataType, fullGridData);

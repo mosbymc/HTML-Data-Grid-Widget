@@ -104,7 +104,10 @@
  - Add grid config option to restrict number of nested filter groups - DONE
  - Remove all empty filter rows from DOM when closing advanced filters modal - DONE
  - Update existing filtering to new filter object model
+ - Make sure that when adding advanced filters, basic filters are cleared out (in DOM and cache), and vise versa
  - Fix boolean filtering
+ - Make more enums (event types)
+ - UPDATE TO ES6
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
     > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
     > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
@@ -863,7 +866,7 @@ var grid = (function _grid($) {
         storageData.resizing = false;
         storageData.sortedOn = [];
         storageData.filteredOn = [];
-        storageData.basicFilters = {};
+        storageData.basicFilters = { conjunct: 'and', filterGroup: null };
         storageData.advancedFilters = {};
         storageData.filters = {};
         storageData.groupedBy = [];
@@ -2453,6 +2456,7 @@ var grid = (function _grid($) {
         return filterMenuItem;
     }
 
+    //TODO: break this out into smaller, separate functions
     function createFilterModalMenuItem(gridId) {
         var filterModalMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Advanced Filters</a>'));
         filterModalMenuItem.on('click', function openAdvancedFilterModal(e) {
@@ -2562,8 +2566,9 @@ var grid = (function _grid($) {
                     createFilterGroups(advancedFiltersContainer, advancedFilters);
                     if (advancedFilters.filterGroup.length) {
                         //var expressionTree = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
-                        expressionParser.createFilterTreeFromFilterObject(advancedFilters);
-                        //var truth = expressionTree.filterCollection(gridState[gridId].dataSource.data);
+                        //expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                        var truth = expressionParser.createFilterTreeFromFilterObject(advancedFilters).filterCollection(gridState[gridId].dataSource.data);
+                        console.log(truth);
                     }
 
                     function createFilterGroups(groupContainer, filterObject) {
@@ -2574,8 +2579,9 @@ var grid = (function _grid($) {
                     }
 
                     function findFilters(groupContainer, filterObject) {
+                        var gridId = groupContainer.parents('.filter_modal').data('grid_id');
                         groupContainer.children('.filter_row_div').each(function iterateFilterDivsCallback() {
-                            createFilterObjects($(this), filterObject.filterGroup);
+                            createFilterObjects($(this), filterObject.filterGroup, gridId);
                         });
 
                         groupContainer.children('.filter_group_container').each(function createNestedFilterGroupsCallback(idx, val) {
@@ -2585,7 +2591,7 @@ var grid = (function _grid($) {
                         });
                     }
 
-                    function createFilterObjects(filterDiv, filterGroupArr) {
+                    function createFilterObjects(filterDiv, filterGroupArr, gridId) {
                         var field = filterDiv.find('.filter_column_selector').val(),
                             operation, value,
                             filterType = filterDiv.find('.filterType').val();
@@ -2594,12 +2600,12 @@ var grid = (function _grid($) {
                             value = filterDiv.find('.advanced_filter_value').val();
                         }
                         else {
-                            operation = 'strict-equal';
+                            operation = 'eq';
                             value = filterType;
                         }
 
                         if (value) {
-                            filterGroupArr.push({ field: field, value: value, operation: operation });
+                            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || 'string') });
                         }
                     }
                         /*
@@ -3165,6 +3171,7 @@ var grid = (function _grid($) {
         });
     }
 
+    //TODO: make sure this removes advanced filters as well
     function resetAllFilters(e) {
         var gridMenu = $(e.currentTarget).parents('.grid_menu'),
             gridId = gridMenu.data('grid_id');
@@ -3228,14 +3235,27 @@ var grid = (function _grid($) {
         if (value === '' && !gridData.filteredOn.length) return;
 
         //TODO: finish changing this section of code out with the new filter structure
-        /*var extantFilters = gridState[gridId].basicFilters.filterGroup || [];
+        //TODO: filteredOn -> filters
+        /*
+         if (value === '' && !gridData.basicFilters.length) return;
+
+        var extantFilters = gridState[gridId].basicFilters.filterGroup || [];
         for (var i = 0; i < extantFilters.length; i++) {
             if (extantFilters[i].field !== field) tmpFilters.push(extantFilters[i]);
             else {
                 updatedFilter = extantFilters[i];
                 foundColumn = true;
             }
-        }*/
+        }
+
+         tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, operation: selected });
+         gridState[gridId].filters = { conjunct: 'and', filterGroup: tmpFilters };
+         gridState[gridId].basicFilters.filterGroup = tmpFilters;
+
+         filterDiv.addClass('hiddenFilter');
+         gridData.pageRequest.eventType = 'filter-add';
+         preparePageDataGetRequest(gridId);
+        */
 
         for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
             if (gridState[gridId].filteredOn[i].field !== field) tmpFilters.push(gridState[gridId].filteredOn[i]);
@@ -3595,6 +3615,7 @@ var grid = (function _grid($) {
 
         var requestObj = {};
         if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
+        //if (gridData.filterable) requestObj.filters = gridData.filters.length? gridData.filters : [];
         if (gridData.filterable) requestObj.filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
         if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
@@ -3618,6 +3639,7 @@ var grid = (function _grid($) {
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy;
                 gridData.sortedOn = requestObj.sortedOn;
+                //gridData.filters = requestObj.filters;
                 gridData.filteredOn = requestObj.filteredOn;
 
                 if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group')
@@ -3691,7 +3713,17 @@ var grid = (function _grid($) {
 
         if ((requestObj.filteredOn && requestObj.filteredOn.length) || eventType === 'filter-rem') {
             fullGridData = eventType === 'filter-add' ? cloneGridData(gridState[id].alteredData) : cloneGridData(gridState[id].originalData);
+            //TODO: this section where I am only running the last filter if the event type was a 'filter-add', will not work
+            //TODO: without either caching the previous number of filters or something to that effect; will likely have to remove
+            //TODO: Also note that the above statement wherein I either take the full data or the existing filtered data will
+            //TODO: have to be changed as well if I can't cache the last applied filters; full data will have to be taken every time.
+            //var startIdx = eventType === 'filter-add' ? requestObj.filters.length - 1 : 0;
             var startIdx = eventType === 'filter-add' ? requestObj.filteredOn.length - 1 : 0;
+
+            //TODO: With the expression parser, I should be able to just let it run the filtering. But then, that means I MUST
+            //TODO: count on its presence even when advanced filters are not allowed... But I'd also hate to have two different means of solving
+            //TODO: the same problem simply due to allowing users to optionally include the expression parser as a separate module.
+            //fullGridData = expressionParser.createFilterTreeFromFilterObject(advancedFilters).filterCollection(fullGridData);
             for (var i = startIdx; i <  requestObj.filteredOn.length; i++) {
                 var dataType = gridState[id].columns[requestObj.filteredOn[i].field].type || 'string';
                 fullGridData = filterGridData(requestObj.filteredOn[i].filterType, requestObj.filteredOn[i].value, requestObj.filteredOn[i].field, dataType, fullGridData);

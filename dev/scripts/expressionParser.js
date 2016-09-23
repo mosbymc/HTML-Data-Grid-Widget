@@ -597,7 +597,6 @@ var expressionParser = (function _expressionParser() {
     booleanExpressionTree.filterCollection = function _filterCollection(collection) {
         return collection.filter(function collectionMap(curr) {
             this.context = curr;
-            console.log(this.rootNode.evaluate);
             return this.rootNode.evaluate(curr);
         }, this);
     };
@@ -634,6 +633,7 @@ var expressionParser = (function _expressionParser() {
                 this.field = node.field;
                 this.standard = node.value;
                 this.operation = node.operation;
+                this.dataType = node.dataType;
                 this.context = null;
             }
             this.value = null;
@@ -684,7 +684,36 @@ var expressionParser = (function _expressionParser() {
             }
         }
         else {
-            this.value = comparator(this.getContext()[this.field], this.standard, this.operation);
+            var baseVal,
+                curVal,
+                initialVal = this.getContext()[this.field];
+
+            switch(this.dataType) {
+                case 'time':
+                    curVal = getNumbersFromTime(initialVal);
+                    baseVal = getNumbersFromTime(this.standard);
+
+                    if (initialVal.indexOf('PM') > -1) curVal[0] += 12;
+                    if (this.standard.indexOf('PM') > -1) baseVal[0] += 12;
+
+                    curVal = convertTimeArrayToSeconds(curVal);
+                    baseVal = convertTimeArrayToSeconds(baseVal);
+                    break;
+                case 'number':
+                    curVal = parseFloat(initialVal);
+                    baseVal = parseFloat(this.standard);
+                    break;
+                case 'date':
+                    curVal = new Date(initialVal);
+                    baseVal = new Date(this.standard);
+                    break;
+                default:
+                    curVal = initialVal;
+                    baseVal = this.standard;
+                    break;
+            }
+
+            this.value = comparator(curVal, baseVal, this.operation);
             return this.value;
         }
     };
@@ -873,6 +902,37 @@ var expressionParser = (function _expressionParser() {
             default:
                 return null;
         }
+    }
+
+    function getNumbersFromTime(val) {
+        var re = /^(0?[1-9]|1[012])(?:(?:(:|\.)([0-5]\d))(?:\2([0-5]\d))?)?(?:(\ [AP]M))$|^([01]?\d|2[0-3])(?:(?:(:|\.)([0-5]\d))(?:\7([0-5]\d))?)$/;
+        if (!re.test(val)) return [];
+        var timeGroups = re.exec(val);
+        var hours = timeGroups[1] ? +timeGroups[1] : +timeGroups[6];
+        var minutes, seconds, meridiem, retVal = [];
+        if (timeGroups[2]) {
+            minutes = timeGroups[3] || '00';
+            seconds = timeGroups[4]  || '00';
+            meridiem = timeGroups[5].replace(' ', '') || null;
+        }
+        else if (timeGroups[6]) {
+            minutes = timeGroups[8] || '00';
+            seconds = timeGroups[9] || '00';
+        }
+        else{
+            minutes = '00';
+            seconds = '00';
+        }
+        retVal.push(hours);
+        retVal.push(minutes);
+        retVal.push(seconds);
+        if (meridiem) retVal.push(meridiem);
+        return retVal;
+    }
+
+    function convertTimeArrayToSeconds(timeArray) {
+        var hourVal = timeArray[0] === 12 || timeArray[0] === 24 ? timeArray[0] - 12 : timeArray[0];
+        return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
     }
 
     return {

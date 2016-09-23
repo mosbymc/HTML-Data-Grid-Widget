@@ -557,7 +557,7 @@ var grid = (function _grid($) {
         storageData.resizing = false;
         storageData.sortedOn = [];
         storageData.filteredOn = [];
-        storageData.basicFilters = {};
+        storageData.basicFilters = { conjunct: 'and', filterGroup: null };
         storageData.advancedFilters = {};
         storageData.filters = {};
         storageData.groupedBy = [];
@@ -2071,7 +2071,8 @@ var grid = (function _grid($) {
                     var advancedFilters = {};
                     createFilterGroups(advancedFiltersContainer, advancedFilters);
                     if (advancedFilters.filterGroup.length) {
-                        expressionParser.createFilterTreeFromFilterObject(advancedFilters);
+                        var truth = expressionParser.createFilterTreeFromFilterObject(advancedFilters).filterCollection(gridState[gridId].dataSource.data);
+                        console.log(truth);
                     }
 
                     function createFilterGroups(groupContainer, filterObject) {
@@ -2082,8 +2083,9 @@ var grid = (function _grid($) {
                     }
 
                     function findFilters(groupContainer, filterObject) {
+                        var gridId = groupContainer.parents('.filter_modal').data('grid_id');
                         groupContainer.children('.filter_row_div').each(function iterateFilterDivsCallback() {
-                            createFilterObjects($(this), filterObject.filterGroup);
+                            createFilterObjects($(this), filterObject.filterGroup, gridId);
                         });
 
                         groupContainer.children('.filter_group_container').each(function createNestedFilterGroupsCallback(idx, val) {
@@ -2093,7 +2095,7 @@ var grid = (function _grid($) {
                         });
                     }
 
-                    function createFilterObjects(filterDiv, filterGroupArr) {
+                    function createFilterObjects(filterDiv, filterGroupArr, gridId) {
                         var field = filterDiv.find('.filter_column_selector').val(),
                             operation, value,
                             filterType = filterDiv.find('.filterType').val();
@@ -2102,12 +2104,12 @@ var grid = (function _grid($) {
                             value = filterDiv.find('.advanced_filter_value').val();
                         }
                         else {
-                            operation = 'strict-equal';
+                            operation = 'eq';
                             value = filterType;
                         }
 
                         if (value) {
-                            filterGroupArr.push({ field: field, value: value, operation: operation });
+                            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || 'string') });
                         }
                     }
                     });
@@ -3088,6 +3090,7 @@ var grid = (function _grid($) {
         if ((requestObj.filteredOn && requestObj.filteredOn.length) || eventType === 'filter-rem') {
             fullGridData = eventType === 'filter-add' ? cloneGridData(gridState[id].alteredData) : cloneGridData(gridState[id].originalData);
             var startIdx = eventType === 'filter-add' ? requestObj.filteredOn.length - 1 : 0;
+
             for (var i = startIdx; i <  requestObj.filteredOn.length; i++) {
                 var dataType = gridState[id].columns[requestObj.filteredOn[i].field].type || 'string';
                 fullGridData = filterGridData(requestObj.filteredOn[i].filterType, requestObj.filteredOn[i].value, requestObj.filteredOn[i].field, dataType, fullGridData);
