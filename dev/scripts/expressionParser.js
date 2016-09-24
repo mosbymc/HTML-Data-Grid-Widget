@@ -712,8 +712,8 @@ var expressionParser = (function _expressionParser() {
                     baseVal = new Date(this.standard);
                     break;
                 default:
-                    curVal = initialVal;
-                    baseVal = this.standard;
+                    curVal = initialVal.toString();
+                    baseVal = this.standard.toString();
                     break;
             }
 

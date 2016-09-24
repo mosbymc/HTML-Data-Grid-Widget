@@ -556,7 +556,6 @@ var grid = (function _grid($) {
         storageData.putRequest = {};
         storageData.resizing = false;
         storageData.sortedOn = [];
-        storageData.filteredOn = [];
         storageData.basicFilters = { conjunct: 'and', filterGroup: null };
         storageData.advancedFilters = {};
         storageData.filters = {};
@@ -2652,7 +2651,6 @@ var grid = (function _grid($) {
 
         if (gridState[gridId].updating) return;		
         gridState[gridId].filters = {};
-        gridState[gridId].filteredOn = [];
         gridState[gridId].pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
     }
@@ -2666,20 +2664,21 @@ var grid = (function _grid($) {
         if (gridState[gridId].updating) return;		
         var gridData = gridState[gridId];
 
-        if (value === '' && !gridData.filteredOn.length) return;
+        if (value === '' && !gridData.filters.filterGroup.length) return;
         filterDiv.find('.filterInput').val('');
         filterDiv.addClass('hiddenFilter');
 
 
-        for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
-            if (gridState[gridId].filteredOn[i].field !== field) {
-                remainingFilters.push(gridState[gridId].filteredOn[i]);
-            }
-        }
+         for (var i = 0; i < gridState[gridId].filters.groupFilters; i++) {
+             if (gridState[gridId].filters.groupFilters[i].field !== field) {
+                remainingFilters.push(gridState[gridId].filters.groupFilters[i]);
+             }
+         }
 
-        gridData.filteredOn = remainingFilters;
-        gridData.pageRequest.eventType = 'filter-rem';
-        preparePageDataGetRequest(gridId);
+         gridData.filters.groupFilters = remainingFilters;
+         gridData.pageRequest.eventType = 'filter-rem';
+         preparePageDataGetRequest(gridId);
+
     }
 
     function filterButtonClickHandler(e) {
@@ -2705,23 +2704,33 @@ var grid = (function _grid($) {
         }
 
         if (errors.length) errors.remove();
-        if (value === '' && !gridData.filteredOn.length) return;
 
+         if (value === '' && !gridData.basicFilters.length) return;
 
-        for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
-            if (gridState[gridId].filteredOn[i].field !== field) tmpFilters.push(gridState[gridId].filteredOn[i]);
+        var extantFilters = gridState[gridId].basicFilters.filterGroup || [];
+        for (var i = 0; i < extantFilters.length; i++) {
+            if (extantFilters[i].field !== field) tmpFilters.push(extantFilters[i]);
             else {
-                updatedFilter = gridState[gridId].filteredOn[i];
+                updatedFilter = extantFilters[i];
                 foundColumn = true;
             }
         }
 
-        tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, filterType: selected });
-        gridState[gridId].filteredOn = tmpFilters;
+        var dataType = gridState[gridId].columns[field].type || 'string';
+        if (dataType === 'boolean') {
+            value = selected;
+            selected = 'eq';
+        }
 
-        filterDiv.addClass('hiddenFilter');
-        gridData.pageRequest.eventType = 'filter-add';
-        preparePageDataGetRequest(gridId);
+         tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, operation: selected, dataType: dataType });
+         gridState[gridId].filters = { conjunct: 'and', filterGroup: tmpFilters };
+         gridState[gridId].basicFilters.filterGroup = tmpFilters;
+         gridState[gridId].advancedFilters = {};
+
+         filterDiv.addClass('hiddenFilter');
+         gridData.pageRequest.eventType = 'filter-add';
+         preparePageDataGetRequest(gridId);
+
     }
 
     function createGridColumnsFromArray(gridData, gridElem) {
@@ -3040,7 +3049,7 @@ var grid = (function _grid($) {
 
         var requestObj = {};
         if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        if (gridData.filterable) requestObj.filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
+        if (gridData.filterable) requestObj.filters = gridData.filters.filterGroup && gridData.filters.filterGroup.length? gridData.filters : { conjunct: null, filterGroup: [] };
         if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
         requestObj.pageSize = pageSize;
@@ -3063,7 +3072,7 @@ var grid = (function _grid($) {
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy;
                 gridData.sortedOn = requestObj.sortedOn;
-                gridData.filteredOn = requestObj.filteredOn;
+                gridData.filters = requestObj.filters;
 
                 if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group')
                     setColWidth(gridData, gridState[id].grid);
@@ -3457,6 +3466,7 @@ var grid = (function _grid($) {
     function createExcelRequestObject(gridId) {
         var gridData = gridState[gridId];
         var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
+        var filters = gridData.pageRequest.filters || gridData.filters || null;
         var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
         var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
         var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
@@ -3467,6 +3477,7 @@ var grid = (function _grid($) {
         if (gridData.sortable) requestObj.sortedOn = sortedOn;
 
         if (gridData.filterable) {
+            requestObj.filters = filters;
             requestObj.filteredOn = filteredOn;
             requestObj.filterVal = filterVal;
             requestObj.filterType = filterType;

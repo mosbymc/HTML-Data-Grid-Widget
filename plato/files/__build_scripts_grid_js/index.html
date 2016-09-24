@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.66</p>
+      <p class="stat">55.62</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3758</p>
+      <p class="stat">3769</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">214.60</p>
+      <p class="stat">214.99</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">84.09</p>
+      <p class="stat">84.38</p>
     </div>
   </div>
 </div>
@@ -647,7 +647,6 @@
         storageData.putRequest = {};
         storageData.resizing = false;
         storageData.sortedOn = [];
-        storageData.filteredOn = [];
         storageData.basicFilters = { conjunct: &#039;and&#039;, filterGroup: null };
         storageData.advancedFilters = {};
         storageData.filters = {};
@@ -2743,7 +2742,6 @@
 
         if (gridState[gridId].updating) return;		
         gridState[gridId].filters = {};
-        gridState[gridId].filteredOn = [];
         gridState[gridId].pageRequest.eventType = &#039;filter-rem&#039;;
         preparePageDataGetRequest(gridId);
     }
@@ -2757,20 +2755,21 @@
         if (gridState[gridId].updating) return;		
         var gridData = gridState[gridId];
 
-        if (value === &#039;&#039; &amp;&amp; !gridData.filteredOn.length) return;
+        if (value === &#039;&#039; &amp;&amp; !gridData.filters.filterGroup.length) return;
         filterDiv.find(&#039;.filterInput&#039;).val(&#039;&#039;);
         filterDiv.addClass(&#039;hiddenFilter&#039;);
 
 
-        for (var i = 0; i &lt; gridState[gridId].filteredOn.length; i++) {
-            if (gridState[gridId].filteredOn[i].field !== field) {
-                remainingFilters.push(gridState[gridId].filteredOn[i]);
-            }
-        }
+         for (var i = 0; i &lt; gridState[gridId].filters.groupFilters; i++) {
+             if (gridState[gridId].filters.groupFilters[i].field !== field) {
+                remainingFilters.push(gridState[gridId].filters.groupFilters[i]);
+             }
+         }
 
-        gridData.filteredOn = remainingFilters;
-        gridData.pageRequest.eventType = &#039;filter-rem&#039;;
-        preparePageDataGetRequest(gridId);
+         gridData.filters.groupFilters = remainingFilters;
+         gridData.pageRequest.eventType = &#039;filter-rem&#039;;
+         preparePageDataGetRequest(gridId);
+
     }
 
     function filterButtonClickHandler(e) {
@@ -2796,23 +2795,33 @@
         }
 
         if (errors.length) errors.remove();
-        if (value === &#039;&#039; &amp;&amp; !gridData.filteredOn.length) return;
 
+         if (value === &#039;&#039; &amp;&amp; !gridData.basicFilters.length) return;
 
-        for (var i = 0; i &lt; gridState[gridId].filteredOn.length; i++) {
-            if (gridState[gridId].filteredOn[i].field !== field) tmpFilters.push(gridState[gridId].filteredOn[i]);
+        var extantFilters = gridState[gridId].basicFilters.filterGroup || [];
+        for (var i = 0; i &lt; extantFilters.length; i++) {
+            if (extantFilters[i].field !== field) tmpFilters.push(extantFilters[i]);
             else {
-                updatedFilter = gridState[gridId].filteredOn[i];
+                updatedFilter = extantFilters[i];
                 foundColumn = true;
             }
         }
 
-        tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, filterType: selected });
-        gridState[gridId].filteredOn = tmpFilters;
+        var dataType = gridState[gridId].columns[field].type || &#039;string&#039;;
+        if (dataType === &#039;boolean&#039;) {
+            value = selected;
+            selected = &#039;eq&#039;;
+        }
 
-        filterDiv.addClass(&#039;hiddenFilter&#039;);
-        gridData.pageRequest.eventType = &#039;filter-add&#039;;
-        preparePageDataGetRequest(gridId);
+         tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, operation: selected, dataType: dataType });
+         gridState[gridId].filters = { conjunct: &#039;and&#039;, filterGroup: tmpFilters };
+         gridState[gridId].basicFilters.filterGroup = tmpFilters;
+         gridState[gridId].advancedFilters = {};
+
+         filterDiv.addClass(&#039;hiddenFilter&#039;);
+         gridData.pageRequest.eventType = &#039;filter-add&#039;;
+         preparePageDataGetRequest(gridId);
+
     }
 
     function createGridColumnsFromArray(gridData, gridElem) {
@@ -3131,7 +3140,7 @@
 
         var requestObj = {};
         if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        if (gridData.filterable) requestObj.filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
+        if (gridData.filterable) requestObj.filters = gridData.filters.filterGroup &amp;&amp; gridData.filters.filterGroup.length? gridData.filters : { conjunct: null, filterGroup: [] };
         if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
         requestObj.pageSize = pageSize;
@@ -3154,7 +3163,7 @@
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy;
                 gridData.sortedOn = requestObj.sortedOn;
-                gridData.filteredOn = requestObj.filteredOn;
+                gridData.filters = requestObj.filters;
 
                 if (gridData.pageRequest.eventType === &#039;newGrid&#039; || gridData.pageRequest.eventType === &#039;group&#039;)
                     setColWidth(gridData, gridState[id].grid);
@@ -3548,6 +3557,7 @@
     function createExcelRequestObject(gridId) {
         var gridData = gridState[gridId];
         var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
+        var filters = gridData.pageRequest.filters || gridData.filters || null;
         var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
         var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
         var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
@@ -3558,6 +3568,7 @@
         if (gridData.sortable) requestObj.sortedOn = sortedOn;
 
         if (gridData.filterable) {
+            requestObj.filters = filters;
             requestObj.filteredOn = filteredOn;
             requestObj.filterVal = filterVal;
             requestObj.filterType = filterType;

@@ -866,7 +866,7 @@ var grid = (function _grid($) {
         storageData.resizing = false;
         storageData.sortedOn = [];
         //MCM
-        storageData.filteredOn = [];
+        //storageData.filteredOn = [];
         storageData.basicFilters = { conjunct: 'and', filterGroup: null };
         storageData.advancedFilters = {};
         storageData.filters = {};
@@ -3217,7 +3217,7 @@ var grid = (function _grid($) {
         if (gridState[gridId].updating) return;		//can't filter if grid is updating
         //MCM
         gridState[gridId].filters = {};
-        gridState[gridId].filteredOn = [];
+        //gridState[gridId].filteredOn = [];
         gridState[gridId].pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
     }
@@ -3232,12 +3232,12 @@ var grid = (function _grid($) {
         var gridData = gridState[gridId];
 
         //MCM
-        //if (value === '' && !gridData.filters.filterGroup.length) return;
-        if (value === '' && !gridData.filteredOn.length) return;
+        if (value === '' && !gridData.filters.filterGroup.length) return;
+        //if (value === '' && !gridData.filteredOn.length) return;
         filterDiv.find('.filterInput').val('');
         filterDiv.addClass('hiddenFilter');
 
-        /*
+
          for (var i = 0; i < gridState[gridId].filters.groupFilters; i++) {
              if (gridState[gridId].filters.groupFilters[i].field !== field) {
                 remainingFilters.push(gridState[gridId].filters.groupFilters[i]);
@@ -3247,8 +3247,8 @@ var grid = (function _grid($) {
          gridData.filters.groupFilters = remainingFilters;
          gridData.pageRequest.eventType = 'filter-rem';
          preparePageDataGetRequest(gridId);
-         */
 
+        /*
         for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
             if (gridState[gridId].filteredOn[i].field !== field) {
                 remainingFilters.push(gridState[gridId].filteredOn[i]);
@@ -3258,6 +3258,7 @@ var grid = (function _grid($) {
         gridData.filteredOn = remainingFilters;
         gridData.pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
+        */
     }
 
     function filterButtonClickHandler(e) {
@@ -3284,11 +3285,8 @@ var grid = (function _grid($) {
 
         //MCM
         if (errors.length) errors.remove();
-        if (value === '' && !gridData.filteredOn.length) return;
+        //if (value === '' && !gridData.filteredOn.length) return;
 
-        //TODO: finish changing this section of code out with the new filter structure
-        //TODO: filteredOn -> filters
-        /*
          if (value === '' && !gridData.basicFilters.length) return;
 
         var extantFilters = gridState[gridId].basicFilters.filterGroup || [];
@@ -3300,7 +3298,13 @@ var grid = (function _grid($) {
             }
         }
 
-         tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, operation: selected });
+        var dataType = gridState[gridId].columns[field].type || 'string';
+        if (dataType === 'boolean') {
+            value = selected;
+            selected = 'eq';
+        }
+
+         tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, operation: selected, dataType: dataType });
          gridState[gridId].filters = { conjunct: 'and', filterGroup: tmpFilters };
          gridState[gridId].basicFilters.filterGroup = tmpFilters;
          gridState[gridId].advancedFilters = {};
@@ -3308,8 +3312,8 @@ var grid = (function _grid($) {
          filterDiv.addClass('hiddenFilter');
          gridData.pageRequest.eventType = 'filter-add';
          preparePageDataGetRequest(gridId);
-        */
 
+        /*
         for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
             if (gridState[gridId].filteredOn[i].field !== field) tmpFilters.push(gridState[gridId].filteredOn[i]);
             else {
@@ -3324,6 +3328,7 @@ var grid = (function _grid($) {
         filterDiv.addClass('hiddenFilter');
         gridData.pageRequest.eventType = 'filter-add';
         preparePageDataGetRequest(gridId);
+        */
     }
 
     function createGridColumnsFromArray(gridData, gridElem) {
@@ -3668,9 +3673,9 @@ var grid = (function _grid($) {
 
         var requestObj = {};
         if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        //if (gridData.filterable) requestObj.filters = gridData.filters.filterGroup.length? gridData.filters : { conjunct: null, filterGroup: [] };
+        if (gridData.filterable) requestObj.filters = gridData.filters.filterGroup && gridData.filters.filterGroup.length? gridData.filters : { conjunct: null, filterGroup: [] };
         //MCM
-        if (gridData.filterable) requestObj.filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
+        //if (gridData.filterable) requestObj.filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
         if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
         requestObj.pageSize = pageSize;
@@ -3693,9 +3698,9 @@ var grid = (function _grid($) {
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy;
                 gridData.sortedOn = requestObj.sortedOn;
-                //gridData.filters = requestObj.filters;
+                gridData.filters = requestObj.filters;
                 //MCM
-                gridData.filteredOn = requestObj.filteredOn;
+                //gridData.filteredOn = requestObj.filteredOn;
 
                 if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group')
                     setColWidth(gridData, gridState[id].grid);
@@ -4203,7 +4208,7 @@ var grid = (function _grid($) {
         //MCM
         var gridData = gridState[gridId];
         var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        //var filters = gridData.pageRequest.filters || gridData.filters || null;
+        var filters = gridData.pageRequest.filters || gridData.filters || null;
         var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
         var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
         var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
@@ -4214,7 +4219,7 @@ var grid = (function _grid($) {
         if (gridData.sortable) requestObj.sortedOn = sortedOn;
 
         if (gridData.filterable) {
-            //request.filters = filters;
+            requestObj.filters = filters;
             requestObj.filteredOn = filteredOn;
             requestObj.filterVal = filterVal;
             requestObj.filterType = filterType;
