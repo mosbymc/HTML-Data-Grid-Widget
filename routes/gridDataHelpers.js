@@ -301,9 +301,13 @@ gridDataHelpers.expressionParser = (function _expressionParser() {
                     curVal = new Date(initialVal);
                     baseVal = new Date(this.standard);
                     break;
-                default:
+                case 'boolean':
                     curVal = initialVal.toString();
                     baseVal = this.standard.toString();
+                    break;
+                default:
+                    curVal = initialVal;
+                    baseVal = this.standard;
                     break;
             }
 

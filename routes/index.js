@@ -55,19 +55,9 @@ var getInitialGridDataSource = function _getInitialGridDataSource(req, res) {
 function determinePageData(requestObj, fullGridData, callback) {
     //TODO: I can make this much smarter and faster by checking to see if a filter has been added or removed. If added, just take the existing data
     //TODO: and filter it again. If removed, need to take the original data and apply all remaining filters.
-    //MCM
-
     if (requestObj.filters && requestObj.filters.filterGroup && requestObj.filters.filterGroup.length) {
         fullGridData = gridDataHelpers.expressionParser.createFilterTreeFromFilterObject(requestObj.filters).filterCollection(fullGridData);
     }
-
-    /*if (requestObj.filteredOn && requestObj.filteredOn.length) {
-        for (var i = 0; i <  requestObj.filteredOn.length; i++) {
-            var dataType = columns[requestObj.filteredOn[i].field].type || 'string';
-            fullGridData = gridDataHelpers.filterGridData(requestObj.filteredOn[i].filterType, requestObj.filteredOn[i].value, requestObj.filteredOn[i].field, dataType, fullGridData);
-        }
-    }*/
-
     //TODO: figure out why node or jquery isn't preserving the empty [] sent from grid...
     if ((requestObj.groupedBy && requestObj.groupedBy.length) || (requestObj.sortedOn && requestObj.sortedOn.length)) {
         var groupSort;

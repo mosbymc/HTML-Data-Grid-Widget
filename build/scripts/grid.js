@@ -2072,12 +2072,10 @@ var grid = (function _grid($) {
                         gridState[gridId].filters = advancedFilters;
                         gridState[gridId].advancedFilters = advancedFilters;
                         gridState[gridId].basicFilters.filterGroup = [];
-                        var truth = expressionParser.createFilterTreeFromFilterObject(advancedFilters).filterCollection(gridState[gridId].dataSource.data);
-                        var g = expressionParser.createFilterTreeFromFilterObject(advancedFilters);
-                        var f = g.isTrue(gridState[gridId].dataSource.data[0]);
-                        console.log(truth);
-                        console.log(' ');
-                        console.log(f);
+
+                        advancedFiltersModal.css('display', 'none');
+                        gridState[gridId].pageRequest.eventType = 'filter-add';
+                        preparePageDataGetRequest(gridId);
                     }
 
                     function createFilterGroups(groupContainer, filterObject) {
@@ -2117,7 +2115,7 @@ var grid = (function _grid($) {
                             filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || 'string') });
                         }
                     }
-                    });
+                });
                 gridState[gridId].grid.append(advancedFiltersModal);
             }
             else advancedFiltersModal.css('display', 'block');
@@ -2668,17 +2666,15 @@ var grid = (function _grid($) {
         filterDiv.find('.filterInput').val('');
         filterDiv.addClass('hiddenFilter');
 
-
-         for (var i = 0; i < gridState[gridId].filters.groupFilters; i++) {
-             if (gridState[gridId].filters.groupFilters[i].field !== field) {
+        for (var i = 0; i < gridState[gridId].filters.groupFilters; i++) {
+            if (gridState[gridId].filters.groupFilters[i].field !== field) {
                 remainingFilters.push(gridState[gridId].filters.groupFilters[i]);
-             }
-         }
+            }
+        }
 
-         gridData.filters.groupFilters = remainingFilters;
-         gridData.pageRequest.eventType = 'filter-rem';
-         preparePageDataGetRequest(gridId);
-
+        gridData.filters.groupFilters = remainingFilters;
+        gridData.pageRequest.eventType = 'filter-rem';
+        preparePageDataGetRequest(gridId);
     }
 
     function filterButtonClickHandler(e) {
@@ -2691,9 +2687,9 @@ var grid = (function _grid($) {
             type = filterDiv.data('type'),
             errors = filterDiv.find('.filter-div-error'),
             field = $(this).data('field'),
-            foundColumn = false,
             tmpFilters = [],
-            updatedFilter, re;
+            foundColumn = false,
+            re, updatedFilter;
 
         if (dataTypes[type]) {
             re = new RegExp(dataTypes[type]);
@@ -2703,34 +2699,34 @@ var grid = (function _grid($) {
             }
         }
 
+        var dataType = gridState[gridId].columns[field].type || 'string',
+            extantFilters = gridState[gridId].basicFilters.filterGroup || [];
+
         if (errors.length) errors.remove();
-
-         if (value === '' && !gridData.basicFilters.length) return;
-
-        var extantFilters = gridState[gridId].basicFilters.filterGroup || [];
-        for (var i = 0; i < extantFilters.length; i++) {
-            if (extantFilters[i].field !== field) tmpFilters.push(extantFilters[i]);
-            else {
-                updatedFilter = extantFilters[i];
-                foundColumn = true;
-            }
-        }
-
-        var dataType = gridState[gridId].columns[field].type || 'string';
+        if (value === '' && !gridData.basicFilters.length) return;
         if (dataType === 'boolean') {
             value = selected;
             selected = 'eq';
         }
 
-         tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, operation: selected, dataType: dataType });
-         gridState[gridId].filters = { conjunct: 'and', filterGroup: tmpFilters };
-         gridState[gridId].basicFilters.filterGroup = tmpFilters;
-         gridState[gridId].advancedFilters = {};
+        for (var i = 0; i < extantFilters.length; i++) {
+            if (extantFilters[i].field !== field) tmpFilters.push(extantFilters[i]);
+            else {
+                updatedFilter = extantFilters[i];
+                updatedFilter.operation = selected;
+                updatedFilter.value = value;
+                foundColumn = true;
+            }
+        }
 
-         filterDiv.addClass('hiddenFilter');
-         gridData.pageRequest.eventType = 'filter-add';
-         preparePageDataGetRequest(gridId);
+        tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, operation: selected, dataType: dataType });
+        gridState[gridId].filters = { conjunct: 'and', filterGroup: tmpFilters };
+        gridState[gridId].basicFilters.filterGroup = tmpFilters;
+        gridState[gridId].advancedFilters = {};
 
+        filterDiv.addClass('hiddenFilter');
+        gridData.pageRequest.eventType = 'filter-add';
+        preparePageDataGetRequest(gridId);
     }
 
     function createGridColumnsFromArray(gridData, gridElem) {
@@ -3130,19 +3126,11 @@ var grid = (function _grid($) {
             limitPageData(requestObj, fullGridData, callback);
             return;
         }
-
-        if ((requestObj.filteredOn && requestObj.filteredOn.length) || eventType === 'filter-rem') {
-            fullGridData = eventType === 'filter-add' ? cloneGridData(gridState[id].alteredData) : cloneGridData(gridState[id].originalData);
-            var startIdx = eventType === 'filter-add' ? requestObj.filteredOn.length - 1 : 0;
-
-            for (var i = startIdx; i <  requestObj.filteredOn.length; i++) {
-                var dataType = gridState[id].columns[requestObj.filteredOn[i].field].type || 'string';
-                fullGridData = filterGridData(requestObj.filteredOn[i].filterType, requestObj.filteredOn[i].value, requestObj.filteredOn[i].field, dataType, fullGridData);
-            }
+        if (requestObj.filters && requestObj.filters.filterGroup && requestObj.filters.filterGroup.length) {
+            fullGridData = expressionParser.createFilterTreeFromFilterObject(requestObj.filters).filterCollection(cloneGridData(gridState[id].originalData));
             requestObj.pageNum = 1;		
             gridState[id].alteredData = fullGridData;
         }
-
         if (requestObj.groupedBy.length || requestObj.sortedOn.length) {
             var sortedData = sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
             gridState[id].alteredData = sortedData;
@@ -3169,37 +3157,6 @@ var grid = (function _grid($) {
         }
 
         callback({ rowCount: fullGridData.length, data: returnData });
-    }
-
-    function filterGridData(filterType, value, field, dataType, gridData) {
-        var filteredData = [], curVal, baseVal;
-
-        for (var i = 0; i < gridData.length; i++) {
-            if (dataType === 'time') {
-                curVal = getNumbersFromTime(gridData[i][field]);
-                baseVal = getNumbersFromTime(value);
-
-                if (gridData[i][field].indexOf('PM') > -1) curVal[0] += 12;
-                if (value.indexOf('PM') > -1) baseVal[0] += 12;
-
-                curVal = convertTimeArrayToSeconds(curVal);
-                baseVal = convertTimeArrayToSeconds(baseVal);
-            }
-            else if (dataType === 'number') {
-                curVal = parseFloat(gridData[i][field]);
-                baseVal = parseFloat(value);
-            }
-            else if (dataType === 'date') {
-                curVal = new Date(gridData[i][field]);
-                baseVal = new Date(value);
-            }
-            else {
-                curVal = gridData[i][field];
-                baseVal = value;
-            }
-            if (comparator(curVal, baseVal, filterType)) filteredData.push(gridData[i]);
-        }
-        return filteredData;
     }
 
     function comparator(val, base, type) {
