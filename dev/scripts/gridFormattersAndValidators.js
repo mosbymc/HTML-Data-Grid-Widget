@@ -1,4 +1,5 @@
-import { gridHelpers } from './gridHelpers';
+import { x100, roundNumber, getNumbersFromTime } from './gridHelpers';
+import { dataTypes } from './gridEnumsAndConfigs';
 
 
 /**
@@ -17,17 +18,58 @@ function validateCharacter(code, dataType) {
 }
 
 /**
+ * Formats the text in a grid cell - uses both column formats and column templates if provided
+ * @param {Object} gridData - The cached data for the current grid instance
+ * @param {string} column - The column of the grid that this data will be displayed in
+ * @param {string|number} value - The value to be formatted
+ * @returns {string|number} - Returns a formatted value if a column format and/or template were provided;
+ * otherwise, returns the value
+ */
+function getFormattedCellText(gridData, column, value) {
+    var text,
+        type = gridData.columns[column].type || 'string';
+    if (value == null) return ' ';
+    switch(type) {
+        case 'number':
+            text = formatNumericCellData(value, gridData.columns[column].format);
+            break;
+        case 'date':
+            text = formatDateCellData(value, gridData.columns[column].format);
+            break;
+        case 'time':
+            text = formatTimeCellData(value, column, gridData);
+            break;
+        case 'string':
+        case 'boolean':
+            text = value;
+            break;
+        default:
+            text = value;
+    }
+
+    var template = gridData.columns[column].template;
+    if (template && text !== '') {
+        if (typeof template === 'function')
+            return template.call(column, text);
+        else if (typeof template === 'string')
+            return template.replace('{{data}}', text);
+        return text;
+    }
+    return text;
+}
+
+/**
  * Given a time of day value, will return the value formatted as specified for a given column of the grid
  * @param {string} time - A string representing a time of day (eg '9:45:56 AM' or '17:36:43.222')
  * @param {string} column - The column of the grid that provided the format
- * @param {string|number} gridId - The id value of the grid this operation is being performed on
+ * @param {Object} gridData - The cached data for the current grid instance
  * @returns {string} - Returns the time formatted as specified for the given grid column
  */
-function formatTimeCellData(time, column, gridId) {
-    var timeArray = gridHelpers.getNumbersFromTime(time),
+function formatTimeCellData(time, column, gridData) {
+    var timeArray = getNumbersFromTime(time),
         formattedTime,
-        format = gridState[gridId].columns[column].format || '24',
-        timeFormat = gridState[gridId].columns[column].timeFormat;
+        format = gridData.columns[column].format || '24',
+        timeFormat = gridData.columns[column].timeFormat;
 
     if (timeArray.length < 2) return '';
 
@@ -96,7 +138,7 @@ function formatNumericCellData(num, format) {
 
     if (formatObject.alterer)
         num = formatObject.alterer(+num);
-    num = gridHelpers.roundNumber(+num, decimals);
+    num = roundNumber(+num, decimals);
     var sign = 0 > +num ? -1 : 1;
     num = num.toString();
     num = num.replace(new RegExp(',', 'g'), '').replace('-', '');   //remove all commas: either the format didn't specify commas, or we will replace them later
@@ -224,13 +266,4 @@ function createCurrencyNumberOrPercentFormat(format) {
     };
 }
 
-var gridFormatters = {
-    validateCharacter,
-    formatTimeCellData,
-    formatDateCellData,
-    formatNumericCellData,
-    verifyFormat,
-    createCurrencyNumberOrPercentFormat
-};
-
-export { gridFormatters };
+export { validateCharacter, getFormattedCellText, formatTimeCellData, formatDateCellData, formatNumericCellData, verifyFormat, createCurrencyNumberOrPercentFormat };

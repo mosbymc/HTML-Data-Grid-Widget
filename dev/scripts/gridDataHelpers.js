@@ -1,4 +1,4 @@
-import { gridHelpers } from './gridHelpers';
+import { getNumbersFromTime, convertTimeArrayToSeconds } from './gridHelpers';
 
 /**
  * Using various equality operators, checks for truth based on the type of the operator(s)
@@ -47,33 +47,32 @@ function comparator(val, base, type) {
 /**
  * Manages sorting grid data based on the field and data type
  * @param {Array} sortedItems - An array of objects describing which columns are to be sorted and in which directions
- * @param {Array} gridData - An array containing the grid data to be sorted
- * @param {number} gridId - The id of the grid instance
+ * @param {Object} gridData - The cached data for the current grid instance\
  * @returns {Array} - Returns an array of sorted grid data
  */
-export function sortGridData (sortedItems, gridData, gridId) {
+export function sortGridData (sortedItems, gridData) {
     for (var i = 0; i < sortedItems.length; i++) {
         if (i === 0)
-            gridData = mergeSort(gridData, sortedItems[i], gridState[gridId].columns[sortedItems[i].field].type || 'string');
+            gridData.dataSource.data = mergeSort(gridData.dataSource.data, sortedItems[i], gridData.columns[sortedItems[i].field].type || 'string');
         else {
             var sortedGridData = [];
             var itemsToSort = [];
-            for (var j = 0; j < gridData.length; j++) {
-                if (!itemsToSort.length || compareValuesByType(itemsToSort[0][sortedItems[i - 1].field], gridData[j][sortedItems[i - 1].field], gridState[gridId].columns[sortedItems[i - 1].field].type))
-                    itemsToSort.push(gridData[j]);
+            for (var j = 0; j < gridData.dataSource.data.length; j++) {
+                if (!itemsToSort.length || compareValuesByType(itemsToSort[0][sortedItems[i - 1].field], gridData[j][sortedItems[i - 1].field], gridData.columns[sortedItems[i - 1].field].type))
+                    itemsToSort.push(gridData.dataSource.data[j]);
                 else {
                     if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
-                    else sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], gridState[gridId].columns[sortedItems[i].field].type || 'string'));
+                    else sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], gridData.columns[sortedItems[i].field].type || 'string'));
                     itemsToSort.length = 0;
-                    itemsToSort.push(gridData[j]);
+                    itemsToSort.push(gridData.dataSource.data[j]);
                 }
-                if (j === gridData.length - 1)
-                    sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], gridState[gridId].columns[sortedItems[i].field].type || 'string'));
+                if (j === gridData.dataSource.data.length - 1)
+                    sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], gridData.columns[sortedItems[i].field].type || 'string'));
             }
-            gridData = sortedGridData;
+            gridData.dataSource.data = sortedGridData;
         }
     }
-    return gridData;
+    return gridData.dataSource.data;
 }
 
 /**
@@ -103,16 +102,16 @@ function merge(left, right, sortObj, type) {
     var result = [], leftVal, rightVal;
     while (left.length && right.length) {
         if (type === 'time') {
-            leftVal = gridHelpers.getNumbersFromTime(left[0][sortObj.field]);
-            rightVal = gridHelpers.getNumbersFromTime(right[0][sortObj.field]);
+            leftVal = getNumbersFromTime(left[0][sortObj.field]);
+            rightVal = getNumbersFromTime(right[0][sortObj.field]);
 
             if (~left[0][sortObj.field].indexOf('PM'))
                 leftVal[0] += 12;
             if (~right[0][sortObj.field].indexOf('PM'))
                 rightVal[0] += 12;
 
-            leftVal = gridHelpers.convertTimeArrayToSeconds(leftVal);
-            rightVal = gridHelpers.convertTimeArrayToSeconds(rightVal);
+            leftVal = convertTimeArrayToSeconds(leftVal);
+            rightVal = convertTimeArrayToSeconds(rightVal);
         }
         else if (type === 'number') {
             leftVal = parseFloat(left[0][sortObj.field]);
@@ -165,23 +164,16 @@ function compareValuesByType (val1, val2, dataType) {
             }
             return date1 === date2;
         case 'time':
-            var value1 = gridHelpers.getNumbersFromTime(val1);
-            var value2 = gridHelpers.getNumbersFromTime(val2);
+            var value1 = getNumbersFromTime(val1);
+            var value2 = getNumbersFromTime(val2);
             if (value1[3] && value1[3] === 'PM')
                 value1[0] += 12;
             if (value2[3] && value2[3] === 'PM')
                 value2[0] += 12;
-            return gridHelpers.convertTimeArrayToSeconds(value1) === gridHelpers.convertTimeArrayToSeconds(value2);
+            return convertTimeArrayToSeconds(value1) === convertTimeArrayToSeconds(value2);
         default:
             return val1.toString() === val2.toString();
     }
 }
 
-var gridDataHelpers = {
-    comparator,
-    sortGridData,
-    mergeSort,
-    compareValuesByType
-};
-
-export { gridDataHelpers };
+export { comparator, sortGridData, mergeSort, compareValuesByType };

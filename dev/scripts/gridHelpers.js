@@ -132,16 +132,4 @@ function convertTimeArrayToSeconds(timeArray) {
     return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
 }
 
-var gridHelpers = {
-    x100,
-    roundNumber,
-    cloneGridData,
-    cloneArray,
-    isDomElement,
-    isNumber,
-    getGridColumns,
-    getNumbersFromTime,
-    convertTimeArrayToSeconds
-};
-
-export { gridHelpers };
+export { x100, roundNumber, cloneGridData, cloneArray, isDomElement, isNumber, getGridColumns, getNumbersFromTime, convertTimeArrayToSeconds };

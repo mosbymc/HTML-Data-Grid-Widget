@@ -33,11 +33,4 @@ var eventsEnum = {
 
 var aggregates = { count: 'Count: ', average: 'Avg: ', max: 'Max: ', min: 'Min: ', total: 'Total: ' };
 
-var gridEnums = {
-    dataTypes,
-    events,
-    eventsEnum,
-    aggregates
-};
-
-export { gridEnums };
+export { dataTypes, events, eventsEnum, aggregates };

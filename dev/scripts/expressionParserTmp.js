@@ -1,6 +1,10 @@
 import { gridDataHelpers } from './gridDataHelpers';
 import { gridHelpers } from './gridHelpers';
 
+var expressionParser = {
+    createFilterTreeFromFilterObject
+};
+
 export function createFilterTreeFromFilterObject(filterObject) {
     var ret = Object.create(booleanExpressionTree);
     ret.init();
