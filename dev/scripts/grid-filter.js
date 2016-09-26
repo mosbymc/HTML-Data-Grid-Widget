@@ -1,4 +1,4 @@
-import { gridFormatters } from './gridFormattersAndValidators';
+import { validateCharacter } from './gridFormattersAndValidators';
 
 /**
  * Add the filter icon to a filterable grid header and attaches an event listener when the icon is clicked
@@ -613,6 +613,14 @@ function getFilterRowIdx(filterModal) {
     return filterModal.find('.filter_row_div').length ? filterModal.find('.filter_row_div').last().data('filter_idx') + 1 : 1;
 }
 
+var gridState = {},
+    isInitialized = false;
+
+function filter_init(gridIObj) {
+    gridState = gridIObj;
+    isInitialized = true;
+}
+
 export { setFilterableClickListener, createFilterDiv, createFilterOptionsByDataType, filterInputValidation, resetAllFilters, resetButtonClickHandler, filterButtonClickHandler,
         attachFilterListener, createFilterMenuItems, createFilterModalMenuItem, addFilterButtonHandler, addNewAdvancedFilter, addFilterGroupHandler, deleteFilterButtonHandler,
-        clearFirstFilterButtonHandler, getFilterRowIdx };
+        clearFirstFilterButtonHandler, getFilterRowIdx, filter_init, isInitialized };

@@ -1,4 +1,4 @@
-import { gridFormatters } from './gridFormattersAndValidators';
+import { getFormattedCellText } from './gridFormattersAndValidators';
 
 /**
  * Creates group header rows, pads with extra columns based on number of grouped columns, and calculates/display group aggregatges
@@ -67,7 +67,7 @@ function createGroupedRows(gridId, rowIndex, columns, currentGroupingValues, gri
         }
         gridData.groupAggregations[j]._items_++;
         if (groupedDiff[j]) {
-            var groupedText = gridFormatters.getFormattedCellText(gridId, gridData.groupedBy[j].field, gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field]) ||
+            var groupedText = getFormattedCellText(gridId, gridData.groupedBy[j].field, gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field]) ||
                 gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field];
             var groupTr = $('<tr class="grouped_row_header"></tr>').appendTo(gridContent);
             var groupTitle = gridData.columns[gridData.groupedBy[j].field].title || gridData.groupedBy[j].field;
@@ -194,4 +194,12 @@ function RemoveAllColumnGrouping(e) {
     preparePageDataGetRequest(gridId);
 }
 
-export { createGroupedRows, createGroupTrEventHandlers, attachGroupItemEventHandlers, createGroupMenuItem, RemoveAllColumnGrouping };
+var gridState = {},
+    isInitialized = false;
+
+function group_init(gridIObj) {
+    gridState = gridIObj;
+    isInitialized = true;
+}
+
+export { createGroupedRows, createGroupTrEventHandlers, attachGroupItemEventHandlers, createGroupMenuItem, RemoveAllColumnGrouping, group_init, isInitialized };

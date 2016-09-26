@@ -1,4 +1,4 @@
-import { gridHelpers } from './gridHelpers';
+import { getGridColumns } from './gridHelpers';
 
 /**
  * Creates the excel export sub-menu options and attached handlers
@@ -77,7 +77,7 @@ function exportDataAsExcelFile(gridId, option) {
  * @param {function} callback - The callback function; Needed for server-side data requests
  */
 function determineGridDataToExport(gridId, option, callback) {
-    var columns = gridHelpers.getGridColumns(gridState[gridId]);
+    var columns = getGridColumns(gridState[gridId]);
     switch (option) {
         case 'select':
             //TODO: this is a bad namespace; need to rework the unfortunate grid.grid section
@@ -145,4 +145,12 @@ function createExcelRequestObject(gridId) {
     return requestObj;
 }
 
-export { createExcelExportMenuItems, exportDataAsExcelFile, determineGridDataToExport, createExcelRequestObject };
+var gridState = {},
+    isInitialized = false;
+
+function excel_init(gridIObj) {
+    gridState = gridIObj;
+    isInitialized = true;
+}
+
+export { createExcelExportMenuItems, exportDataAsExcelFile, determineGridDataToExport, createExcelRequestObject, excel_init, isInitialized };

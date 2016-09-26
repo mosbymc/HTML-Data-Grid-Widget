@@ -1,6 +1,7 @@
-import { gridFormatters } from './gridFormattersAndValidators';
-import { gridHelpers } from './gridHelpers';
-import { gridDataHelpers } from './gridDataHelpers';
+import { validateCharacter, getFormattedCellText } from './gridFormattersAndValidators';
+import { isNumber, getNumbersFromTime, convertTimeArrayToSeconds, cloneGridData } from './gridHelpers';
+import { compareValuesByType } from './gridDataHelpers';
+import { dataTypes } from './gridEnumsAndConfigs';
 
 /**
  * Makes a grid cell editable on a click event. Used for grid cells whose values can be changed and whose column configuration
@@ -47,9 +48,9 @@ function makeCellEditable(id, td) {
                 break;
             case 'number':
                 if (typeof gridState[id].dataSource.data[index][field] === 'string')
-                    val = gridHelpers.sNumber(parseFloat(gridState[id].dataSource.data[index][field])) ? gridHelpers.isNumber(parseFloat(gridState[id].dataSource.data[index][field])) : 0;
+                    val = isNumber(parseFloat(gridState[id].dataSource.data[index][field])) ? isNumber(parseFloat(gridState[id].dataSource.data[index][field])) : 0;
                 else
-                    val = gridHelpers.isNumber(gridState[id].dataSource.data[index][field]) ? gridState[id].dataSource.data[index][field] : 0;
+                    val = isNumber(gridState[id].dataSource.data[index][field]) ? gridState[id].dataSource.data[index][field] : 0;
                 inputVal = val;
                 input = $('<input type="text" value="' + inputVal + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
                 dataType = 'number';
@@ -77,7 +78,7 @@ function makeCellEditable(id, td) {
         if (dataType) {
             input.on('keypress', function restrictCharsHandler(e) {
                 var code = e.charCode ? e.charCode : e.keyCode;
-                if (!gridFormatters.validateCharacter.call(this, code, dataType)) {
+                if (!validateCharacter.call(this, code, dataType)) {
                     e.preventDefault();
                     return false;
                 }
@@ -131,7 +132,7 @@ function makeCellSelectable(id, td) {
         var setVal = gridData.dataSource.data[index][field];
         if (null != setVal && '' !== setVal) options.push(setVal);
         for (var z = 0; z < gridData.columns[field].options.length; z++) {
-            if (!gridDataHelpers.compareValuesByType(setVal, gridData.columns[field].options[z], (gridData.columns[field].type || 'string'))) {
+            if (!compareValuesByType(setVal, gridData.columns[field].options[z], (gridData.columns[field].type || 'string'))) {
                 options.push(gridData.columns[field].options[z]);
             }
         }
@@ -145,16 +146,16 @@ function makeCellSelectable(id, td) {
                 case 'boolean':
                     return first > second ? 1 : first < second ? -1 : 0;
                 case 'time':
-                    var firstTime = gridHelpers.getNumbersFromTime(first);
-                    var secondTime = gridHelpers.getNumbersFromTime(second);
+                    var firstTime = getNumbersFromTime(first);
+                    var secondTime = getNumbersFromTime(second);
 
                     if (~first.indexOf('PM'))
                         firstTime[0] += 12;
                     if (~second.indexOf('PM'))
                         secondTime[0] += 12;
 
-                    firstTime = gridHelpers.convertTimeArrayToSeconds(firstTime);
-                    secondTime = gridHelpers.convertTimeArrayToSeconds(secondTime);
+                    firstTime = convertTimeArrayToSeconds(firstTime);
+                    secondTime = convertTimeArrayToSeconds(secondTime);
                     return firstTime > secondTime ? 1 : firstTime < secondTime ? -1 : 0;
                 case 'date':
                     var firstDate = new Date(first);
@@ -258,7 +259,7 @@ function saveCellEditData(input) {
         field = cell.data('field'),
         type = gridState[id].columns[field].type || '',
         saveVal, re, setDirtyFlag = false,
-        formattedVal = gridFormatters.getFormattedCellText(id, field, val),
+        formattedVal = getFormattedCellText(id, field, val),
         displayVal = formattedVal == null ? '' : formattedVal;
 
     input.remove();
@@ -328,7 +329,7 @@ function saveCellSelectData(select) {
         index = parentCell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
         field = parentCell.data('field'),
         type = gridState[id].columns[field].type || '',
-        displayVal = gridFormatters.getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field],
+        displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field],
         re, saveVal, setDirtyFlag = false;
 
     switch (type) {
@@ -402,7 +403,7 @@ function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
                 gridState[id].putRequest.models = [];
                 var putRequestModels = gridState[id].putRequest.models;
                 for (i = 0; i < dirtyCells.length; i++) {
-                    var tmpModel = gridHelpers.cloneGridData(gridState[id].dataSource.data[dirtyCells[i].parents('tr').index()]);
+                    var tmpModel = cloneGridData(gridState[id].dataSource.data[dirtyCells[i].parents('tr').index()]);
                     var tmpMap = tmpModel._initialRowIndex;
                     var idx = existsInPutRequest(putRequestModels, tmpModel);
                     if (~idx)
@@ -438,7 +439,7 @@ function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
                 var rowNum = gridState[id].pageSize;
                 var addend = (pageNum-1)*rowNum;
                 var cellVal = gridState[id].originalData[index][field] !== undefined ? gridState[id].originalData[index][field] : '';
-                var text = gridFormatters.getFormattedCellText(id, field, cellVal) || cellVal;
+                var text = getFormattedCellText(id, field, cellVal) || cellVal;
                 dirtyCells[i].text(text);
                 dirtyCells[i].find('.dirty').add('.dirty-blank').remove();
                 gridState[id].dataSource.data[index][field] = gridState[id].originalData[index + addend][field];
@@ -460,5 +461,13 @@ function createSaveDeleteMenuItems(gridId) {
     return [saveMenuItem, deleteMenuItem];
 }
 
+var gridState = {},
+    isInitialized = false;
+
+function edit_init(gridIObj) {
+    gridState = gridIObj;
+    isInitialized = true;
+}
+
 export { makeCellEditable, makeCellSelectable, setupCellValidation, attachValidationListener, saveCellEditData, saveCellSelectData,
-        attachSaveAndDeleteHandlers, createSaveDeleteMenuItems };
+        attachSaveAndDeleteHandlers, createSaveDeleteMenuItems, isInitialized, edit_init };

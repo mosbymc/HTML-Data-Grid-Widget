@@ -290,4 +290,12 @@ function createDeselectMenuOption(gridId) {
     return deSelectMenuItem;
 }
 
-export { attachTableSelectHandler, determineOverlayDimensions, selectHighlighted, createDeselectMenuOption };
+var gridState = {},
+    isInitialized = false;
+
+function select_init(gridIObj) {
+    gridState = gridIObj;
+    isInitialized = true;
+}
+
+export { attachTableSelectHandler, determineOverlayDimensions, selectHighlighted, createDeselectMenuOption, select_init, isInitialized };

@@ -1,4 +1,4 @@
-import { gridHelpers } from './gridHelpers';
+import { cloneGridData } from './gridHelpers';
 
 function createSortMenuItem() {
     var sortMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove All Column Sorts</a>'));
@@ -51,7 +51,7 @@ function setSortableClickListener(elem) {
                     });
                     elem.find('.sortSpan').remove();
                     //TODO: why am I doing this here?
-                    gridState[id].alteredData = gridHelpers.cloneGridData(gridState[id].originalData);
+                    gridState[id].alteredData = cloneGridData(gridState[id].originalData);
                 }
             }
         }
@@ -65,4 +65,12 @@ function setSortableClickListener(elem) {
     });
 }
 
-export { createSortMenuItem, RemoveAllColumnSorts, setSortableClickListener };
+var gridState = {},
+    isInitialized = false;
+
+function sort_init(gridIObj) {
+    gridState = gridIObj;
+    isInitialized = true;
+}
+
+export { createSortMenuItem, RemoveAllColumnSorts, setSortableClickListener, sort_init, isInitialized };

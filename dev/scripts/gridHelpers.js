@@ -1,3 +1,5 @@
+import { dataTypes } from './gridEnumsAndConfigs';
+
 /**
  * Multiples a number by 100
  * @param {number} val - the number to by multiplied by 100
