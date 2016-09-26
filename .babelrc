@@ -1,0 +1,13 @@
+{
+  "presets": ["es2015"],
+  "sourceMaps": true,
+  "ignore": [],
+  "only": [],
+  "inputSourceMap": {
+
+  },
+  "sourceRoot": "",
+  "babelrc": true,
+  "minified": false,
+  "comments": true
+}

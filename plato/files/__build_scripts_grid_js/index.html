@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.70</p>
+      <p class="stat">55.73</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3726</p>
+      <p class="stat">3708</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">214.20</p>
+      <p class="stat">213.72</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">83.41</p>
+      <p class="stat">83.09</p>
     </div>
   </div>
 </div>
@@ -2168,44 +2168,6 @@
                         gridState[gridId].pageRequest.eventType = &#039;filter-add&#039;;
                         preparePageDataGetRequest(gridId);
                     }
-
-                    function createFilterGroups(groupContainer, filterObject) {
-                        var groupConjunct = groupContainer.parents(&#039;.filter_modal&#039;).find(&#039;span[data-filter_group_num=&quot;&#039; + groupContainer.data(&#039;filter_group_num&#039;) + &#039;&quot;]&#039;).children(&#039;select&#039;);
-                        filterObject.filterGroup = [];
-                        filterObject.conjunct = groupConjunct.val();
-                        findFilters(groupContainer, filterObject);
-                    }
-
-                    function findFilters(groupContainer, filterObject) {
-                        var gridId = groupContainer.parents(&#039;.filter_modal&#039;).data(&#039;grid_id&#039;);
-                        groupContainer.children(&#039;.filter_row_div&#039;).each(function iterateFilterDivsCallback() {
-                            createFilterObjects($(this), filterObject.filterGroup, gridId);
-                        });
-
-                        groupContainer.children(&#039;.filter_group_container&#039;).each(function createNestedFilterGroupsCallback(idx, val) {
-                            var nestedGroup = {};
-                            filterObject.filterGroup.push(nestedGroup);
-                            createFilterGroups($(val), nestedGroup);
-                        });
-                    }
-
-                    function createFilterObjects(filterDiv, filterGroupArr, gridId) {
-                        var field = filterDiv.find(&#039;.filter_column_selector&#039;).val(),
-                            operation, value,
-                            filterType = filterDiv.find(&#039;.filterType&#039;).val();
-                        if (filterType !== &#039;false&#039; &amp;&amp; filterType !== &#039;true&#039;) {
-                            operation = filterType;
-                            value = filterDiv.find(&#039;.advanced_filter_value&#039;).val();
-                        }
-                        else {
-                            operation = &#039;eq&#039;;
-                            value = filterType;
-                        }
-
-                        if (value) {
-                            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || &#039;string&#039;) });
-                        }
-                    }
                 });
                 gridState[gridId].grid.append(advancedFiltersModal);
             }
@@ -2220,6 +2182,44 @@
             gridState[gridId].grid.find(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
         });
         return filterModalMenuItem;
+    }
+
+    function createFilterGroups(groupContainer, filterObject) {
+        var groupConjunct = groupContainer.parents(&#039;.filter_modal&#039;).find(&#039;span[data-filter_group_num=&quot;&#039; + groupContainer.data(&#039;filter_group_num&#039;) + &#039;&quot;]&#039;).children(&#039;select&#039;);
+        filterObject.filterGroup = [];
+        filterObject.conjunct = groupConjunct.val();
+        findFilters(groupContainer, filterObject);
+    }
+
+    function findFilters(groupContainer, filterObject) {
+        var gridId = groupContainer.parents(&#039;.filter_modal&#039;).data(&#039;grid_id&#039;);
+        groupContainer.children(&#039;.filter_row_div&#039;).each(function iterateFilterDivsCallback() {
+            createFilterObjects($(this), filterObject.filterGroup, gridId);
+        });
+
+        groupContainer.children(&#039;.filter_group_container&#039;).each(function createNestedFilterGroupsCallback(idx, val) {
+            var nestedGroup = {};
+            filterObject.filterGroup.push(nestedGroup);
+            createFilterGroups($(val), nestedGroup);
+        });
+    }
+
+    function createFilterObjects(filterDiv, filterGroupArr, gridId) {
+        var field = filterDiv.find(&#039;.filter_column_selector&#039;).val(),
+            operation, value,
+            filterType = filterDiv.find(&#039;.filterType&#039;).val();
+        if (filterType !== &#039;false&#039; &amp;&amp; filterType !== &#039;true&#039;) {
+            operation = filterType;
+            value = filterDiv.find(&#039;.advanced_filter_value&#039;).val();
+        }
+        else {
+            operation = &#039;eq&#039;;
+            value = filterType;
+        }
+
+        if (value) {
+            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || &#039;string&#039;) });
+        }
     }
 
     function addFilterButtonHandler(e) {
@@ -3512,29 +3512,11 @@
     }
 
     function createExcelRequestObject(gridId) {
-        var gridData = gridState[gridId];
-        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        var filters = gridData.pageRequest.filters || gridData.filters || null;
-        var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
-        var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
-        var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
-        var groupedBy = gridData.pageRequest.eventType === &#039;group&#039; ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
-        var groupSortDirection = gridData.pageRequest.eventType === &#039;group&#039; ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
-
-        var requestObj = {};
-        if (gridData.sortable) requestObj.sortedOn = sortedOn;
-
-        if (gridData.filterable) {
-            requestObj.filters = filters;
-            requestObj.filteredOn = filteredOn;
-            requestObj.filterVal = filterVal;
-            requestObj.filterType = filterType;
-        }
-
-        if (gridData.groupable) {   
-            requestObj.groupedBy = groupedBy;
-            requestObj.groupSortDirection = groupSortDirection;
-        }
+        var gridData = gridState[gridId],
+            requestObj = {};
+        if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
+        if (gridData.filterable) requestObj.filters = gridData.filters.filterGroup &amp;&amp; gridData.filters.filterGroup.length? gridData.filters : { conjunct: null, filterGroup: [] };
+        if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
         requestObj.pageSize = gridData.dataSource.rowCount;
         requestObj.pageNum = 1;

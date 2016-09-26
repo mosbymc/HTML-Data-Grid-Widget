@@ -2571,44 +2571,6 @@ var grid = (function _grid($) {
                         gridState[gridId].pageRequest.eventType = 'filter-add';
                         preparePageDataGetRequest(gridId);
                     }
-
-                    function createFilterGroups(groupContainer, filterObject) {
-                        var groupConjunct = groupContainer.parents('.filter_modal').find('span[data-filter_group_num="' + groupContainer.data('filter_group_num') + '"]').children('select');
-                        filterObject.filterGroup = [];
-                        filterObject.conjunct = groupConjunct.val();
-                        findFilters(groupContainer, filterObject);
-                    }
-
-                    function findFilters(groupContainer, filterObject) {
-                        var gridId = groupContainer.parents('.filter_modal').data('grid_id');
-                        groupContainer.children('.filter_row_div').each(function iterateFilterDivsCallback() {
-                            createFilterObjects($(this), filterObject.filterGroup, gridId);
-                        });
-
-                        groupContainer.children('.filter_group_container').each(function createNestedFilterGroupsCallback(idx, val) {
-                            var nestedGroup = {};
-                            filterObject.filterGroup.push(nestedGroup);
-                            createFilterGroups($(val), nestedGroup);
-                        });
-                    }
-
-                    function createFilterObjects(filterDiv, filterGroupArr, gridId) {
-                        var field = filterDiv.find('.filter_column_selector').val(),
-                            operation, value,
-                            filterType = filterDiv.find('.filterType').val();
-                        if (filterType !== 'false' && filterType !== 'true') {
-                            operation = filterType;
-                            value = filterDiv.find('.advanced_filter_value').val();
-                        }
-                        else {
-                            operation = 'eq';
-                            value = filterType;
-                        }
-
-                        if (value) {
-                            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || 'string') });
-                        }
-                    }
                 });
                 gridState[gridId].grid.append(advancedFiltersModal);
             }
@@ -2623,6 +2585,44 @@ var grid = (function _grid($) {
             gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
         });
         return filterModalMenuItem;
+    }
+
+    function createFilterGroups(groupContainer, filterObject) {
+        var groupConjunct = groupContainer.parents('.filter_modal').find('span[data-filter_group_num="' + groupContainer.data('filter_group_num') + '"]').children('select');
+        filterObject.filterGroup = [];
+        filterObject.conjunct = groupConjunct.val();
+        findFilters(groupContainer, filterObject);
+    }
+
+    function findFilters(groupContainer, filterObject) {
+        var gridId = groupContainer.parents('.filter_modal').data('grid_id');
+        groupContainer.children('.filter_row_div').each(function iterateFilterDivsCallback() {
+            createFilterObjects($(this), filterObject.filterGroup, gridId);
+        });
+
+        groupContainer.children('.filter_group_container').each(function createNestedFilterGroupsCallback(idx, val) {
+            var nestedGroup = {};
+            filterObject.filterGroup.push(nestedGroup);
+            createFilterGroups($(val), nestedGroup);
+        });
+    }
+
+    function createFilterObjects(filterDiv, filterGroupArr, gridId) {
+        var field = filterDiv.find('.filter_column_selector').val(),
+            operation, value,
+            filterType = filterDiv.find('.filterType').val();
+        if (filterType !== 'false' && filterType !== 'true') {
+            operation = filterType;
+            value = filterDiv.find('.advanced_filter_value').val();
+        }
+        else {
+            operation = 'eq';
+            value = filterType;
+        }
+
+        if (value) {
+            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || 'string') });
+        }
     }
 
     function addFilterButtonHandler(e) {
@@ -4060,30 +4060,11 @@ var grid = (function _grid($) {
 
     //TODO: why am I creating the request object differently here than in the normal grid page get request?
     function createExcelRequestObject(gridId) {
-        //MCM
-        var gridData = gridState[gridId];
-        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        var filters = gridData.pageRequest.filters || gridData.filters || null;
-        var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
-        var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
-        var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
-        var groupedBy = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
-        var groupSortDirection = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
-
-        var requestObj = {};
-        if (gridData.sortable) requestObj.sortedOn = sortedOn;
-
-        if (gridData.filterable) {
-            requestObj.filters = filters;
-            requestObj.filteredOn = filteredOn;
-            requestObj.filterVal = filterVal;
-            requestObj.filterType = filterType;
-        }
-
-        if (gridData.groupable) {   //TODO: not sure if the data can be grouped in excel; maybe a pivot table, but that will come much later, if at all.
-            requestObj.groupedBy = groupedBy;
-            requestObj.groupSortDirection = groupSortDirection;
-        }
+        var gridData = gridState[gridId],
+            requestObj = {};
+        if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
+        if (gridData.filterable) requestObj.filters = gridData.filters.filterGroup && gridData.filters.filterGroup.length? gridData.filters : { conjunct: null, filterGroup: [] };
+        if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
         requestObj.pageSize = gridData.dataSource.rowCount;
         requestObj.pageNum = 1;
