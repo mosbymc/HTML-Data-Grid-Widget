@@ -139,9 +139,9 @@ var grid = (function _grid($) {
             gridElem[0].grid, {
                 'bindEvents': {
                     value: function _bindGridEvents(evt, funcs) {
-                        if (!funcs || (typeof funcs !== 'function' && funcs.constructor !== Array)) return false;
+                        if (!funcs || (typeof funcs !== 'function' && !Array.isArray(funcs))) return false;
                         if (typeof funcs === 'function') funcs = [funcs];
-                        if (~events.indexOf(evt)) {
+                        if (events.includes(evt)) {
                             gridState[gridId].events[evt] = gridState[gridId].events[evt].concat(funcs);
                             return true;
                         }
@@ -152,7 +152,7 @@ var grid = (function _grid($) {
                 },
                 'unbindEvents': {
                     value: function _unbindEvents(evt, funcs) {
-                        if (~events.indexOf(evt) && (funcs || (typeof funcs === 'function' || funcs.constructor === Array))) {
+                        if (events.includes(evt) && (funcs || (typeof funcs === 'function' || Array.isArray(funcs)))) {
                             if (typeof funcs === 'function') funcs = [funcs];
                             var tmpEvts = [];
                             for (var i = 0; i < gridState[gridId].events[evt].length; i++) {
@@ -424,7 +424,7 @@ var grid = (function _grid($) {
                 'updateCellData': {
                     value: function _updateCellData(cellData, setAsDirty) {
                         if (!cellData) return;
-                        if (cellData.constructor === Array) {
+                        if (Array.isArray(cellData)) {
                             cellData.forEach(function cellIterationCallback(cell) {
                                 applyUpdate(cell, setAsDirty);
                             });

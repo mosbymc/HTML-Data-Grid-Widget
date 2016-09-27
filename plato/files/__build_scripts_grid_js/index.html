@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">213.72</p>
+      <p class="stat">213.42</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">83.09</p>
+      <p class="stat">83.10</p>
     </div>
   </div>
 </div>
@@ -230,9 +230,9 @@
             gridElem[0].grid, {
                 &#039;bindEvents&#039;: {
                     value: function _bindGridEvents(evt, funcs) {
-                        if (!funcs || (typeof funcs !== &#039;function&#039; &amp;&amp; funcs.constructor !== Array)) return false;
+                        if (!funcs || (typeof funcs !== &#039;function&#039; &amp;&amp; !Array.isArray(funcs))) return false;
                         if (typeof funcs === &#039;function&#039;) funcs = [funcs];
-                        if (~events.indexOf(evt)) {
+                        if (events.includes(evt)) {
                             gridState[gridId].events[evt] = gridState[gridId].events[evt].concat(funcs);
                             return true;
                         }
@@ -243,7 +243,7 @@
                 },
                 &#039;unbindEvents&#039;: {
                     value: function _unbindEvents(evt, funcs) {
-                        if (~events.indexOf(evt) &amp;&amp; (funcs || (typeof funcs === &#039;function&#039; || funcs.constructor === Array))) {
+                        if (events.includes(evt) &amp;&amp; (funcs || (typeof funcs === &#039;function&#039; || Array.isArray(funcs)))) {
                             if (typeof funcs === &#039;function&#039;) funcs = [funcs];
                             var tmpEvts = [];
                             for (var i = 0; i &lt; gridState[gridId].events[evt].length; i++) {
@@ -515,7 +515,7 @@
                 &#039;updateCellData&#039;: {
                     value: function _updateCellData(cellData, setAsDirty) {
                         if (!cellData) return;
-                        if (cellData.constructor === Array) {
+                        if (Array.isArray(cellData)) {
                             cellData.forEach(function cellIterationCallback(cell) {
                                 applyUpdate(cell, setAsDirty);
                             });

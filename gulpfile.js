@@ -154,6 +154,7 @@ gulp.task('optimize-js', ['lint', 'clean-code'], function() {
             fileName: 'grid.min.js',
             compilerFlags: {
                 compilation_level: 'SIMPLE_OPTIMIZATIONS',
+                //allow_es6_out: 'true',
                 language_in: 'ECMASCRIPT5_STRICT',
                 language_out: 'ECMASCRIPT5_STRICT',
                 warning_level: 'DEFAULT',

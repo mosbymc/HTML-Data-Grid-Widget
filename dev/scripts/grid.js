@@ -165,6 +165,7 @@ var grid = (function _grid($) {
             (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
             gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function';
 
+            //if (Array.isArray(gridData)) createGridColumnsFromArray(gridData, gridElem);
             if (gridData.constructor === Array) createGridColumnsFromArray(gridData, gridElem);
             else {
                 createGridHeaders(gridData, gridElem);
@@ -313,9 +314,14 @@ var grid = (function _grid($) {
                      * @returns {boolean} - indicates that the provided function(s) were or were not added as event listeners.
                      */
                     value: function _bindGridEvents(evt, funcs) {
-                        if (!funcs || (typeof funcs !== 'function' && funcs.constructor !== Array)) return false;
+                        /*
+                         if (!funcs || (typeof funcs !== 'function' && funcs.constructor !== Array)) return false;
+                         if (typeof funcs === 'function') funcs = [funcs];
+                         if (~events.indexOf(evt)) {
+                         */
+                        if (!funcs || (typeof funcs !== 'function' && !Array.isArray(funcs))) return false;
                         if (typeof funcs === 'function') funcs = [funcs];
-                        if (~events.indexOf(evt)) {
+                        if (events.includes(evt)) {
                             gridState[gridId].events[evt] = gridState[gridId].events[evt].concat(funcs);
                             return true;
                         }
@@ -335,7 +341,8 @@ var grid = (function _grid($) {
                      * @returns {boolean} - indicates that the provided function(s) were or were not unbound
                      */
                     value: function _unbindEvents(evt, funcs) {
-                        if (~events.indexOf(evt) && (funcs || (typeof funcs === 'function' || funcs.constructor === Array))) {
+                        //if (~events.indexOf(evt) && (funcs || (typeof funcs === 'function' || funcs.constructor === Array))) {
+                        if (events.includes(evt) && (funcs || (typeof funcs === 'function' || Array.isArray(funcs)))) {
                             if (typeof funcs === 'function') funcs = [funcs];
                             var tmpEvts = [];
                             for (var i = 0; i < gridState[gridId].events[evt].length; i++) {
@@ -705,7 +712,8 @@ var grid = (function _grid($) {
                      */
                     value: function _updateCellData(cellData, setAsDirty) {
                         if (!cellData) return;
-                        if (cellData.constructor === Array) {
+                        //if (cellData.constructor === Array) {
+                        if (Array.isArray(cellData)) {
                             cellData.forEach(function cellIterationCallback(cell) {
                                 applyUpdate(cell, setAsDirty);
                             });
@@ -2622,6 +2630,7 @@ var grid = (function _grid($) {
 
         if (value) {
             filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || 'string') });
+            //filterGroupArr.push({ field, value, operation, dataType: (gridState[gridId].columns[field].type || 'string') });
         }
     }
 
@@ -4058,7 +4067,6 @@ var grid = (function _grid($) {
         return cols;
     }
 
-    //TODO: why am I creating the request object differently here than in the normal grid page get request?
     function createExcelRequestObject(gridId) {
         var gridData = gridState[gridId],
             requestObj = {};
