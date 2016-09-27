@@ -135,6 +135,12 @@ gulp.task('minify-css', ['styles'], function() {
         .pipe(gulp.dest(config.build + 'styles'));
 });
 
+gulp.task('transpile', function() {
+    return gulp.src('./dev/scripts/grid-core.js')
+        .pipe(_.babel())
+        .pipe(gulp.dest('./babel_tmp'));
+});
+
 gulp.task('optimize-js', ['lint', 'clean-code'], function() {
     log('Optimizing JavaScript');
 

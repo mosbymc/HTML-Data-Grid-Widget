@@ -66,11 +66,11 @@ function setSortableClickListener(elem) {
 }
 
 var gridState = {},
-    isInitialized = false;
+    isSortInitialized = false;
 
 function sort_init(gridIObj) {
     gridState = gridIObj;
-    isInitialized = true;
+    isSortInitialized = true;
 }
 
-export { createSortMenuItem, RemoveAllColumnSorts, setSortableClickListener, sort_init, isInitialized };
+export { createSortMenuItem, RemoveAllColumnSorts, setSortableClickListener, sort_init, isSortInitialized };

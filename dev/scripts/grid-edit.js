@@ -462,12 +462,12 @@ function createSaveDeleteMenuItems(gridId) {
 }
 
 var gridState = {},
-    isInitialized = false;
+    isEditInitialized = false;
 
 function edit_init(gridIObj) {
     gridState = gridIObj;
-    isInitialized = true;
+    isEditInitialized = true;
 }
 
 export { makeCellEditable, makeCellSelectable, setupCellValidation, attachValidationListener, saveCellEditData, saveCellSelectData,
-        attachSaveAndDeleteHandlers, createSaveDeleteMenuItems, isInitialized, edit_init };
+        attachSaveAndDeleteHandlers, createSaveDeleteMenuItems, isEditInitialized, edit_init };

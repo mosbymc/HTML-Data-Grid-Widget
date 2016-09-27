@@ -1,18 +1,24 @@
-/*
- The MIT License (MIT)
- Copyright © 2014 <copyright holders>
+'use strict';
 
- Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”),
- to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
 
- The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
- */
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; }; /*
+                                                                                                                                                                                                                                                   The MIT License (MIT)
+                                                                                                                                                                                                                                                   Copyright © 2014 <copyright holders>
+                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”),
+                                                                                                                                                                                                                                                   to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+                                                                                                                                                                                                                                                   and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                   The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                   THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                                                                                                                                                                                                                                                   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+                                                                                                                                                                                                                                                   WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                   */
 /*
  TODO:
  - Need to reattach event listeners for sorting and filtering when columns are reordered. - DONE
@@ -120,21 +126,31 @@
  - Thoroughly test date & time regex usages
  */
 
-import { validateCharacter, getFormattedCellText, formatTimeCellData, formatDateCellData, formatNumericCellData, verifyFormat, createCurrencyNumberOrPercentFormat } from './gridFormattersAndValidators';
-import { dataTypes, events, eventsEnum, aggregates } from './gridEnumsAndConfigs';
-import { comparator, sortGridData, mergeSort, compareValuesByType } from './gridDataHelpers';
-import { x100, roundNumber, cloneGridData, cloneArray, isDomElement, isNumber, getGridColumns, getNumbersFromTime, convertTimeArrayToSeconds } from './gridHelpers';
-import { createFilterTreeFromFilterObject } from './expressionParserTmp';
-import { createGroupedRows, createGroupTrEventHandlers, attachGroupItemEventHandlers, createGroupMenuItem, RemoveAllColumnGrouping, group_init, isGroupInitialized } from './grid-group';
-import { createSortMenuItem, RemoveAllColumnSorts, setSortableClickListener, sort_init, isSortInitialized } from './grid-sort';
-import { setFilterableClickListener, createFilterDiv, createFilterOptionsByDataType, filterInputValidation, resetAllFilters, resetButtonClickHandler, filterButtonClickHandler,
-    attachFilterListener, createFilterMenuItems, createFilterModalMenuItem, addFilterButtonHandler, addNewAdvancedFilter, addFilterGroupHandler, deleteFilterButtonHandler,
-    clearFirstFilterButtonHandler, getFilterRowIdx, filter_init, isFilterInitialized } from './grid-filter';
-import { createExcelExportMenuItems, exportDataAsExcelFile, determineGridDataToExport, createExcelRequestObject, excel_init, isExcelInitialized } from './grid-excel';
-import { attachTableSelectHandler, determineOverlayDimensions, selectHighlighted, createDeselectMenuOption, select_init, isSelectInitialized } from './grid-select';
-import { makeCellEditable, makeCellSelectable, setupCellValidation, attachValidationListener, saveCellEditData, saveCellSelectData,
-    attachSaveAndDeleteHandlers, createSaveDeleteMenuItems, isEditInitialized, edit_init } from './grid-edit';
-import { setDragAndDropListeners, handleDropCallback, swapContentCells, handleResizeDragCallback, reorder_init, isReorderInitialized } from './grid-reorder_resize';
+exports.createGrid = createGrid;
+
+var _gridFormattersAndValidators = require('./gridFormattersAndValidators');
+
+var _gridEnumsAndConfigs = require('./gridEnumsAndConfigs');
+
+var _gridDataHelpers = require('./gridDataHelpers');
+
+var _gridHelpers = require('./gridHelpers');
+
+var _expressionParserTmp = require('./expressionParserTmp');
+
+var _gridGroup = require('./grid-group');
+
+var _gridSort = require('./grid-sort');
+
+var _gridFilter = require('./grid-filter');
+
+var _gridExcel = require('./grid-excel');
+
+var _gridSelect = require('./grid-select');
+
+var _gridEdit = require('./grid-edit');
+
+var _gridReorder_resize = require('./grid-reorder_resize');
 
 /*exported grid*/
 /**
@@ -155,14 +171,16 @@ var generateId,
  * @param {object} gridData - The dataSource object needed to initialize the grid
  * @param {object} gridElem - The DOM element that should be used to create the grid widget
  */
-export function createGrid(gridData, gridElem) {
-    if (gridData && isDomElement(gridElem)) {
+function createGrid(gridData, gridElem) {
+    if (gridData && (0, _gridHelpers.isDomElement)(gridElem)) {
         var id = generateId();
-        if (id > 0) {   //test to check if previously created grids still exist
+        if (id > 0) {
+            //test to check if previously created grids still exist
             var tmp = id - 1;
-            while (tmp > -1) {  //iterate through all previous grids
-                if (gridState[tmp] != null && !$('body').find('#' + gridState[tmp].grid[0].id).length)     //if not found in the body
-                    delete gridState[tmp];      //remove the data from storage
+            while (tmp > -1) {
+                //iterate through all previous grids
+                if (gridState[tmp] != null && !$('body').find('#' + gridState[tmp].grid[0].id).length) //if not found in the body
+                    delete gridState[tmp]; //remove the data from storage
                 tmp--;
             }
         }
@@ -178,11 +196,10 @@ export function createGrid(gridData, gridElem) {
 
         createGridInstanceMethods(gridElem, id);
 
-        (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
+        gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function' ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
         gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function';
 
-        if (gridData.constructor === Array) createGridColumnsFromArray(gridData, gridElem);
-        else {
+        if (gridData.constructor === Array) createGridColumnsFromArray(gridData, gridElem);else {
             createGridHeaders(gridData, gridElem);
             getInitialGridData(gridData.dataSource, function initialGridDataCallback(err, res) {
                 if (!err) {
@@ -190,12 +207,10 @@ export function createGrid(gridData, gridElem) {
                     gridData.dataSource.rowCount = res.rowCount || 25;
                     if (res.aggregations) {
                         for (var col in gridData.aggregates) {
-                            if (res.aggregations[col])
-                                gridData.aggregates[col].value = res.aggregations[col];
+                            if (res.aggregations[col]) gridData.aggregates[col].value = res.aggregations[col];
                         }
                     }
-                }
-                else {
+                } else {
                     gridData.dataSource.data = {};
                     gridData.dataSource.rowCount = 0;
                 }
@@ -215,598 +230,556 @@ export function createGrid(gridData, gridElem) {
  */
 function createGridInstanceMethods(gridElem, gridId) {
 
-    Object.defineProperty(
-        gridElem[0].grid,
-        'exportToExcel',
-        {
-            value: function _exportToExcel(exportType) {
-                if (!isExcelInitialized)
-                    excel_init(gridState[gridId]);
-                exportDataAsExcelFile(gridId, exportType || 'page');
-            }
+    Object.defineProperty(gridElem[0].grid, 'exportToExcel', {
+        value: function _exportToExcel(exportType) {
+            if (!_gridExcel.isExcelInitialized) (0, _gridExcel.excel_init)(gridState[gridId]);
+            (0, _gridExcel.exportDataAsExcelFile)(gridId, exportType || 'page');
         }
-    );
+    });
 
-    Object.defineProperty(
-        gridElem[0].grid,
-        'activeCellData',
-        {
+    Object.defineProperty(gridElem[0].grid, 'activeCellData', {
+        /**
+         * Returns the DOM element for the current active cell in the grid and metadata about the cell
+         * @method activeCellData
+         * @for Grid DOM element
+         * @protected
+         * @readonly
+         * @type string
+         * @returns {object|null} - An object containing the active cell's current value, row index, column index,
+         * column field, and the DOM element itself
+         */
+        get: function _getActiveCellData() {
+            var cell = gridElem.find('.active-cell');
+            if (!cell.length) return null;
+            var field = cell.parents('td').data('field');
+            var colIndex = cell.parents('.grid-wrapper').find('.grid-header-wrapper').find('.grid-headerRow').children('[data-field="' + field + '"]').data('index');
+            if (cell[0].type === 'checkbox') return { data: cell[0].checked, row: cell.parents('tr').index(), column: colIndex, field: field };
+            return { data: cell.val(), row: cell.parents('tr').index(), column: colIndex, field: field, cell: cell.parents('td')[0] };
+        },
+        configurable: false
+    });
+
+    Object.defineProperty(gridElem[0].grid, 'selected', {
+        /**
+         * Returns the collection of selected grid items (row or columns) as an array.
+         * @returns {Array} - The collection of selected grid items
+         */
+        get: function _getSelectedItems() {
+            var selectedItems = [];
+            gridElem.find('.selected').each(function iteratedSelectedGridItems(idx, val) {
+                selectedItems.push(val);
+            });
+            return selectedItems;
+        },
+        /**
+         * Sets the selected row and/or columns of the grid.
+         * @param {Array} itemArray - Ay array of objects that have a zero-based 'rowIndex' property to indicate which row is to be selected.
+         * Optionally each object may have a zero-based 'columnIndex' property that indicates which column of the row to select.
+         */
+        set: function _setSelectedItems(itemArray) {
+            if (!itemArray || itemArray.constructor !== Array) return;
+            for (var i = 0; i < itemArray.length; i++) {
+                if (typeof itemArray[i].rowIndex !== 'number') continue;
+                var row = gridElem.find('.grid-content-div').find('tbody').children('tr:nth-child(' + (itemArray[i].rowIndex + 1) + ')');
+                if (typeof itemArray[i].columnIndex === 'number') {
+                    row.children('td:nth-child(' + (itemArray[i].columnIndex + 1) + ')').addClass('selected');
+                } else row.addClass('selected');
+            }
+        },
+        configurable: false
+    });
+
+    Object.defineProperty(gridElem[0].grid, 'selectedData', {
+        /**
+         * Returns metadata about each selected item in the grid.
+         */
+        get: function _getSelectedGridItemData() {
+            var data = [];
+            gridElem.find('.selected').each(function getSelectedElementData(index, value) {
+                var item = $(value);
+                if (value.tagName.toLowerCase() === 'tr') {
+                    var rowIndex = item.index();
+                    $(value).children().each(function iterateTableCells(idx, val) {
+                        var cell = $(val);
+                        data.push({ rowIndex: rowIndex, columnIndex: cell.index(), data: cell.text(), field: cell.data('field') });
+                    });
+                } else {
+                    data.push({ rowIndex: item.parents('tr').index(), columnIndex: item.index(), data: item.text(), field: item.data('field') });
+                }
+            });
+            return data;
+        },
+        configurable: false
+    });
+
+    Object.defineProperties(gridElem[0].grid, {
+        'bindEvents': {
             /**
-             * Returns the DOM element for the current active cell in the grid and metadata about the cell
-             * @method activeCellData
+             * Binds event handlers to events
+             * @method bindEvents
+             * @for Grid DOM element
+             * @protected
+             * @param {string} evt - a string representing an event that the grid can cause
+             * @param {*} funcs - the event handler
+             * @returns {boolean} - indicates that the provided function(s) were or were not added as event listeners.
+             */
+            value: function _bindGridEvents(evt, funcs) {
+                if (!funcs || typeof funcs !== 'function' && funcs.constructor !== Array) return false;
+                if (typeof funcs === 'function') funcs = [funcs];
+                if (~_gridEnumsAndConfigs.events.indexOf(evt)) {
+                    gridState[gridId].events[evt] = gridState[gridId].events[evt].concat(funcs);
+                    return true;
+                }
+                return false;
+            },
+            writable: false,
+            configurable: false
+        },
+        'unbindEvents': {
+            /**
+             * Unbinds an event handler from the specified event
+             * @method unbindEvents
+             * @for Grid DOM element
+             * @protected
+             * @param {string} evt - a string representing an event that the grid can cause
+             * @param {*} funcs - the function object, or array of function objects to unbind
+             * @returns {boolean} - indicates that the provided function(s) were or were not unbound
+             */
+            value: function _unbindEvents(evt, funcs) {
+                if (~_gridEnumsAndConfigs.events.indexOf(evt) && (funcs || typeof funcs === 'function' || funcs.constructor === Array)) {
+                    if (typeof funcs === 'function') funcs = [funcs];
+                    var tmpEvts = [];
+                    for (var i = 0; i < gridState[gridId].events[evt].length; i++) {
+                        for (var j = 0; j < funcs.length; j++) {
+                            if (gridState[gridId].events[evt][i] !== funcs[j]) tmpEvts.push(gridState[gridId].events[evt][i]);
+                        }
+                    }
+                    gridState[gridId].events[evt] = tmpEvts;
+                    return true;
+                }
+                return false;
+            },
+            writable: false,
+            configurable: false
+        },
+        'removeAllEventHandlers': {
+            /**
+             * Removes all registered event handlers from grid events
+             * @method removeAllEventHandlers
+             * @for Grid DOM element
+             * @protected
+             */
+            value: function _removeAllEventHandlers() {
+                for (var i = 0; i < _gridEnumsAndConfigs.events.length; i++) {
+                    gridState[gridId].events[_gridEnumsAndConfigs.events[i]] = [];
+                }
+            },
+            writable: false,
+            configurable: false
+        },
+        'getHandledEvents': {
+            /**
+             * Returns all events for which a handler has been registered
+             * @method getHandledEvents
              * @for Grid DOM element
              * @protected
              * @readonly
-             * @type string
-             * @returns {object|null} - An object containing the active cell's current value, row index, column index,
-             * column field, and the DOM element itself
+             * @default Array of grid events that currently have registered a handler
+             * @type Array
+             * @returns {Array} - The list of events that currently have a handler
              */
-            get: function _getActiveCellData() {
-                var cell = gridElem.find('.active-cell');
-                if (!cell.length)
-                    return null;
-                var field = cell.parents('td').data('field');
-                var colIndex = cell.parents('.grid-wrapper').find('.grid-header-wrapper').find('.grid-headerRow').children('[data-field="' + field + '"]').data('index');
-                if (cell[0].type === 'checkbox')
-                    return { data: cell[0].checked, row: cell.parents('tr').index(), column: colIndex, field: field };
-                return { data: cell.val(), row: cell.parents('tr').index(), column: colIndex, field: field, cell: cell.parents('td')[0] };
+            value: function _getHandledEvents() {
+                var evts = [];
+                for (var i = 0; i < _gridEnumsAndConfigs.events.length; i++) {
+                    if (gridState[gridId].events[_gridEnumsAndConfigs.events[i]].length) evts.push(_gridEnumsAndConfigs.events[i]);
+                }
+                return evts;
             },
+            writable: false,
             configurable: false
-        });
-
-    Object.defineProperty(
-        gridElem[0].grid,
-        'selected',
-        {
+        },
+        'getAvailableEvents': {
             /**
-             * Returns the collection of selected grid items (row or columns) as an array.
-             * @returns {Array} - The collection of selected grid items
+             * Returns a list of the events that the grid can cause
+             * @method getAvailableEvents
+             * @for Grid DOM element
+             * @protected
+             * @readonly
+             * @default Array of available grid events to listen for
+             * @type Array
+             * @returns {Array} - The list of all events that a handler can be registered for
              */
-            get: function _getSelectedItems() {
-                var selectedItems = [];
-                gridElem.find('.selected').each(function iteratedSelectedGridItems(idx, val) {
-                    selectedItems.push(val);
-                });
-                return selectedItems;
+            value: function _getAvailableEvents() {
+                return _gridEnumsAndConfigs.events;
             },
+            writable: false,
+            configurable: false
+        },
+        'hideColumn': {
             /**
-             * Sets the selected row and/or columns of the grid.
-             * @param {Array} itemArray - Ay array of objects that have a zero-based 'rowIndex' property to indicate which row is to be selected.
-             * Optionally each object may have a zero-based 'columnIndex' property that indicates which column of the row to select.
+             * Hides a column that is being displayed in the grid
+             * @param {string} col - The name of the column to hide
              */
-            set: function _setSelectedItems(itemArray) {
-                if (!itemArray || itemArray.constructor !== Array) return;
-                for (var i = 0; i < itemArray.length; i++) {
-                    if (typeof itemArray[i].rowIndex !== 'number') continue;
-                    var row = gridElem.find('.grid-content-div').find('tbody').children('tr:nth-child(' + (itemArray[i].rowIndex + 1) + ')');
-                    if (typeof itemArray[i].columnIndex === 'number') {
-                        row.children('td:nth-child(' + (itemArray[i].columnIndex + 1) + ')').addClass('selected');
+            value: function _hideColumn(col) {
+                if (gridState[gridId].columns[col]) {
+                    gridState[gridId].columns[col].isHidden = true;
+                    gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', 'none');
+                    gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', 'none');
+                    var colGroups = gridState[gridId].grid.find('colgroup');
+                    var group1 = $(colGroups[0]).find('col');
+                    var group2 = $(colGroups[1]).find('col');
+                    if (gridState[gridId].groupedBy.length) {
+                        for (var i = 0; i < group1.length; i++) {
+                            if (!group1[i].hasClass('group_col')) {
+                                $(group1[i]).remove();
+                                $(group2[i]).remove();
+                            }
+                        }
+                    } else {
+                        $(group1[0]).remove();
+                        $(group2[0]).remove();
                     }
-                    else
-                        row.addClass('selected');
                 }
             },
+            writable: false,
             configurable: false
-        }
-    );
-
-    Object.defineProperty(
-        gridElem[0].grid,
-        'selectedData',
-        {
+        },
+        'showColumn': {
             /**
-             * Returns metadata about each selected item in the grid.
+             * Displays a column that was previously hidden from view in the grid
+             * @param {string} col - The name of the hidden column
              */
-            get: function _getSelectedGridItemData() {
-                var data = [];
-                gridElem.find('.selected').each(function getSelectedElementData(index, value) {
-                    var item = $(value);
-                    if (value.tagName.toLowerCase() === 'tr') {
-                        var rowIndex = item.index();
-                        $(value).children().each(function iterateTableCells(idx, val) {
-                            var cell = $(val);
-                            data.push({ rowIndex: rowIndex, columnIndex: cell.index(), data: cell.text(), field: cell.data('field') });
-                        });
-                    }
-                    else {
-                        data.push({ rowIndex: item.parents('tr').index(), columnIndex: item.index(), data: item.text(), field: item.data('field') });
-                    }
-                });
-                return data;
+            value: function _showColumn(col) {
+                if (gridState[gridId].columns[col] && gridState[gridId].columns[col].isHidden) {
+                    gridState[gridId].columns[col].isHidden = false;
+                    gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
+                    gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
+                    gridState[gridId].grid.find('colgroup').append('col');
+                    setColWidth(gridState[gridId], gridState[gridId].grid);
+                }
             },
+            writable: false,
             configurable: false
-        }
-    );
+        },
+        'addColumn': {
+            /**
+             * Adds a new column to the grid
+             * @param {string|Object} column - Either the name of the column to be added to the grid,
+             * or a column object akin to what is passed into the grid to initialize the widget.
+             * @param {Array} data - A collection of values for the new column. Need to match the existing
+             * rows in the grid because they will be paired with them; both in the display and in the model.
+             */
+            value: function _addColumn(column, data) {
+                if ((typeof column === 'undefined' ? 'undefined' : _typeof(column)) !== 'object' && typeof column !== 'string' || !data || !data.length) return;
+                var field = (typeof column === 'undefined' ? 'undefined' : _typeof(column)) === 'object' ? column.field || 'field' : column,
+                    newCol;
+                if (!gridState[gridId].columns[field]) {
+                    for (var i = 0; i < gridState[gridId].dataSource.data.length; i++) {
+                        gridState[gridId].dataSource.data[i][field] = data[i] ? data[i] : null;
+                    }
+                    if ((typeof column === 'undefined' ? 'undefined' : _typeof(column)) === 'object') newCol = column;else {
+                        newCol = {};
+                    }
+                    newCol.filterable = newCol.filterable || false;
+                    newCol.editable = newCol.editable || false;
+                    newCol.selectable = newCol.selectable || false;
+                    newCol.title = newCol.title || field;
+                    newCol.type = newCol.type || 'string';
 
-    Object.defineProperties(
-        gridElem[0].grid, {
-            'bindEvents': {
-                /**
-                 * Binds event handlers to events
-                 * @method bindEvents
-                 * @for Grid DOM element
-                 * @protected
-                 * @param {string} evt - a string representing an event that the grid can cause
-                 * @param {*} funcs - the event handler
-                 * @returns {boolean} - indicates that the provided function(s) were or were not added as event listeners.
-                 */
-                value: function _bindGridEvents(evt, funcs) {
-                    if (!funcs || (typeof funcs !== 'function' && funcs.constructor !== Array)) return false;
-                    if (typeof funcs === 'function') funcs = [funcs];
-                    if (~events.indexOf(evt)) {
-                        gridState[gridId].events[evt] = gridState[gridId].events[evt].concat(funcs);
-                        return true;
-                    }
-                    return false;
-                },
-                writable: false,
-                configurable: false
-            },
-            'unbindEvents': {
-                /**
-                 * Unbinds an event handler from the specified event
-                 * @method unbindEvents
-                 * @for Grid DOM element
-                 * @protected
-                 * @param {string} evt - a string representing an event that the grid can cause
-                 * @param {*} funcs - the function object, or array of function objects to unbind
-                 * @returns {boolean} - indicates that the provided function(s) were or were not unbound
-                 */
-                value: function _unbindEvents(evt, funcs) {
-                    if (~events.indexOf(evt) && (funcs || (typeof funcs === 'function' || funcs.constructor === Array))) {
-                        if (typeof funcs === 'function') funcs = [funcs];
-                        var tmpEvts = [];
-                        for (var i = 0; i < gridState[gridId].events[evt].length; i++) {
-                            for (var j = 0; j < funcs.length; j++) {
-                                if (gridState[gridId].events[evt][i] !== funcs[j])
-                                    tmpEvts.push(gridState[gridId].events[evt][i]);
-                            }
-                        }
-                        gridState[gridId].events[evt] = tmpEvts;
-                        return true;
-                    }
-                    return false;
-                },
-                writable: false,
-                configurable: false
-            },
-            'removeAllEventHandlers': {
-                /**
-                 * Removes all registered event handlers from grid events
-                 * @method removeAllEventHandlers
-                 * @for Grid DOM element
-                 * @protected
-                 */
-                value: function _removeAllEventHandlers() {
-                    for (var i = 0; i < events.length; i++) {
-                        gridState[gridId].events[events[i]] = [];
-                    }
-                },
-                writable: false,
-                configurable: false
-            },
-            'getHandledEvents': {
-                /**
-                 * Returns all events for which a handler has been registered
-                 * @method getHandledEvents
-                 * @for Grid DOM element
-                 * @protected
-                 * @readonly
-                 * @default Array of grid events that currently have registered a handler
-                 * @type Array
-                 * @returns {Array} - The list of events that currently have a handler
-                 */
-                value: function _getHandledEvents() {
-                    var evts = [];
-                    for (var i = 0; i < events.length; i++) {
-                        if (gridState[gridId].events[events[i]].length)
-                            evts.push(events[i]);
-                    }
-                    return evts;
-                },
-                writable: false,
-                configurable: false
-            },
-            'getAvailableEvents': {
-                /**
-                 * Returns a list of the events that the grid can cause
-                 * @method getAvailableEvents
-                 * @for Grid DOM element
-                 * @protected
-                 * @readonly
-                 * @default Array of available grid events to listen for
-                 * @type Array
-                 * @returns {Array} - The list of all events that a handler can be registered for
-                 */
-                value: function _getAvailableEvents() {
-                    return events;
-                },
-                writable: false,
-                configurable: false
-            },
-            'hideColumn': {
-                /**
-                 * Hides a column that is being displayed in the grid
-                 * @param {string} col - The name of the column to hide
-                 */
-                value: function _hideColumn(col) {
-                    if (gridState[gridId].columns[col]) {
-                        gridState[gridId].columns[col].isHidden = true;
-                        gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', 'none');
-                        gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', 'none');
-                        var colGroups = gridState[gridId].grid.find('colgroup');
-                        var group1 = $(colGroups[0]).find('col');
-                        var group2 = $(colGroups[1]).find('col');
-                        if (gridState[gridId].groupedBy.length) {
-                            for (var i = 0; i < group1.length; i++) {
-                                if (!group1[i].hasClass('group_col')) {
-                                    $(group1[i]).remove();
-                                    $(group2[i]).remove();
-                                }
-                            }
-                        }
-                        else {
-                            $(group1[0]).remove();
-                            $(group2[0]).remove();
-                        }
-                    }
-                },
-                writable: false,
-                configurable: false
-            },
-            'showColumn': {
-                /**
-                 * Displays a column that was previously hidden from view in the grid
-                 * @param {string} col - The name of the hidden column
-                 */
-                value: function _showColumn(col) {
-                    if (gridState[gridId].columns[col] && gridState[gridId].columns[col].isHidden) {
-                        gridState[gridId].columns[col].isHidden = false;
-                        gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
-                        gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
-                        gridState[gridId].grid.find('colgroup').append('col');
-                        setColWidth(gridState[gridId], gridState[gridId].grid);
-                    }
-                },
-                writable: false,
-                configurable: false
-            },
-            'addColumn': {
-                /**
-                 * Adds a new column to the grid
-                 * @param {string|Object} column - Either the name of the column to be added to the grid,
-                 * or a column object akin to what is passed into the grid to initialize the widget.
-                 * @param {Array} data - A collection of values for the new column. Need to match the existing
-                 * rows in the grid because they will be paired with them; both in the display and in the model.
-                 */
-                value: function _addColumn(column, data) {
-                    if (typeof column !== 'object' && typeof column !== 'string' || !data || !data.length)
-                        return;
-                    var field = typeof column === 'object' ? column.field || 'field' : column,
-                        newCol;
-                    if (!gridState[gridId].columns[field]) {
-                        for (var i = 0; i < gridState[gridId].dataSource.data.length; i++) {
-                            gridState[gridId].dataSource.data[i][field] = data[i] ? data[i] : null;
-                        }
-                        if (typeof column === 'object') newCol = column;
-                        else {
-                            newCol = {};
-                        }
-                        newCol.filterable = newCol.filterable || false;
-                        newCol.editable = newCol.editable || false;
-                        newCol.selectable = newCol.selectable ||false;
-                        newCol.title = newCol.title || field;
-                        newCol.type = newCol.type || 'string';
+                    gridState[gridId].columns[field] = newCol;
+                    if (gridState[gridId].aggregates) gridState[gridId].aggregates[field] = {
+                        type: newCol.type
+                    };
 
-                        gridState[gridId].columns[field] = newCol;
-                        if (gridState[gridId].aggregates) gridState[gridId].aggregates[field] = {
-                            type: newCol.type
-                        };
-
-                        gridState[gridId].hasAddedColumn = true;
-                        gridState[gridId].grid.find('.grid-header-wrapper').empty();
-                        createGridHeaders(gridState[gridId], gridElem);
-                        gridState[gridId].grid.find('.grid-content-div').empty();
-                        setColWidth(gridState[gridId], gridState[gridId].grid);
-                        createGridContent(gridState[gridId], gridState[gridId].grid);
-                        gridState[gridId].grid.find('.grid-footer-div').empty();
-                        createGridFooter(gridState[gridId], gridState[gridId].grid);
-                        buildHeaderAggregations(gridId);
-                    }
-                },
-                writable: false,
-                configurable: false
+                    gridState[gridId].hasAddedColumn = true;
+                    gridState[gridId].grid.find('.grid-header-wrapper').empty();
+                    createGridHeaders(gridState[gridId], gridElem);
+                    gridState[gridId].grid.find('.grid-content-div').empty();
+                    setColWidth(gridState[gridId], gridState[gridId].grid);
+                    createGridContent(gridState[gridId], gridState[gridId].grid);
+                    gridState[gridId].grid.find('.grid-footer-div').empty();
+                    createGridFooter(gridState[gridId], gridState[gridId].grid);
+                    buildHeaderAggregations(gridId);
+                }
             },
-            'addRow': {
-                /**
-                 * Adds a new row to the table; with either 'null' values if no data was passed in, or with the values given
-                 * @param {Object} data - A javascript model object with the same properties as the grid's model collection objects.
-                 */
-                value: function _addRow(data) {
-                    var newModel = {}, prop;
-                    if (!data) {
-                        for (prop in gridState[gridId].dataSource.data[0]) {
-                            if (prop !== '_initialRowIndex') newModel[prop] = null;
-                        }
+            writable: false,
+            configurable: false
+        },
+        'addRow': {
+            /**
+             * Adds a new row to the table; with either 'null' values if no data was passed in, or with the values given
+             * @param {Object} data - A javascript model object with the same properties as the grid's model collection objects.
+             */
+            value: function _addRow(data) {
+                var newModel = {},
+                    prop;
+                if (!data) {
+                    for (prop in gridState[gridId].dataSource.data[0]) {
+                        if (prop !== '_initialRowIndex') newModel[prop] = null;
                     }
-                    else if (typeof data === 'object') {
-                        for (prop in gridState[gridId].dataSource.data[0]) {
-                            if (typeof data[prop] !== 'undefined') newModel[prop] = data[prop];
-                            else newModel[prop] = null;
-                        }
+                } else if ((typeof data === 'undefined' ? 'undefined' : _typeof(data)) === 'object') {
+                    for (prop in gridState[gridId].dataSource.data[0]) {
+                        if (typeof data[prop] !== 'undefined') newModel[prop] = data[prop];else newModel[prop] = null;
                     }
-                    gridState[gridId].originalData.push(newModel);
-                    var dataSourceModel = cloneGridData(newModel);
-                    dataSourceModel._initialRowIndex = gridState[gridId].dataSource.data.length;
-                    gridState[gridId].dataSource.data.push(dataSourceModel);
-                    gridState[gridId].dataSource.rowCount++;
+                }
+                gridState[gridId].originalData.push(newModel);
+                var dataSourceModel = (0, _gridHelpers.cloneGridData)(newModel);
+                dataSourceModel._initialRowIndex = gridState[gridId].dataSource.data.length;
+                gridState[gridId].dataSource.data.push(dataSourceModel);
+                gridState[gridId].dataSource.rowCount++;
 
-                    gridState[gridId].pageSize = gridState[gridId].pageSize + 1;
+                gridState[gridId].pageSize = gridState[gridId].pageSize + 1;
+                gridState[gridId].grid.find('.grid-content-div').empty();
+                createGridContent(gridState[gridId], gridState[gridId].grid);
+                gridState[gridId].grid.find('.grid-footer-div').empty();
+                createGridFooter(gridState[gridId], gridState[gridId].grid);
+                buildHeaderAggregations(gridId);
+            },
+            writable: false,
+            configurable: false
+        },
+        'getAggregates': {
+            /**
+             * Returns the aggregations for all columns
+             * @method getAggregates
+             * @for Grid DOM element
+             * @protected
+             * @readonly
+             * @default aggregates object
+             * @type object
+             * @returns {Object} - The aggregations that are currently in use for this page of the grid
+             */
+            value: function _getAggregates() {
+                return gridState[gridId].gridAggregations;
+            },
+            writable: false,
+            configurable: false
+        },
+        'getCurrentPageData': {
+            /**
+             * Returns the grid's page data.
+             * @method getCurrentPageData
+             * @for Grid DOM element
+             * @protected
+             * @readOnly
+             * @default dataSource.data
+             * @type Array
+             * @param {int} index - The index of the grid page to return the data for.
+             * @returns {Array} - An array with either all grid page data, or a single index's data if a
+             * valid index was passed to the function
+             */
+            value: function _getCurrentPageData(index) {
+                var rows = [],
+                    result = [],
+                    tmpRowModel,
+                    validRow;
+                if (typeof index === 'number' && index > -1 && index <= gridState[gridId].dataSource.data.length) {
+                    validRow = findValidRows(index);
+                    if (validRow) rows.push(validRow);
+                } else {
+                    for (var i = 0; i < gridState[gridId].pageSize; i++) {
+                        validRow = findValidRows(i);
+                        if (validRow) rows.push(validRow);
+                    }
+                }
+
+                for (var j = 0; j < rows.length; j++) {
+                    tmpRowModel = {};
+                    var cells = rows[j].find('td');
+                    for (var k = 0; k < cells.length; k++) {
+                        tmpRowModel[$(cells[k]).data('field')] = $(cells[k]).text();
+                    }
+                    result.push(tmpRowModel);
+                }
+                return result;
+
+                function findValidRows(index) {
+                    var counter = 0;
+                    var row = null;
+                    gridState[gridId].grid.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
+                        if ($(this).hasClass('grouped_row_header')) return true;
+                        if (counter === index) {
+                            row = $(this);
+                            return false;
+                        }
+                        counter++;
+                    });
+                    return row;
+                }
+            },
+            writable: false,
+            configurable: false
+        },
+        'getCurrentDataSourceData': {
+            /**
+             * Returns the grid's dataSource data
+             * @method getCurrentDataSourceData
+             * @for Grid DOM element
+             * @protected
+             * @param {int} index - The index of the dataSource.data to return the data for.
+             * @returns {Array} - An array with either all grid page data, or a single index's data if a
+             * valid index was passed to the function
+             */
+            value: function _getCurrentDataSourceData(index) {
+                var i;
+                if (typeof index === 'number' && index > -1 && index <= gridState[gridId].dataSource.data.length) {
+                    var val = (0, _gridHelpers.cloneGridData)([].concat(gridState[gridId].dataSource.data[index]));
+                    delete val[0]._initialRowIndex;
+                    return val;
+                } else {
+                    var gd = (0, _gridHelpers.cloneGridData)(gridState[gridId].dataSource.data);
+                    for (i = 0; i < gd.length; i++) {
+                        delete gd[i]._initialRowIndex;
+                    }
+                    return gd;
+                }
+            },
+            writable: false,
+            configurable: false
+        },
+        'updatePageData': {
+            /**
+             * Updates the grid's page data; will also update the dataSource
+             * @method updatePageData
+             * @for Grid DOM element
+             * @protected
+             * @param {object} data
+             */
+            value: function _updatePageData(data) {
+                if (data != null && (typeof data === 'undefined' ? 'undefined' : _typeof(data)) === 'object' && data.constructor === Array) {
+                    gridState[gridId].dataSource.data = data;
+                    gridState[gridId].pageSize = data.length;
+                    gridState[gridId].dataSource.rowCount = data.length;
                     gridState[gridId].grid.find('.grid-content-div').empty();
                     createGridContent(gridState[gridId], gridState[gridId].grid);
                     gridState[gridId].grid.find('.grid-footer-div').empty();
                     createGridFooter(gridState[gridId], gridState[gridId].grid);
                     buildHeaderAggregations(gridId);
-                },
-                writable: false,
-                configurable: false
+                }
             },
-            'getAggregates': {
-                /**
-                 * Returns the aggregations for all columns
-                 * @method getAggregates
-                 * @for Grid DOM element
-                 * @protected
-                 * @readonly
-                 * @default aggregates object
-                 * @type object
-                 * @returns {Object} - The aggregations that are currently in use for this page of the grid
-                 */
-                value: function _getAggregates() {
-                    return gridState[gridId].gridAggregations;
-                },
-                writable: false,
-                configurable: false
-            },
-            'getCurrentPageData': {
-                /**
-                 * Returns the grid's page data.
-                 * @method getCurrentPageData
-                 * @for Grid DOM element
-                 * @protected
-                 * @readOnly
-                 * @default dataSource.data
-                 * @type Array
-                 * @param {int} index - The index of the grid page to return the data for.
-                 * @returns {Array} - An array with either all grid page data, or a single index's data if a
-                 * valid index was passed to the function
-                 */
-                value: function _getCurrentPageData(index) {
-                    var rows = [],
-                        result = [],
-                        tmpRowModel,
-                        validRow;
-                    if (typeof index === 'number' && index > -1 && index <= gridState[gridId].dataSource.data.length) {
-                        validRow = findValidRows(index);
-                        if (validRow) rows.push(validRow);
-                    }
-                    else {
-                        for (var i = 0; i < gridState[gridId].pageSize; i++) {
-                            validRow = findValidRows(i);
-                            if (validRow) rows.push(validRow);
-                        }
-                    }
-
-                    for (var j = 0; j < rows.length; j++) {
-                        tmpRowModel = {};
-                        var cells = rows[j].find('td');
-                        for (var k = 0; k < cells.length; k++) {
-                            tmpRowModel[$(cells[k]).data('field')] = $(cells[k]).text();
-                        }
-                        result.push(tmpRowModel);
-                    }
-                    return result;
-
-                    function findValidRows(index) {
-                        var counter = 0;
-                        var row = null;
-                        gridState[gridId].grid.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
-                            if ($(this).hasClass('grouped_row_header'))
-                                return true;
-                            if (counter === index) {
-                                row = $(this);
-                                return false;
-                            }
-                            counter++;
-                        });
-                        return row;
-                    }
-                },
-                writable: false,
-                configurable: false
-            },
-            'getCurrentDataSourceData': {
-                /**
-                 * Returns the grid's dataSource data
-                 * @method getCurrentDataSourceData
-                 * @for Grid DOM element
-                 * @protected
-                 * @param {int} index - The index of the dataSource.data to return the data for.
-                 * @returns {Array} - An array with either all grid page data, or a single index's data if a
-                 * valid index was passed to the function
-                 */
-                value: function _getCurrentDataSourceData(index) {
-                    var i;
-                    if (typeof index === 'number' && index > -1 && index <= gridState[gridId].dataSource.data.length) {
-                        var val = cloneGridData([].concat(gridState[gridId].dataSource.data[index]));
-                        delete val[0]._initialRowIndex;
-                        return val;
-                    }
-                    else {
-                        var gd = cloneGridData(gridState[gridId].dataSource.data);
-                        for (i = 0; i < gd.length; i++) {
-                            delete gd[i]._initialRowIndex;
-                        }
-                        return gd;
-                    }
-                },
-                writable: false,
-                configurable: false
-            },
-            'updatePageData': {
-                /**
-                 * Updates the grid's page data; will also update the dataSource
-                 * @method updatePageData
-                 * @for Grid DOM element
-                 * @protected
-                 * @param {object} data
-                 */
-                value: function _updatePageData(data) {
-                    if (data != null && typeof data === 'object' && data.constructor === Array) {
-                        gridState[gridId].dataSource.data = data;
-                        gridState[gridId].pageSize = data.length;
-                        gridState[gridId].dataSource.rowCount = data.length;
-                        gridState[gridId].grid.find('.grid-content-div').empty();
-                        createGridContent(gridState[gridId], gridState[gridId].grid);
-                        gridState[gridId].grid.find('.grid-footer-div').empty();
-                        createGridFooter(gridState[gridId], gridState[gridId].grid);
-                        buildHeaderAggregations(gridId);
-                    }
-                },
-                writable: false,
-                configurable: false
-            },
-            'updateRowData': {
-                /**
-                 * Updates the specified grid's row's data via the .index property
-                 * @method updateRowData
-                 * @for Grid DOM element
-                 * @protected
-                 * @param {object} rowData
-                 */
-                value: function _updateRowData(rowData) {
-                    var appliedUpdate = false;
-                    if (!rowData)
-                        return;
-                    if (rowData.constructor === Array) {
-                        for (var i = 0; i < rowData.length; i++) {
-                            if (typeof rowData[i].index !== 'number' || rowData[i].index >= gridState[gridId].dataSource.data.length)
-                                continue;
-                            gridState[gridId].dataSource.data[rowData[i].index] = rowData[i].data;
-                            appliedUpdate = true;
-                        }
-                    }
-                    else if (typeof rowData.index === 'number') {
-                        gridState[gridId].dataSource.data[rowData.index] = rowData.data;
+            writable: false,
+            configurable: false
+        },
+        'updateRowData': {
+            /**
+             * Updates the specified grid's row's data via the .index property
+             * @method updateRowData
+             * @for Grid DOM element
+             * @protected
+             * @param {object} rowData
+             */
+            value: function _updateRowData(rowData) {
+                var appliedUpdate = false;
+                if (!rowData) return;
+                if (rowData.constructor === Array) {
+                    for (var i = 0; i < rowData.length; i++) {
+                        if (typeof rowData[i].index !== 'number' || rowData[i].index >= gridState[gridId].dataSource.data.length) continue;
+                        gridState[gridId].dataSource.data[rowData[i].index] = rowData[i].data;
                         appliedUpdate = true;
                     }
+                } else if (typeof rowData.index === 'number') {
+                    gridState[gridId].dataSource.data[rowData.index] = rowData.data;
+                    appliedUpdate = true;
+                }
 
-                    if (appliedUpdate) {
-                        gridState[gridId].grid.find('.grid-content-div').empty();
-                        createGridContent(gridState[gridId], gridState[gridId].grid);
-                        gridState[gridId].grid.find('.grid-footer-div').empty();
-                        createGridFooter(gridState[gridId], gridState[gridId].grid);
-                        buildHeaderAggregations(gridId);
-                    }
-                },
-                writable: false,
-                configurable: false
+                if (appliedUpdate) {
+                    gridState[gridId].grid.find('.grid-content-div').empty();
+                    createGridContent(gridState[gridId], gridState[gridId].grid);
+                    gridState[gridId].grid.find('.grid-footer-div').empty();
+                    createGridFooter(gridState[gridId], gridState[gridId].grid);
+                    buildHeaderAggregations(gridId);
+                }
             },
-            'updateCellData': {
-                /**
-                 * Updates the specified grid's cell's data via the .index and .field properties
-                 * @method updateCellData
-                 * @for Grid DOM element
-                 * @protected
-                 * @param {object} cellData
-                 * @param {boolean} setAsDirty
-                 */
-                value: function _updateCellData(cellData, setAsDirty) {
-                    if (!cellData) return;
-                    if (cellData.constructor === Array) {
-                        cellData.forEach(function cellIterationCallback(cell) {
-                            applyUpdate(cell, setAsDirty);
-                        });
-                    }
-                    else applyUpdate(cellData, setAsDirty);
-
-                    function applyUpdate(cell, setAsDirty) {
-                        if (typeof cell.index !== 'number' || typeof cell.field !== 'string' || cell.index > gridState[gridId].dataSource.data.length)
-                            return;
-                        if (gridState[gridId].columns[cell.field]) {
-                            var dataType = gridState[gridId].columns[cell.field].type;
-                            if (!dataType)
-                                dataType = 'string';
-                            if (dataType !== 'time' && dataType !== 'date' && dataType !== 'datetime') {
-                                if (typeof cell.value !== dataType)
-                                    return;
-                            }
-                            else {
-                                var re = new RegExp(gridEnums.dataTypes[dataType]);
-                                if (!re.test(cell.value)) return;
-                            }
-                            gridState[gridId].dataSource.data[cell.index][cell.field] = cell.value;
-                            var tableCell;
-                            if (gridState[gridId].groupedBy) {
-                                var counter = 0;
-                                gridState[gridId].grid.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
-                                    if ($(this).hasClass('grouped_row_header'))
-                                        return true;
-                                    if (counter === cell.index) {
-                                        tableCell = $(this).find('[data-field="' + cell.field + '"]');
-                                        return false;
-                                    }
-                                    counter++;
-                                });
-                            }
-                            else
-                                tableCell = gridState[gridId].grid.find('.grid-content-div').find('table').find('tr:nth-child(' + (cell.index + 1) + ')').find('[data-field="' + cell.field + '"]');
-                            var text = getFormattedCellText(gridId, cell.field, cell.value) || cell.value;
-                            tableCell.text(text);
-                            if (setAsDirty) tableCell.prepend('<span class="dirty"></span>');
-                        }
-                    }
-                },
-                writable: false,
-                configurable: false
-            },
-            'destroy': {
-                /**
-                 * Destroys the grid widget - includes the dataSource and the DOM element
-                 * @method destroy
-                 * @for Grid DOM element
-                 * @protected
-                 */
-                value: function _destroy() {
-                    findChildren(gridState[gridId].grid.children());
-                    delete gridState[gridId];
-
-                    function findChildren(nodes) {
-                        for (var i = 0; i < nodes.length; i++) {
-                            var child = $(nodes[i]);
-                            while (child.children().length)
-                                findChildren(child.children());
-                            child.off();
-                            child.remove();
-                        }
-                    }
-                },
-                writable: false,
-                configurable: false
-            },
-            'removeSelection': {
-                /**
-                 * Removes all selected grid items
-                 */
-                value: function _removeSelection() {
-                    gridElem.find('.selected').each(function removeSelectedClass(idx, val) {
-                        $(val).removeClass('selected');
+            writable: false,
+            configurable: false
+        },
+        'updateCellData': {
+            /**
+             * Updates the specified grid's cell's data via the .index and .field properties
+             * @method updateCellData
+             * @for Grid DOM element
+             * @protected
+             * @param {object} cellData
+             * @param {boolean} setAsDirty
+             */
+            value: function _updateCellData(cellData, setAsDirty) {
+                if (!cellData) return;
+                if (cellData.constructor === Array) {
+                    cellData.forEach(function cellIterationCallback(cell) {
+                        applyUpdate(cell, setAsDirty);
                     });
-                },
-                writable: false,
-                configurable: false
-            }
-        });
+                } else applyUpdate(cellData, setAsDirty);
+
+                function applyUpdate(cell, setAsDirty) {
+                    if (typeof cell.index !== 'number' || typeof cell.field !== 'string' || cell.index > gridState[gridId].dataSource.data.length) return;
+                    if (gridState[gridId].columns[cell.field]) {
+                        var dataType = gridState[gridId].columns[cell.field].type;
+                        if (!dataType) dataType = 'string';
+                        if (dataType !== 'time' && dataType !== 'date' && dataType !== 'datetime') {
+                            if (_typeof(cell.value) !== dataType) return;
+                        } else {
+                            var re = new RegExp(gridEnums.dataTypes[dataType]);
+                            if (!re.test(cell.value)) return;
+                        }
+                        gridState[gridId].dataSource.data[cell.index][cell.field] = cell.value;
+                        var tableCell;
+                        if (gridState[gridId].groupedBy) {
+                            var counter = 0;
+                            gridState[gridId].grid.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
+                                if ($(this).hasClass('grouped_row_header')) return true;
+                                if (counter === cell.index) {
+                                    tableCell = $(this).find('[data-field="' + cell.field + '"]');
+                                    return false;
+                                }
+                                counter++;
+                            });
+                        } else tableCell = gridState[gridId].grid.find('.grid-content-div').find('table').find('tr:nth-child(' + (cell.index + 1) + ')').find('[data-field="' + cell.field + '"]');
+                        var text = (0, _gridFormattersAndValidators.getFormattedCellText)(gridId, cell.field, cell.value) || cell.value;
+                        tableCell.text(text);
+                        if (setAsDirty) tableCell.prepend('<span class="dirty"></span>');
+                    }
+                }
+            },
+            writable: false,
+            configurable: false
+        },
+        'destroy': {
+            /**
+             * Destroys the grid widget - includes the dataSource and the DOM element
+             * @method destroy
+             * @for Grid DOM element
+             * @protected
+             */
+            value: function _destroy() {
+                findChildren(gridState[gridId].grid.children());
+                delete gridState[gridId];
+
+                function findChildren(nodes) {
+                    for (var i = 0; i < nodes.length; i++) {
+                        var child = $(nodes[i]);
+                        while (child.children().length) {
+                            findChildren(child.children());
+                        }child.off();
+                        child.remove();
+                    }
+                }
+            },
+            writable: false,
+            configurable: false
+        },
+        'removeSelection': {
+            /**
+             * Removes all selected grid items
+             */
+            value: function _removeSelection() {
+                gridElem.find('.selected').each(function removeSelectedClass(idx, val) {
+                    $(val).removeClass('selected');
+                });
+            },
+            writable: false,
+            configurable: false
+        }
+    });
 
     var keys = Object.getOwnPropertyNames(gridElem[0].grid);
     for (var i = 0; i < keys.length; i++) {
@@ -824,16 +797,11 @@ function createGridInstanceMethods(gridElem, gridId) {
  * @param {function} callback - The callback function
  */
 function getInitialGridData(dataSource, callback) {
-    if (dataSource && typeof dataSource.data === 'object')
-        callback(null, { data: dataSource.data, rowCount: dataSource.rowCount });
-    else if (typeof dataSource.get == 'function') {
-        dataSource.get({ pageSize: 25, pageNum: 1 },
-            function gridDataCallback(data) {
-                if (data) callback(null, data);
-                else callback(true, {});
-            });
-    }
-    else callback(true, {});
+    if (dataSource && _typeof(dataSource.data) === 'object') callback(null, { data: dataSource.data, rowCount: dataSource.rowCount });else if (typeof dataSource.get == 'function') {
+        dataSource.get({ pageSize: 25, pageNum: 1 }, function gridDataCallback(data) {
+            if (data) callback(null, data);else callback(true, {});
+        });
+    } else callback(true, {});
 }
 
 /**
@@ -847,15 +815,15 @@ function getInitialGridData(dataSource, callback) {
  * @param {object} gridElem
  */
 function initializeGrid(id, gridData, gridElem) {
-    var storageData = cloneGridData(gridData);
+    var storageData = (0, _gridHelpers.cloneGridData)(gridData);
     storageData.events = {
-        beforeCellEdit: typeof storageData.beforeCellEdit === 'object' && storageData.beforeCellEdit.constructor === Array ? storageData.beforeCellEdit : [],
-        cellEditChange: typeof storageData.cellEditChange === 'object' && storageData.cellEditChange.constructor === Array ? storageData.cellEditChange : [],
-        afterCellEdit: typeof storageData.afterCellEdit === 'object' && storageData.afterCellEdit.constructor === Array ? storageData.afterCellEdit : [],
-        pageRequested: typeof storageData.pageRequested === 'object' && storageData.pageRequested.constructor === Array ? storageData.pageRequested : [],
-        beforeDataBind: typeof storageData.beforeDataBind === 'object' && storageData.beforeDataBind.constructor === Array ? storageData.beforeDataBind : [],
-        afterDataBind: typeof storageData.afterDataBind === 'object' && storageData.afterDataBind.constructor === Array ? storageData.afterDataBind : [],
-        columnReorder: typeof storageData.columnReorder === 'object' && storageData.columnReorder.constructor === Array ? storageData.columnReorder : []
+        beforeCellEdit: _typeof(storageData.beforeCellEdit) === 'object' && storageData.beforeCellEdit.constructor === Array ? storageData.beforeCellEdit : [],
+        cellEditChange: _typeof(storageData.cellEditChange) === 'object' && storageData.cellEditChange.constructor === Array ? storageData.cellEditChange : [],
+        afterCellEdit: _typeof(storageData.afterCellEdit) === 'object' && storageData.afterCellEdit.constructor === Array ? storageData.afterCellEdit : [],
+        pageRequested: _typeof(storageData.pageRequested) === 'object' && storageData.pageRequested.constructor === Array ? storageData.pageRequested : [],
+        beforeDataBind: _typeof(storageData.beforeDataBind) === 'object' && storageData.beforeDataBind.constructor === Array ? storageData.beforeDataBind : [],
+        afterDataBind: _typeof(storageData.afterDataBind) === 'object' && storageData.afterDataBind.constructor === Array ? storageData.afterDataBind : [],
+        columnReorder: _typeof(storageData.columnReorder) === 'object' && storageData.columnReorder.constructor === Array ? storageData.columnReorder : []
     };
 
     for (var event in storageData.events) {
@@ -874,7 +842,7 @@ function initializeGrid(id, gridData, gridElem) {
     delete storageData.afterDataBind;
     delete storageData.columnReorder;
 
-    storageData.originalData = cloneGridData(gridData.dataSource.data);
+    storageData.originalData = (0, _gridHelpers.cloneGridData)(gridData.dataSource.data);
     storageData.pageNum = 1;
     storageData.pageSize = gridData.pageSize || 25;
     storageData.grid = gridElem;
@@ -917,12 +885,14 @@ function createGridHeaders(gridData, gridElem) {
     var gridHeader = gridElem.find('.grid-header-div'),
         gridHeadWrap = gridHeader.find('.grid-header-wrapper'),
         headerTable = $('<table></table>').appendTo(gridHeadWrap);
-    headerTable.css('width','auto');
+    headerTable.css('width', 'auto');
     var colgroup = $('<colgroup></colgroup>').appendTo(headerTable),
         headerTHead = $('<thead></thead>').appendTo(headerTable),
         headerRow = $('<tr class=grid-headerRow></tr>').appendTo(headerTHead),
         index = 0,
-        id = gridHeader.data('grid_header_id'), i, columnCount = 0;
+        id = gridHeader.data('grid_header_id'),
+        i,
+        columnCount = 0;
 
     //TODO: I think this will work for data that is already grouped; specifically when adding a new column. However, it may work or be
     //TODO: adjusted to work with data coming from the server on widget creation
@@ -935,12 +905,12 @@ function createGridHeaders(gridData, gridElem) {
 
     for (var col in gridData.columns) {
         columnCount++;
-        if (typeof gridData.columns[col] !== 'object') continue;
+        if (_typeof(gridData.columns[col]) !== 'object') continue;
         $('<col/>').appendTo(colgroup);
         var text = gridData.columns[col].title || col;
         var th = $('<th id="' + col + '_grid_id_' + id + '" data-field="' + col + '" data-index="' + index + '" class=grid-header-cell></th>').appendTo(headerRow);
 
-        if (typeof gridData.columns[col].attributes === 'object' && gridData.columns[col].attributes.headerClasses && gridData.columns[col].attributes.headerClasses.constructor ===  Array) {
+        if (_typeof(gridData.columns[col].attributes) === 'object' && gridData.columns[col].attributes.headerClasses && gridData.columns[col].attributes.headerClasses.constructor === Array) {
             for (i = 0; i < gridData.columns[col].attributes.headerClasses.length; i++) {
                 th.addClass(gridData.columns[col].attributes.headerClasses[i]);
             }
@@ -948,25 +918,25 @@ function createGridHeaders(gridData, gridElem) {
 
         if (gridData.reorderable === true && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable === true)) {
             th.prop('draggable', true);
-            setDragAndDropListeners(th);
+            (0, _gridReorder_resize.setDragAndDropListeners)(th);
         }
         if (gridData.sortable === true && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable === true)) {
-            setSortableClickListener(th);
+            (0, _gridSort.setSortableClickListener)(th);
             gridData.sortable = true;
         }
 
         if (gridData.columns[col].filterable === true) {
-            setFilterableClickListener(th, gridData, col);
+            (0, _gridFilter.setFilterableClickListener)(th, gridData, col);
             gridData.filterable = true;
             gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
         }
 
-        if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
+        if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createGridToolbar(gridData, gridElem, gridData.columns[col].editable || gridData.columns[col].selectable);
 
         $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
         index++;
     }
-    headerTable.css('width','');
+    headerTable.css('width', '');
     gridData.numColumns = columnCount;
     setColWidth(gridData, gridElem);
 }
@@ -984,8 +954,7 @@ function buildHeaderAggregations(gridId) {
     if (aggrs) {
         var headerTHead = $('#grid-header-' + gridId).find('thead');
         var aggRow = headerTHead.find('.summary-row-header');
-        if (aggRow.length)
-            aggRow.remove();
+        if (aggRow.length) aggRow.remove();
         aggRow = $('<tr class=summary-row-header></tr>').appendTo(headerTHead);
         if (gridState[gridId].groupedBy.length) {
             for (var i = 0; i < gridState[gridId].groupedBy.length; i++) {
@@ -1013,25 +982,27 @@ function createGridContent(gridData, gridElem) {
         footerHeight = parseFloat(gridElem.find('.grid-footer-div').css('height')),
         headerHeight = parseFloat(gridElem.find('.grid-header-div').css('height')),
         toolbarHeight = 0;
-    if (gridElem.find('.toolbar'))
-        toolbarHeight = parseFloat(gridElem.find('.toolbar').css('height'));
+    if (gridElem.find('.toolbar')) toolbarHeight = parseFloat(gridElem.find('.toolbar').css('height'));
 
-    contentHeight = gridData.height && isNumber(parseFloat(gridData.height)) ? gridData.height - (headerHeight + footerHeight + toolbarHeight) + 'px' : '250px';
+    contentHeight = gridData.height && (0, _gridHelpers.isNumber)(parseFloat(gridData.height)) ? gridData.height - (headerHeight + footerHeight + toolbarHeight) + 'px' : '250px';
     var gridContent = gridElem.find('.grid-content-div').css('height', contentHeight),
         id = gridContent.data('grid_content_id'),
         gcOffsets = gridContent.offset(),
-        top = gcOffsets.top + (gridContent.height()/2) + $(window).scrollTop(),
-        left = gcOffsets.left + (gridContent.width()/2) + $(window).scrollLeft(),
+        top = gcOffsets.top + gridContent.height() / 2 + $(window).scrollTop(),
+        left = gcOffsets.left + gridContent.width() / 2 + $(window).scrollLeft(),
         loader = $('<span id="loader-span" class="spinner"></span>').appendTo(gridContent).css('top', top).css('left', left),
         contentTable = $('<table id="' + gridElem[0].id + '_content" style="height:auto;"></table>').appendTo(gridContent),
         colGroup = $('<colgroup></colgroup>').appendTo(contentTable),
         contentTBody = $('<tbody></tbody>').appendTo(contentTable),
-        text, i, j, k, item;
-    if (gridData.selectable) attachTableSelectHandler(contentTBody);
+        text,
+        i,
+        j,
+        k,
+        item;
+    if (gridData.selectable) (0, _gridSelect.attachTableSelectHandler)(contentTBody);
     var columns = [];
     gridElem.find('th').each(function headerIterationCallback(idx, val) {
-        if (!$(val).hasClass('group_spacer'))
-            columns.push($(val).data('field'));
+        if (!$(val).hasClass('group_spacer')) columns.push($(val).data('field'));
     });
 
     var rowEnd = gridData.pageSize > gridData.dataSource.data.length ? gridData.dataSource.data.length : gridData.pageSize,
@@ -1042,15 +1013,14 @@ function createGridContent(gridData, gridElem) {
 
     for (i = 0; i < rowEnd; i++) {
         gridData.dataSource.data[i]._initialRowIndex = i;
-        if (gridData.groupedBy && gridData.groupedBy.length) createGroupedRows(id, i, columns, currentGroupingValues, contentTBody);
+        if (gridData.groupedBy && gridData.groupedBy.length) (0, _gridGroup.createGroupedRows)(id, i, columns, currentGroupingValues, contentTBody);
 
         var tr = $('<tr class="data-row"></tr>').appendTo(contentTBody);
         if (i % 2) {
             tr.addClass('alt-row');
-            if (rows && rows.alternateRows && rows.alternateRows.constructor === Array)
-                for (j = 0; j < rows.alternateRows.length; j++) {
-                    tr.addClass(rows.alternateRows[j].toString());
-                }
+            if (rows && rows.alternateRows && rows.alternateRows.constructor === Array) for (j = 0; j < rows.alternateRows.length; j++) {
+                tr.addClass(rows.alternateRows[j].toString());
+            }
         }
 
         if (rows && rows.all && rows.all.constructor === Array) {
@@ -1072,17 +1042,16 @@ function createGridContent(gridData, gridElem) {
                     td.addClass(gridData.columns[columns[j]].attributes.cellClasses[k]);
                 }
             }
-            text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
+            text = (0, _gridFormattersAndValidators.getFormattedCellText)(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
             text = text == null ? '' : text;
             td.text(text);
             if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
             //attach event handlers to save data
             if (gridData.columns[columns[j]].editable && gridData.columns[columns[j]].editable !== 'drop-down') {
-                makeCellEditable(id, td);
+                (0, _gridEdit.makeCellEditable)(id, td);
                 gridState[id].editable = true;
-            }
-            else if (gridData.columns[columns[j]].editable === 'drop-down') {
-                makeCellSelectable(id, td);
+            } else if (gridData.columns[columns[j]].editable === 'drop-down') {
+                (0, _gridEdit.makeCellSelectable)(id, td);
                 gridState[id].editable = true;
             }
         }
@@ -1115,13 +1084,12 @@ function createGridContent(gridData, gridElem) {
         }
     }
 
-    createGroupTrEventHandlers();
+    (0, _gridGroup.createGroupTrEventHandlers)();
 
     gridContent.on('scroll', function contentDivScrollCallback(e) {
         var cDiv = $(e.currentTarget);
         var headWrap = cDiv.parents('.grid-wrapper').find('.grid-header-wrapper');
-        if (gridState[headWrap.parent().data('grid_header_id')].resizing)
-            return;
+        if (gridState[headWrap.parent().data('grid_header_id')].resizing) return;
         headWrap.scrollLeft(cDiv.scrollLeft());
     });
 
@@ -1160,10 +1128,9 @@ function constructAggregationsFromServer(gridId, aggregationObj) {
         if (typeof gridState[gridId].dataSource.get === 'function') {
             //TODO: why do I need to check for typing here? Can't I just use it if it's available and assume a string if not?
             if (gridState[gridId].aggregates[col].type && gridState[gridId].aggregates[col].value) {
-                var text = getFormattedCellText(gridId, col, gridState[gridId].aggregates[col].value) || gridState[gridId].aggregates[col].value;
-                aggregationObj[col].text = aggregates[gridState[gridId].aggregates[col].type] + text;
-            }
-            else aggregationObj[col].text = null;
+                var text = (0, _gridFormattersAndValidators.getFormattedCellText)(gridId, col, gridState[gridId].aggregates[col].value) || gridState[gridId].aggregates[col].value;
+                aggregationObj[col].text = _gridEnumsAndConfigs.aggregates[gridState[gridId].aggregates[col].type] + text;
+            } else aggregationObj[col].text = null;
         }
     }
 }
@@ -1181,39 +1148,39 @@ function addValueToAggregations(gridId, field, value, aggregationObj) {
     if (value == null) return;
     switch (gridState[gridId].aggregates[field].type) {
         case 'count':
-            aggregationObj[field].value =(aggregationObj[field].value || 0) + 1;
-            aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + aggregationObj[field].value;
+            aggregationObj[field].value = (aggregationObj[field].value || 0) + 1;
+            aggregationObj[field].text = _gridEnumsAndConfigs.aggregates[gridState[gridId].aggregates[field].type] + aggregationObj[field].value;
             return;
         case 'average':
             var count = aggregationObj[field].count ? aggregationObj[field].count + 1 : 1;
             value = parseFloat(value.toString());
             total = aggregationObj[field].total ? aggregationObj[field].total + value : value;
-            var avg = parseFloat(parseFloat(total/count));
-            text = getFormattedCellText(gridId, field, avg.toFixed(2)) || avg.toFixed(2);
+            var avg = parseFloat(parseFloat(total / count));
+            text = (0, _gridFormattersAndValidators.getFormattedCellText)(gridId, field, avg.toFixed(2)) || avg.toFixed(2);
             aggregationObj[field].total = total;
             aggregationObj[field].count = count;
-            aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
+            aggregationObj[field].text = _gridEnumsAndConfigs.aggregates[gridState[gridId].aggregates[field].type] + text;
             aggregationObj[field].value = avg;
             return;
         case 'max':
             if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) < parseFloat(value.toString())) {
-                text = getFormattedCellText(gridId, field, value) || value;
-                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
+                text = (0, _gridFormattersAndValidators.getFormattedCellText)(gridId, field, value) || value;
+                aggregationObj[field].text = _gridEnumsAndConfigs.aggregates[gridState[gridId].aggregates[field].type] + text;
                 aggregationObj[field].value = value;
             }
             return;
         case 'min':
             if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) > parseFloat(value.toString())) {
-                text = getFormattedCellText(gridId, field, value) || value;
-                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
+                text = (0, _gridFormattersAndValidators.getFormattedCellText)(gridId, field, value) || value;
+                aggregationObj[field].text = _gridEnumsAndConfigs.aggregates[gridState[gridId].aggregates[field].type] + text;
                 aggregationObj[field].value = text;
             }
             return;
         case 'total':
             total = (parseFloat(aggregationObj[field].total) || 0) + parseFloat(value);
-            text = getFormattedCellText(gridId, field, total) || total;
+            text = (0, _gridFormattersAndValidators.getFormattedCellText)(gridId, field, total) || total;
             aggregationObj[field].total = total;
-            aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
+            aggregationObj[field].text = _gridEnumsAndConfigs.aggregates[gridState[gridId].aggregates[field].type] + text;
             aggregationObj[field].value = text;
             return;
         default:
@@ -1235,7 +1202,7 @@ function setColWidth(gridData, gridElem) {
     var tableDiv = gridElem.find('.grid-header-wrapper');
     for (name in gridData.columns) {
         if (!gridData.columns[name].isHidden) {
-            columnNames[name] = isNumber(gridData.columns[name].width) ? gridData.columns[name].width : null;
+            columnNames[name] = (0, _gridHelpers.isNumber)(gridData.columns[name].width) ? gridData.columns[name].width : null;
             columnList.push(name);
         }
     }
@@ -1244,12 +1211,11 @@ function setColWidth(gridData, gridElem) {
     colGroups.each(function iterateColsCallback(idx, val) {
         var i = idx;
         if (gridData.groupedBy && gridData.groupedBy.length) {
-            i = (idx%(colGroups.length/2)) - gridData.groupedBy.length;
+            i = idx % (colGroups.length / 2) - gridData.groupedBy.length;
         }
         if (gridData.groupedBy && gridData.groupedBy.length && idx < gridData.groupedBy.length) {
             $(val).css('width', 27);
-        }
-        else if (columnNames[columnList[i]] != null) {
+        } else if (columnNames[columnList[i]] != null) {
             $(val).css('width', columnNames[columnList[i]]);
         }
     });
@@ -1287,7 +1253,7 @@ function copyGridWidth(gridElem) {
  */
 function createGridToolbar(gridData, gridElem, canEdit) {
     var id = gridElem.find('.grid-wrapper').data('grid_id');
-    if ($('#grid_' + id + '_toolbar').length) return;	//if the toolbar has already been created, don't create it again.
+    if ($('#grid_' + id + '_toolbar').length) return; //if the toolbar has already been created, don't create it again.
 
     if (gridData.groupable) {
         var groupMenuBar = $('<div id="grid_' + id + '_group_div" class="group_div clearfix" data-grid_id="' + id + '">' + groupMenuText + '</div>').prependTo(gridElem);
@@ -1302,7 +1268,7 @@ function createGridToolbar(gridData, gridElem, canEdit) {
                 droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null,
                 groupedItems = {};
             if (groupId == null || droppedId == null || groupId !== droppedId) return;
-            if (gridState[id].updating) return;		//can't group columns if grid is updating
+            if (gridState[id].updating) return; //can't group columns if grid is updating
             if (!groupMenuBar.children().length) groupMenuBar.text('');
             var field = droppedCol.data('field'),
                 title = gridState[groupId].columns[field].title || field,
@@ -1316,16 +1282,16 @@ function createGridToolbar(gridData, gridElem, canEdit) {
                     return false;
                 }
             });
-            if (foundDupe) return;  //can't group on the same column twice
+            if (foundDupe) return; //can't group on the same column twice
 
-            var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>'),//.appendTo(groupMenuBar),
-                groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
+            var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>'),
+                //.appendTo(groupMenuBar),
+            groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
             groupDirSpan.append('<span class="sort-asc-white groupSortSpan"></span>').append('<span>' + title + '</span>');
             var cancelButton = $('<span class="remove"></span>').appendTo(groupItem),
                 groupings = [];
 
-            if (dropIndicator.data('field')) groupItem.insertBefore(groupedItems[dropIndicator.data('field')]);
-            else groupItem.appendTo(groupMenuBar);
+            if (dropIndicator.data('field')) groupItem.insertBefore(groupedItems[dropIndicator.data('field')]);else groupItem.appendTo(groupMenuBar);
 
             groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
                 var item = $(val);
@@ -1338,8 +1304,7 @@ function createGridToolbar(gridData, gridElem, canEdit) {
             if (gridState[id].sortedOn && gridState[id].sortedOn.length) {
                 var sortArr = [];
                 for (var l = 0; l < gridState[id].sortedOn.length; l++) {
-                    if (gridState[id].sortedOn[l].field !== field) sortArr.push(gridState[id].sortedOn[l]);
-                    else {
+                    if (gridState[id].sortedOn[l].field !== field) sortArr.push(gridState[id].sortedOn[l]);else {
                         gridState[id].grid.find('.grid-header-wrapper').find('#' + field + '_grid_id_' + id).find('.sortSpan').remove();
                     }
                 }
@@ -1355,7 +1320,7 @@ function createGridToolbar(gridData, gridElem, canEdit) {
 
             gridState[id].groupedBy = groupings;
             gridState[id].pageRequest.eventType = 'group';
-            attachGroupItemEventHandlers(groupMenuBar, groupDirSpan, cancelButton);
+            (0, _gridGroup.attachGroupItemEventHandlers)(groupMenuBar, groupDirSpan, cancelButton);
             preparePageDataGetRequest(id);
         });
         groupMenuBar.on('dragover', function handleHeaderDragOverCallback(e) {
@@ -1393,8 +1358,7 @@ function createGridToolbar(gridData, gridElem, canEdit) {
                     dropIndicator.css('height', lastItem.outerHeight());
                     dropIndicator.data('field', lastItem.data('field'));
                 }
-            }
-            else {
+            } else {
                 dropIndicator.css('height', groupMenuBar.outerHeight());
                 dropIndicator.css('left', groupMenuBar.offset().left);
                 dropIndicator.css('top', groupMenuBar.offset().top);
@@ -1423,7 +1387,7 @@ function createGridToolbar(gridData, gridElem, canEdit) {
             var deleteAnchor = $('<a href="#" class="toolbarAnchor deleteToolbar"></a>').appendTo(saveBar);
             deleteAnchor.append('<span class="toolbarSpan deleteToolbarSpan">Delete Changes</span>');
 
-            attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor);
+            (0, _gridEdit.attachSaveAndDeleteHandlers)(id, gridElem, saveAnchor, deleteAnchor);
         }
     }
 }
@@ -1435,7 +1399,7 @@ function createGridToolbar(gridData, gridElem, canEdit) {
  */
 function attachMenuClickHandler(menuAnchor, gridId) {
     menuAnchor.on('click', function menuAnchorClickHandler(e) {
-        e.stopPropagation();	//stop event bubbling so that the click won't bubble to document click handler
+        e.stopPropagation(); //stop event bubbling so that the click won't bubble to document click handler
         e.preventDefault();
         var menu = gridState[gridId].grid.find('#menu_model_grid_id_' + gridId),
             newMenu;
@@ -1443,7 +1407,7 @@ function attachMenuClickHandler(menuAnchor, gridId) {
         if (!menu.length) {
             newMenu = $('<div id="menu_model_grid_id_' + gridId + '" class="grid_menu" data-grid_id="' + gridId + '"></div>');
             if (gridState[gridId].editable) {
-                newMenu.append($('<ul class="menu-list"></ul>').append(createSaveDeleteMenuItems(gridId)));
+                newMenu.append($('<ul class="menu-list"></ul>').append((0, _gridEdit.createSaveDeleteMenuItems)(gridId)));
             }
             if (gridState[gridId].columnToggle) {
                 newMenu.append($('<hr/>'));
@@ -1451,19 +1415,19 @@ function attachMenuClickHandler(menuAnchor, gridId) {
             }
             if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable || gridState[gridId].groupable) {
                 newMenu.append($('<hr/>'));
-                if (gridState[gridId].sortable) newMenu.append($('<ul class="menu-list"></ul>').append(createSortMenuItem()));
+                if (gridState[gridId].sortable) newMenu.append($('<ul class="menu-list"></ul>').append((0, _gridSort.createSortMenuItem)()));
                 if (gridState[gridId].filterable) {
-                    newMenu.append($('<ul class="menu-list"></ul>').append(createFilterMenuItems()));
+                    newMenu.append($('<ul class="menu-list"></ul>').append((0, _gridFilter.createFilterMenuItems)()));
                     if (gridState[gridId].advancedFiltering) {
-                        newMenu.append($('<ul class="menu-list"></ul>').append(createFilterModalMenuItem(gridId)));
+                        newMenu.append($('<ul class="menu-list"></ul>').append((0, _gridFilter.createFilterModalMenuItem)(gridId)));
                     }
                 }
-                if (gridState[gridId].groupable) newMenu.append($('<ul class="menu-list"></ul>').append(createGroupMenuItem()));
-                if (gridState[gridId].selectable) newMenu.append($('<ul class="menu-list"></ul>').append(createDeselectMenuOption(gridId)));
+                if (gridState[gridId].groupable) newMenu.append($('<ul class="menu-list"></ul>').append((0, _gridGroup.createGroupMenuItem)()));
+                if (gridState[gridId].selectable) newMenu.append($('<ul class="menu-list"></ul>').append((0, _gridSelect.createDeselectMenuOption)(gridId)));
             }
             if (gridState[gridId].excelExport) {
                 newMenu.append($('<hr/>'));
-                newMenu.append(createExcelExportMenuItems(newMenu, gridId));
+                newMenu.append((0, _gridExcel.createExcelExportMenuItems)(newMenu, gridId));
             }
             gridState[gridId].grid.append(newMenu);
             $(document).on('click', function hideMenuHandler(e) {
@@ -1475,15 +1439,14 @@ function attachMenuClickHandler(menuAnchor, gridId) {
                     }
                 }
             });
-        }
-        else {
+        } else {
             newMenu = menu;
             newMenu.removeClass('hiddenMenu');
         }
 
         var menuAnchorOffset = menuAnchor.offset();
-        newMenu.css('top', (menuAnchorOffset.top - $(window).scrollTop()));
-        newMenu.css('left', (menuAnchorOffset.left - $(window).scrollLeft()));
+        newMenu.css('top', menuAnchorOffset.top - $(window).scrollTop());
+        newMenu.css('left', menuAnchorOffset.left - $(window).scrollLeft());
     });
 }
 
@@ -1513,9 +1476,7 @@ function createColumnToggleMenuOptions(menu, gridId) {
                         return false;
                     }
                 });
-                if (uncheckedCol && this.checked) gridState[gridId].grid[0].grid.hideColumn($(this).data('field'));
-                else if (this.checked) this.checked = false;
-                else gridState[gridId].grid[0].grid.showColumn($(this).data('field'));
+                if (uncheckedCol && this.checked) gridState[gridId].grid[0].grid.hideColumn($(this).data('field'));else if (this.checked) this.checked = false;else gridState[gridId].grid[0].grid.showColumn($(this).data('field'));
             });
             toggleOptions.append(columnList);
             gridState[gridId].grid.append(toggleOptions);
@@ -1523,17 +1484,16 @@ function createColumnToggleMenuOptions(menu, gridId) {
         if (toggleOptions.css('display') === 'none') {
             var groupAnchorOffset = menuAnchor.offset(),
                 newMenuOffset = menu.offset();
-            toggleOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
+            toggleOptions.css('top', groupAnchorOffset.top - 3 - $(window).scrollTop());
             toggleOptions.css('left', newMenuOffset.left + (menu.outerWidth() - toggleOptions.outerWidth()));
-            toggle(toggleOptions, {duration: 200 });
+            toggle(toggleOptions, { duration: 200 });
         }
     });
     menuList.on('mouseleave', function columnToggleItemHoverHandler(evt) {
         setTimeout(function detectMouseLeave() {
             var toggleOptions = $('#toggle_grid_id_' + gridId),
                 toggleOptionsOffset = toggleOptions.offset();
-            if (evt.pageX >= toggleOptionsOffset.left && evt.pageX <= (toggleOptionsOffset.left + toggleOptions.width()) && evt.pageY >= toggleOptionsOffset.top &&
-                evt.pageY <= (toggleOptionsOffset.top + toggleOptions.height())) {
+            if (evt.pageX >= toggleOptionsOffset.left && evt.pageX <= toggleOptionsOffset.left + toggleOptions.width() && evt.pageY >= toggleOptionsOffset.top && evt.pageY <= toggleOptionsOffset.top + toggleOptions.height()) {
                 return;
             }
             toggle(toggleOptions, { duration: 200 });
@@ -1552,16 +1512,16 @@ function createGridFooter(gridData, gridElem) {
     var gridFooter = gridElem.find('.grid-footer-div');
     var id = gridFooter.data('grid_footer_id');
     var count = gridState[id].dataSource.rowCount;
-    var displayedRows = (count - gridState[id].pageSize) > 0 ? gridState[id].pageSize : count;
-    var totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 0;
+    var displayedRows = count - gridState[id].pageSize > 0 ? gridState[id].pageSize : count;
+    var totalPages = count - displayedRows > 0 ? Math.ceil((count - displayedRows) / displayedRows) + 1 : 0;
     var pageNum = gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum;
 
     var first = $('<a href="#" class="grid-page-link" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridFooter);
     var prev = $('<a href="#" class="grid-page-link" data-link="prev" data-pagenum="1" title="Previous Page"><span class="grid-page-span span-prev">Prev Page</span></a>').appendTo(gridFooter);
-    var text = 'Page ' + gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum + '/' + (totalPages);
+    var text = 'Page ' + gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum + '/' + totalPages;
     gridFooter.append('<span class="grid-pagenum-span page-counter">' + text + '</span>');
     var next = $('<a href="#" class="grid-page-link" data-link="next" data-pagenum="2" title="Next Page"><span class="grid-page-span span-next">Next Page</span></a>').appendTo(gridFooter);
-    var last = $('<a href="#" class="grid-page-link" data-link="last" data-pagenum="' + (totalPages) + '" title="Last Page"><span class="grid-page-span span-last">Last Page</span></a>').appendTo(gridFooter);
+    var last = $('<a href="#" class="grid-page-link" data-link="last" data-pagenum="' + totalPages + '" title="Last Page"><span class="grid-page-span span-last">Last Page</span></a>').appendTo(gridFooter);
 
     if (pageNum === 1) {
         first.addClass('link-disabled');
@@ -1578,7 +1538,7 @@ function createGridFooter(gridData, gridElem) {
             sizeSelect = $('<select class="size-selector input"></select>'),
             numOptions = 0;
         for (var i = 0; i < pageOptions.length; i++) {
-            if (isNumber(parseFloat(pageOptions[i]))) {
+            if ((0, _gridHelpers.isNumber)(parseFloat(pageOptions[i]))) {
                 sizeSelect.append('<option value="' + pageOptions[i] + '">' + pageOptions[i] + '</option>');
                 numOptions++;
             }
@@ -1598,7 +1558,7 @@ function createGridFooter(gridData, gridElem) {
         });
     }
 
-    var rowStart = 1 + (displayedRows * (pageNum - 1));
+    var rowStart = 1 + displayedRows * (pageNum - 1);
     var rowEnd = gridData.dataSource.rowCount < gridData.pageSize * pageNum ? gridData.dataSource.rowCount : gridData.pageSize * pageNum;
     text = rowStart + ' - ' + rowEnd + ' of ' + count + ' rows';
     gridFooter.append('<span class="pageinfo">' + text + '</span>');
@@ -1615,21 +1575,22 @@ function setPagerEventListeners(gridFooter) {
         $(val).on('click', function gridFooterAnchorClickHandlerCallback(e) {
             e.preventDefault();
             var link = e.currentTarget.tagName === 'A' ? $(e.currentTarget) : $(e.srcElement).parents('.grid-page-link');
-            if (link.hasClass('link-disabled')) {	//If the pager link that was clicked on is disabled, return.
+            if (link.hasClass('link-disabled')) {
+                //If the pager link that was clicked on is disabled, return.
                 return;
             }
             var gridFooter = link.parents('.grid-footer-div');
             var allPagers = gridFooter.find('a');
             var id = parseInt(link.parents('.grid-wrapper')[0].dataset.grid_id);
-            if (gridState[id].updating) return;		//can't page if grid is updating
+            if (gridState[id].updating) return; //can't page if grid is updating
             var gridData = gridState[id];
             var pageSize = gridData.pageSize;
             var pagerInfo = gridFooter.find('.pageinfo');
             var pagerSpan = gridFooter.find('.grid-pagenum-span');
-            var totalPages = (gridData.dataSource.rowCount - pageSize) > 0 ? Math.ceil((gridData.dataSource.rowCount - pageSize)/pageSize) + 1 : 1;
+            var totalPages = gridData.dataSource.rowCount - pageSize > 0 ? Math.ceil((gridData.dataSource.rowCount - pageSize) / pageSize) + 1 : 1;
             var pageNum = parseInt(link[0].dataset.pagenum);
             gridData.pageNum = pageNum;
-            var rowStart = 1 + (pageSize * (pageNum - 1));
+            var rowStart = 1 + pageSize * (pageNum - 1);
             var rowEnd = pageSize * pageNum;
 
             switch (link.data('link')) {
@@ -1708,8 +1669,8 @@ function preparePageDataGetRequest(id) {
 
     var requestObj = {};
     if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-    if (gridData.filterable) requestObj.filters = gridData.filters.filterGroup && gridData.filters.filterGroup.length? gridData.filters : { conjunct: null, filterGroup: [] };
-    if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
+    if (gridData.filterable) requestObj.filters = gridData.filters.filterGroup && gridData.filters.filterGroup.length ? gridData.filters : { conjunct: null, filterGroup: [] };
+    if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length ? gridData.groupedBy : [];
 
     requestObj.pageSize = pageSize;
     requestObj.pageNum = gridData.eventType === 'filter' ? 1 : pageNum;
@@ -1717,8 +1678,7 @@ function preparePageDataGetRequest(id) {
     gridData.grid.find('.grid-content-div').empty();
 
     callGridEventHandlers(gridState[id].events.pageRequested, gridData.grid, { element: gridData.grid });
-    if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function') gridData.dataSource.get(requestObj, getPageDataRequestCallback);
-    else {
+    if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function') gridData.dataSource.get(requestObj, getPageDataRequestCallback);else {
         if (!gridData.alteredData) gridData.alteredData = gridHelpers.cloneGridData(gridData.originalData);
         getPageData(requestObj, id, getPageDataRequestCallback);
     }
@@ -1733,16 +1693,14 @@ function preparePageDataGetRequest(id) {
             gridData.sortedOn = requestObj.sortedOn;
             gridData.filters = requestObj.filters;
 
-            if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group')
-                setColWidth(gridData, gridState[id].grid);
+            if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group') setColWidth(gridData, gridState[id].grid);
 
             createGridContent(gridData, gridState[id].grid);
             if (gridData.pageRequest.eventType === 'filter-add' || gridData.pageRequest.eventType === 'filter-rem' || gridData.pageRequest.eventType === 'pageSize') {
                 gridData.grid.find('.grid-footer-div').empty();
                 createGridFooter(gridData, gridData.grid);
             }
-            if (gridData.pageRequest.eventType === 'filter' && gridData.aggregates && gridData.aggregates.positionAt === 'top')
-                buildHeaderAggregations(id);
+            if (gridData.pageRequest.eventType === 'filter' && gridData.aggregates && gridData.aggregates.positionAt === 'top') buildHeaderAggregations(id);
             gridData.pageRequest = {};
         }
     }
@@ -1773,8 +1731,7 @@ function prepareGridDataUpdateRequest(id) {
                 gridState[id].originalData[origIdx][field] = gridState[id].dataSource.data[index][field];
                 $(val).remove();
             });
-        }
-        else {
+        } else {
             gridState[id].grid.find('.dirty').add('.dirty-blank').each(function iterateDirtySpansCallback(idx, val) {
                 var cell = $(val).parents('td');
                 var index = cell.parents('tr').index();
@@ -1802,8 +1759,8 @@ function getPageData(requestObj, id, callback) {
         return;
     }
     if (requestObj.filters && requestObj.filters.filterGroup && requestObj.filters.filterGroup.length) {
-        fullGridData = createFilterTreeFromFilterObject(requestObj.filters).filterCollection(gridHelpers.cloneGridData(gridState[id].originalData));
-        requestObj.pageNum = 1;		//reset the page to the first page when a filter is applied or removed.
+        fullGridData = (0, _expressionParserTmp.createFilterTreeFromFilterObject)(requestObj.filters).filterCollection(gridHelpers.cloneGridData(gridState[id].originalData));
+        requestObj.pageNum = 1; //reset the page to the first page when a filter is applied or removed.
         gridState[id].alteredData = fullGridData;
     }
     if (requestObj.groupedBy.length || requestObj.sortedOn.length) {
@@ -1823,14 +1780,12 @@ function getPageData(requestObj, id, callback) {
 
 function limitPageData(requestObj, fullGridData, callback) {
     var returnData;
-    if (requestObj.pageSize >= fullGridData.length)
-        returnData = fullGridData;
-    else {
+    if (requestObj.pageSize >= fullGridData.length) returnData = fullGridData;else {
         returnData = [];
-        var startRow = (requestObj.pageNum-1) * (requestObj.pageSize);
-        var endRow = fullGridData.length >= (startRow + parseInt(requestObj.pageSize)) ? (startRow + parseInt(requestObj.pageSize)) : fullGridData.length;
+        var startRow = (requestObj.pageNum - 1) * requestObj.pageSize;
+        var endRow = fullGridData.length >= startRow + parseInt(requestObj.pageSize) ? startRow + parseInt(requestObj.pageSize) : fullGridData.length;
 
-        for (var i = startRow; i < endRow; i++){
+        for (var i = startRow; i < endRow; i++) {
             returnData.push(fullGridData[i]);
         }
     }
@@ -1846,25 +1801,25 @@ function limitPageData(requestObj, fullGridData, callback) {
  */
 function callGridEventHandlers(events, context, param) {
     if (events.length) {
-        for (var x = 0; x < events.length; x++)
+        for (var x = 0; x < events.length; x++) {
             events[x].call(context, param);
+        }
     }
 }
 
 function existsInPutRequest(putRequest, model) {
     for (var i = 0; i < putRequest.length; i++) {
-        if (model._initialRowIndex == putRequest[i].dirtyData._initialRowIndex)
-            return i;
+        if (model._initialRowIndex == putRequest[i].dirtyData._initialRowIndex) return i;
     }
     return -1;
 }
 
-generateId = (function _generateId(seed) {
+generateId = function _generateId(seed) {
     return function guid() {
         seed++;
         return seed.toString();
     };
-})(-1);
+}(-1);
 
 //var gridApi = {};
 

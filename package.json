@@ -27,6 +27,7 @@
     "del": "^2.2.0",
     "gulp": "^3.9.1",
     "gulp-autoprefixer": "^3.1.0",
+    "gulp-babel": "^6.1.2",
     "gulp-closure-compiler": "^0.4.0",
     "gulp-csso": "^1.1.0",
     "gulp-esdoc": "^0.2.0",

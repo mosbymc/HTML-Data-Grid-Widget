@@ -77,7 +77,7 @@ function exportDataAsExcelFile(gridId, option) {
  * @param {function} callback - The callback function; Needed for server-side data requests
  */
 function determineGridDataToExport(gridId, option, callback) {
-    var columns = getGridColumns(gridState[gridId]);
+    var columns = getGridColumns(gridState[gridId].columns);
     switch (option) {
         case 'select':
             //TODO: this is a bad namespace; need to rework the unfortunate grid.grid section
@@ -146,11 +146,11 @@ function createExcelRequestObject(gridId) {
 }
 
 var gridState = {},
-    isInitialized = false;
+    isExcelInitialized = false;
 
 function excel_init(gridIObj) {
     gridState = gridIObj;
-    isInitialized = true;
+    isExcelInitialized = true;
 }
 
-export { createExcelExportMenuItems, exportDataAsExcelFile, determineGridDataToExport, createExcelRequestObject, excel_init, isInitialized };
+export { createExcelExportMenuItems, exportDataAsExcelFile, determineGridDataToExport, createExcelRequestObject, excel_init, isExcelInitialized };

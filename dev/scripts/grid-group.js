@@ -195,11 +195,11 @@ function RemoveAllColumnGrouping(e) {
 }
 
 var gridState = {},
-    isInitialized = false;
+    isGroupInitialized = false;
 
 function group_init(gridIObj) {
     gridState = gridIObj;
-    isInitialized = true;
+    isGroupInitialized = true;
 }
 
-export { createGroupedRows, createGroupTrEventHandlers, attachGroupItemEventHandlers, createGroupMenuItem, RemoveAllColumnGrouping, group_init, isInitialized };
+export { createGroupedRows, createGroupTrEventHandlers, attachGroupItemEventHandlers, createGroupMenuItem, RemoveAllColumnGrouping, group_init, isGroupInitialized };

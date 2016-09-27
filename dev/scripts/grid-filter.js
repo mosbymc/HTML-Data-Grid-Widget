@@ -614,13 +614,13 @@ function getFilterRowIdx(filterModal) {
 }
 
 var gridState = {},
-    isInitialized = false;
+    isFilterInitialized = false;
 
 function filter_init(gridIObj) {
     gridState = gridIObj;
-    isInitialized = true;
+    isFilterInitialized = true;
 }
 
 export { setFilterableClickListener, createFilterDiv, createFilterOptionsByDataType, filterInputValidation, resetAllFilters, resetButtonClickHandler, filterButtonClickHandler,
         attachFilterListener, createFilterMenuItems, createFilterModalMenuItem, addFilterButtonHandler, addNewAdvancedFilter, addFilterGroupHandler, deleteFilterButtonHandler,
-        clearFirstFilterButtonHandler, getFilterRowIdx, filter_init, isInitialized };
+        clearFirstFilterButtonHandler, getFilterRowIdx, filter_init, isFilterInitialized };

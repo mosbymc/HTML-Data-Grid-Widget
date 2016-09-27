@@ -291,11 +291,11 @@ function createDeselectMenuOption(gridId) {
 }
 
 var gridState = {},
-    isInitialized = false;
+    isSelectInitialized = false;
 
 function select_init(gridIObj) {
     gridState = gridIObj;
-    isInitialized = true;
+    isSelectInitialized = true;
 }
 
-export { attachTableSelectHandler, determineOverlayDimensions, selectHighlighted, createDeselectMenuOption, select_init, isInitialized };
+export { attachTableSelectHandler, determineOverlayDimensions, selectHighlighted, createDeselectMenuOption, select_init, isSelectInitialized };

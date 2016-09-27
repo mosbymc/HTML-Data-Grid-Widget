@@ -217,11 +217,11 @@ function handleResizeDragCallback(e) {
 }
 
 var gridState = {},
-    isInitialized = false;
+    isReorderInitialized = false;
 
 function reorder_init(gridIObj) {
     gridState = gridIObj;
-    isInitialized = true;
+    isReorderInitialized = true;
 }
 
-export { setDragAndDropListeners, handleDropCallback, swapContentCells, handleResizeDragCallback, reorder_init, isInitialized };
+export { setDragAndDropListeners, handleDropCallback, swapContentCells, handleResizeDragCallback, reorder_init, isReorderInitialized };
