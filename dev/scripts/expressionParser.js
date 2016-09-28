@@ -575,6 +575,13 @@ var queue = [];
 
 
 var expressionParser = (function _expressionParser() {
+    var dateTimeRegex = '^(((?:(?:(?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\4|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\7))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\10)|(?:(29|30)(\\/|-|\\.)' +
+        '(0?[1,3-9]|1[0-2])\\13)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\17)|(?:(29)(\\/|-|\\.)(0?2))\\20)((?:(?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])' +
+        '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)' +
+        '((?:1[6-9]|[2-9]\\d)?\\d{2}))))|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\31)(29))))' +
+        '|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)(?:(?:(?:(0?[13578]|1[02])\\35(31))|(?:(0?[1,3-9]|1[0-2])\\35(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\35(0?[1-9]|1\\d|2[0-8])))))' +
+        '((0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\44([0-5]\\d))?)?(?:(\\ [AP]M))$|^([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\49([0-5]\\d))?)$))';
+
     var booleanExpressionTree = {
         init: function _init() {
             this.tree = null;
@@ -702,6 +709,35 @@ var expressionParser = (function _expressionParser() {
 
                     curVal = convertTimeArrayToSeconds(curVal);
                     baseVal = convertTimeArrayToSeconds(baseVal);
+                    break;
+                case 'datetime':
+                    var re = new RegExp(dateTimeRegex),
+                        execVal1, execVal2;
+                    if (re.test(initialVal) && re.test(this.standard)) {
+                        execVal1 = re.exec(initialVal);
+                        execVal2 = re.exec(this.standard);
+
+                        var dateComp1 = execVal1[2],
+                            dateComp2 = execVal2[2],
+                            timeComp1 = execVal1[42],
+                            timeComp2 = execVal2[42];
+
+                        timeComp1 = getNumbersFromTime(timeComp1);
+                        timeComp2 = getNumbersFromTime(timeComp2);
+                        if (timeComp1[3] && timeComp1[3] === 'PM')
+                            timeComp1[0] += 12;
+                        if (timeComp2[3] && timeComp2[3] === 'PM')
+                            timeComp2[0] += 12;
+
+                        dateComp1 = new Date(dateComp1);
+                        dateComp2 = new Date(dateComp2);
+                        curVal = dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
+                        baseVal = dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
+                    }
+                    else {
+                        curVal = 0;
+                        baseVal = 0;
+                    }
                     break;
                 case 'number':
                     curVal = parseFloat(initialVal);

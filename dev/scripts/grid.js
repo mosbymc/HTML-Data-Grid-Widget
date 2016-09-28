@@ -936,22 +936,24 @@ var grid = (function _grid($) {
                 }
             }
 
-            if (gridData.reorderable === true && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable === true)) {
-                th.prop('draggable', true);
-                setDragAndDropListeners(th);
-            }
-            if (gridData.sortable === true && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable === true)) {
-                setSortableClickListener(th);
-                gridData.sortable = true;
-            }
+            if (gridData.columns[col].type !== 'custom') {
+                if (gridData.reorderable === true && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable === true)) {
+                    th.prop('draggable', true);
+                    setDragAndDropListeners(th);
+                }
+                if (gridData.sortable === true && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable === true)) {
+                    setSortableClickListener(th);
+                    gridData.sortable = true;
+                }
 
-            if (gridData.columns[col].filterable === true) {
-                setFilterableClickListener(th, gridData, col);
-                gridData.filterable = true;
-                gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
-            }
+                if (gridData.columns[col].filterable === true) {
+                    setFilterableClickListener(th, gridData, col);
+                    gridData.filterable = true;
+                    gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
+                }
 
-            if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
+                if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
+            }
 
             $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
             index++;
@@ -3126,6 +3128,7 @@ var grid = (function _grid($) {
                 break;
             case 'date':
             case 'time':
+            case 'datetime':
                 select.append('<option value="gte">Equal to or later than:</option>')
                     .append('<option value="gt">Later than:</option>')
                     .append('<option value="lte">Equal to or before:</option>')
@@ -3848,6 +3851,28 @@ var grid = (function _grid($) {
                 leftVal = new Date(left[0][sortObj.field]);
                 rightVal = new Date(right[0][sortObj.field]);
             }
+            else if (type === 'datetime') {
+                var re = new RegExp(dataTypes['datetime']),
+                execVal1 = re.exec(left[0][sortObj.field]),
+                execVal2 = re.exec(right[0][sortObj.field]);
+
+                var dateComp1 = execVal1[2],
+                    dateComp2 = execVal2[2],
+                    timeComp1 = execVal1[42],
+                    timeComp2 = execVal2[42];
+
+                timeComp1 = getNumbersFromTime(timeComp1);
+                timeComp2 = getNumbersFromTime(timeComp2);
+                if (timeComp1[3] && timeComp1[3] === 'PM')
+                    timeComp1[0] += 12;
+                if (timeComp2[3] && timeComp2[3] === 'PM')
+                    timeComp2[0] += 12;
+
+                dateComp1 = new Date(dateComp1);
+                dateComp2 = new Date(dateComp2);
+                leftVal = dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
+                rightVal = dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
+            }
             else {
                 leftVal = left[0][sortObj.field];
                 rightVal = right[0][sortObj.field];
@@ -3907,6 +3932,13 @@ var grid = (function _grid($) {
                 break;
             case 'time':
                 text = formatTimeCellData(value, column, gridId);
+                break;
+            case 'datetime':
+                var re = new RegExp(dataTypes['datetime']),
+                    execVal = re.exec(value),
+                    timeText = formatTimeCellData(execVal[42], column, gridId),
+                    dateComp = new Date(execVal[2]);
+                text = timeText.replace('dd', dateComp.getUTCDate().toString()).replace('dd', (dateComp.getUTCMonth() + 1).toString()).replace('yyyy', dateComp.getUTCFullYear().toString());
                 break;
             case 'string':
             case 'boolean':
@@ -4018,6 +4050,30 @@ var grid = (function _grid($) {
                 if (value2[3] && value2[3] === 'PM')
                     value2[0] += 12;
                 return convertTimeArrayToSeconds(value1) === convertTimeArrayToSeconds(value2);
+            case 'datetime':
+                var re = new RegExp(dataTypes['datetime']),
+                    execVal1, execVal2;
+                if (re.test(val1) && re.test(val2)) {
+                    execVal1 = re.exec(val1);
+                    execVal2 = re.exec(val2);
+
+                    var dateComp1 = execVal1[2],
+                        dateComp2 = execVal2[2],
+                        timeComp1 = execVal1[42],
+                        timeComp2 = execVal2[42];
+
+                    timeComp1 = getNumbersFromTime(timeComp1);
+                    timeComp2 = getNumbersFromTime(timeComp2);
+                    if (timeComp1[3] && timeComp1[3] === 'PM')
+                        timeComp1[0] += 12;
+                    if (timeComp2[3] && timeComp2[3] === 'PM')
+                        timeComp2[0] += 12;
+
+                    dateComp1 = new Date(dateComp1);
+                    dateComp2 = new Date(dateComp2);
+                    return dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1) === dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
+                }
+                return true;
             default:
                 return val1.toString() === val2.toString();
         }
@@ -4110,6 +4166,12 @@ var grid = (function _grid($) {
         '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\22|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\25)((?:1[6-9]|[2-9]\\d)?\\d{2}))))' +
         '|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\29)(29))))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)' +
         '(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$',
+        dateTime: '^(((?:(?:(?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\4|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\7))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\10)|(?:(29|30)(\\/|-|\\.)' +
+        '(0?[1,3-9]|1[0-2])\\13)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\17)|(?:(29)(\\/|-|\\.)(0?2))\\20)((?:(?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])' +
+        '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)' +
+        '((?:1[6-9]|[2-9]\\d)?\\d{2}))))|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\31)(29))))' +
+        '|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)(?:(?:(?:(0?[13578]|1[02])\\35(31))|(?:(0?[1,3-9]|1[0-2])\\35(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\35(0?[1-9]|1\\d|2[0-8])))))' +
+        '((0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\44([0-5]\\d))?)?(?:(\\ [AP]M))$|^([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\49([0-5]\\d))?)$))',
         dateChar: '\\d|\\-|\\/|\\.'
     };
 
