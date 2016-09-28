@@ -47,6 +47,9 @@ var gridData = {
         Markup: {
             type: ""
         },
+        Icon: {
+            type: ""
+        },
         positionAt: "top"
     },
     rows: {
@@ -186,7 +189,19 @@ var gridData = {
             type: "boolean",
             editable: true,
             filterable: true,
-            //width: 100
+            width: 100
+        },
+        Icon: {
+            title: 'GridIcon',
+            type: 'custom',
+            image: '../images/close.png',
+            width: 100,
+            //class: 'x',
+            html: '<a href="#"><span class="x"></span></a>',
+            click: function _customClick(row) {
+                console.log(row);
+                console.log('working');
+            }
         }
     },
     dataSource: {

@@ -718,9 +718,21 @@ var grid = (function _grid($) {
                         td.addClass(gridData.columns[columns[j]].attributes.cellClasses[k]);
                     }
                 }
-                text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
-                text = text == null ? '' : text;
-                td.text(text);
+                if (gridData.columns[columns[j]].type !== 'custom') {
+                    text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
+                    text = text == null ? '' : text;
+                    td.text(text);
+                }
+                else {
+                    var html = gridData.columns[columns[j]].html ? $(gridData.columns[columns[j]].html).appendTo(td) : td;
+                    if (gridData.columns[columns[j]].class)
+                        html.addClass(gridData.columns[columns[j]].class);
+                    if (gridData.columns[columns[j]].text)
+                        html.text(gridData.columns[columns[j]].text);
+                    if (typeof gridData.columns[columns[j]].click === 'function') {
+                        attachCustomCellHandler(columns[j], html, id);
+                    }
+                }
                 if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
                 if (gridData.columns[columns[j]].editable && gridData.columns[columns[j]].editable !== 'drop-down') {
                     makeCellEditable(id, td);
@@ -780,6 +792,14 @@ var grid = (function _grid($) {
         gridState[id].dataSource.data = gridData.dataSource.data;
         loader.remove();
         gridState[id].updating = false;
+    }
+
+    function attachCustomCellHandler(field, cellItem, gridId) {
+        cellItem.on('click', function _callCustomCellClickHandler() {
+            var row = $(this).parents('tr'),
+                rowIdx = row.index();
+            gridState[gridId].columns[field].click.call(this, gridState[gridId].dataSource.data[rowIdx]);
+        });
     }
 
     function createGroupedRows(gridId, rowIndex, columns, currentGroupingValues, gridContent) {

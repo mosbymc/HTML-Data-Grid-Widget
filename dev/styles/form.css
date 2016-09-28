@@ -1,3 +1,15 @@
+.x {
+    background: url('../images/close.png') no-repeat;
+    width: 12px !important;
+    height: 12px !important;
+    margin-left: auto;
+    margin-right: auto;
+    display: inline-block;
+    /*padding-left: auto;
+    padding-right: auto;*/
+    color: #a8a8a8;
+}
+
 #showErrors {
     background-color: #ffd;
     padding-left: 30px;

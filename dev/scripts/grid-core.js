@@ -120,6 +120,7 @@
  - Thoroughly test date & time regex usages
  */
 
+import { cacheManager } from './cacheManager';
 import { validateCharacter, getFormattedCellText, formatTimeCellData, formatDateCellData, formatNumericCellData, verifyFormat, createCurrencyNumberOrPercentFormat } from './gridFormattersAndValidators';
 import { dataTypes, events, eventsEnum, aggregates } from './gridEnumsAndConfigs';
 import { comparator, sortGridData, mergeSort, compareValuesByType } from './gridDataHelpers';
@@ -157,6 +158,7 @@ var generateId,
  */
 export function createGrid(gridData, gridElem) {
     if (gridData && isDomElement(gridElem)) {
+        //var newId = cacheManager.getNextCacheId();
         var id = generateId();
         if (id > 0) {   //test to check if previously created grids still exist
             var tmp = id - 1;

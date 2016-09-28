@@ -23,14 +23,17 @@ Object.defineProperties(
 
 var cache = [];
 
-var cacheStore = {
+var cacheManager = {
     cache: {},
-    createNewGridCache: function _createNewGridCache(gridCacheObj) {
+    getNextCacheId: function _getNextCacheId() {
+        return generateId();
+    },
+    createNewGridCache: function _createNewGridCache(gridCacheObj, cacheId) {
         var newId = generateId();
         cache[newId] = gridCacheObj;
 
         Object.defineProperty(
-            cacheStore.cache,
+            cacheManager.cache,
             newId.toString(),
             {
                 get: function _get() {
@@ -42,7 +45,7 @@ var cacheStore = {
         return newId;
     },
     deleteGridCache: function _deleteGridCache(cacheId) {
-        delete cacheStore.cache[cacheId];
+        delete cacheManager.cache[cacheId];
         delete cache[cacheId];
     },
     updateCacheWithPageData: function _updateCacheWithPageData(pageData, cacheId) {
@@ -77,3 +80,5 @@ var generateId = (function guid(seed) {
         return seed.toString();
     };
 })(-1);
+
+export { cacheManager };
