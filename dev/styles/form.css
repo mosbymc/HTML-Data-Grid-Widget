@@ -15,7 +15,7 @@
     padding-left: 30px;
     padding-bottom: 10px;
     margin-left: auto;"
-width: 80%;
+    width: 80%;
     color: #A41919;
     border: 2px solid #A41919;
 }
@@ -25,7 +25,7 @@ width: 80%;
     padding-left: 30px;
     padding-bottom: 10px;
     margin-left: auto;"
-width: 80%;
+    width: 80%;
     color: #A41919;
     border: 2px solid #A41919;
 }
@@ -36,7 +36,7 @@ width: 80%;
 }
 
 #fieldValidate2 {
-    float: center;
+    float: none;
     display: inline-block;
 }
 
@@ -51,7 +51,7 @@ width: 80%;
 }
 
 #fieldValidate5 {
-    float: center;
+    float: none;
     display: inline-block;
 }
 

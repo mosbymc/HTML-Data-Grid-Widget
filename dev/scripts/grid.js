@@ -952,7 +952,12 @@ var grid = (function _grid($) {
                     gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
                 }
 
-                if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
+                if (gridData.resizable) {
+                    th.on('mouseleave', mouseLeaveHandlerCallback);
+                }
+
+                if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering)
+                    createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
             }
 
             $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
@@ -2826,7 +2831,7 @@ var grid = (function _grid($) {
             gridId = gridMenu.data('grid_id');
         $('.grid_menu').addClass('hiddenMenu');
 
-        gridState[gridId].find('.sortSpan').remove();
+        gridState[gridId].grid.find('.sortSpan').remove();
         gridState[gridId].sortedOn = [];
         gridState[gridId].pageRequest.eventType = 'sort';
         preparePageDataGetRequest(gridId);
@@ -3218,13 +3223,13 @@ var grid = (function _grid($) {
         filterDiv.find('.filterInput').val('');
         filterDiv.addClass('hiddenFilter');
 
-        for (var i = 0; i < gridState[gridId].filters.groupFilters; i++) {
-            if (gridState[gridId].filters.groupFilters[i].field !== field) {
-                remainingFilters.push(gridState[gridId].filters.groupFilters[i]);
+        for (var i = 0; i < gridState[gridId].filters.filterGroup.length; i++) {
+            if (gridState[gridId].filters.filterGroup[i].field !== field) {
+                remainingFilters.push(gridState[gridId].filters.filterGroup[i]);
             }
         }
 
-        gridData.filters.groupFilters = remainingFilters;
+        gridData.filters.filterGroup = remainingFilters;
         gridData.pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
     }
@@ -3340,7 +3345,7 @@ var grid = (function _grid($) {
                 dropIndicator.css('display', 'none');
             }
         });
-        elem.on('mouseleave', mouseLeaveHandlerCallback);
+        //elem.on('mouseleave', mouseLeaveHandlerCallback);
     }
 
     function handleDropCallback(e) {
@@ -3596,7 +3601,7 @@ var grid = (function _grid($) {
                 return true;
             var droppedIdx = 1 + parseInt(droppedIndex);
             var targetIdx = 1 + parseInt(targetIndex);
-            if (gridData.groupedBy && gridData.groupedBy !== 'none') {
+            if (gridData.groupedBy && gridData.groupedBy.length && gridData.groupedBy !== 'none') {
                 droppedIdx++;
                 targetIdx++;
             }
@@ -3627,14 +3632,15 @@ var grid = (function _grid($) {
         if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
         requestObj.pageSize = pageSize;
-        requestObj.pageNum = gridData.eventType === 'filter' ? 1 : pageNum;
+        requestObj.pageNum = gridData.pageRequest.eventType === 'filter' ? 1 : pageNum;
 
         gridData.grid.find('.grid-content-div').empty();
 
         callGridEventHandlers(gridState[id].events.pageRequested, gridData.grid, { element: gridData.grid });
         if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function') gridData.dataSource.get(requestObj, getPageDataRequestCallback);
         else {
-            if (!gridData.alteredData) gridData.alteredData = cloneGridData(gridData.originalData);
+            if (!gridData.alteredData || gridData.pageRequest.eventType === 'filter-rem') gridData.alteredData = cloneGridData(gridData.originalData);
+            //else if (gridData.eventType === 'filter-rem') gridData.alteredData = cloneGridData(gridData.originalData);
             getPageData(requestObj, id, getPageDataRequestCallback);
         }
 
@@ -3644,9 +3650,9 @@ var grid = (function _grid($) {
                 gridData.pageSize = requestObj.pageSize;
                 gridData.pageNum = requestObj.pageNum;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
-                gridData.groupedBy = requestObj.groupedBy;
-                gridData.sortedOn = requestObj.sortedOn;
-                gridData.filters = requestObj.filters;
+                gridData.groupedBy = requestObj.groupedBy || [];
+                gridData.sortedOn = requestObj.sortedOn || [];
+                gridData.filters = requestObj.filters || {};
 
                 if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group')
                     setColWidth(gridData, gridState[id].grid);
@@ -3721,8 +3727,8 @@ var grid = (function _grid($) {
             requestObj.pageNum = 1;		//reset the page to the first page when a filter is applied or removed.
             gridState[id].alteredData = fullGridData;
         }
-        if (requestObj.groupedBy.length || requestObj.sortedOn.length) {
-            var sortedData = sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
+        if (requestObj.groupedBy && requestObj.groupedBy.length || requestObj.sortedOn.length) {
+            var sortedData = sortGridData((requestObj.groupedBy || []).concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
             gridState[id].alteredData = sortedData;
             limitPageData(requestObj, sortedData, callback);
             return;

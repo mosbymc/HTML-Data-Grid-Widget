@@ -590,9 +590,10 @@ var excelExporter = (function _excelExporter() {
                 var cellLoc = positionToLetterRef((j + 1), (i + 2));
                 if (typeof data[i][columns[j]] !== 'number') {
                     total += 1;
-                    if (!sharedStringsMap[data[i][columns[j]].toString()]) {
-                        sharedStrings.push(data[i][columns[j]].toString());
-                        sharedStringsMap[data[i][columns[j]].toString()] = count.toString();
+                    var sharedString = (data[i][columns[j]] || '').toString();
+                    if (!sharedStringsMap[sharedString]) {
+                        sharedStrings.push(sharedString);
+                        sharedStringsMap[sharedString] = count.toString();
 
                         row.createChildReturnChild({
                             nodeType: 'c',
@@ -615,8 +616,8 @@ var excelExporter = (function _excelExporter() {
                             }
                         }).createChild({
                             nodeType: 'v',
-                            textValue: sharedStringsMap[data[i][columns[j]].toString()]
-                        });
+                            textValue: sharedStringsMap[sharedString]
+                    });
                     }
                 }
                 else {

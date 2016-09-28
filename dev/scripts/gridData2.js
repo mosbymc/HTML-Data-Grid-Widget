@@ -4,6 +4,7 @@ var gridData = {
     useFormatter: true,
     sortable: true,
     reorderable: true,
+    resizable: true,
     groupable: true,
     groupAggregates: true,
     selectable: 'multi-row',
