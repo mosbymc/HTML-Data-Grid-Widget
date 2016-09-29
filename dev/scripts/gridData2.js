@@ -1,4 +1,4 @@
-var gridData = {
+var gridData2 = {
     height: 400,
     useValidator: true,
     useFormatter: true,

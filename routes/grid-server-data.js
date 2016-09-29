@@ -785,3 +785,5 @@ var gridData = {
         ]
     }
 };
+
+module.exports = gridData;

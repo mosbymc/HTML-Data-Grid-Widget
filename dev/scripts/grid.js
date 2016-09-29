@@ -142,14 +142,14 @@ var grid = (function _grid($) {
     function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
             var id = generateId();
-            if (id > 0) {   //test to check if previously created grids still exist
+            /*if (id > 0) {   //test to check if previously created grids still exist
                 var tmp = id - 1;
                 while (tmp > -1) {  //iterate through all previous grids
                     if (gridState[tmp] != null && !$('body').find('#' + gridState[tmp].grid[0].id).length)     //if not found in the body
                         delete gridState[tmp];      //remove the data from storage
                     tmp--;
                 }
-            }
+            }*/
             gridElem = $(gridElem);
             var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class=grid-wrapper></div>').appendTo(gridElem);
             var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class=grid-header-div></div>').appendTo(wrapperDiv);
@@ -3563,7 +3563,7 @@ var grid = (function _grid($) {
             var gridWrapper = $(targetCell).parents('.grid-wrapper');
             var colGroups = gridWrapper.find('colgroup');
             var tables = gridWrapper.find('table');
-            if (gridState[id].groupedBy && gridState[id].groupedBy !== 'none')
+            if (gridState[id].groupedBy && gridState[id].groupedBy.length && gridState[id].groupedBy !== 'none')
                 index++;
 
             var contentDiv = gridWrapper.find('.grid-content-div');

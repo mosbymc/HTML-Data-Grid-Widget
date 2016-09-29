@@ -1,6 +1,6 @@
 var request =           require('request'),
     gridData =          require('../dev/scripts/data.js'),
-    originalData =      require('../dev/scripts/gridData.js'),
+    originalData =      require('./grid-server-data'),
     columns =           originalData.columns,
     gridDataHelpers =   require('./gridDataHelpers.js');
 
