@@ -950,9 +950,11 @@ var grid = (function _grid($) {
 
                 if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering)
                     createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
-            }
 
-            $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
+                $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
+            }
+            else
+                $('<span class="header-anchor" href="#"></span>').appendTo(th).text(text);
             index++;
         }
         headerTable.css('width','');
