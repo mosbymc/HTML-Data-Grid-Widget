@@ -3564,7 +3564,7 @@ var grid = (function _grid($) {
             var colGroups = gridWrapper.find('colgroup');
             var tables = gridWrapper.find('table');
             if (gridState[id].groupedBy && gridState[id].groupedBy.length && gridState[id].groupedBy !== 'none')
-                index++;
+                index += gridState[id].groupedBy.length;
 
             var contentDiv = gridWrapper.find('.grid-content-div');
             var scrollLeft = contentDiv.scrollLeft();
