@@ -2423,7 +2423,7 @@ var grid = (function _grid($) {
         var id = gridFooter.data('grid_footer_id');
         var count = gridState[id].dataSource.rowCount;
         var displayedRows = (count - gridState[id].pageSize) > 0 ? gridState[id].pageSize : count;
-        var totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 0;
+        var totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1;
         var pageNum = gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum;
 
         var first = $('<a href="#" class="grid-page-link" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridFooter);
@@ -3100,7 +3100,7 @@ var grid = (function _grid($) {
             if (response) {
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
-                gridData.pageNum = requestObj.pageNum;
+                gridData.pageNum = (requestObj.pageSize * requestObj.pageNum) > response.data.length ? Math.ceil(response.data.length / requestObj.pageSize) : requestObj.pageSize;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy || [];
                 gridData.sortedOn = requestObj.sortedOn || [];

@@ -103,6 +103,7 @@
  - Add ability to create an arbitrary number of nested filter groups - DONE
  - Add grid config option to restrict number of nested filter groups - DONE
  - Remove all empty filter rows from DOM when closing advanced filters modal - DONE
+ - Fix paging when on a non-first page and the rows/page is increased
  - Update existing filtering to new filter object model
  - Make sure that when adding advanced filters, basic filters are cleared out (in DOM and cache), and vise versa
  - Fix boolean filtering
@@ -2931,7 +2932,7 @@ var grid = (function _grid($) {
         var id = gridFooter.data('grid_footer_id');
         var count = gridState[id].dataSource.rowCount;
         var displayedRows = (count - gridState[id].pageSize) > 0 ? gridState[id].pageSize : count;
-        var totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 0;
+        var totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1;
         var pageNum = gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum;
 
         var first = $('<a href="#" class="grid-page-link" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridFooter);
@@ -3657,7 +3658,7 @@ var grid = (function _grid($) {
             if (response) {
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
-                gridData.pageNum = requestObj.pageNum;
+                gridData.pageNum = (requestObj.pageSize * requestObj.pageNum) > response.data.length ? Math.ceil(response.data.length / requestObj.pageSize) : requestObj.pageSize;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy || [];
                 gridData.sortedOn = requestObj.sortedOn || [];

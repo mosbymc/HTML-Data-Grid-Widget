@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">215.22</p>
+      <p class="stat">215.45</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">85.63</p>
+      <p class="stat">85.73</p>
     </div>
   </div>
 </div>
@@ -2514,7 +2514,7 @@
         var id = gridFooter.data(&#039;grid_footer_id&#039;);
         var count = gridState[id].dataSource.rowCount;
         var displayedRows = (count - gridState[id].pageSize) &gt; 0 ? gridState[id].pageSize : count;
-        var totalPages = (count - displayedRows) &gt; 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 0;
+        var totalPages = (count - displayedRows) &gt; 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1;
         var pageNum = gridState[parseInt(gridFooter.data(&#039;grid_footer_id&#039;))].pageNum;
 
         var first = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;first&quot; data-pagenum=&quot;1&quot; title=&quot;First Page&quot;&gt;&lt;span class=&quot;grid-page-span span-first&quot;&gt;First Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
@@ -3191,7 +3191,7 @@
             if (response) {
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
-                gridData.pageNum = requestObj.pageNum;
+                gridData.pageNum = (requestObj.pageSize * requestObj.pageNum) &gt; response.data.length ? Math.ceil(response.data.length / requestObj.pageSize) : requestObj.pageSize;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy || [];
                 gridData.sortedOn = requestObj.sortedOn || [];
