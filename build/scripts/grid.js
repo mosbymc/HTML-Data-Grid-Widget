@@ -1858,11 +1858,13 @@ var grid = (function _grid($) {
                     newMenu.append($('<ul class="menu-list"></ul>').append(createSaveDeleteMenuItems(gridId)));
                 }
                 if (gridState[gridId].columnToggle) {
-                    newMenu.append($('<hr/>'));
+                    if (newMenu.children().length)
+                        newMenu.append($('<hr/>'));
                     newMenu.append(createColumnToggleMenuOptions(newMenu, gridId));
                 }
                 if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable || gridState[gridId].groupable) {
-                    newMenu.append($('<hr/>'));
+                    if (newMenu.children().length)
+                        newMenu.append($('<hr/>'));
                     if (gridState[gridId].sortable) newMenu.append($('<ul class="menu-list"></ul>').append(createSortMenuItem()));
                     if (gridState[gridId].filterable) {
                         newMenu.append($('<ul class="menu-list"></ul>').append(createFilterMenuItems()));
@@ -1874,7 +1876,8 @@ var grid = (function _grid($) {
                     if (gridState[gridId].selectable) newMenu.append($('<ul class="menu-list"></ul>').append(createDeselectMenuOption(gridId)));
                 }
                 if (gridState[gridId].excelExport) {
-                    newMenu.append($('<hr/>'));
+                    if (newMenu.children().length)
+                        newMenu.append($('<hr/>'));
                     newMenu.append(createExcelExportMenuItems(newMenu, gridId));
                 }
                 gridState[gridId].grid.append(newMenu);
@@ -1975,7 +1978,7 @@ var grid = (function _grid($) {
 
     function createSortMenuItem() {
         var sortMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove All Column Sorts</a>'));
-        sortMenuItem.on('click', RemoveAllColumnSorts);
+        sortMenuItem.on('click', removeAllColumnSorts);
         return sortMenuItem;
     }
 
@@ -2318,7 +2321,7 @@ var grid = (function _grid($) {
         return filterModal.find('.filter_row_div').length ? filterModal.find('.filter_row_div').last().data('filter_idx') + 1 : 1;
     }
 
-    function RemoveAllColumnSorts(e) {
+    function removeAllColumnSorts(e) {
         var gridMenu = $(e.currentTarget).parents('.grid_menu'),
             gridId = gridMenu.data('grid_id');
         $('.grid_menu').addClass('hiddenMenu');
@@ -2327,15 +2330,16 @@ var grid = (function _grid($) {
         gridState[gridId].sortedOn = [];
         gridState[gridId].pageRequest.eventType = 'sort';
         preparePageDataGetRequest(gridId);
+        e.preventDefault();
     }
 
     function createGroupMenuItem() {
         var groupMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove All Column Grouping</a>'));
-        groupMenuItem.on('click', RemoveAllColumnGrouping);
+        groupMenuItem.on('click', removeAllColumnGrouping);
         return groupMenuItem;
     }
 
-    function RemoveAllColumnGrouping(e) {
+    function removeAllColumnGrouping(e) {
         var gridMenu = $(e.currentTarget).parents('.grid_menu'),
             gridId = gridMenu.data('grid_id');
         $('.grid_menu').addClass('hiddenMenu');
@@ -2354,6 +2358,7 @@ var grid = (function _grid($) {
         gridState[gridId].groupedBy = [];
         gridState[gridId].pageRequest.eventType = 'group';
         preparePageDataGetRequest(gridId);
+        e.preventDefault();
     }
 
     function createColumnToggleMenuOptions(menu, gridId) {
@@ -2699,6 +2704,7 @@ var grid = (function _grid($) {
         gridData.filters.filterGroup = remainingFilters;
         gridData.pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
+        e.preventDefault();
     }
 
     function filterButtonClickHandler(e) {
