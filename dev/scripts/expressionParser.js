@@ -580,7 +580,7 @@ var expressionParser = (function _expressionParser() {
         '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)' +
         '((?:1[6-9]|[2-9]\\d)?\\d{2}))))|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\31)(29))))' +
         '|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)(?:(?:(?:(0?[13578]|1[02])\\35(31))|(?:(0?[1,3-9]|1[0-2])\\35(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\35(0?[1-9]|1\\d|2[0-8])))))' +
-        '((0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\44([0-5]\\d))?)?(?:(\\ [AP]M))$|^([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\49([0-5]\\d))?)$))';
+        '(?: |T)((0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\44([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\49([0-5]\\d))?)$))';
 
     var booleanExpressionTree = {
         init: function _init() {
@@ -729,10 +729,20 @@ var expressionParser = (function _expressionParser() {
                         if (timeComp2[3] && timeComp2[3] === 'PM')
                             timeComp2[0] += 12;
 
-                        dateComp1 = new Date(dateComp1);
-                        dateComp2 = new Date(dateComp2);
-                        curVal = dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
-                        baseVal = dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
+                        var year1 = execVal1[15] || execVal1[22] || execVal1[29] || execVal1[30] || execVal1[34],
+                            month1 = execVal1[3] || execVal1[6] || execVal1[11] || execVal1[14] || execVal1[16] || execVal1[21] || execVal1[23]
+                                || execVal1[28] || execVal1[32] || execVal1[36] || execVal1[38] || execVal1[40],
+                            day1 = execVal1[5] || execVal1[8] || execVal1[9] || execVal1[12] || execVal1[18] || execVal1[19] || execVal1[25]
+                                || execVal1[26] || execVal1[33] || execVal1[37] || execVal1[39] || execVal1[41];
+
+                        var year2 = execVal2[15] || execVal2[22] || execVal2[29] || execVal2[30] || execVal2[34],
+                            month2 = execVal2[3] || execVal2[6] || execVal2[11] || execVal2[14] || execVal2[16] || execVal2[21] || execVal2[23]
+                                || execVal2[28] || execVal2[32] || execVal2[36] || execVal2[38] || execVal2[40],
+                            day2 = execVal2[5] || execVal2[8] || execVal2[9] || execVal2[12] || execVal2[18] || execVal2[19] || execVal2[25]
+                                || execVal2[26] || execVal2[33] || execVal2[37] || execVal2[39] || execVal2[41];
+
+                        dateComp1 = new Date(year1, month1, day1);
+                        dateComp2 = new Date(year2, month2, day2);
                     }
                     else {
                         curVal = 0;
@@ -984,8 +994,8 @@ var expressionParser = (function _expressionParser() {
     }
 
     function convertTimeArrayToSeconds(timeArray) {
-        var hourVal = timeArray[0] === 12 || timeArray[0] === 24 ? timeArray[0] - 12 : timeArray[0];
-        return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
+        var hourVal = parseInt(timeArray[0].toString()) === 12 || parseInt(timeArray[0].toString()) === 24 ? parseInt(timeArray[0].toString()) - 12 : parseInt(timeArray[0]);
+        return 3660 * hourVal + 60 * parseInt(timeArray[1]) + parseInt(timeArray[2]);
     }
 
     return {

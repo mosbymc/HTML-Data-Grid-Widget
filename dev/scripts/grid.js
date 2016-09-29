@@ -3246,9 +3246,14 @@ var grid = (function _grid($) {
 
         if (dataTypes[type]) {
             re = new RegExp(dataTypes[type]);
-            if (!re.test(value) && !errors.length) {
-                $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
-                return;
+            if (!re.test(value)) {
+                if (type === 'datetime' && new RegExp(dataTypes['date']).test(value)) {
+                    value += ' 00:00:00';
+                }
+                else {
+                    $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
+                    return;
+                }
             }
         }
 
@@ -3941,7 +3946,7 @@ var grid = (function _grid($) {
                     execVal = re.exec(value),
                     timeText = formatTimeCellData(execVal[42], column, gridId),
                     dateComp = new Date(execVal[2]);
-                text = timeText.replace('dd', dateComp.getUTCDate().toString()).replace('dd', (dateComp.getUTCMonth() + 1).toString()).replace('yyyy', dateComp.getUTCFullYear().toString());
+                text = timeText.replace('day', dateComp.getUTCDate().toString()).replace('month', (dateComp.getUTCMonth() + 1).toString()).replace('year', dateComp.getUTCFullYear().toString());
                 break;
             case 'string':
             case 'boolean':
@@ -4001,8 +4006,8 @@ var grid = (function _grid($) {
      * @returns {number} - Returns a value in seconds for the time of day
      */
     function convertTimeArrayToSeconds(timeArray) {
-        var hourVal = timeArray[0] === 12 || timeArray[0] === 24 ? timeArray[0] - 12 : timeArray[0];
-        return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
+        var hourVal = parseInt(timeArray[0].toString()) === 12 || parseInt(timeArray[0].toString()) === 24 ? parseInt(timeArray[0].toString()) - 12 : parseInt(timeArray[0]);
+        return 3660 * hourVal + 60 * parseInt(timeArray[1]) + parseInt(timeArray[2]);
     }
 
     /**
@@ -4175,12 +4180,12 @@ var grid = (function _grid($) {
         '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\22|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\25)((?:1[6-9]|[2-9]\\d)?\\d{2}))))' +
         '|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\29)(29))))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)' +
         '(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$',
-        dateTime: '^(((?:(?:(?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\4|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\7))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\10)|(?:(29|30)(\\/|-|\\.)' +
+        datetime: '^(((?:(?:(?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\4|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\7))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\10)|(?:(29|30)(\\/|-|\\.)' +
         '(0?[1,3-9]|1[0-2])\\13)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\17)|(?:(29)(\\/|-|\\.)(0?2))\\20)((?:(?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])' +
         '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)' +
         '((?:1[6-9]|[2-9]\\d)?\\d{2}))))|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\31)(29))))' +
         '|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)(?:(?:(?:(0?[13578]|1[02])\\35(31))|(?:(0?[1,3-9]|1[0-2])\\35(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\35(0?[1-9]|1\\d|2[0-8])))))' +
-        '((0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\44([0-5]\\d))?)?(?:(\\ [AP]M))$|^([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\49([0-5]\\d))?)$))',
+        '(?: |T)((0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\44([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\49([0-5]\\d))?)$))',
         dateChar: '\\d|\\-|\\/|\\.'
     };
 
@@ -4218,7 +4223,7 @@ var grid = (function _grid($) {
         var meridiem = timeArray[3] || 'AM';
 
         if (timeArray.length && format) {
-            formattedTime = format.replace('hh', timeArray[0]).replace('mm', timeArray[1]).replace('ss', timeArray[2]).replace('A/PM', meridiem);
+            formattedTime = format.replace('hour', timeArray[0]).replace('minute', timeArray[1]).replace('second', timeArray[2]).replace('A/PM', meridiem);
             return timeArray.length === 4 ? formattedTime + ' ' + timeArray[3] : formattedTime;
         }
         else if (timeArray.length) {
@@ -4239,7 +4244,7 @@ var grid = (function _grid($) {
         var parseDate = Date.parse(date);
         var jsDate = new Date(parseDate);
         if (!isNaN(parseDate) && format)
-            return format.replace('mm', (jsDate.getUTCMonth() + 1).toString()).replace('dd', jsDate.getUTCDate().toString()).replace('yyyy', jsDate.getUTCFullYear().toString());
+            return format.replace('month', (jsDate.getUTCMonth() + 1).toString()).replace('day', jsDate.getUTCDate().toString()).replace('year', jsDate.getUTCFullYear().toString());
         else if (!isNaN(parseDate))
             return new Date(jsDate);
         return '';
