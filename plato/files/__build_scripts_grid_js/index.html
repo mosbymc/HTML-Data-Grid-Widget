@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3808</p>
+      <p class="stat">3807</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">215.57</p>
+      <p class="stat">215.42</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">85.65</p>
+      <p class="stat">85.58</p>
     </div>
   </div>
 </div>
@@ -2442,7 +2442,6 @@
         for (var i = 0; i &lt; groupItemsCount; i++) {
             headerColGroup.children().first().remove();
         }
-        gridState[gridId].grid.find(&#039;colgroup&#039;).first().children().first().remove();
         gridState[gridId].grid.find(&#039;.grid-headerRow&#039;).children(&#039;.group_spacer&#039;).remove();
         gridState[gridId].grid.find(&#039;.summary-row-header&#039;).children(&#039;.group_spacer&#039;).remove();
         gridState[gridId].grid.find(&#039;.group_div&#039;).text(groupMenuText);

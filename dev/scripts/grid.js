@@ -2854,7 +2854,6 @@ var grid = (function _grid($) {
         for (var i = 0; i < groupItemsCount; i++) {
             headerColGroup.children().first().remove();
         }
-        gridState[gridId].grid.find('colgroup').first().children().first().remove();
         gridState[gridId].grid.find('.grid-headerRow').children('.group_spacer').remove();
         gridState[gridId].grid.find('.summary-row-header').children('.group_spacer').remove();
         gridState[gridId].grid.find('.group_div').text(groupMenuText);
