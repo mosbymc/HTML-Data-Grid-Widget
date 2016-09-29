@@ -445,7 +445,7 @@ var grid = (function _grid($) {
                             gridState[gridId].columns[col].isHidden = false;
                             gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
                             gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
-                            gridState[gridId].grid.find('colgroup').append('col');
+                            gridState[gridId].grid.find('colgroup').append('<col>');
                             setColWidth(gridState[gridId], gridState[gridId].grid);
                         }
                     },
