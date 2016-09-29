@@ -817,7 +817,7 @@ var grid = (function _grid($) {
                 else groupedDiff[j] = 1;
             }
         }
-        if (foundDiff && rowIndex) {   
+        if (foundDiff && rowIndex && gridData.groupAggregates) {   
             for (j = groupedDiff.length - 1; j >= 0; j--) {     
                 var numItems = gridData.groupAggregations[j]._items_; 
                 if (groupedDiff[j]) {                               
@@ -845,15 +845,17 @@ var grid = (function _grid($) {
             }
         }
         for (j = 0; j < groupedDiff.length; j++) {
-            if (!gridData.groupAggregations[j]) {
-                gridData.groupAggregations[j] = {
-                    _items_: 0
-                };
+            if (gridData.groupAggregates) {
+                if (gridData.groupAggregations && !gridData.groupAggregations[j]) {
+                    gridData.groupAggregations[j] = {
+                        _items_: 0
+                    };
+                }
+                for (item in gridData.columns) {
+                    addValueToAggregations(gridId, item, gridData.dataSource.data[rowIndex][item], gridData.groupAggregations[j]);
+                }
+                gridData.groupAggregations[j]._items_++;
             }
-            for (item in gridData.columns) {
-                addValueToAggregations(gridId, item, gridData.dataSource.data[rowIndex][item], gridData.groupAggregations[j]);
-            }
-            gridData.groupAggregations[j]._items_++;
             if (groupedDiff[j]) {
                 var groupedText = getFormattedCellText(gridId, gridData.groupedBy[j].field, gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field]) ||
                     gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field];
@@ -1917,6 +1919,9 @@ var grid = (function _grid($) {
                 options.on('click', function excelExportItemClickHandler() {
                     exportDataAsExcelFile(gridId, this.dataset.value);
                     gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
+                    toggle(exportOptions, {duration: 20, callback: function checkForMouseOver() {
+
+                    }});
                 });
                 exportOptions.append(exportList);
                 gridState[gridId].grid.append(exportOptions);
@@ -1928,9 +1933,7 @@ var grid = (function _grid($) {
                     newMenuOffset = menu.offset();
                 exportOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
                 exportOptions.css('left', newMenuOffset.left + (menu.outerWidth() - exportOptions.outerWidth()));
-                toggle(exportOptions, {duration: 200, callback: function checkForMouseOver() {
-
-                }});
+                toggle(exportOptions, {duration: 200, callback: function checkForMouseOver() {}});
             }
         });
         menuList.on('mouseleave', function excelMenuItemHoverHandler(evt) {
@@ -2451,11 +2454,12 @@ var grid = (function _grid($) {
             sizeSelect.val(~pageOptions.indexOf(gridState[id].pageSize) ? gridState[id].pageSize : pageOptions[0]);
             sizeSelectorSpan.append('Rows per page');
 
-            sizeSelect.on('change', function pageSizeSelectorClickHandler() {
+            sizeSelect.on('change', function pageSizeSelectorClickHandler(e) {
                 var pageSize = $(this).val();
                 gridState[id].pageRequest.pageSize = parseInt(pageSize);
                 gridState[id].pageRequest.eventType = 'pageSize';
                 preparePageDataGetRequest(id);
+                e.preventDefault();
             });
         }
 
@@ -2917,7 +2921,7 @@ var grid = (function _grid($) {
     }
 
     function setSortableClickListener(elem) {
-        elem.on('click', function handleHeaderClickCallback() {
+        elem.on('click', function handleHeaderClickCallback(e) {
             var headerDiv = elem.parents('.grid-header-div');
             var id = parseInt(headerDiv.data('grid_header_id'));
             if (gridState[id].updating) return;		
@@ -2953,6 +2957,7 @@ var grid = (function _grid($) {
             }
             gridState[id].pageRequest.eventType = 'sort';
             preparePageDataGetRequest(id);
+            e.preventDefault();
         });
     }
 
@@ -3472,9 +3477,14 @@ var grid = (function _grid($) {
             case 'all':
                 if (typeof gridState[gridId].dataSource.get === 'function') {
                     var reqObj = createExcelRequestObject(gridId);
-                    gridState[gridId].dataSource.get(reqObj, function excelDataCallback(response) {
-                        callback({ data: response.data, columns: columns});
-                    });
+                    if (typeof gridState[gridId].dataSource.get === 'function') {
+                        gridState[gridId].dataSource.get(reqObj, function excelDataCallback(response) {
+                            callback({ data: response.data, columns: columns});
+                        });
+                    }
+                    else {
+                        callback({ data: gridState[gridId].originalData, columns: columns });
+                    }
                 }
                 else callback({ data: gridState[gridId].originalData, columns: columns });
                 break;
@@ -3487,7 +3497,8 @@ var grid = (function _grid($) {
     function getGridColumns(gridId) {
         var cols = [];
         for (var col in gridState[gridId].columns) {
-            cols.push(col);
+            if (!gridState[gridId].columns[col].isHidden)
+                cols.push(col);
         }
         return cols;
     }

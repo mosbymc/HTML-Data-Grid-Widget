@@ -142,14 +142,6 @@ var grid = (function _grid($) {
     function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
             var id = generateId();
-            /*if (id > 0) {   //test to check if previously created grids still exist
-                var tmp = id - 1;
-                while (tmp > -1) {  //iterate through all previous grids
-                    if (gridState[tmp] != null && !$('body').find('#' + gridState[tmp].grid[0].id).length)     //if not found in the body
-                        delete gridState[tmp];      //remove the data from storage
-                    tmp--;
-                }
-            }*/
             gridElem = $(gridElem);
             var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class=grid-wrapper></div>').appendTo(gridElem);
             var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class=grid-header-div></div>').appendTo(wrapperDiv);
@@ -1191,7 +1183,7 @@ var grid = (function _grid($) {
                 else groupedDiff[j] = 1;
             }
         }
-        if (foundDiff && rowIndex) {   //If a diff was found...
+        if (foundDiff && rowIndex && gridData.groupAggregates) {   //If a diff was found...
             for (j = groupedDiff.length - 1; j >= 0; j--) {     //...go backwards through the grouped aggregates...
                 var numItems = gridData.groupAggregations[j]._items_; //...save the current row's number of items...
                 if (groupedDiff[j]) {                               //...if there is a diff at the current row, print it to the screen
@@ -1219,15 +1211,17 @@ var grid = (function _grid($) {
             }
         }
         for (j = 0; j < groupedDiff.length; j++) {
-            if (!gridData.groupAggregations[j]) {
-                gridData.groupAggregations[j] = {
-                    _items_: 0
-                };
+            if (gridData.groupAggregates) {
+                if (gridData.groupAggregations && !gridData.groupAggregations[j]) {
+                    gridData.groupAggregations[j] = {
+                        _items_: 0
+                    };
+                }
+                for (item in gridData.columns) {
+                    addValueToAggregations(gridId, item, gridData.dataSource.data[rowIndex][item], gridData.groupAggregations[j]);
+                }
+                gridData.groupAggregations[j]._items_++;
             }
-            for (item in gridData.columns) {
-                addValueToAggregations(gridId, item, gridData.dataSource.data[rowIndex][item], gridData.groupAggregations[j]);
-            }
-            gridData.groupAggregations[j]._items_++;
             if (groupedDiff[j]) {
                 var groupedText = getFormattedCellText(gridId, gridData.groupedBy[j].field, gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field]) ||
                     gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field];
@@ -2425,6 +2419,9 @@ var grid = (function _grid($) {
                 options.on('click', function excelExportItemClickHandler() {
                     exportDataAsExcelFile(gridId, this.dataset.value);
                     gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
+                    toggle(exportOptions, {duration: 20, callback: function checkForMouseOver() {
+
+                    }});
                 });
                 exportOptions.append(exportList);
                 gridState[gridId].grid.append(exportOptions);
@@ -2436,9 +2433,7 @@ var grid = (function _grid($) {
                     newMenuOffset = menu.offset();
                 exportOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
                 exportOptions.css('left', newMenuOffset.left + (menu.outerWidth() - exportOptions.outerWidth()));
-                toggle(exportOptions, {duration: 200, callback: function checkForMouseOver() {
-
-                }});
+                toggle(exportOptions, {duration: 200, callback: function checkForMouseOver() {}});
             }
         });
         menuList.on('mouseleave', function excelMenuItemHoverHandler(evt) {
@@ -2967,11 +2962,12 @@ var grid = (function _grid($) {
             sizeSelect.val(~pageOptions.indexOf(gridState[id].pageSize) ? gridState[id].pageSize : pageOptions[0]);
             sizeSelectorSpan.append('Rows per page');
 
-            sizeSelect.on('change', function pageSizeSelectorClickHandler() {
+            sizeSelect.on('change', function pageSizeSelectorClickHandler(e) {
                 var pageSize = $(this).val();
                 gridState[id].pageRequest.pageSize = parseInt(pageSize);
                 gridState[id].pageRequest.eventType = 'pageSize';
                 preparePageDataGetRequest(id);
+                e.preventDefault();
             });
         }
 
@@ -3459,7 +3455,7 @@ var grid = (function _grid($) {
      * @param {object} elem - The DOM element that has the click handler attached
      */
     function setSortableClickListener(elem) {
-        elem.on('click', function handleHeaderClickCallback() {
+        elem.on('click', function handleHeaderClickCallback(e) {
             var headerDiv = elem.parents('.grid-header-div');
             var id = parseInt(headerDiv.data('grid_header_id'));
             if (gridState[id].updating) return;		//can't sort if grid is updating
@@ -3499,6 +3495,7 @@ var grid = (function _grid($) {
             }
             gridState[id].pageRequest.eventType = 'sort';
             preparePageDataGetRequest(id);
+            e.preventDefault();
         });
     }
 
@@ -4129,9 +4126,14 @@ var grid = (function _grid($) {
             case 'all':
                 if (typeof gridState[gridId].dataSource.get === 'function') {
                     var reqObj = createExcelRequestObject(gridId);
-                    gridState[gridId].dataSource.get(reqObj, function excelDataCallback(response) {
-                        callback({ data: response.data, columns: columns});
-                    });
+                    if (typeof gridState[gridId].dataSource.get === 'function') {
+                        gridState[gridId].dataSource.get(reqObj, function excelDataCallback(response) {
+                            callback({ data: response.data, columns: columns});
+                        });
+                    }
+                    else {
+                        callback({ data: gridState[gridId].originalData, columns: columns });
+                    }
                 }
                 else callback({ data: gridState[gridId].originalData, columns: columns });
                 break;
@@ -4144,7 +4146,8 @@ var grid = (function _grid($) {
     function getGridColumns(gridId) {
         var cols = [];
         for (var col in gridState[gridId].columns) {
-            cols.push(col);
+            if (!gridState[gridId].columns[col].isHidden)
+                cols.push(col);
         }
         return cols;
     }
