@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.54</p>
+      <p class="stat">55.50</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3809</p>
+      <p class="stat">3819</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">215.45</p>
+      <p class="stat">215.92</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">85.73</p>
+      <p class="stat">86.05</p>
     </div>
   </div>
 </div>
@@ -314,6 +314,7 @@
                             gridState[gridId].grid.find(&#039;.grid-content-div&#039;).find(&#039;[data-field=&quot;&#039; + col + &#039;&quot;]&#039;).css(&#039;display&#039;, &#039;&#039;);
                             gridState[gridId].grid.find(&#039;colgroup&#039;).append(&#039;&lt;col&gt;&#039;);
                             setColWidth(gridState[gridId], gridState[gridId].grid);
+                            copyGridWidth(gridState[gridId].grid);
                         }
                     },
                     writable: false,
@@ -3435,8 +3436,12 @@
                 var re = new RegExp(dataTypes[&#039;datetime&#039;]),
                     execVal = re.exec(value),
                     timeText = formatTimeCellData(execVal[42], column, gridId),
-                    dateComp = new Date(execVal[2]);
-                text = timeText.replace(&#039;day&#039;, dateComp.getUTCDate().toString()).replace(&#039;month&#039;, (dateComp.getUTCMonth() + 1).toString()).replace(&#039;year&#039;, dateComp.getUTCFullYear().toString());
+                    dateComp = new Date(execVal[2]),
+                    dateFormat = gridState[gridId].columns[column].format || &#039;mm/dd/yyyy&#039;;
+                dateFormat = dateFormat.substring(0, (dateFormat.indexOf(&#039; &#039;) || dateFormat.indexOf(&#039;T&#039;)));
+                text = dateFormat.replace(&#039;dd&#039;, dateComp.getUTCDate().toString())
+                        .replace(&#039;mm&#039;, (dateComp.getUTCMonth() + 1).toString())
+                        .replace(&#039;yyyy&#039;, dateComp.getUTCFullYear().toString()) + &#039; &#039; + timeText;
                 break;
             case &#039;string&#039;:
             case &#039;boolean&#039;:
@@ -3645,10 +3650,15 @@
     function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
             formattedTime,
-            format = gridState[gridId].columns[column].format || &#039;24&#039;,
-            timeFormat = gridState[gridId].columns[column].timeFormat;
+            format = gridState[gridId].columns[column].format,
+            timeFormat = gridState[gridId].columns[column].timeFormat || &#039;24&#039;;
 
         if (timeArray.length &lt; 2) return &#039;&#039;;
+
+        if (~format.indexOf(&#039; &#039;) || ~format.indexOf(&#039;T&#039;)) {
+            var dateIdxEnd = ~format.indexOf(&#039; &#039;) ? format.indexOf(&#039; &#039;) : format.indexOf(&#039;T&#039;);
+            format = format.substring(dateIdxEnd + 1, format.length);
+        }
 
         if (timeFormat == &#039;24&#039; &amp;&amp; timeArray.length === 4 &amp;&amp; timeArray[3] === &#039;PM&#039;)
             timeArray[0] = timeArray[0] === &#039;12&#039; ? &#039;00&#039; : (parseInt(timeArray[0]) + 12).toString();
@@ -3665,7 +3675,7 @@
         var meridiem = timeArray[3] || &#039;AM&#039;;
 
         if (timeArray.length &amp;&amp; format) {
-            formattedTime = format.replace(&#039;hour&#039;, timeArray[0]).replace(&#039;minute&#039;, timeArray[1]).replace(&#039;second&#039;, timeArray[2]).replace(&#039;A/PM&#039;, meridiem);
+            formattedTime = format.replace(&#039;hh&#039;, timeArray[0]).replace(&#039;mm&#039;, timeArray[1]).replace(&#039;ss&#039;, timeArray[2]).replace(&#039;A/PM&#039;, meridiem);
             return timeArray.length === 4 ? formattedTime + &#039; &#039; + timeArray[3] : formattedTime;
         }
         else if (timeArray.length) {
@@ -3680,7 +3690,7 @@
         var parseDate = Date.parse(date);
         var jsDate = new Date(parseDate);
         if (!isNaN(parseDate) &amp;&amp; format)
-            return format.replace(&#039;month&#039;, (jsDate.getUTCMonth() + 1).toString()).replace(&#039;day&#039;, jsDate.getUTCDate().toString()).replace(&#039;year&#039;, jsDate.getUTCFullYear().toString());
+            return format.replace(&#039;mm&#039;, (jsDate.getUTCMonth() + 1).toString()).replace(&#039;dd&#039;, jsDate.getUTCDate().toString()).replace(&#039;yyyy&#039;, jsDate.getUTCFullYear().toString());
         else if (!isNaN(parseDate))
             return new Date(jsDate);
         return &#039;&#039;;

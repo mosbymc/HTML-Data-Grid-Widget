@@ -223,6 +223,7 @@ var grid = (function _grid($) {
                             gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
                             gridState[gridId].grid.find('colgroup').append('<col>');
                             setColWidth(gridState[gridId], gridState[gridId].grid);
+                            copyGridWidth(gridState[gridId].grid);
                         }
                     },
                     writable: false,
@@ -3344,8 +3345,12 @@ var grid = (function _grid($) {
                 var re = new RegExp(dataTypes['datetime']),
                     execVal = re.exec(value),
                     timeText = formatTimeCellData(execVal[42], column, gridId),
-                    dateComp = new Date(execVal[2]);
-                text = timeText.replace('day', dateComp.getUTCDate().toString()).replace('month', (dateComp.getUTCMonth() + 1).toString()).replace('year', dateComp.getUTCFullYear().toString());
+                    dateComp = new Date(execVal[2]),
+                    dateFormat = gridState[gridId].columns[column].format || 'mm/dd/yyyy';
+                dateFormat = dateFormat.substring(0, (dateFormat.indexOf(' ') || dateFormat.indexOf('T')));
+                text = dateFormat.replace('dd', dateComp.getUTCDate().toString())
+                        .replace('mm', (dateComp.getUTCMonth() + 1).toString())
+                        .replace('yyyy', dateComp.getUTCFullYear().toString()) + ' ' + timeText;
                 break;
             case 'string':
             case 'boolean':
@@ -3554,10 +3559,15 @@ var grid = (function _grid($) {
     function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
             formattedTime,
-            format = gridState[gridId].columns[column].format || '24',
-            timeFormat = gridState[gridId].columns[column].timeFormat;
+            format = gridState[gridId].columns[column].format,
+            timeFormat = gridState[gridId].columns[column].timeFormat || '24';
 
         if (timeArray.length < 2) return '';
+
+        if (~format.indexOf(' ') || ~format.indexOf('T')) {
+            var dateIdxEnd = ~format.indexOf(' ') ? format.indexOf(' ') : format.indexOf('T');
+            format = format.substring(dateIdxEnd + 1, format.length);
+        }
 
         if (timeFormat == '24' && timeArray.length === 4 && timeArray[3] === 'PM')
             timeArray[0] = timeArray[0] === '12' ? '00' : (parseInt(timeArray[0]) + 12).toString();
@@ -3574,7 +3584,7 @@ var grid = (function _grid($) {
         var meridiem = timeArray[3] || 'AM';
 
         if (timeArray.length && format) {
-            formattedTime = format.replace('hour', timeArray[0]).replace('minute', timeArray[1]).replace('second', timeArray[2]).replace('A/PM', meridiem);
+            formattedTime = format.replace('hh', timeArray[0]).replace('mm', timeArray[1]).replace('ss', timeArray[2]).replace('A/PM', meridiem);
             return timeArray.length === 4 ? formattedTime + ' ' + timeArray[3] : formattedTime;
         }
         else if (timeArray.length) {
@@ -3589,7 +3599,7 @@ var grid = (function _grid($) {
         var parseDate = Date.parse(date);
         var jsDate = new Date(parseDate);
         if (!isNaN(parseDate) && format)
-            return format.replace('month', (jsDate.getUTCMonth() + 1).toString()).replace('day', jsDate.getUTCDate().toString()).replace('year', jsDate.getUTCFullYear().toString());
+            return format.replace('mm', (jsDate.getUTCMonth() + 1).toString()).replace('dd', jsDate.getUTCDate().toString()).replace('yyyy', jsDate.getUTCFullYear().toString());
         else if (!isNaN(parseDate))
             return new Date(jsDate);
         return '';

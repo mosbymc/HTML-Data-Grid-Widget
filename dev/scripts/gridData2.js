@@ -160,7 +160,7 @@ var gridData2 = {
             type: "date",
             width: 180,
             editable: true,
-            format: "month/day/year",
+            format: "mm/dd/yyyy",
             validation: {
                 required: true,
                 customRules: {
@@ -183,7 +183,7 @@ var gridData2 = {
             width: 150,
             editable: true,
             timeFormat: "12",
-            format: 'hour:minute:second',
+            format: 'hh:mm:ss',
             delimiter: ":"
         },
         Paid: {
