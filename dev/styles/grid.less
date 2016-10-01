@@ -244,6 +244,55 @@
         line-height: 1.6em;
         height: 1.6em;
       }
+
+      td.drillDown_cell {
+        border-top-width: 0;
+        color: #444;
+        background-color: #fafafa;
+        border-color: #e6e6e6;
+        border-left-width: 1px;
+        border-right-width: 1px;
+        line-height: 1em;
+        padding: 10px 7.5px;
+
+        span.drillDown_span {
+          display: inline-block;
+          vertical-align: middle;
+          margin: auto 0;
+          border: 0;
+          outline: 0;
+          text-decoration: none;
+          font-size: 100%;
+          list-style: none;
+          line-height: 0;
+
+          .drillDown_acc {
+            border-collapse: separate;
+            box-sizing: content-box;
+            cursor: pointer;
+            display: inline-block;
+            empty-cells: show;
+            height: 8px;
+            .list-styles;
+            opacity: 0.45;
+            overflow: visible;
+            position: static;
+            text-align: center;
+            vertical-align: bottom;
+            white-space: nowrap;
+            margin: 0 auto;
+            width: 12px;
+          }
+
+          .drillDown-desc {
+            background: url(../images/arrowDown.svg) no-repeat;
+          }
+
+          .drillDown-asc {
+            background: url(../images/arrowUp.svg) no-repeat;
+          }
+        }
+      }
     }
 
     tr.selected,

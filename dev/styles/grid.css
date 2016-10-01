@@ -242,6 +242,50 @@
   line-height: 1.6em;
   height: 1.6em;
 }
+.grid-content-div table tr td.drillDown_cell {
+  border-top-width: 0;
+  color: #444;
+  background-color: #fafafa;
+  border-color: #e6e6e6;
+  border-left-width: 1px;
+  border-right-width: 1px;
+  line-height: 1em;
+  padding: 10px 7.5px;
+}
+.grid-content-div table tr td.drillDown_cell span.drillDown_span {
+  display: inline-block;
+  vertical-align: middle;
+  margin: auto 0;
+  border: 0;
+  outline: 0;
+  text-decoration: none;
+  font-size: 100%;
+  list-style: none;
+  line-height: 0;
+}
+.grid-content-div table tr td.drillDown_cell span.drillDown_span .drillDown_acc {
+  border-collapse: separate;
+  box-sizing: content-box;
+  cursor: pointer;
+  display: inline-block;
+  empty-cells: show;
+  height: 8px;
+  list-style: none outside none;
+  opacity: 0.45;
+  overflow: visible;
+  position: static;
+  text-align: center;
+  vertical-align: bottom;
+  white-space: nowrap;
+  margin: 0 auto;
+  width: 12px;
+}
+.grid-content-div table tr td.drillDown_cell span.drillDown_span .drillDown-desc {
+  background: url(../images/arrowDown.svg) no-repeat;
+}
+.grid-content-div table tr td.drillDown_cell span.drillDown_span .drillDown-asc {
+  background: url(../images/arrowUp.svg) no-repeat;
+}
 .grid-content-div table tr.selected,
 .grid-content-div table td.selected {
   background-color: #00b0ff;

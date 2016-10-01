@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.50</p>
+      <p class="stat">55.41</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3819</p>
+      <p class="stat">3869</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">215.92</p>
+      <p class="stat">215.05</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">86.05</p>
+      <p class="stat">87.16</p>
     </div>
   </div>
 </div>
@@ -95,7 +95,7 @@
         gridState = [],
         groupMenuText = &#039;Drag and drop a column header here to group by that column&#039;;
 
-    function create(gridData, gridElem) {
+    function create(gridData, gridElem, parentId) {
         if (gridData &amp;&amp; isDomElement(gridElem)) {
             var id = generateId();
             gridElem = $(gridElem);
@@ -131,10 +131,11 @@
                         gridData.dataSource.data = {};
                         gridData.dataSource.rowCount = 0;
                     }
-                    initializeGrid(id, gridData, gridElem);
+                    initializeGrid(id, gridData, gridElem, parentId);
                 });
             }
         }
+        return gridElem[0].grid;
     }
 
     function createGridInstanceMethods(gridElem, gridId) {
@@ -603,7 +604,7 @@
         else callback(true, {});
     }
 
-    function initializeGrid(id, gridData, gridElem) {
+    function initializeGrid(id, gridData, gridElem, parentId) {
         var storageData = cloneGridData(gridData);
         storageData.events = {
             beforeCellEdit: typeof storageData.beforeCellEdit === &#039;object&#039; &amp;&amp; storageData.beforeCellEdit.constructor === Array ? storageData.beforeCellEdit : [],
@@ -646,6 +647,7 @@
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
+        storageData.parentGridId = parentId;
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -678,6 +680,11 @@
                 colgroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
                 headerRow.prepend(&#039;&lt;th class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/th&gt;&#039;);
             }
+        }
+
+        if (gridData.drillDown) {
+            colgroup.prepend(&#039;&lt;col class=&quot;groupCol&quot;/&gt;&#039;);
+            headerRow.prepend(&#039;&lt;th class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/th&gt;&#039;);
         }
 
         for (var col in gridData.columns) {
@@ -739,6 +746,9 @@
                 for (var i = 0; i &lt; gridState[gridId].groupedBy.length; i++) {
                     aggRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
                 }
+            }
+            if (gridState[gridId].drillDown) {
+                aggRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
             }
             for (var col in aggrs) {
                 var text = aggrs[col].text || &#039;&#039;;
@@ -804,6 +814,9 @@
                 }
             }
 
+            if (gridData.drillDown)
+                tr.append(&#039;&lt;td class=&quot;drillDown_cell&quot;&gt;&lt;span class=&quot;drillDown_span&quot; data-state=&quot;closed&quot;&gt;&lt;a class=&quot;drillDown-asc drillDown_acc&quot;&gt;&lt;/a&gt;&lt;/span&gt;&lt;/td&gt;&#039;);
+
             for (j = 0; j &lt; columns.length; j++) {
                 var td = $(&#039;&lt;td data-field=&quot;&#039; + columns[j] + &#039;&quot; class=&quot;grid-content-cell&quot;&gt;&lt;/td&gt;&#039;).appendTo(tr);
                 if (gridData.columns[columns[j]].attributes &amp;&amp; gridData.columns[columns[j]].attributes.cellClasses &amp;&amp; gridData.columns[columns[j]].attributes.cellClasses.constructor === Array) {
@@ -865,14 +878,13 @@
             }
         }
 
-        createGroupTrEventHandlers();
+        createGroupTrEventHandlers(id);
+        attachDrillDownAccordionHandler(id);
 
-        gridContent.on(&#039;scroll&#039;, function contentDivScrollCallback(e) {
-            var cDiv = $(e.currentTarget);
-            var headWrap = cDiv.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-header-wrapper&#039;);
-            if (gridState[headWrap.parent().data(&#039;grid_header_id&#039;)].resizing)
-                return;
-            headWrap.scrollLeft(cDiv.scrollLeft());
+        gridContent[0].addEventListener(&#039;scroll&#039;, function contentDivScrollHandler() {
+            var headWrap = gridContent.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-header-wrapper&#039;);
+            if (gridState[id].resizing) return;
+            headWrap.scrollLeft(gridContent.scrollLeft());
         });
 
         var headerId = &#039;grid-header-&#039; + gridContent.data(&#039;grid_content_id&#039;);
@@ -917,7 +929,8 @@
                 if (groupedDiff[j]) {                               
                     var groupAggregateRow = $(&#039;&lt;tr class=&quot;grouped_row_header&quot;&gt;&lt;/tr&gt;&#039;).appendTo(gridContent);
                     for (k = 0; k &lt; groupedDiff.length; k++) {
-                        groupAggregateRow.append(&#039;&lt;td colspan=&quot;1&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
+                        var colSpan = gridData.drillDown ? 2 : 1;
+                        groupAggregateRow.append(&#039;&lt;td colspan=&quot;&#039; + colSpan + &#039;&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
                     }
                     for (item in gridData.groupAggregations[j]) {
                         if (item !== &#039;_items_&#039;) {
@@ -957,15 +970,49 @@
                 var groupTitle = gridData.columns[gridData.groupedBy[j].field].title || gridData.groupedBy[j].field;
                 for (k = 0; k &lt;= j; k++) {
                     var indent = k === j ? (columns.length + gridData.groupedBy.length - k) : 1;
+                    if (gridData.drillDown) ++indent;
                     groupTr.data(&#039;group-indent&#039;, indent);
                     var groupingCell = $(&#039;&lt;td colspan=&quot;&#039; + indent + &#039;&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;).appendTo(groupTr);
                     if (k === j) {
-                        groupingCell.append(&#039;&lt;p class=&quot;grouped&quot;&gt;&lt;a class=&quot;group-desc sortSpan group_acc_link&quot;&gt;&lt;/a&gt;&#039; + groupTitle + &#039;: &#039; + groupedText + &#039;&lt;/p&gt;&lt;/td&gt;&#039;);
+                        groupingCell.append(&#039;&lt;p class=&quot;grouped&quot;&gt;&lt;a class=&quot;group-desc sortSpan group_acc_link&quot; data-state=&quot;open&quot;&gt;&lt;/a&gt;&#039; + groupTitle + &#039;: &#039; + groupedText + &#039;&lt;/p&gt;&#039;);
                         break;
                     }
                 }
             }
         }
+    }
+
+    function attachDrillDownAccordionHandler(gridId) {
+        var gridData = gridState[gridId];
+        gridState[gridId].grid.find(&#039;.drillDown_span&#039;).on(&#039;click&#039;, function drillDownAccordionHandler() {
+            var accRow = $(this).parents(&#039;tr&#039;);
+            if (accRow.find(&#039;.drillDown_span&#039;).data(&#039;state&#039;) === &#039;open&#039;) {
+                accRow.find(&#039;.drillDown_span&#039;).data(&#039;state&#039;, &#039;closed&#039;);
+                accRow.next().css(&#039;display&#039;, &#039;none&#039;);
+            }
+            else {
+                if (accRow.next().hasClass(&#039;drill-down-row&#039;)) {
+                    accRow.find(&#039;.drillDown_span&#039;).data(&#039;state&#039;, &#039;open&#039;);
+                    accRow.next().css(&#039;display&#039;, &#039;inline-block&#039;);
+                }
+                else {
+                    if (typeof gridData.drillDown === &#039;object&#039;) {
+                        var drillDownRow = $(&#039;&lt;tr class=&quot;drill-down-row&quot;&gt;&lt;/tr&gt;&#039;).insertAfter(accRow);
+                        if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) {
+                            for (var i = 0; i &lt; gridData.groupedBy.length; i++) {
+                                drillDownRow.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
+                            }
+                        }
+                        drillDownRow.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
+                        var containerCell = $(&#039;&lt;td class=&quot;drill-down-cell&quot; colspan=&quot;&#039; + Object.keys(gridData.columns).length + &#039;&quot;&gt;&lt;/td&gt;&#039;).appendTo(drillDownRow),
+                            newGridId = gridData.grid[0].id + generateId(),
+                            gridDiv = $(&#039;&lt;div id=&quot;&#039; + newGridId + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(containerCell);
+                        accRow.find(&#039;.drillDown_span&#039;).data(&#039;state&#039;, &#039;open&#039;);
+                        grid.createGrid(gridData.drillDown, gridDiv[0]);
+                    }
+                }
+            }
+        });
     }
 
     function constructAggregationsFromServer(gridId, aggregationObj) {
@@ -1292,14 +1339,13 @@
         });
     }
 
-    function createGroupTrEventHandlers() {
-        $(&#039;.group_acc_link&#039;).each(function iterateAccordionsCallback(idx, val) {
-            $(val).data(&#039;state&#039;, &#039;open&#039;);
-        }).on(&#039;click&#039;, function groupedAccordionsClickListenerCallback(e) {
-            var accRow = $(e.currentTarget).parents(&#039;tr&#039;),
+    function createGroupTrEventHandlers(gridId) {
+        gridState[gridId].grid.find(&#039;.group_acc_link&#039;).on(&#039;click&#039;, function groupedAccordionsClickListenerCallback() {
+            var elem = $(this),
+                accRow = elem.parents(&#039;tr&#039;),
                 indent = accRow.data(&#039;group-indent&#039;);
-            if ($(e.currentTarget).data(&#039;state&#039;) === &#039;open&#039;) {
-                $(e.currentTarget).data(&#039;state&#039;, &#039;closed&#039;).removeClass(&#039;group-desc&#039;).addClass(&#039;group-asc&#039;);
+            if (elem.data(&#039;state&#039;) === &#039;open&#039;) {
+                elem.data(&#039;state&#039;, &#039;closed&#039;).removeClass(&#039;group-desc&#039;).addClass(&#039;group-asc&#039;);
                 accRow.nextAll().each(function iterateAccordionRowSiblingsToCloseCallback(idx, val) {
                     var row = $(val),
                         rowIndent = row.data(&#039;group-indent&#039;);
@@ -1309,7 +1355,7 @@
                 });
             }
             else {
-                $(e.currentTarget).data(&#039;state&#039;, &#039;open&#039;).removeClass(&#039;group-asc&#039;).addClass(&#039;group-desc&#039;);
+                elem.data(&#039;state&#039;, &#039;open&#039;).removeClass(&#039;group-asc&#039;).addClass(&#039;group-desc&#039;);
                 accRow.nextAll().each(function iterateAccordionRowSiblingsToOpenCallback(idx, val) {
                     var row = $(val),
                         rowIndent = row.data(&#039;group-indent&#039;);
@@ -1524,14 +1570,18 @@
                 columnList.push(name);
             }
         }
-        var colGroups = tableDiv.find(&#039;col&#039;);
+        var headerCols = tableDiv.find(&#039;col&#039;);
 
-        colGroups.each(function iterateColsCallback(idx, val) {
-            var i = idx;
-            if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) {
-                i = (idx%(colGroups.length/2)) - gridData.groupedBy.length;
+        headerCols.each(function iterateColsCallback(idx, val) {
+            var i = idx,
+                numColPadders = 0,
+                isGroupAndOrDrill = (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) || gridData.drillDown;
+            if (isGroupAndOrDrill) {
+                numColPadders = gridData.drillDown ? 1 : 0;
+                numColPadders += gridData.groupedBy &amp;&amp; gridData.groupedBy.length ? gridData.groupedBy.length : 0;
+                i = idx - numColPadders;
             }
-            if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length &amp;&amp; idx &lt; gridData.groupedBy.length) {
+            if (isGroupAndOrDrill &amp;&amp; idx &lt; numColPadders) {
                 $(val).css(&#039;width&#039;, 27);
             }
             else if (columnNames[columnList[i]] != null) {
@@ -3192,7 +3242,7 @@
             if (response) {
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
-                gridData.pageNum = (requestObj.pageSize * requestObj.pageNum) &gt; response.data.length ? Math.ceil(response.data.length / requestObj.pageSize) : requestObj.pageSize;
+                gridData.pageNum = (requestObj.pageSize * requestObj.pageNum) &gt; response.data.length ? Math.ceil(response.data.length / requestObj.pageSize) : requestObj.pageNum;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy || [];
                 gridData.sortedOn = requestObj.sortedOn || [];

@@ -10,6 +10,33 @@ var gridData = {
     selectable: 'multi-row',
     excelExport: true,
     columnToggle: true,
+    drillDown: {
+        reorderable: true,
+        sortable: true,
+        resizable: true,
+        columns: {
+            Mechanic: {
+                filterable: true,
+                width: 180,
+                type: 'string'
+            },
+            Make: {
+                filterable: true,
+                width: 125,
+                type: 'string'
+            },
+            Model: {
+                filterable: true,
+                width: 125,
+                type: 'string'
+            },
+            Year: {
+                filterable: true,
+                width: 75,
+                type: 'date'
+            }
+        }
+    },
     pagingOptions: [25, 50, 100],
     menu: ['filter', 'excel', 'save', 'sort', 'selection'],
     aggregates: {

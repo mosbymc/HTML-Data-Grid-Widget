@@ -9,7 +9,9 @@ module.exports = function (router) {
 
     router.get('/grid/getpage', getGridPageData);
 
-    router.get('/grid/getInitialDataSource', getInitialGridDataSource)
+    router.get('/grid/getInitialDataSource', getInitialGridDataSource);
+
+    router.get('/grid/drilldown/getpage', getDrillDownData);
 };
 
 var reqObj = {
@@ -50,6 +52,21 @@ var updateGridData = function _updateGridData(req, res) {
 var getInitialGridDataSource = function _getInitialGridDataSource(req, res) {
     res.send(originalData);
     res.end();
+};
+
+var getDrillDownData = function _getDrillDownData(req, response) {
+    request('http://localhost:5500/auto-repair-info', function(err, res, body) {
+        if (!err && res.statusCode == 200) {
+            determinePageData(req.query, JSON.parse(body), function(err, data) {
+                response.send(data);
+                response.end();
+            });
+        }
+        else {
+            response.send();
+            response.end();
+        }
+    });
 };
 
 function determinePageData(requestObj, fullGridData, callback) {

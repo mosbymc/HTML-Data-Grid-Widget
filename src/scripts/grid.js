@@ -4,7 +4,7 @@ var grid = (function _grid($) {
         gridState = [],
         groupMenuText = 'Drag and drop a column header here to group by that column';
 
-    function create(gridData, gridElem) {
+    function create(gridData, gridElem, parentId) {
         if (gridData && isDomElement(gridElem)) {
             var id = generateId();
             gridElem = $(gridElem);
@@ -40,10 +40,11 @@ var grid = (function _grid($) {
                         gridData.dataSource.data = {};
                         gridData.dataSource.rowCount = 0;
                     }
-                    initializeGrid(id, gridData, gridElem);
+                    initializeGrid(id, gridData, gridElem, parentId);
                 });
             }
         }
+        return gridElem[0].grid;
     }
 
     function createGridInstanceMethods(gridElem, gridId) {
@@ -512,7 +513,7 @@ var grid = (function _grid($) {
         else callback(true, {});
     }
 
-    function initializeGrid(id, gridData, gridElem) {
+    function initializeGrid(id, gridData, gridElem, parentId) {
         var storageData = cloneGridData(gridData);
         storageData.events = {
             beforeCellEdit: typeof storageData.beforeCellEdit === 'object' && storageData.beforeCellEdit.constructor === Array ? storageData.beforeCellEdit : [],
@@ -555,6 +556,7 @@ var grid = (function _grid($) {
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
+        storageData.parentGridId = parentId;
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -587,6 +589,11 @@ var grid = (function _grid($) {
                 colgroup.prepend('<col class="group_col"/>');
                 headerRow.prepend('<th class="group_spacer">&nbsp</th>');
             }
+        }
+
+        if (gridData.drillDown) {
+            colgroup.prepend('<col class="groupCol"/>');
+            headerRow.prepend('<th class="group_spacer">&nbsp</th>');
         }
 
         for (var col in gridData.columns) {
@@ -648,6 +655,9 @@ var grid = (function _grid($) {
                 for (var i = 0; i < gridState[gridId].groupedBy.length; i++) {
                     aggRow.append('<td class="group_spacer">&nbsp</td>');
                 }
+            }
+            if (gridState[gridId].drillDown) {
+                aggRow.append('<td class="group_spacer">&nbsp</td>');
             }
             for (var col in aggrs) {
                 var text = aggrs[col].text || '';
@@ -713,6 +723,9 @@ var grid = (function _grid($) {
                 }
             }
 
+            if (gridData.drillDown)
+                tr.append('<td class="drillDown_cell"><span class="drillDown_span" data-state="closed"><a class="drillDown-asc drillDown_acc"></a></span></td>');
+
             for (j = 0; j < columns.length; j++) {
                 var td = $('<td data-field="' + columns[j] + '" class="grid-content-cell"></td>').appendTo(tr);
                 if (gridData.columns[columns[j]].attributes && gridData.columns[columns[j]].attributes.cellClasses && gridData.columns[columns[j]].attributes.cellClasses.constructor === Array) {
@@ -774,14 +787,13 @@ var grid = (function _grid($) {
             }
         }
 
-        createGroupTrEventHandlers();
+        createGroupTrEventHandlers(id);
+        attachDrillDownAccordionHandler(id);
 
-        gridContent.on('scroll', function contentDivScrollCallback(e) {
-            var cDiv = $(e.currentTarget);
-            var headWrap = cDiv.parents('.grid-wrapper').find('.grid-header-wrapper');
-            if (gridState[headWrap.parent().data('grid_header_id')].resizing)
-                return;
-            headWrap.scrollLeft(cDiv.scrollLeft());
+        gridContent[0].addEventListener('scroll', function contentDivScrollHandler() {
+            var headWrap = gridContent.parents('.grid-wrapper').find('.grid-header-wrapper');
+            if (gridState[id].resizing) return;
+            headWrap.scrollLeft(gridContent.scrollLeft());
         });
 
         var headerId = 'grid-header-' + gridContent.data('grid_content_id');
@@ -826,7 +838,8 @@ var grid = (function _grid($) {
                 if (groupedDiff[j]) {                               
                     var groupAggregateRow = $('<tr class="grouped_row_header"></tr>').appendTo(gridContent);
                     for (k = 0; k < groupedDiff.length; k++) {
-                        groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
+                        var colSpan = gridData.drillDown ? 2 : 1;
+                        groupAggregateRow.append('<td colspan="' + colSpan + '" class="grouped_cell"></td>');
                     }
                     for (item in gridData.groupAggregations[j]) {
                         if (item !== '_items_') {
@@ -866,15 +879,49 @@ var grid = (function _grid($) {
                 var groupTitle = gridData.columns[gridData.groupedBy[j].field].title || gridData.groupedBy[j].field;
                 for (k = 0; k <= j; k++) {
                     var indent = k === j ? (columns.length + gridData.groupedBy.length - k) : 1;
+                    if (gridData.drillDown) ++indent;
                     groupTr.data('group-indent', indent);
                     var groupingCell = $('<td colspan="' + indent + '" class="grouped_cell"></td>').appendTo(groupTr);
                     if (k === j) {
-                        groupingCell.append('<p class="grouped"><a class="group-desc sortSpan group_acc_link"></a>' + groupTitle + ': ' + groupedText + '</p></td>');
+                        groupingCell.append('<p class="grouped"><a class="group-desc sortSpan group_acc_link" data-state="open"></a>' + groupTitle + ': ' + groupedText + '</p>');
                         break;
                     }
                 }
             }
         }
+    }
+
+    function attachDrillDownAccordionHandler(gridId) {
+        var gridData = gridState[gridId];
+        gridState[gridId].grid.find('.drillDown_span').on('click', function drillDownAccordionHandler() {
+            var accRow = $(this).parents('tr');
+            if (accRow.find('.drillDown_span').data('state') === 'open') {
+                accRow.find('.drillDown_span').data('state', 'closed');
+                accRow.next().css('display', 'none');
+            }
+            else {
+                if (accRow.next().hasClass('drill-down-row')) {
+                    accRow.find('.drillDown_span').data('state', 'open');
+                    accRow.next().css('display', 'inline-block');
+                }
+                else {
+                    if (typeof gridData.drillDown === 'object') {
+                        var drillDownRow = $('<tr class="drill-down-row"></tr>').insertAfter(accRow);
+                        if (gridData.groupedBy && gridData.groupedBy.length) {
+                            for (var i = 0; i < gridData.groupedBy.length; i++) {
+                                drillDownRow.append('<td class="grouped_cell"></td>');
+                            }
+                        }
+                        drillDownRow.append('<td class="grouped_cell"></td>');
+                        var containerCell = $('<td class="drill-down-cell" colspan="' + Object.keys(gridData.columns).length + '"></td>').appendTo(drillDownRow),
+                            newGridId = gridData.grid[0].id + generateId(),
+                            gridDiv = $('<div id="' + newGridId + '"></div>').appendTo(containerCell);
+                        accRow.find('.drillDown_span').data('state', 'open');
+                        grid.createGrid(gridData.drillDown, gridDiv[0]);
+                    }
+                }
+            }
+        });
     }
 
     function constructAggregationsFromServer(gridId, aggregationObj) {
@@ -1201,14 +1248,13 @@ var grid = (function _grid($) {
         });
     }
 
-    function createGroupTrEventHandlers() {
-        $('.group_acc_link').each(function iterateAccordionsCallback(idx, val) {
-            $(val).data('state', 'open');
-        }).on('click', function groupedAccordionsClickListenerCallback(e) {
-            var accRow = $(e.currentTarget).parents('tr'),
+    function createGroupTrEventHandlers(gridId) {
+        gridState[gridId].grid.find('.group_acc_link').on('click', function groupedAccordionsClickListenerCallback() {
+            var elem = $(this),
+                accRow = elem.parents('tr'),
                 indent = accRow.data('group-indent');
-            if ($(e.currentTarget).data('state') === 'open') {
-                $(e.currentTarget).data('state', 'closed').removeClass('group-desc').addClass('group-asc');
+            if (elem.data('state') === 'open') {
+                elem.data('state', 'closed').removeClass('group-desc').addClass('group-asc');
                 accRow.nextAll().each(function iterateAccordionRowSiblingsToCloseCallback(idx, val) {
                     var row = $(val),
                         rowIndent = row.data('group-indent');
@@ -1218,7 +1264,7 @@ var grid = (function _grid($) {
                 });
             }
             else {
-                $(e.currentTarget).data('state', 'open').removeClass('group-asc').addClass('group-desc');
+                elem.data('state', 'open').removeClass('group-asc').addClass('group-desc');
                 accRow.nextAll().each(function iterateAccordionRowSiblingsToOpenCallback(idx, val) {
                     var row = $(val),
                         rowIndent = row.data('group-indent');
@@ -1433,14 +1479,18 @@ var grid = (function _grid($) {
                 columnList.push(name);
             }
         }
-        var colGroups = tableDiv.find('col');
+        var headerCols = tableDiv.find('col');
 
-        colGroups.each(function iterateColsCallback(idx, val) {
-            var i = idx;
-            if (gridData.groupedBy && gridData.groupedBy.length) {
-                i = (idx%(colGroups.length/2)) - gridData.groupedBy.length;
+        headerCols.each(function iterateColsCallback(idx, val) {
+            var i = idx,
+                numColPadders = 0,
+                isGroupAndOrDrill = (gridData.groupedBy && gridData.groupedBy.length) || gridData.drillDown;
+            if (isGroupAndOrDrill) {
+                numColPadders = gridData.drillDown ? 1 : 0;
+                numColPadders += gridData.groupedBy && gridData.groupedBy.length ? gridData.groupedBy.length : 0;
+                i = idx - numColPadders;
             }
-            if (gridData.groupedBy && gridData.groupedBy.length && idx < gridData.groupedBy.length) {
+            if (isGroupAndOrDrill && idx < numColPadders) {
                 $(val).css('width', 27);
             }
             else if (columnNames[columnList[i]] != null) {
@@ -3101,7 +3151,7 @@ var grid = (function _grid($) {
             if (response) {
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
-                gridData.pageNum = (requestObj.pageSize * requestObj.pageNum) > response.data.length ? Math.ceil(response.data.length / requestObj.pageSize) : requestObj.pageSize;
+                gridData.pageNum = (requestObj.pageSize * requestObj.pageNum) > response.data.length ? Math.ceil(response.data.length / requestObj.pageSize) : requestObj.pageNum;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy || [];
                 gridData.sortedOn = requestObj.sortedOn || [];

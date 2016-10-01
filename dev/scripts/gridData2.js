@@ -10,6 +10,51 @@ var gridData2 = {
     selectable: 'multi-row',
     excelExport: true,
     columnToggle: true,
+    drillDown: {
+        reorderable: true,
+        sortable: true,
+        resizable: true,
+        columns: {
+            MechanicName: {
+                title: 'Mechanic',
+                filterable: true,
+                width: 180,
+                type: 'string'
+            },
+            Make: {
+                filterable: true,
+                width: 125,
+                type: 'string'
+            },
+            Model: {
+                filterable: true,
+                width: 125,
+                type: 'string'
+            },
+            Year: {
+                filterable: true,
+                width: 75,
+                type: 'date'
+            }
+        },
+        dataSource: {
+            get: function _getGridData(req, cb) {
+                $.ajax({
+                    type: 'GET',
+                    url: '../grid/drilldown/getpage',
+                    data: req,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json"
+                })
+                .done(function pageDataSuccessCallback(data) {
+                    cb(data);
+                })
+                .fail(function pageDataFailureCallback(){
+                    cb();
+                });
+            }
+        }
+    },
     advancedFiltering: {
         groupsCount: 4,
         filtersCount: 8
