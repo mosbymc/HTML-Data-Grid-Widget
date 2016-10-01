@@ -57,7 +57,8 @@ var getInitialGridDataSource = function _getInitialGridDataSource(req, res) {
 var getDrillDownData = function _getDrillDownData(req, response) {
     request('http://localhost:5500/auto-repair-info', function(err, res, body) {
         if (!err && res.statusCode == 200) {
-            determinePageData(req.query, JSON.parse(body), function(err, data) {
+            var childData = findDataByParentId(JSON.parse(body), req.query.parentId);
+            determinePageData(req.query, childData, function(err, data) {
                 response.send(data);
                 response.end();
             });
@@ -115,4 +116,10 @@ function calculateAggregations(fullGridData) {
     }
     labor = parseFloat(total/parseFloat(fullGridData.length)).toFixed(2);
     return { Service: fullGridData.length, Labor: labor, Cost: max, Paid: fullGridData.length, Billed: mTotal };
+}
+
+function findDataByParentId(collection, parentId) {
+    return collection.filter(function findChildData(data) {
+        return data.AutoRepairId === parentId;
+    });
 }

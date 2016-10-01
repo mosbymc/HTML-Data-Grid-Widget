@@ -10,48 +10,50 @@ var gridData2 = {
     selectable: 'multi-row',
     excelExport: true,
     columnToggle: true,
-    drillDown: {
-        reorderable: true,
-        sortable: true,
-        resizable: true,
-        columns: {
-            MechanicName: {
-                title: 'Mechanic',
-                filterable: true,
-                width: 180,
-                type: 'string'
+    drillDown: function _drillDown(parentRowIdx, parentRowData) {
+        return {
+            reorderable: true,
+            sortable: true,
+            resizable: true,
+            columns: {
+                MechanicName: {
+                    title: 'Mechanic',
+                    filterable: true,
+                    width: 180,
+                    type: 'string'
+                },
+                Make: {
+                    filterable: true,
+                    width: 125,
+                    type: 'string'
+                },
+                Model: {
+                    filterable: true,
+                    width: 125,
+                    type: 'string'
+                },
+                Year: {
+                    filterable: true,
+                    width: 75,
+                    type: 'date'
+                }
             },
-            Make: {
-                filterable: true,
-                width: 125,
-                type: 'string'
-            },
-            Model: {
-                filterable: true,
-                width: 125,
-                type: 'string'
-            },
-            Year: {
-                filterable: true,
-                width: 75,
-                type: 'date'
-            }
-        },
-        dataSource: {
-            get: function _getGridData(req, cb) {
-                $.ajax({
-                    type: 'GET',
-                    url: '../grid/drilldown/getpage',
-                    data: req,
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json"
-                })
-                .done(function pageDataSuccessCallback(data) {
-                    cb(data);
-                })
-                .fail(function pageDataFailureCallback(){
-                    cb();
-                });
+            dataSource: {
+                get: function _getGridData(req, cb) {
+                    $.ajax({
+                        type: 'GET',
+                        url: '../grid/drilldown/getpage?parentId=' + parentRowData.id,
+                        data: req,
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json"
+                    })
+                        .done(function pageDataSuccessCallback(data) {
+                            cb(data);
+                        })
+                        .fail(function pageDataFailureCallback() {
+                            cb();
+                        });
+                }
             }
         }
     },
@@ -266,7 +268,7 @@ var gridData2 = {
             .done(function pageDataSuccessCallback(data) {
                 cb(data);
             })
-            .fail(function pageDataFailureCallback(){
+            .fail(function pageDataFailureCallback() {
                 cb();
             });
         },

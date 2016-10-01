@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.41</p>
+      <p class="stat">55.40</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3869</p>
+      <p class="stat">3883</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">215.05</p>
+      <p class="stat">214.78</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">87.16</p>
+      <p class="stat">87.67</p>
     </div>
   </div>
 </div>
@@ -794,6 +794,7 @@
             if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) createGroupedRows(id, i, columns, currentGroupingValues, contentTBody);
 
             var tr = $(&#039;&lt;tr class=&quot;data-row&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
+            if (gridData.parentGridId != null) tr.addClass(&#039;drill-down-row&#039;);
             if (i % 2) {
                 tr.addClass(&#039;alt-row&#039;);
                 if (rows &amp;&amp; rows.alternateRows &amp;&amp; rows.alternateRows.constructor === Array)
@@ -984,8 +985,9 @@
 
     function attachDrillDownAccordionHandler(gridId) {
         var gridData = gridState[gridId];
-        gridState[gridId].grid.find(&#039;.drillDown_span&#039;).on(&#039;click&#039;, function drillDownAccordionHandler() {
-            var accRow = $(this).parents(&#039;tr&#039;);
+        gridData.grid.find(&#039;.drillDown_span&#039;).on(&#039;click&#039;, function drillDownAccordionHandler() {
+            var accRow = $(this).parents(&#039;tr&#039;),
+                accRowIdx = gridData.grid.find(&#039;.data-row&#039;).not(&#039;.drill-down-row&#039;).index(accRow);
             if (accRow.find(&#039;.drillDown_span&#039;).data(&#039;state&#039;) === &#039;open&#039;) {
                 accRow.find(&#039;.drillDown_span&#039;).data(&#039;state&#039;, &#039;closed&#039;);
                 accRow.next().css(&#039;display&#039;, &#039;none&#039;);
@@ -996,19 +998,25 @@
                     accRow.next().css(&#039;display&#039;, &#039;inline-block&#039;);
                 }
                 else {
-                    if (typeof gridData.drillDown === &#039;object&#039;) {
-                        var drillDownRow = $(&#039;&lt;tr class=&quot;drill-down-row&quot;&gt;&lt;/tr&gt;&#039;).insertAfter(accRow);
-                        if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) {
-                            for (var i = 0; i &lt; gridData.groupedBy.length; i++) {
-                                drillDownRow.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
-                            }
+                    var drillDownRow = $(&#039;&lt;tr class=&quot;drill-down-row&quot;&gt;&lt;/tr&gt;&#039;).insertAfter(accRow);
+                    if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) {
+                        for (var i = 0; i &lt; gridData.groupedBy.length; i++) {
+                            drillDownRow.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
                         }
-                        drillDownRow.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
-                        var containerCell = $(&#039;&lt;td class=&quot;drill-down-cell&quot; colspan=&quot;&#039; + Object.keys(gridData.columns).length + &#039;&quot;&gt;&lt;/td&gt;&#039;).appendTo(drillDownRow),
-                            newGridId = gridData.grid[0].id + generateId(),
-                            gridDiv = $(&#039;&lt;div id=&quot;&#039; + newGridId + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(containerCell);
-                        accRow.find(&#039;.drillDown_span&#039;).data(&#039;state&#039;, &#039;open&#039;);
-                        grid.createGrid(gridData.drillDown, gridDiv[0]);
+                    }
+                    drillDownRow.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
+                    var containerCell = $(&#039;&lt;td class=&quot;drill-down-cell&quot; colspan=&quot;&#039; + Object.keys(gridData.columns).length + &#039;&quot;&gt;&lt;/td&gt;&#039;).appendTo(drillDownRow),
+                        newGridId = gridData.grid[0].id + generateId(),
+                        gridDiv = $(&#039;&lt;div id=&quot;&#039; + newGridId + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(containerCell);
+                    accRow.find(&#039;.drillDown_span&#039;).data(&#039;state&#039;, &#039;open&#039;);
+                    var parentRowData = gridData.grid[0].grid.getCurrentDataSourceData(accRowIdx);
+
+                    if (typeof gridData.drillDown === &#039;function&#039;) {
+                        grid.createGrid(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
+                    }
+                    else if (typeof gridData.drillDown === &#039;object&#039;) {
+                        gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
+                        grid.createGrid(gridData.drillDown, gridDiv[0], gridId);
                     }
                 }
             }
@@ -1092,6 +1100,7 @@
                         $(elem).removeClass(&#039;selected&#039;);
                     });
                     var target = $(e.target);
+                    if (target.hasClass(&#039;drillDown_cell&#039;)) return;
                     if (isSelectable === &#039;cell&#039; &amp;&amp; target[0].tagName.toUpperCase() === &#039;TD&#039;)
                         target.addClass(&#039;selected&#039;);
                     else if (target[0].tagName.toUpperCase() === &#039;TR&#039;)
@@ -1104,6 +1113,7 @@
         if (isSelectable === &#039;multi-row&#039; || isSelectable === &#039;multi-cell&#039;) {
             $(document).on(&#039;mousedown&#039;, function mouseDownDragCallback(event) {
                 if (event.target === tableBody[0] || $(event.target).parents(&#039;tbody&#039;)[0] === tableBody[0]) {
+                    if ($(event.target).hasClass(&#039;drillDown_cell&#039;)) return;     
                     gridState[gridId].selecting = true;
                     var contentDiv = tableBody.parents(&#039;.grid-content-div&#039;),
                         overlay = $(&#039;&lt;div class=&quot;selection-highlighter&quot;&gt;&lt;/div&gt;&#039;).appendTo(gridState[gridId].grid);
@@ -1325,6 +1335,10 @@
         }
 
         var gridElems = gridState[gridId].selectable === &#039;multi-cell&#039; ? contentDiv.find(&#039;td&#039;) : contentDiv.find(&#039;tr&#039;);
+        gridElems = gridElems.filter(function filterDrillDownRows() {
+            var gridElem = $(this);
+            return !gridElem.hasClass(&#039;drill-down-row&#039;) &amp;&amp; !gridElem.parents(&#039;.drill-down-row&#039;).length;
+        });
 
         gridElems.each(function highlightGridElemsCallback(idx, val) {
             var element = $(val),

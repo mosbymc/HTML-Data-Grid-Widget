@@ -703,6 +703,7 @@ var grid = (function _grid($) {
             if (gridData.groupedBy && gridData.groupedBy.length) createGroupedRows(id, i, columns, currentGroupingValues, contentTBody);
 
             var tr = $('<tr class="data-row"></tr>').appendTo(contentTBody);
+            if (gridData.parentGridId != null) tr.addClass('drill-down-row');
             if (i % 2) {
                 tr.addClass('alt-row');
                 if (rows && rows.alternateRows && rows.alternateRows.constructor === Array)
@@ -893,8 +894,9 @@ var grid = (function _grid($) {
 
     function attachDrillDownAccordionHandler(gridId) {
         var gridData = gridState[gridId];
-        gridState[gridId].grid.find('.drillDown_span').on('click', function drillDownAccordionHandler() {
-            var accRow = $(this).parents('tr');
+        gridData.grid.find('.drillDown_span').on('click', function drillDownAccordionHandler() {
+            var accRow = $(this).parents('tr'),
+                accRowIdx = gridData.grid.find('.data-row').not('.drill-down-row').index(accRow);
             if (accRow.find('.drillDown_span').data('state') === 'open') {
                 accRow.find('.drillDown_span').data('state', 'closed');
                 accRow.next().css('display', 'none');
@@ -905,19 +907,25 @@ var grid = (function _grid($) {
                     accRow.next().css('display', 'inline-block');
                 }
                 else {
-                    if (typeof gridData.drillDown === 'object') {
-                        var drillDownRow = $('<tr class="drill-down-row"></tr>').insertAfter(accRow);
-                        if (gridData.groupedBy && gridData.groupedBy.length) {
-                            for (var i = 0; i < gridData.groupedBy.length; i++) {
-                                drillDownRow.append('<td class="grouped_cell"></td>');
-                            }
+                    var drillDownRow = $('<tr class="drill-down-row"></tr>').insertAfter(accRow);
+                    if (gridData.groupedBy && gridData.groupedBy.length) {
+                        for (var i = 0; i < gridData.groupedBy.length; i++) {
+                            drillDownRow.append('<td class="grouped_cell"></td>');
                         }
-                        drillDownRow.append('<td class="grouped_cell"></td>');
-                        var containerCell = $('<td class="drill-down-cell" colspan="' + Object.keys(gridData.columns).length + '"></td>').appendTo(drillDownRow),
-                            newGridId = gridData.grid[0].id + generateId(),
-                            gridDiv = $('<div id="' + newGridId + '"></div>').appendTo(containerCell);
-                        accRow.find('.drillDown_span').data('state', 'open');
-                        grid.createGrid(gridData.drillDown, gridDiv[0]);
+                    }
+                    drillDownRow.append('<td class="grouped_cell"></td>');
+                    var containerCell = $('<td class="drill-down-cell" colspan="' + Object.keys(gridData.columns).length + '"></td>').appendTo(drillDownRow),
+                        newGridId = gridData.grid[0].id + generateId(),
+                        gridDiv = $('<div id="' + newGridId + '"></div>').appendTo(containerCell);
+                    accRow.find('.drillDown_span').data('state', 'open');
+                    var parentRowData = gridData.grid[0].grid.getCurrentDataSourceData(accRowIdx);
+
+                    if (typeof gridData.drillDown === 'function') {
+                        grid.createGrid(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
+                    }
+                    else if (typeof gridData.drillDown === 'object') {
+                        gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
+                        grid.createGrid(gridData.drillDown, gridDiv[0], gridId);
                     }
                 }
             }
@@ -1001,6 +1009,7 @@ var grid = (function _grid($) {
                         $(elem).removeClass('selected');
                     });
                     var target = $(e.target);
+                    if (target.hasClass('drillDown_cell')) return;
                     if (isSelectable === 'cell' && target[0].tagName.toUpperCase() === 'TD')
                         target.addClass('selected');
                     else if (target[0].tagName.toUpperCase() === 'TR')
@@ -1013,6 +1022,7 @@ var grid = (function _grid($) {
         if (isSelectable === 'multi-row' || isSelectable === 'multi-cell') {
             $(document).on('mousedown', function mouseDownDragCallback(event) {
                 if (event.target === tableBody[0] || $(event.target).parents('tbody')[0] === tableBody[0]) {
+                    if ($(event.target).hasClass('drillDown_cell')) return;     
                     gridState[gridId].selecting = true;
                     var contentDiv = tableBody.parents('.grid-content-div'),
                         overlay = $('<div class="selection-highlighter"></div>').appendTo(gridState[gridId].grid);
@@ -1234,6 +1244,10 @@ var grid = (function _grid($) {
         }
 
         var gridElems = gridState[gridId].selectable === 'multi-cell' ? contentDiv.find('td') : contentDiv.find('tr');
+        gridElems = gridElems.filter(function filterDrillDownRows() {
+            var gridElem = $(this);
+            return !gridElem.hasClass('drill-down-row') && !gridElem.parents('.drill-down-row').length;
+        });
 
         gridElems.each(function highlightGridElemsCallback(idx, val) {
             var element = $(val),
