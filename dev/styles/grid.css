@@ -219,7 +219,7 @@
   border-width: 0;
   outline: 0;
 }
-.grid-content-div table tr:hover {
+.grid-content-div table tr:not(.drill-down-parent):hover {
   background-color: #ebebeb;
 }
 .grid-content-div table tr:last-child td {

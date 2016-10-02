@@ -36,6 +36,24 @@ var gridData2 = {
                     filterable: true,
                     width: 75,
                     type: 'date'
+                },
+                Doors: {
+                    filterable: true,
+                    width: 100,
+                    type: 'number',
+                    title: 'Number of doors'
+                },
+                EngineType: {
+                    title: 'Engine Type',
+                    width: 75,
+                    type: 'string',
+                    filterable: true
+                },
+                EngineSize: {
+                    title: 'Engine Size',
+                    width: 75,
+                    type: 'string',
+                    filterable: true
                 }
             },
             dataSource: {

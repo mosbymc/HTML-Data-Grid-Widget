@@ -1280,12 +1280,12 @@ var grid = (function _grid($) {
                 accRow.next().css('display', 'none');
             }
             else {
-                if (accRow.next().hasClass('drill-down-row')) {
+                if (accRow.next().hasClass('drill-down-parent')) {
                     accRow.find('.drillDown_span').data('state', 'open');
                     accRow.next().css('display', 'inline-block');
                 }
                 else {
-                    var drillDownRow = $('<tr class="drill-down-row"></tr>').insertAfter(accRow);
+                    var drillDownRow = $('<tr class="drill-down-parent"></tr>').insertAfter(accRow);
                     if (gridData.groupedBy && gridData.groupedBy.length) {
                         for (var i = 0; i < gridData.groupedBy.length; i++) {
                             drillDownRow.append('<td class="grouped_cell"></td>');
@@ -1400,11 +1400,12 @@ var grid = (function _grid($) {
                         gridState[gridId].selecting = false;
                         return;
                     }
-                    $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
+                    gridState[gridId].grid.find('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
                         $(elem).removeClass('selected');
                     });
                     var target = $(e.target);
-                    if (target.hasClass('drillDown_cell')) return;
+                    if (target.hasClass('drill-down-parent') || target.parents('.drill-down-parent').length) return;
+                    if (target.hasClass('drillDown_cell') || target.parents('.drillDown_cell').length) return;
                     if (isSelectable === 'cell' && target[0].tagName.toUpperCase() === 'TD')
                         target.addClass('selected');
                     else if (target[0].tagName.toUpperCase() === 'TR')
@@ -1416,8 +1417,10 @@ var grid = (function _grid($) {
         }
         if (isSelectable === 'multi-row' || isSelectable === 'multi-cell') {
             $(document).on('mousedown', function mouseDownDragCallback(event) {
-                if (event.target === tableBody[0] || $(event.target).parents('tbody')[0] === tableBody[0]) {
-                    if ($(event.target).hasClass('drillDown_cell')) return;     //can't select drill down cells.
+                var target = $(event.target);
+                if (event.target === tableBody[0] || target.parents('tbody')[0] === tableBody[0]) {
+                    if (target.hasClass('drill-down-parent') || target.parents('.drill-down-parent').length) return;
+                    if (target.hasClass('drillDown_cell') || target.parents('.drillDown_cell').length) return;
                     gridState[gridId].selecting = true;
                     var contentDiv = tableBody.parents('.grid-content-div'),
                         overlay = $('<div class="selection-highlighter"></div>').appendTo(gridState[gridId].grid);
@@ -1430,7 +1433,7 @@ var grid = (function _grid($) {
                     overlay.data('actual-height', 0).data('actual-width', 0).data('event-type', 'mouse');
 
                     $(document).one('mouseup', function mouseUpDragCallback() {
-                        $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
+                        gridState[gridId].grid.find('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
                             $(elem).removeClass('selected');
                         });
                         var overlay = $(".selection-highlighter");
@@ -1659,7 +1662,7 @@ var grid = (function _grid($) {
         var gridElems = gridState[gridId].selectable === 'multi-cell' ? contentDiv.find('td') : contentDiv.find('tr');
         gridElems = gridElems.filter(function filterDrillDownRows() {
             var gridElem = $(this);
-            return !gridElem.hasClass('drill-down-row') && !gridElem.parents('.drill-down-row').length;
+            return !gridElem.hasClass('drill-down-parent') && !gridElem.parents('.drill-down-parent').length;
         });
 
         gridElems.each(function highlightGridElemsCallback(idx, val) {
