@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.38</p>
+      <p class="stat">55.42</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3886</p>
+      <p class="stat">3892</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">214.80</p>
+      <p class="stat">215.03</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">87.90</p>
+      <p class="stat">88.08</p>
     </div>
   </div>
 </div>
@@ -95,7 +95,7 @@
         gridState = [],
         groupMenuText = &#039;Drag and drop a column header here to group by that column&#039;;
 
-    function create(gridData, gridElem, parentId) {
+    function create(gridData, gridElem) {
         if (gridData &amp;&amp; isDomElement(gridElem)) {
             var id = generateId();
             gridElem = $(gridElem);
@@ -131,11 +131,16 @@
                         gridData.dataSource.data = {};
                         gridData.dataSource.rowCount = 0;
                     }
-                    initializeGrid(id, gridData, gridElem, parentId);
+                    initializeGrid(id, gridData, gridElem);
                 });
             }
         }
         return gridElem[0].grid;
+    }
+
+    function drillDownCreate(gridData, gridElem, parentId) {
+        gridData.parentGridId = parentId;
+        grid.createGrid(gridData, gridElem);
     }
 
     function createGridInstanceMethods(gridElem, gridId) {
@@ -604,7 +609,7 @@
         else callback(true, {});
     }
 
-    function initializeGrid(id, gridData, gridElem, parentId) {
+    function initializeGrid(id, gridData, gridElem) {
         var storageData = cloneGridData(gridData);
         storageData.events = {
             beforeCellEdit: typeof storageData.beforeCellEdit === &#039;object&#039; &amp;&amp; storageData.beforeCellEdit.constructor === Array ? storageData.beforeCellEdit : [],
@@ -647,7 +652,7 @@
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
-        storageData.parentGridId = parentId;
+        storageData.parentGridId = gridData.parentGridId || null;
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -701,7 +706,7 @@
             }
 
             if (gridData.columns[col].type !== &#039;custom&#039;) {
-                if (gridData.reorderable === true &amp;&amp; (typeof gridData.columns[col].reorderable === &#039;undefined&#039; || gridData.columns[col].reorderable === true)) {
+                if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (gridData.reorderable === true &amp;&amp; (typeof gridData.columns[col].reorderable === &#039;undefined&#039; || gridData.columns[col].reorderable === true))) {
                     th.prop(&#039;draggable&#039;, true);
                     setDragAndDropListeners(th);
                 }
@@ -720,7 +725,8 @@
                     th.on(&#039;mouseleave&#039;, mouseLeaveHandlerCallback);
                 }
 
-                if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering)
+                if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (gridData.columns[col].editable || gridData.columns[col].selectable ||
+                    gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
                     createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
 
                 $(&#039;&lt;a class=&quot;header-anchor&quot; href=&quot;#&quot;&gt;&lt;/a&gt;&#039;).appendTo(th).text(text);
@@ -776,7 +782,7 @@
             colGroup = $(&#039;&lt;colgroup&gt;&lt;/colgroup&gt;&#039;).appendTo(contentTable),
             contentTBody = $(&#039;&lt;tbody&gt;&lt;/tbody&gt;&#039;).appendTo(contentTable),
             text, i, j, k, item;
-        if (gridData.selectable) attachTableSelectHandler(contentTBody);
+        if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; gridData.selectable) attachTableSelectHandler(contentTBody);
         var columns = [];
         gridElem.find(&#039;th&#039;).each(function headerIterationCallback(idx, val) {
             if (!$(val).hasClass(&#039;group_spacer&#039;))
@@ -794,7 +800,7 @@
             if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) createGroupedRows(id, i, columns, currentGroupingValues, contentTBody);
 
             var tr = $(&#039;&lt;tr class=&quot;data-row&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
-            if (gridData.parentGridId != null) tr.addClass(&#039;drill-down-row&#039;);
+            if (typeof gridData.parentGridId === &#039;number&#039;) tr.addClass(&#039;drill-down-row&#039;);
             if (i % 2) {
                 tr.addClass(&#039;alt-row&#039;);
                 if (rows &amp;&amp; rows.alternateRows &amp;&amp; rows.alternateRows.constructor === Array)
@@ -841,11 +847,11 @@
                     }
                 }
                 if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
-                if (gridData.columns[columns[j]].editable &amp;&amp; gridData.columns[columns[j]].editable !== &#039;drop-down&#039;) {
+                if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (gridData.columns[columns[j]].editable &amp;&amp; gridData.columns[columns[j]].editable !== &#039;drop-down&#039;)) {
                     makeCellEditable(id, td);
                     gridState[id].editable = true;
                 }
-                else if (gridData.columns[columns[j]].editable === &#039;drop-down&#039;) {
+                else if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (gridData.columns[columns[j]].editable === &#039;drop-down&#039;)) {
                     makeCellSelectable(id, td);
                     gridState[id].editable = true;
                 }
@@ -1012,11 +1018,11 @@
                     var parentRowData = gridData.grid[0].grid.getCurrentDataSourceData(accRowIdx);
 
                     if (typeof gridData.drillDown === &#039;function&#039;) {
-                        grid.createGrid(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
+                        drillDownCreate(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
                     }
                     else if (typeof gridData.drillDown === &#039;object&#039;) {
                         gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
-                        grid.createGrid(gridData.drillDown, gridDiv[0], gridId);
+                        drillDownCreate(gridData.drillDown, gridDiv[0], gridId);
                     }
                 }
             }

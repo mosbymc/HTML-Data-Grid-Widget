@@ -139,10 +139,9 @@ var grid = (function _grid($) {
      * @static
      * @param {object} gridData - The dataSource object needed to initialize the grid
      * @param {object} gridElem - The DOM element that should be used to create the grid widget
-     * @param {number} parentId - The id of the parent grid widget instance when using drill down grid; null if not a drill down
      * @Returns {Object} - Returns an object containing the functions created for the grid widget instance
      */
-    function create(gridData, gridElem, parentId) {
+    function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
             var id = generateId();
             gridElem = $(gridElem);
@@ -179,11 +178,16 @@ var grid = (function _grid($) {
                         gridData.dataSource.data = {};
                         gridData.dataSource.rowCount = 0;
                     }
-                    initializeGrid(id, gridData, gridElem, parentId);
+                    initializeGrid(id, gridData, gridElem);
                 });
             }
         }
         return gridElem[0].grid;
+    }
+
+    function drillDownCreate(gridData, gridElem, parentId) {
+        gridData.parentGridId = parentId;
+        grid.createGrid(gridData, gridElem);
     }
 
     /**
@@ -842,7 +846,7 @@ var grid = (function _grid($) {
      * @param {object} gridElem
      * @param {number} parentId
      */
-    function initializeGrid(id, gridData, gridElem, parentId) {
+    function initializeGrid(id, gridData, gridElem) {
         var storageData = cloneGridData(gridData);
         storageData.events = {
             beforeCellEdit: typeof storageData.beforeCellEdit === 'object' && storageData.beforeCellEdit.constructor === Array ? storageData.beforeCellEdit : [],
@@ -885,7 +889,7 @@ var grid = (function _grid($) {
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
-        storageData.parentGridId = parentId;
+        storageData.parentGridId = gridData.parentGridId || null;
         if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -921,8 +925,6 @@ var grid = (function _grid($) {
             index = 0,
             id = gridHeader.data('grid_header_id'), i, columnCount = 0;
 
-        //TODO: I think this will work for data that is already grouped; specifically when adding a new column. However, it may work or be
-        //TODO: adjusted to work with data coming from the server on widget creation
         if (gridData.groupedBy && gridData.groupedBy.length) {
             for (i = 0; i < gridData.groupedBy.length; i++) {
                 colgroup.prepend('<col class="group_col"/>');
@@ -949,7 +951,7 @@ var grid = (function _grid($) {
             }
 
             if (gridData.columns[col].type !== 'custom') {
-                if (gridData.reorderable === true && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable === true)) {
+                if (typeof gridData.parentGridId !== 'number' && (gridData.reorderable === true && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable === true))) {
                     th.prop('draggable', true);
                     setDragAndDropListeners(th);
                 }
@@ -968,7 +970,8 @@ var grid = (function _grid($) {
                     th.on('mouseleave', mouseLeaveHandlerCallback);
                 }
 
-                if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering)
+                if (typeof gridData.parentGridId !== 'number' && (gridData.columns[col].editable || gridData.columns[col].selectable ||
+                    gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
                     createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
 
                 $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
@@ -1041,7 +1044,7 @@ var grid = (function _grid($) {
             colGroup = $('<colgroup></colgroup>').appendTo(contentTable),
             contentTBody = $('<tbody></tbody>').appendTo(contentTable),
             text, i, j, k, item;
-        if (gridData.selectable) attachTableSelectHandler(contentTBody);
+        if (typeof gridData.parentGridId !== 'number' && gridData.selectable) attachTableSelectHandler(contentTBody);
         var columns = [];
         gridElem.find('th').each(function headerIterationCallback(idx, val) {
             if (!$(val).hasClass('group_spacer'))
@@ -1059,7 +1062,7 @@ var grid = (function _grid($) {
             if (gridData.groupedBy && gridData.groupedBy.length) createGroupedRows(id, i, columns, currentGroupingValues, contentTBody);
 
             var tr = $('<tr class="data-row"></tr>').appendTo(contentTBody);
-            if (gridData.parentGridId != null) tr.addClass('drill-down-row');
+            if (typeof gridData.parentGridId === 'number') tr.addClass('drill-down-row');
             if (i % 2) {
                 tr.addClass('alt-row');
                 if (rows && rows.alternateRows && rows.alternateRows.constructor === Array)
@@ -1107,11 +1110,11 @@ var grid = (function _grid($) {
                 }
                 if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
                 //attach event handlers to save data
-                if (gridData.columns[columns[j]].editable && gridData.columns[columns[j]].editable !== 'drop-down') {
+                if (typeof gridData.parentGridId !== 'number' && (gridData.columns[columns[j]].editable && gridData.columns[columns[j]].editable !== 'drop-down')) {
                     makeCellEditable(id, td);
                     gridState[id].editable = true;
                 }
-                else if (gridData.columns[columns[j]].editable === 'drop-down') {
+                else if (typeof gridData.parentGridId !== 'number' && (gridData.columns[columns[j]].editable === 'drop-down')) {
                     makeCellSelectable(id, td);
                     gridState[id].editable = true;
                 }
@@ -1299,11 +1302,11 @@ var grid = (function _grid($) {
                     var parentRowData = gridData.grid[0].grid.getCurrentDataSourceData(accRowIdx);
 
                     if (typeof gridData.drillDown === 'function') {
-                        grid.createGrid(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
+                        drillDownCreate(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
                     }
                     else if (typeof gridData.drillDown === 'object') {
                         gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
-                        grid.createGrid(gridData.drillDown, gridDiv[0], gridId);
+                        drillDownCreate(gridData.drillDown, gridDiv[0], gridId);
                     }
                 }
             }
