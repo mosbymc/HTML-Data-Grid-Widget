@@ -2889,6 +2889,8 @@ var grid = (function _grid($) {
                 dropIndicator.append('<span class="drop-indicator-top"></span><span class="drop-indicator-bottom"></span>');
                 gridState[gridId].grid.append(dropIndicator);
             }
+            else
+                dropIndicator.css('display', 'block');
 
             var originalColumn;
             gridState[gridId].grid.find('.grid-header-cell').each(function iterateGridHeadersCallback(idx, val) {
@@ -2952,6 +2954,16 @@ var grid = (function _grid($) {
 
         swapContentCells(parentDivId, droppedIndex, targetIndex);
 
+        if (gridState[id].groupedBy && gridState[id].groupedBy.length && gridState[id].groupedBy !== 'none') {
+            ++droppedIndex;
+            ++targetIndex;
+        }
+
+        if (gridState[id].drillDown) {
+            ++droppedIndex;
+            ++targetIndex;
+        }
+
         var targetWidth = colGroups[0].children[droppedIndex].style.width;
         var droppedWidth = colGroups[0].children[targetIndex].style.width;
 
@@ -2975,6 +2987,7 @@ var grid = (function _grid($) {
                 targetColSum.replaceWith(droppedColSumClone);
             }
         }
+        $('#drop_indicator_id_' + id).css('display', 'none');
         e.preventDefault();
         var evtObj = {
             element: gridState[id].grid,

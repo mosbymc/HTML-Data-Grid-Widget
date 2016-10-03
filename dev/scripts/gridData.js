@@ -15,7 +15,8 @@ var gridData = {
         sortable: true,
         resizable: true,
         columns: {
-            Mechanic: {
+            MechanicName: {
+                title: 'Mechanic',
                 filterable: true,
                 width: 180,
                 type: 'string'
@@ -32,8 +33,26 @@ var gridData = {
             },
             Year: {
                 filterable: true,
-                width: 75,
+                width: 100,
                 type: 'date'
+            },
+            Doors: {
+                filterable: true,
+                width: 175,
+                type: 'number',
+                title: 'Number of doors'
+            },
+            EngineType: {
+                title: 'Engine Type',
+                width: 150,
+                type: 'string',
+                filterable: true
+            },
+            EngineSize: {
+                title: 'Engine Size',
+                width: 150,
+                type: 'string',
+                filterable: true
             }
         }
     },
@@ -224,7 +243,45 @@ var gridData = {
                 Customer: "Mark Mosby",
                 Billed: "75.00",
                 Markup: 150,
-                Time: "12:15:32 AM"
+                Time: "12:15:32 AM",
+                drilldown: [
+                    {
+                        MechanicName: 'Joe Reyes',
+                        Make: 'Honda',
+                        Model: 'Civic ES',
+                        Year: '2003',
+                        Doors: '3',
+                        EngineType: '4 Cyclinder',
+                        EngineSize: '1.6 Liter'
+                    },
+                    {
+                        MechanicName: 'Joe Reyes',
+                        Make: 'Acura',
+                        Model: 'Integra',
+                        Year: '1996',
+                        Doors: '3',
+                        EngineType: '4 Cyclinder',
+                        EngineSize: '1.8 Liter'
+                    },
+                    {
+                        MechanicName: 'Ed Strabel',
+                        Make: 'BMW',
+                        Model: 'Z4',
+                        Year: '2003',
+                        Doors: '1',
+                        EngineType: '6 Cyclinder',
+                        EngineSize: '2.2 Liter'
+                    },
+                    {
+                        MechanicName: 'Joe Reyes',
+                        Make: 'Nissan',
+                        Model: 'Pathfinder',
+                        Year: '2002',
+                        Doors: '5',
+                        EngineType: 'V6',
+                        EngineSize: '3.5 Liter'
+                    }
+                ]
             },
             {
                 Service: "Tire Rotation",

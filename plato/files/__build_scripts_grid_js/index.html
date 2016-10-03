@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.46</p>
+      <p class="stat">55.43</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3915</p>
+      <p class="stat">3928</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">215.06</p>
+      <p class="stat">215.51</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">88.59</p>
+      <p class="stat">88.78</p>
     </div>
   </div>
 </div>
@@ -2980,6 +2980,8 @@
                 dropIndicator.append(&#039;&lt;span class=&quot;drop-indicator-top&quot;&gt;&lt;/span&gt;&lt;span class=&quot;drop-indicator-bottom&quot;&gt;&lt;/span&gt;&#039;);
                 gridState[gridId].grid.append(dropIndicator);
             }
+            else
+                dropIndicator.css(&#039;display&#039;, &#039;block&#039;);
 
             var originalColumn;
             gridState[gridId].grid.find(&#039;.grid-header-cell&#039;).each(function iterateGridHeadersCallback(idx, val) {
@@ -3043,6 +3045,16 @@
 
         swapContentCells(parentDivId, droppedIndex, targetIndex);
 
+        if (gridState[id].groupedBy &amp;&amp; gridState[id].groupedBy.length &amp;&amp; gridState[id].groupedBy !== &#039;none&#039;) {
+            ++droppedIndex;
+            ++targetIndex;
+        }
+
+        if (gridState[id].drillDown) {
+            ++droppedIndex;
+            ++targetIndex;
+        }
+
         var targetWidth = colGroups[0].children[droppedIndex].style.width;
         var droppedWidth = colGroups[0].children[targetIndex].style.width;
 
@@ -3066,6 +3078,7 @@
                 targetColSum.replaceWith(droppedColSumClone);
             }
         }
+        $(&#039;#drop_indicator_id_&#039; + id).css(&#039;display&#039;, &#039;none&#039;);
         e.preventDefault();
         var evtObj = {
             element: gridState[id].grid,
