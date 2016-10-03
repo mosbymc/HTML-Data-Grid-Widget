@@ -1295,9 +1295,14 @@ var grid = (function _grid($) {
                         }
                     }
                     drillDownRow.append('<td class="grouped_cell"></td>');
-                    var containerCell = $('<td class="drill-down-cell" colspan="' + Object.keys(gridData.columns).length + '"></td>').appendTo(drillDownRow),
+                    var drillDownCellLength = 0;
+                    gridData.grid.find('.grid-header-div').find('col').each(function getTotalGridLength() {
+                        if (!$(this).hasClass('groupCol'))
+                            drillDownCellLength += $(this).width();
+                    });
+                    var containerCell = $('<td class="drill-down-cell" colspan="' + Object.keys(gridData.columns).length + '" style="width: ' + drillDownCellLength + ';"></td>').appendTo(drillDownRow),
                         newGridId = gridData.grid[0].id + generateId(),
-                        gridDiv = $('<div id="' + newGridId + '"></div>').appendTo(containerCell);
+                        gridDiv = $('<div id="' + newGridId + '" class="drill_down_grid"></div>').appendTo(containerCell);
                     accRow.find('.drillDown_span').data('state', 'open');
                     var parentRowData = gridData.grid[0].grid.getCurrentDataSourceData(accRowIdx);
 
@@ -3656,6 +3661,8 @@ var grid = (function _grid($) {
             var tables = gridWrapper.find('table');
             if (gridState[id].groupedBy && gridState[id].groupedBy.length && gridState[id].groupedBy !== 'none')
                 index += gridState[id].groupedBy.length;
+            if (gridState[id].drillDown)
+                ++index;
 
             var contentDiv = gridWrapper.find('.grid-content-div');
             var scrollLeft = contentDiv.scrollLeft();

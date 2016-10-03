@@ -1,7 +1,9 @@
 var request =           require('request'),
     gridData =          require('../dev/scripts/data.js'),
     originalData =      require('./grid-server-data'),
+    drillDownData =     require('./drillDownConfig-server'),
     columns =           originalData.columns,
+    drillDownColumns =  drillDownData.columns,
     gridDataHelpers =   require('./gridDataHelpers.js');
 
 module.exports = function (router) {
@@ -15,10 +17,6 @@ module.exports = function (router) {
 };
 
 var reqObj = {
-    filterType: null,
-    filterVal: null,
-    //MCM
-    filteredOn: null,
     filters: null,
     groupedBy: null,
     pageNum: 1,
@@ -30,7 +28,7 @@ var reqObj = {
 var getGridPageData = function _getGridPageData(req, response) {
     request('http://localhost:5500/auto-repairs', function(err, res, body) {
         if (!err && res.statusCode == 200) {
-            determinePageData(req.query, JSON.parse(body), function(err, data) {
+            determinePageData(req.query, JSON.parse(body), columns, function(err, data) {
                 response.send(data);
                 //response.send(null);
                 response.end()
@@ -58,7 +56,7 @@ var getDrillDownData = function _getDrillDownData(req, response) {
     request('http://localhost:5500/auto-repair-info', function(err, res, body) {
         if (!err && res.statusCode == 200) {
             var childData = findDataByParentId(JSON.parse(body), req.query.parentId);
-            determinePageData(req.query, childData, function(err, data) {
+            determinePageData(req.query, childData, drillDownColumns, function(err, data) {
                 response.send(data);
                 response.end();
             });
@@ -70,7 +68,7 @@ var getDrillDownData = function _getDrillDownData(req, response) {
     });
 };
 
-function determinePageData(requestObj, fullGridData, callback) {
+function determinePageData(requestObj, fullGridData, columns, callback) {
     //TODO: I can make this much smarter and faster by checking to see if a filter has been added or removed. If added, just take the existing data
     //TODO: and filter it again. If removed, need to take the original data and apply all remaining filters.
     if (requestObj.filters && requestObj.filters.filterGroup && requestObj.filters.filterGroup.length) {

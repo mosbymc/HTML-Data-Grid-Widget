@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.42</p>
+      <p class="stat">55.45</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3892</p>
+      <p class="stat">3899</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">215.03</p>
+      <p class="stat">214.69</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">88.08</p>
+      <p class="stat">88.29</p>
     </div>
   </div>
 </div>
@@ -1011,9 +1011,14 @@
                         }
                     }
                     drillDownRow.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
-                    var containerCell = $(&#039;&lt;td class=&quot;drill-down-cell&quot; colspan=&quot;&#039; + Object.keys(gridData.columns).length + &#039;&quot;&gt;&lt;/td&gt;&#039;).appendTo(drillDownRow),
+                    var drillDownCellLength = 0;
+                    gridData.grid.find(&#039;.grid-header-div&#039;).find(&#039;col&#039;).each(function getTotalGridLength() {
+                        if (!$(this).hasClass(&#039;groupCol&#039;))
+                            drillDownCellLength += $(this).width();
+                    });
+                    var containerCell = $(&#039;&lt;td class=&quot;drill-down-cell&quot; colspan=&quot;&#039; + Object.keys(gridData.columns).length + &#039;&quot; style=&quot;width: &#039; + drillDownCellLength + &#039;;&quot;&gt;&lt;/td&gt;&#039;).appendTo(drillDownRow),
                         newGridId = gridData.grid[0].id + generateId(),
-                        gridDiv = $(&#039;&lt;div id=&quot;&#039; + newGridId + &#039;&quot;&gt;&lt;/div&gt;&#039;).appendTo(containerCell);
+                        gridDiv = $(&#039;&lt;div id=&quot;&#039; + newGridId + &#039;&quot; class=&quot;drill_down_grid&quot;&gt;&lt;/div&gt;&#039;).appendTo(containerCell);
                     accRow.find(&#039;.drillDown_span&#039;).data(&#039;state&#039;, &#039;open&#039;);
                     var parentRowData = gridData.grid[0].grid.getCurrentDataSourceData(accRowIdx);
 
@@ -3191,6 +3196,8 @@
             var tables = gridWrapper.find(&#039;table&#039;);
             if (gridState[id].groupedBy &amp;&amp; gridState[id].groupedBy.length &amp;&amp; gridState[id].groupedBy !== &#039;none&#039;)
                 index += gridState[id].groupedBy.length;
+            if (gridState[id].drillDown)
+                ++index;
 
             var contentDiv = gridWrapper.find(&#039;.grid-content-div&#039;);
             var scrollLeft = contentDiv.scrollLeft();
