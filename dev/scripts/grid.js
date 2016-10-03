@@ -1044,6 +1044,7 @@ var grid = (function _grid($) {
             colGroup = $('<colgroup></colgroup>').appendTo(contentTable),
             contentTBody = $('<tbody></tbody>').appendTo(contentTable),
             text, i, j, k, item;
+        contentTBody.css('width', 'auto');
         if (typeof gridData.parentGridId !== 'number' && gridData.selectable) attachTableSelectHandler(contentTBody);
         var columns = [];
         gridElem.find('th').each(function headerIterationCallback(idx, val) {
@@ -1940,11 +1941,13 @@ var grid = (function _grid($) {
         var columnNames = {},
             name,
             columnList = [];
-        var tableDiv = gridElem.find('.grid-header-wrapper');
+        var tableDiv = gridElem.find('.grid-header-wrapper'),
+            totalColWidth = 0;
         for (name in gridData.columns) {
             if (!gridData.columns[name].isHidden) {
                 columnNames[name] = isNumber(gridData.columns[name].width) ? gridData.columns[name].width : null;
                 columnList.push(name);
+                totalColWidth += columnNames[name] || 0;
             }
         }
         var headerCols = tableDiv.find('col');
@@ -1962,6 +1965,11 @@ var grid = (function _grid($) {
                 $(val).css('width', 27);
             }
             else if (columnNames[columnList[i]] != null) {
+                if (idx === headerCols.length - 1 && totalColWidth < tableDiv.find('table').width()) {
+                    $(val).css('width', columnNames[columnList[i]] + (tableDiv.find('table').width() - totalColWidth));
+
+                }
+                else
                     $(val).css('width', columnNames[columnList[i]]);
             }
         });
