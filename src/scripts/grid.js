@@ -1779,7 +1779,7 @@ var grid = (function _grid($) {
                         dropIndicator.css('left', lastItem.offset().left + lastItem.outerWidth());
                         dropIndicator.css('top', lastItem.offset().top);
                         dropIndicator.css('height', lastItem.outerHeight());
-                        dropIndicator.data('field', lastItem.data('field'));
+                        dropIndicator.data('field', '');
                     }
                 }
                 else {
@@ -3149,6 +3149,12 @@ var grid = (function _grid($) {
                 droppedIdx++;
                 targetIdx++;
             }
+
+            if (gridData.drillDown) {
+                ++droppedIdx;
+                ++targetIdx;
+            }
+
             var droppedCell = $(val).children('td:nth-child(' + droppedIdx + ')');
             var targetCell = $(val).children('td:nth-child(' + targetIdx + ')');
 

@@ -103,11 +103,10 @@
  - Add ability to create an arbitrary number of nested filter groups - DONE
  - Add grid config option to restrict number of nested filter groups - DONE
  - Remove all empty filter rows from DOM when closing advanced filters modal - DONE
- - Fix paging when on a non-first page and the rows/page is increased
- - Update existing filtering to new filter object model
- - Make sure that when adding advanced filters, basic filters are cleared out (in DOM and cache), and vise versa
- - Fix boolean filtering
- - Make more enums (event types)
+ - Fix paging when on a non-first page and the rows/page is increased  - DONE
+ - Update existing filtering to new filter object model - DONE
+ - Make sure that when adding advanced filters, and vise versa - DONE
+ - Fix boolean filtering - DONE
  - UPDATE TO ES6
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
     > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
@@ -2264,7 +2263,7 @@ var grid = (function _grid($) {
                         dropIndicator.css('left', lastItem.offset().left + lastItem.outerWidth());
                         dropIndicator.css('top', lastItem.offset().top);
                         dropIndicator.css('height', lastItem.outerHeight());
-                        dropIndicator.data('field', lastItem.data('field'));
+                        dropIndicator.data('field', '');
                     }
                 }
                 else {
@@ -3711,6 +3710,12 @@ var grid = (function _grid($) {
                 droppedIdx++;
                 targetIdx++;
             }
+
+            if (gridData.drillDown) {
+                ++droppedIdx;
+                ++targetIdx;
+            }
+
             var droppedCell = $(val).children('td:nth-child(' + droppedIdx + ')');
             var targetCell = $(val).children('td:nth-child(' + targetIdx + ')');
 
