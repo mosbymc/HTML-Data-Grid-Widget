@@ -1525,8 +1525,8 @@ var grid = (function _grid($) {
                 $(val).css('width', 27);
             }
             else if (columnNames[columnList[i]] != null) {
-                if (idx === headerCols.length - 1 && totalColWidth < tableDiv.find('table').width()) {
-                    $(val).css('width', columnNames[columnList[i]] + (tableDiv.find('table').width() - totalColWidth));
+                if (idx === headerCols.length - 1 && totalColWidth < (tableDiv.find('table').width() + (numColPadders * 27))) {
+                    $(val).css('width', columnNames[columnList[i]] + (tableDiv.find('table').width() - totalColWidth - (numColPadders * 27)));
 
                 }
                 else

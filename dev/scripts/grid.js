@@ -107,6 +107,9 @@
  - Update existing filtering to new filter object model - DONE
  - Make sure that when adding advanced filters, and vise versa - DONE
  - Fix boolean filtering - DONE
+ - Fix group aggregates indentation
+ - Create a 'reset' for css values at the grid level
+ - Figure out why sorting a grouped columns makes the last column in the grid a bit longer each time
  - UPDATE TO ES6
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
     > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
@@ -1964,8 +1967,8 @@ var grid = (function _grid($) {
                 $(val).css('width', 27);
             }
             else if (columnNames[columnList[i]] != null) {
-                if (idx === headerCols.length - 1 && totalColWidth < tableDiv.find('table').width()) {
-                    $(val).css('width', columnNames[columnList[i]] + (tableDiv.find('table').width() - totalColWidth));
+                if (idx === headerCols.length - 1 && totalColWidth < (tableDiv.find('table').width() + (numColPadders * 27))) {
+                    $(val).css('width', columnNames[columnList[i]] + (tableDiv.find('table').width() - totalColWidth - (numColPadders * 27)));
 
                 }
                 else
