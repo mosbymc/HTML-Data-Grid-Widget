@@ -615,7 +615,7 @@ var grid = (function _grid($) {
             }
 
             if (gridData.columns[col].type !== 'custom') {
-                if (typeof gridData.parentGridId !== 'number' && (gridData.reorderable === true && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable === true))) {
+                if (gridData.reorderable === true && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable === true)) {
                     th.prop('draggable', true);
                     setDragAndDropListeners(th);
                 }
@@ -3140,7 +3140,9 @@ var grid = (function _grid($) {
 
     function swapContentCells(gridId, droppedIndex, targetIndex) {
         var gridData = gridState[gridId];
-        $('#grid-content-' + gridId).find('tr').each(function iterateContentRowsCallback(idx, val) {
+        $('#grid-content-' + gridId).find('tr').filter(function filterNestedGridRows() {
+            return !$(this).hasClass('drill-down-parent') && !$(this).parents('.drill-down-parent').length;
+        }).each(function iterateContentRowsCallback(idx, val) {
             if ($(val).hasClass('grouped_row_header'))
                 return true;
             var droppedIdx = 1 + parseInt(droppedIndex);
