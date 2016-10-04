@@ -110,6 +110,7 @@
  - Fix group aggregates indentation - DONE
  - Create a 'reset' for css values at the grid level
  - Figure out why sorting a grouped columns makes the last column in the grid a bit longer each time - DONE
+ - Remove anchors as links for grid functionality - clicking them just requires the event to halt propagation
  - UPDATE TO ES6
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
     > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
@@ -2489,6 +2490,12 @@ var grid = (function _grid($) {
                             gridState[gridId].grid.find('.menu_item_options').css('display', 'none');
                         }
                     }
+                });
+
+                $(document).on('scroll', function adjustMenuHandler() {
+                    var scrollMenuAnchorOffset = menuAnchor.offset();
+                    newMenu.css('top', (scrollMenuAnchorOffset.top - $(window).scrollTop()));
+                    newMenu.css('left', (scrollMenuAnchorOffset.left - $(window).scrollLeft()));
                 });
             }
             else {

@@ -33,7 +33,7 @@
   empty-cells : show;
   float : none;
   font-family : inherit;
-  font-size : medium;
+  font-size : 14px;
   font-style : normal;
   font-variant : normal;
   font-weight : normal;
@@ -303,90 +303,93 @@
       outline:0;
       margin: 0;
 
-      tr {
-        &:not(.drill-down-parent):hover {
-          background-color: #ebebeb;
-        }
-        &:last-child td {
-          border-bottom-width: 0;
-        }
+      tbody {
+        tr {
+          background-color: @white;
+          &:not(.drill-down-parent):hover {
+            background-color: #ebebeb;
+          }
+          &:last-child td {
+            border-bottom-width: 0;
+          }
 
-        td {
-          /*td:first-child {
+          td {
+            /*td:first-child {
+              border-left: none;
+            }*/
+            border-bottom: 1px solid @border-color;
+            /*border-left: 1px solid @border-color;*/
+            .grid-th-td;
+            border-top: none;
             border-left: none;
-          }*/
-          border-bottom: 1px solid @border-color;
-          /*border-left: 1px solid @border-color;*/
-          .grid-th-td;
-          border-top: none;
-          border-left: none;
-          border-right: none;
-          text-align: left;
-          white-space: normal;
-          line-height: 1.6em;
-          height: 1.6em;
+            border-right: none;
+            text-align: left;
+            white-space: normal;
+            line-height: 1.6em;
+            height: 1.6em;
 
-          .drill_down_grid {}
-        }
+            .drill_down_grid {}
+          }
 
-        td.drillDown_cell {
-          border-top-width: 0;
-          color: #444;
-          background-color: #fafafa;
-          border-color: #e6e6e6;
-          border-left-width: 1px;
-          border-right-width: 1px;
-          line-height: 1em;
-          padding: 10px 7.5px;
+          td.drillDown_cell {
+            border-top-width: 0;
+            color: #444;
+            background-color: #fafafa;
+            border-color: #e6e6e6;
+            border-left-width: 1px;
+            border-right-width: 1px;
+            line-height: 1em;
+            padding: 10px 7.5px;
 
-          span.drillDown_span {
-            display: inline-block;
-            vertical-align: middle;
-            margin: auto 0;
-            border: 0;
-            outline: 0;
-            text-decoration: none;
-            font-size: 100%;
-            list-style: none;
-            line-height: 0;
-
-            .drillDown_acc {
-              border-collapse: separate;
-              box-sizing: content-box;
-              cursor: pointer;
+            span.drillDown_span {
               display: inline-block;
-              empty-cells: show;
-              height: 8px;
-              .list-styles;
-              opacity: 0.45;
-              overflow: visible;
-              position: static;
-              text-align: center;
-              vertical-align: bottom;
-              white-space: nowrap;
-              margin: 0 auto;
-              width: 12px;
-            }
+              vertical-align: middle;
+              margin: auto 0;
+              border: 0;
+              outline: 0;
+              text-decoration: none;
+              font-size: 100%;
+              list-style: none;
+              line-height: 0;
 
-            .drillDown-desc {
-              background: url(../images/arrowDown.svg) no-repeat;
-            }
+              .drillDown_acc {
+                border-collapse: separate;
+                box-sizing: content-box;
+                cursor: pointer;
+                display: inline-block;
+                empty-cells: show;
+                height: 8px;
+                .list-styles;
+                opacity: 0.45;
+                overflow: visible;
+                position: static;
+                text-align: center;
+                vertical-align: bottom;
+                white-space: nowrap;
+                margin: 0 auto;
+                width: 12px;
+              }
 
-            .drillDown-asc {
-              background: url(../images/arrowUp.svg) no-repeat;
+              .drillDown-desc {
+                background: url(../images/arrowDown.svg) no-repeat;
+              }
+
+              .drillDown-asc {
+                background: url(../images/arrowUp.svg) no-repeat;
+              }
             }
           }
         }
-      }
 
-      tr.selected,
-      td.selected {
-        background-color: #00b0ff;
-      }
+        tr.selected,
+        td.selected {
+          background-color: #00b0ff;
+        }
 
-      tr.selected:hover,
-      td.selected:hover {
-        background-color: #00a2eb;
+        tr.selected:hover,
+        td.selected:hover {
+          background-color: #00a2eb;
+        }
       }
     }
   }

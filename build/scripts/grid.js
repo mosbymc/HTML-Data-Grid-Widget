@@ -1985,6 +1985,12 @@ var grid = (function _grid($) {
                         }
                     }
                 });
+
+                $(document).on('scroll', function adjustMenuHandler() {
+                    var scrollMenuAnchorOffset = menuAnchor.offset();
+                    newMenu.css('top', (scrollMenuAnchorOffset.top - $(window).scrollTop()));
+                    newMenu.css('left', (scrollMenuAnchorOffset.left - $(window).scrollLeft()));
+                });
             }
             else {
                 newMenu = menu;
