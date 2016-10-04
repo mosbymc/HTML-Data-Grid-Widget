@@ -301,7 +301,7 @@ var gridData = {
                 Labor: "12",
                 Cost: "800.00",
                 Paid: true,
-                Customer: "Lenny Brensman",
+                Customer: "Lenny Bensman",
                 Billed: "1010.00",
                 Markup: 200,
                 Time: "9:03:48 AM"
@@ -488,7 +488,7 @@ var gridData = {
                 Labor: "2",
                 Cost: "250.00",
                 Paid: true,
-                Customer: "Lenny Brensman",
+                Customer: "Lenny Bensman",
                 Billed: "1010.00",
                 Markup: 98,
                 Time: "8:02:20 AM"
