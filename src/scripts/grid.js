@@ -199,23 +199,20 @@ var grid = (function _grid($) {
                     value: function _hideColumn(col) {
                         if (gridState[gridId].columns[col]) {
                             gridState[gridId].columns[col].isHidden = true;
-                            gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', 'none');
+                            var column = gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]'),
+                                columnIdx = column.data('index');
+                            column.css('display', 'none');
                             gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', 'none');
                             var colGroups = gridState[gridId].grid.find('colgroup');
                             var group1 = $(colGroups[0]).find('col');
                             var group2 = $(colGroups[1]).find('col');
-                            if (gridState[gridId].groupedBy.length) {
-                                for (var i = 0; i < group1.length; i++) {
-                                    if (!group1[i].hasClass('group_col')) {
-                                        $(group1[i]).remove();
-                                        $(group2[i]).remove();
-                                    }
-                                }
-                            }
-                            else {
-                                $(group1[0]).remove();
-                                $(group2[0]).remove();
-                            }
+                            var offset = columnIdx;
+                            if (gridState[gridId].drillDown)
+                                ++offset;
+                            if (gridState[gridId].groupedBy)
+                                offset += gridState[gridId].groupedBy.length;
+                            group1.eq(offset).remove();
+                            group2.eq(offset).remove();
                         }
                     },
                     writable: false,
@@ -939,6 +936,7 @@ var grid = (function _grid($) {
                     else if (typeof gridData.drillDown === 'object') {
                         if (!gridData.drillDown.dataSource) gridData.drillDown.dataSource = {};
                         gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
+                        gridData.drillDown.dataSource.rowCount = gridData.drillDown.dataSource.rowCount || gridData.drillDown.dataSource.data.length;
                         drillDownCreate(gridData.drillDown, gridDiv[0], gridId);
                     }
                 }
@@ -969,7 +967,7 @@ var grid = (function _grid($) {
         if (value == null) return;
         switch (gridState[gridId].aggregates[field].type) {
             case 'count':
-                aggregationObj[field].value =(aggregationObj[field].value || 0) + 1;
+                aggregationObj[field].value = gridState[gridId].dataSource.rowCount || gridState[gridId].dataSource.data.length;
                 aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + aggregationObj[field].value;
                 return;
             case 'average':
@@ -1709,6 +1707,7 @@ var grid = (function _grid($) {
                 });
                 if (foundDupe) return;  
 
+                droppedCol.data('grouped', true);
                 var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>'),
                     groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
                 groupDirSpan.append('<span class="sort-asc-white groupSortSpan"></span>').append('<span>' + title + '</span>');
@@ -1856,6 +1855,7 @@ var grid = (function _grid($) {
                     sortDirection: item.find('.groupSortSpan').hasClass('sort-asc-white') ? 'asc' : 'desc'
                 });
             });
+            gridState[id].grid.find('.grid-header-div').find('th [data-field="' + groupElem.data('field') + '"]').data('grouped', false);
             if (!groupElements.length) groupMenuBar.text(groupMenuText);
             gridState[id].groupedBy = groupElements;
             gridState[id].pageRequest.eventType = 'group';
@@ -1865,6 +1865,7 @@ var grid = (function _grid($) {
 
     function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
         saveAnchor.on('click', function saveChangesHandler(e) {
+            e.preventDefault();
             if (gridState[id].updating) return;
             var gridMenu = $(e.currentTarget).parents('.grid_menu');
             if (gridMenu.length)
@@ -1880,7 +1881,7 @@ var grid = (function _grid($) {
                     for (i = 0; i < dirtyCells.length; i++) {
                         var index = dirtyCells[i].parents('tr').index();
                         var field = dirtyCells[i].data('field');
-                        var origIndex = gridState[id].dataSource.data[index][field]._initialRowIndex;
+                        var origIndex = gridState[id].dataSource.data[index]._initialRowIndex;
                         gridState[id].originalData[origIndex][field] = gridState[id].dataSource.data[index][field];
                         dirtyCells[i].find('.dirty').add('.dirty-blank').remove();
                     }
@@ -1910,6 +1911,7 @@ var grid = (function _grid($) {
         });
 
         deleteAnchor.on('click', function deleteChangeHandler(e) {
+            e.preventDefault();
             if (gridState[id].updating) return;
             var gridMenu = $(e.currentTarget).parents('.grid_menu');
             if (gridMenu.length)

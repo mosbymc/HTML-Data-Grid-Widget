@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.41</p>
+      <p class="stat">55.40</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3930</p>
+      <p class="stat">3932</p>
     </div>
   </div>
   <div class="row historical">
@@ -66,7 +66,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">88.88</p>
+      <p class="stat">89.14</p>
     </div>
   </div>
 </div>
@@ -290,23 +290,20 @@
                     value: function _hideColumn(col) {
                         if (gridState[gridId].columns[col]) {
                             gridState[gridId].columns[col].isHidden = true;
-                            gridState[gridId].grid.find(&#039;.grid-header-wrapper&#039;).find(&#039;[data-field=&quot;&#039; + col + &#039;&quot;]&#039;).css(&#039;display&#039;, &#039;none&#039;);
+                            var column = gridState[gridId].grid.find(&#039;.grid-header-wrapper&#039;).find(&#039;[data-field=&quot;&#039; + col + &#039;&quot;]&#039;),
+                                columnIdx = column.data(&#039;index&#039;);
+                            column.css(&#039;display&#039;, &#039;none&#039;);
                             gridState[gridId].grid.find(&#039;.grid-content-div&#039;).find(&#039;[data-field=&quot;&#039; + col + &#039;&quot;]&#039;).css(&#039;display&#039;, &#039;none&#039;);
                             var colGroups = gridState[gridId].grid.find(&#039;colgroup&#039;);
                             var group1 = $(colGroups[0]).find(&#039;col&#039;);
                             var group2 = $(colGroups[1]).find(&#039;col&#039;);
-                            if (gridState[gridId].groupedBy.length) {
-                                for (var i = 0; i &lt; group1.length; i++) {
-                                    if (!group1[i].hasClass(&#039;group_col&#039;)) {
-                                        $(group1[i]).remove();
-                                        $(group2[i]).remove();
-                                    }
-                                }
-                            }
-                            else {
-                                $(group1[0]).remove();
-                                $(group2[0]).remove();
-                            }
+                            var offset = columnIdx;
+                            if (gridState[gridId].drillDown)
+                                ++offset;
+                            if (gridState[gridId].groupedBy)
+                                offset += gridState[gridId].groupedBy.length;
+                            group1.eq(offset).remove();
+                            group2.eq(offset).remove();
                         }
                     },
                     writable: false,
@@ -1030,6 +1027,7 @@
                     else if (typeof gridData.drillDown === &#039;object&#039;) {
                         if (!gridData.drillDown.dataSource) gridData.drillDown.dataSource = {};
                         gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
+                        gridData.drillDown.dataSource.rowCount = gridData.drillDown.dataSource.rowCount || gridData.drillDown.dataSource.data.length;
                         drillDownCreate(gridData.drillDown, gridDiv[0], gridId);
                     }
                 }
@@ -1060,7 +1058,7 @@
         if (value == null) return;
         switch (gridState[gridId].aggregates[field].type) {
             case &#039;count&#039;:
-                aggregationObj[field].value =(aggregationObj[field].value || 0) + 1;
+                aggregationObj[field].value = gridState[gridId].dataSource.rowCount || gridState[gridId].dataSource.data.length;
                 aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + aggregationObj[field].value;
                 return;
             case &#039;average&#039;:
@@ -1800,6 +1798,7 @@
                 });
                 if (foundDupe) return;  
 
+                droppedCol.data(&#039;grouped&#039;, true);
                 var groupItem = $(&#039;&lt;div class=&quot;group_item&quot; data-grid_id=&quot;&#039; + groupId + &#039;&quot; data-field=&quot;&#039; + field + &#039;&quot;&gt;&lt;/div&gt;&#039;),
                     groupDirSpan = $(&#039;&lt;span class=&quot;group_sort&quot;&gt;&lt;/span&gt;&#039;).appendTo(groupItem);
                 groupDirSpan.append(&#039;&lt;span class=&quot;sort-asc-white groupSortSpan&quot;&gt;&lt;/span&gt;&#039;).append(&#039;&lt;span&gt;&#039; + title + &#039;&lt;/span&gt;&#039;);
@@ -1947,6 +1946,7 @@
                     sortDirection: item.find(&#039;.groupSortSpan&#039;).hasClass(&#039;sort-asc-white&#039;) ? &#039;asc&#039; : &#039;desc&#039;
                 });
             });
+            gridState[id].grid.find(&#039;.grid-header-div&#039;).find(&#039;th [data-field=&quot;&#039; + groupElem.data(&#039;field&#039;) + &#039;&quot;]&#039;).data(&#039;grouped&#039;, false);
             if (!groupElements.length) groupMenuBar.text(groupMenuText);
             gridState[id].groupedBy = groupElements;
             gridState[id].pageRequest.eventType = &#039;group&#039;;
@@ -1956,6 +1956,7 @@
 
     function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
         saveAnchor.on(&#039;click&#039;, function saveChangesHandler(e) {
+            e.preventDefault();
             if (gridState[id].updating) return;
             var gridMenu = $(e.currentTarget).parents(&#039;.grid_menu&#039;);
             if (gridMenu.length)
@@ -1971,7 +1972,7 @@
                     for (i = 0; i &lt; dirtyCells.length; i++) {
                         var index = dirtyCells[i].parents(&#039;tr&#039;).index();
                         var field = dirtyCells[i].data(&#039;field&#039;);
-                        var origIndex = gridState[id].dataSource.data[index][field]._initialRowIndex;
+                        var origIndex = gridState[id].dataSource.data[index]._initialRowIndex;
                         gridState[id].originalData[origIndex][field] = gridState[id].dataSource.data[index][field];
                         dirtyCells[i].find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).remove();
                     }
@@ -2001,6 +2002,7 @@
         });
 
         deleteAnchor.on(&#039;click&#039;, function deleteChangeHandler(e) {
+            e.preventDefault();
             if (gridState[id].updating) return;
             var gridMenu = $(e.currentTarget).parents(&#039;.grid_menu&#039;);
             if (gridMenu.length)

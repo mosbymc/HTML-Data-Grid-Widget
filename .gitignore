@@ -1,5 +1,9 @@
 # Temp directory
 .tmp
+dev
+routes
+src
+tests
 
 # Dependency directory
 node_modules
