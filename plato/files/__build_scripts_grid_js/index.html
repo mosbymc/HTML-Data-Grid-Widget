@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.43</p>
+      <p class="stat">55.46</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3940</p>
+      <p class="stat">3949</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">215.84</p>
+      <p class="stat">216.02</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">89.37</p>
+      <p class="stat">89.51</p>
     </div>
   </div>
 </div>
@@ -836,14 +836,15 @@
                         td.text(text);
                     }
                     else {
-                        var html = gridData.columns[columns[j]].html ? $(gridData.columns[columns[j]].html).appendTo(td) : td;
+                        td = gridData.columns[columns[j]].html ? $(gridData.columns[columns[j]].html).appendTo(td) : td;
                         if (gridData.columns[columns[j]].class)
-                            html.addClass(gridData.columns[columns[j]].class);
+                            td.addClass(gridData.columns[columns[j]].class);
                         if (gridData.columns[columns[j]].text)
-                            html.text(gridData.columns[columns[j]].text);
-                        if (typeof gridData.columns[columns[j]].click === &#039;function&#039;) {
-                            attachCustomCellHandler(columns[j], html, id);
-                        }
+                            td.text(gridData.columns[columns[j]].text);
+                    }
+
+                    if (typeof gridData.columns[columns[j]].events === &#039;object&#039;) {
+                        attachCustomCellHandler(columns[j], td, id);
                     }
                     if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
                     if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (gridData.columns[columns[j]].editable &amp;&amp; gridData.columns[columns[j]].editable !== &#039;drop-down&#039;)) {
@@ -906,12 +907,20 @@
         gridState[id].updating = false;
     }
 
-    function attachCustomCellHandler(field, cellItem, gridId) {
-        cellItem.on(&#039;click&#039;, function _callCustomCellClickHandler() {
-            var row = $(this).parents(&#039;tr&#039;),
-                rowIdx = row.index();
-            gridState[gridId].columns[field].click.call(this, gridState[gridId].dataSource.data[rowIdx]);
-        });
+    function attachCustomCellHandler(column, cellItem, gridId) {
+        for (var event in gridState[gridId].columns[column].events) {
+            if (typeof gridState[gridId].columns[column].events[event] === &#039;function&#039;) {
+                createEventHandler(cellItem, event);
+            }
+        }
+
+        function createEventHandler(cellItem, event) {
+            cellItem.on(event, function genericEventHandler() {
+                var row = $(this).parents(&#039;tr&#039;),
+                    rowIdx = row.index();
+                gridState[gridId].columns[column].events[event].call(this, gridState[gridId].dataSource.data[rowIdx]);
+            });
+        }
     }
 
     function createGroupedRows(gridId, rowIndex, columns, currentGroupingValues, gridContent) {
