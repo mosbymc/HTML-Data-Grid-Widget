@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.43</p>
+      <p class="stat">55.41</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3928</p>
+      <p class="stat">3930</p>
     </div>
   </div>
   <div class="row historical">
@@ -66,7 +66,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">88.81</p>
+      <p class="stat">88.88</p>
     </div>
   </div>
 </div>
@@ -98,7 +98,7 @@
     function create(gridData, gridElem) {
         if (gridData &amp;&amp; isDomElement(gridElem)) {
             var id = generateId();
-            gridElem = $(gridElem);
+            gridElem = $(gridElem).addClass(&#039;grid_elem&#039;);
             var wrapperDiv = $(&#039;&lt;div id=&quot;grid-wrapper-&#039; + id + &#039;&quot; data-grid_id=&quot;&#039; + id + &#039;&quot; class=grid-wrapper&gt;&lt;/div&gt;&#039;).appendTo(gridElem);
             var headerDiv = $(&#039;&lt;div id=&quot;grid-header-&#039; + id + &#039;&quot; data-grid_header_id=&quot;&#039; + id + &#039;&quot; class=grid-header-div&gt;&lt;/div&gt;&#039;).appendTo(wrapperDiv);
             headerDiv.append(&#039;&lt;div class=grid-header-wrapper&gt;&lt;/div&gt;&#039;);
@@ -937,9 +937,10 @@
                 if (groupedDiff[j]) {                               
                     var groupAggregateRow = $(&#039;&lt;tr class=&quot;grouped_row_header&quot;&gt;&lt;/tr&gt;&#039;).appendTo(gridContent);
                     for (k = 0; k &lt; groupedDiff.length; k++) {
-                        var colSpan = gridData.drillDown ? 2 : 1;
-                        groupAggregateRow.append(&#039;&lt;td colspan=&quot;&#039; + colSpan + &#039;&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
+                        groupAggregateRow.append(&#039;&lt;td colspan=&quot;&#039; + 1 + &#039;&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
                     }
+                    if (gridData.drillDown)
+                        groupAggregateRow.append(&#039;&lt;td colspan=&quot;1&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
                     for (item in gridData.groupAggregations[j]) {
                         if (item !== &#039;_items_&#039;) {
                             groupAggregateRow.append(&#039;&lt;td class=&quot;group_aggregate_cell&quot;&gt;&#039; + (gridData.groupAggregations[j][item].text || &#039;&#039;) + &#039;&lt;/td&gt;&#039;);
@@ -1027,6 +1028,7 @@
                         drillDownCreate(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
                     }
                     else if (typeof gridData.drillDown === &#039;object&#039;) {
+                        if (!gridData.drillDown.dataSource) gridData.drillDown.dataSource = {};
                         gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
                         drillDownCreate(gridData.drillDown, gridDiv[0], gridId);
                     }

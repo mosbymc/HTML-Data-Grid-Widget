@@ -244,7 +244,7 @@ var gridData = {
                 Billed: "75.00",
                 Markup: 150,
                 Time: "12:15:32 AM",
-                drilldown: [
+                drillDownData: [
                     {
                         MechanicName: 'Joe Reyes',
                         Make: 'Honda',

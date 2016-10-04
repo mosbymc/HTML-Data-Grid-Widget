@@ -7,7 +7,7 @@ var grid = (function _grid($) {
     function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
             var id = generateId();
-            gridElem = $(gridElem);
+            gridElem = $(gridElem).addClass('grid_elem');
             var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class=grid-wrapper></div>').appendTo(gridElem);
             var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class=grid-header-div></div>').appendTo(wrapperDiv);
             headerDiv.append('<div class=grid-header-wrapper></div>');
@@ -846,9 +846,10 @@ var grid = (function _grid($) {
                 if (groupedDiff[j]) {                               
                     var groupAggregateRow = $('<tr class="grouped_row_header"></tr>').appendTo(gridContent);
                     for (k = 0; k < groupedDiff.length; k++) {
-                        var colSpan = gridData.drillDown ? 2 : 1;
-                        groupAggregateRow.append('<td colspan="' + colSpan + '" class="grouped_cell"></td>');
+                        groupAggregateRow.append('<td colspan="' + 1 + '" class="grouped_cell"></td>');
                     }
+                    if (gridData.drillDown)
+                        groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
                     for (item in gridData.groupAggregations[j]) {
                         if (item !== '_items_') {
                             groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[j][item].text || '') + '</td>');
@@ -936,6 +937,7 @@ var grid = (function _grid($) {
                         drillDownCreate(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
                     }
                     else if (typeof gridData.drillDown === 'object') {
+                        if (!gridData.drillDown.dataSource) gridData.drillDown.dataSource = {};
                         gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
                         drillDownCreate(gridData.drillDown, gridDiv[0], gridId);
                     }
