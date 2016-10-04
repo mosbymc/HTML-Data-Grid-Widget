@@ -1,7 +1,7 @@
 .grid_elem {
   -webkit-backface-visibility: visible;
           backface-visibility: visible;
-  background: transparent none repeat scroll 0 0;
+  background: #ffffff none repeat scroll 0 0;
   border-collapse: separate;
   border-image: none;
   border-spacing: 0;
