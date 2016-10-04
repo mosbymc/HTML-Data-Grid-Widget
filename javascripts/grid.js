@@ -2257,6 +2257,7 @@ var grid = (function _grid($) {
      */
     function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
         saveAnchor.on('click', function saveChangesHandler(e) {
+            e.preventDefault();
             if (gridState[id].updating) return;
             var gridMenu = $(e.currentTarget).parents('.grid_menu');
             if (gridMenu.length)
@@ -2302,6 +2303,7 @@ var grid = (function _grid($) {
         });
 
         deleteAnchor.on('click', function deleteChangeHandler(e) {
+            e.preventDefault();
             if (gridState[id].updating) return;
             var gridMenu = $(e.currentTarget).parents('.grid_menu');
             if (gridMenu.length)
