@@ -1206,7 +1206,7 @@ var grid = (function _grid($) {
                     else if (typeof gridData.drillDown === 'object') {
                         if (!gridData.drillDown.dataSource) gridData.drillDown.dataSource = {};
                         gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
-                        gridData.drillDown.dataSource.rowCount = gridData.drillDown.dataSource.rowCount || gridData.drillDown.dataSource.data.length;
+                        gridData.drillDown.dataSource.rowCount = gridData.drillDown.dataSource.data.length;
                         drillDownCreate(gridData.drillDown, gridDiv[0], gridId);
                     }
                 }
