@@ -264,9 +264,11 @@ var gridData2 = {
             width: 100,
             //class: 'x',
             html: '<a href="#"><span class="x"></span></a>',
-            click: function _customClick(row) {
-                console.log(row);
-                console.log('working');
+            events: {
+                click: function _customClick(row) {
+                    console.log(row);
+                    console.log('working');
+                }
             }
         }
     },
