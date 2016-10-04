@@ -314,23 +314,20 @@ var grid = (function _grid($) {
                     value: function _hideColumn(col) {
                         if (gridState[gridId].columns[col]) {
                             gridState[gridId].columns[col].isHidden = true;
-                            gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', 'none');
+                            var column = gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]'),
+                                columnIdx = column.data('index');
+                            column.css('display', 'none');
                             gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', 'none');
                             var colGroups = gridState[gridId].grid.find('colgroup');
                             var group1 = $(colGroups[0]).find('col');
                             var group2 = $(colGroups[1]).find('col');
-                            if (gridState[gridId].groupedBy.length) {
-                                for (var i = 0; i < group1.length; i++) {
-                                    if (!group1[i].hasClass('group_col')) {
-                                        $(group1[i]).remove();
-                                        $(group2[i]).remove();
-                                    }
-                                }
-                            }
-                            else {
-                                $(group1[0]).remove();
-                                $(group2[0]).remove();
-                            }
+                            var offset = columnIdx;
+                            if (gridState[gridId].drillDown)
+                                ++offset;
+                            if (gridState[gridId].groupedBy)
+                                offset += gridState[gridId].groupedBy.length;
+                            group1.eq(offset).remove();
+                            group2.eq(offset).remove();
                         }
                     },
                     writable: false,
@@ -1114,10 +1111,10 @@ var grid = (function _grid($) {
                 if (groupedDiff[j]) {                               //...if there is a diff at the current row, print it to the screen
                     var groupAggregateRow = $('<tr class="grouped_row_header"></tr>').appendTo(gridContent);
                     for (k = 0; k < groupedDiff.length; k++) {
-                        groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
+                        groupAggregateRow.append('<td colspan="' + 1 + '" class="grouped_cell"></td>');
                     }
                     if (gridData.drillDown)
-                        groupAggregateRow.append('<td colspan="' + 1 + '" class="grouped_cell"></td>');
+                        groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
                     for (item in gridData.groupAggregations[j]) {
                         if (item !== '_items_') {
                             groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[j][item].text || '') + '</td>');
@@ -2087,6 +2084,7 @@ var grid = (function _grid($) {
                 });
                 if (foundDupe) return;  //can't group on the same column twice
 
+                droppedCol.data('grouped', true);
                 var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>'),//.appendTo(groupMenuBar),
                     groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
                 groupDirSpan.append('<span class="sort-asc-white groupSortSpan"></span>').append('<span>' + title + '</span>');
@@ -2241,6 +2239,7 @@ var grid = (function _grid($) {
                     sortDirection: item.find('.groupSortSpan').hasClass('sort-asc-white') ? 'asc' : 'desc'
                 });
             });
+            gridState[id].grid.find('.grid-header-div').find('th [data-field="' + groupElem.data('field') + '"]').data('grouped', false);
             if (!groupElements.length) groupMenuBar.text(groupMenuText);
             gridState[id].groupedBy = groupElements;
             gridState[id].pageRequest.eventType = 'group';
