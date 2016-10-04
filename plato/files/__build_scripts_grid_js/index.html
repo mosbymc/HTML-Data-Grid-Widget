@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.40</p>
+      <p class="stat">55.39</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3932</p>
+      <p class="stat">3934</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">215.58</p>
+      <p class="stat">215.74</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">89.14</p>
+      <p class="stat">89.20</p>
     </div>
   </div>
 </div>
@@ -119,7 +119,7 @@
                 getInitialGridData(gridData.dataSource, function initialGridDataCallback(err, res) {
                     if (!err) {
                         gridData.dataSource.data = res.data;
-                        gridData.dataSource.rowCount = res.rowCount || 25;
+                        gridData.dataSource.rowCount = res.rowCount != null ? res.rowCount : 25;
                         if (res.aggregations) {
                             for (var col in gridData.aggregates) {
                                 if (res.aggregations[col])
@@ -793,98 +793,100 @@
 
         if (gridData.groupAggregates) gridData.groupAggregations = {};
 
-        for (i = 0; i &lt; rowEnd; i++) {
-            gridData.dataSource.data[i]._initialRowIndex = i;
-            if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) createGroupedRows(id, i, columns, currentGroupingValues, contentTBody);
+        if (gridData.dataSource.data.length) {
+            for (i = 0; i &lt; rowEnd; i++) {
+                gridData.dataSource.data[i]._initialRowIndex = i;
+                if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) createGroupedRows(id, i, columns, currentGroupingValues, contentTBody);
 
-            var tr = $(&#039;&lt;tr class=&quot;data-row&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
-            if (typeof gridData.parentGridId === &#039;number&#039;) tr.addClass(&#039;drill-down-row&#039;);
-            if (i % 2) {
-                tr.addClass(&#039;alt-row&#039;);
-                if (rows &amp;&amp; rows.alternateRows &amp;&amp; rows.alternateRows.constructor === Array)
-                    for (j = 0; j &lt; rows.alternateRows.length; j++) {
-                        tr.addClass(rows.alternateRows[j].toString());
+                var tr = $(&#039;&lt;tr class=&quot;data-row&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
+                if (typeof gridData.parentGridId === &#039;number&#039;) tr.addClass(&#039;drill-down-row&#039;);
+                if (i % 2) {
+                    tr.addClass(&#039;alt-row&#039;);
+                    if (rows &amp;&amp; rows.alternateRows &amp;&amp; rows.alternateRows.constructor === Array)
+                        for (j = 0; j &lt; rows.alternateRows.length; j++) {
+                            tr.addClass(rows.alternateRows[j].toString());
+                        }
+                }
+
+                if (rows &amp;&amp; rows.all &amp;&amp; rows.all.constructor === Array) {
+                    for (j = 0; j &lt; rows.all.length; j++) {
+                        tr.addClass(rows.all[j].toString());
                     }
-            }
+                }
 
-            if (rows &amp;&amp; rows.all &amp;&amp; rows.all.constructor === Array) {
-                for (j = 0; j &lt; rows.all.length; j++) {
-                    tr.addClass(rows.all[j].toString());
+                if (gridData.groupedBy.length) {
+                    for (j = 0; j &lt; gridData.groupedBy.length; j++) {
+                        tr.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
+                    }
+                }
+
+                if (gridData.drillDown)
+                    tr.append(&#039;&lt;td class=&quot;drillDown_cell&quot;&gt;&lt;span class=&quot;drillDown_span&quot; data-state=&quot;closed&quot;&gt;&lt;a class=&quot;drillDown-asc drillDown_acc&quot;&gt;&lt;/a&gt;&lt;/span&gt;&lt;/td&gt;&#039;);
+
+                for (j = 0; j &lt; columns.length; j++) {
+                    var td = $(&#039;&lt;td data-field=&quot;&#039; + columns[j] + &#039;&quot; class=&quot;grid-content-cell&quot;&gt;&lt;/td&gt;&#039;).appendTo(tr);
+                    if (gridData.columns[columns[j]].attributes &amp;&amp; gridData.columns[columns[j]].attributes.cellClasses &amp;&amp; gridData.columns[columns[j]].attributes.cellClasses.constructor === Array) {
+                        for (k = 0; k &lt; gridData.columns[columns[j]].attributes.cellClasses.length; k++) {
+                            td.addClass(gridData.columns[columns[j]].attributes.cellClasses[k]);
+                        }
+                    }
+                    if (gridData.columns[columns[j]].type !== &#039;custom&#039;) {
+                        text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
+                        text = text == null ? &#039;&#039; : text;
+                        td.text(text);
+                    }
+                    else {
+                        var html = gridData.columns[columns[j]].html ? $(gridData.columns[columns[j]].html).appendTo(td) : td;
+                        if (gridData.columns[columns[j]].class)
+                            html.addClass(gridData.columns[columns[j]].class);
+                        if (gridData.columns[columns[j]].text)
+                            html.text(gridData.columns[columns[j]].text);
+                        if (typeof gridData.columns[columns[j]].click === &#039;function&#039;) {
+                            attachCustomCellHandler(columns[j], html, id);
+                        }
+                    }
+                    if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
+                    if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (gridData.columns[columns[j]].editable &amp;&amp; gridData.columns[columns[j]].editable !== &#039;drop-down&#039;)) {
+                        makeCellEditable(id, td);
+                        gridState[id].editable = true;
+                    }
+                    else if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (gridData.columns[columns[j]].editable === &#039;drop-down&#039;)) {
+                        makeCellSelectable(id, td);
+                        gridState[id].editable = true;
+                    }
                 }
             }
 
+            for (i = 0; i &lt; columns.length; i++) {
+                colGroup.append(&#039;&lt;col/&gt;&#039;);
+            }
             if (gridData.groupedBy.length) {
                 for (j = 0; j &lt; gridData.groupedBy.length; j++) {
-                    tr.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
+                    colGroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
                 }
             }
 
-            if (gridData.drillDown)
-                tr.append(&#039;&lt;td class=&quot;drillDown_cell&quot;&gt;&lt;span class=&quot;drillDown_span&quot; data-state=&quot;closed&quot;&gt;&lt;a class=&quot;drillDown-asc drillDown_acc&quot;&gt;&lt;/a&gt;&lt;/span&gt;&lt;/td&gt;&#039;);
+            if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039; &amp;&amp; typeof gridData.dataSource.get !== &#039;function&#039;) buildHeaderAggregations(id);
 
-            for (j = 0; j &lt; columns.length; j++) {
-                var td = $(&#039;&lt;td data-field=&quot;&#039; + columns[j] + &#039;&quot; class=&quot;grid-content-cell&quot;&gt;&lt;/td&gt;&#039;).appendTo(tr);
-                if (gridData.columns[columns[j]].attributes &amp;&amp; gridData.columns[columns[j]].attributes.cellClasses &amp;&amp; gridData.columns[columns[j]].attributes.cellClasses.constructor === Array) {
-                    for (k = 0; k &lt; gridData.columns[columns[j]].attributes.cellClasses.length; k++) {
-                        td.addClass(gridData.columns[columns[j]].attributes.cellClasses[k]);
+            if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;bottom&#039;) {
+                var aggrs = gridState[id].gridAggregations;
+                if (aggrs) {
+                    var aggRow = $(&#039;&lt;tr class=&quot;summary-row-footer&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
+                    if (gridState[id].groupedBy.length) {
+                        for (i = 0; i &lt; gridState[id].groupedBy.length; i++) {
+                            aggRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
+                        }
+                    }
+                    for (item in aggrs) {
+                        text = aggrs[item].value || &#039;&#039;;
+                        aggRow.append(&#039;&lt;td data-field=&quot;&#039; + item + &#039;&quot; class=summary-cell-header&gt;&#039; + text + &#039;&lt;/td&gt;&#039;);
                     }
                 }
-                if (gridData.columns[columns[j]].type !== &#039;custom&#039;) {
-                    text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
-                    text = text == null ? &#039;&#039; : text;
-                    td.text(text);
-                }
-                else {
-                    var html = gridData.columns[columns[j]].html ? $(gridData.columns[columns[j]].html).appendTo(td) : td;
-                    if (gridData.columns[columns[j]].class)
-                        html.addClass(gridData.columns[columns[j]].class);
-                    if (gridData.columns[columns[j]].text)
-                        html.text(gridData.columns[columns[j]].text);
-                    if (typeof gridData.columns[columns[j]].click === &#039;function&#039;) {
-                        attachCustomCellHandler(columns[j], html, id);
-                    }
-                }
-                if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
-                if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (gridData.columns[columns[j]].editable &amp;&amp; gridData.columns[columns[j]].editable !== &#039;drop-down&#039;)) {
-                    makeCellEditable(id, td);
-                    gridState[id].editable = true;
-                }
-                else if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (gridData.columns[columns[j]].editable === &#039;drop-down&#039;)) {
-                    makeCellSelectable(id, td);
-                    gridState[id].editable = true;
-                }
             }
-        }
 
-        for (i = 0; i &lt; columns.length; i++) {
-            colGroup.append(&#039;&lt;col/&gt;&#039;);
+            createGroupTrEventHandlers(id);
+            attachDrillDownAccordionHandler(id);
         }
-        if (gridData.groupedBy.length) {
-            for (j = 0; j &lt; gridData.groupedBy.length; j++) {
-                colGroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
-            }
-        }
-
-        if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039; &amp;&amp; typeof gridData.dataSource.get !== &#039;function&#039;) buildHeaderAggregations(id);
-
-        if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;bottom&#039;) {
-            var aggrs = gridState[id].gridAggregations;
-            if (aggrs) {
-                var aggRow = $(&#039;&lt;tr class=&quot;summary-row-footer&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
-                if (gridState[id].groupedBy.length) {
-                    for (i = 0; i &lt; gridState[id].groupedBy.length; i++) {
-                        aggRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
-                    }
-                }
-                for (item in aggrs) {
-                    text = aggrs[item].value || &#039;&#039;;
-                    aggRow.append(&#039;&lt;td data-field=&quot;&#039; + item + &#039;&quot; class=summary-cell-header&gt;&#039; + text + &#039;&lt;/td&gt;&#039;);
-                }
-            }
-        }
-
-        createGroupTrEventHandlers(id);
-        attachDrillDownAccordionHandler(id);
 
         gridContent[0].addEventListener(&#039;scroll&#039;, function contentDivScrollHandler() {
             var headWrap = gridContent.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-header-wrapper&#039;);
@@ -2603,7 +2605,7 @@
     function createGridFooter(gridData, gridElem) {
         var gridFooter = gridElem.find(&#039;.grid-footer-div&#039;);
         var id = gridFooter.data(&#039;grid_footer_id&#039;);
-        var count = gridState[id].dataSource.rowCount;
+        var count = gridState[id].dataSource.rowCount || 0;
         var displayedRows = (count - gridState[id].pageSize) &gt; 0 ? gridState[id].pageSize : count;
         var totalPages = (count - displayedRows) &gt; 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1;
         var pageNum = gridState[parseInt(gridFooter.data(&#039;grid_footer_id&#039;))].pageNum;
@@ -2651,7 +2653,7 @@
             });
         }
 
-        var rowStart = 1 + (displayedRows * (pageNum - 1));
+        var rowStart = displayedRows ? (1 + (displayedRows * (pageNum - 1))) : 0;
         var rowEnd = gridData.dataSource.rowCount &lt; gridData.pageSize * pageNum ? gridData.dataSource.rowCount : gridData.pageSize * pageNum;
         text = rowStart + &#039; - &#039; + rowEnd + &#039; of &#039; + count + &#039; rows&#039;;
         gridFooter.append(&#039;&lt;span class=&quot;pageinfo&quot;&gt;&#039; + text + &#039;&lt;/span&gt;&#039;);
