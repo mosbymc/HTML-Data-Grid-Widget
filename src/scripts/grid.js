@@ -559,7 +559,7 @@ var grid = (function _grid($) {
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
         storageData.parentGridId = gridData.parentGridId || null;
-        if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
+        if (storageData.dataSource.rowCount == null) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
         callGridEventHandlers(storageData.events.beforeDataBind, storageData.grid, eventObj);
@@ -938,7 +938,7 @@ var grid = (function _grid($) {
                     else if (typeof gridData.drillDown === 'object') {
                         if (!gridData.drillDown.dataSource) gridData.drillDown.dataSource = {};
                         gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
-                        gridData.drillDown.dataSource.rowCount = gridData.drillDown.dataSource.rowCount || gridData.drillDown.dataSource.data.length;
+                        gridData.drillDown.dataSource.rowCount = parentRowData[0].drillDownData ? parentRowData[0].drillDownData.length : 0;
                         drillDownCreate(gridData.drillDown, gridDiv[0], gridId);
                     }
                 }

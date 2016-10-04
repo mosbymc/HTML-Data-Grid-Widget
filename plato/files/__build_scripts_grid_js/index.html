@@ -66,7 +66,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">89.20</p>
+      <p class="stat">89.19</p>
     </div>
   </div>
 </div>
@@ -650,7 +650,7 @@
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
         storageData.parentGridId = gridData.parentGridId || null;
-        if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
+        if (storageData.dataSource.rowCount == null) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
         callGridEventHandlers(storageData.events.beforeDataBind, storageData.grid, eventObj);
@@ -1029,7 +1029,7 @@
                     else if (typeof gridData.drillDown === &#039;object&#039;) {
                         if (!gridData.drillDown.dataSource) gridData.drillDown.dataSource = {};
                         gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
-                        gridData.drillDown.dataSource.rowCount = gridData.drillDown.dataSource.rowCount || gridData.drillDown.dataSource.data.length;
+                        gridData.drillDown.dataSource.rowCount = parentRowData[0].drillDownData ? parentRowData[0].drillDownData.length : 0;
                         drillDownCreate(gridData.drillDown, gridDiv[0], gridId);
                     }
                 }
