@@ -7,11 +7,30 @@
     <meta name="description" content="Html-data-grid-widget : A Jquery-dependent, HTML data-grid widget">
 
     <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+    <head>
+    <link rel="stylesheet" href="./styles/grid.css" />
+    <link rel="stylesheet" href="./styles/form.css" />
+    <script src="http://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="./javascripts/gridData.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.2/jszip.js"></script>
+    <script type="text/javascript" src="./javascripts/grid.js"></script>
+    <script type="text/javascript" src="./javascripts/validator.js"></script>
+    <script type="text/javascript" src="./javascripts/formatter.js"></script>
+    <script type="text/javascript" src="./javascripts/excelExporter.js"></script>
+    <script type="text/javascript" src="./javascripts/toggle.js"></script>
+    <script type="text/javascript" src="./javascripts/expressionParser.js"></script>
+    <script type="text/javascript" src="./javascripts/system.js"></script>
+    <script type="text/javascript">
+        function init() {
+            grid.createGrid(gridData, document.getElementById('mGrid'));
+        }
+    </script>
+</head>
 
     <title>Html-data-grid-widget</title>
   </head>
 
-  <body>
+  <body onload="init()">
 
     <!-- HEADER -->
     <div id="header_wrap" class="outer">
@@ -37,6 +56,12 @@
 <p>A JQuery-dependent, HTML data-grid widget</p>
 
 <p>Now with 100% more validation!</p>
+        
+<br><br>
+    
+<div id="mGrid" style="width:1600px; margin-left:auto; margin-right:auto; margin-top:100px;"></div>
+  
+<br><br>
 
 <p>I am still working on getting this to both a stable and functional version. The develop branch is used primarily to merge working branches into,
 and then, every so often, the develop branch is merged with Master.</p>
