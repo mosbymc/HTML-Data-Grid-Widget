@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Html-data-grid-widget : A Jquery-dependent, HTML data-grid widget">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Html-data-grid-widget</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/mosbymc/HTML-Data-Grid-Widget">View on GitHub</a>
+
+          <h1 id="project_title">Html-data-grid-widget</h1>
+          <h2 id="project_tagline">A Jquery-dependent, HTML data-grid widget</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/mosbymc/HTML-Data-Grid-Widget/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/mosbymc/HTML-Data-Grid-Widget/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="html-data-grid-widget" class="anchor" href="#html-data-grid-widget" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>HTML-Data-Grid-Widget</h1>
+
+<p>A JQuery-dependent, HTML data-grid widget</p>
+
+<p>Now with 100% more validation!</p>
+
+<p>I am still working on getting this to both a stable and functional version. The develop branch is used primarily to merge working branches into,
+and then, every so often, the develop branch is merged with Master.</p>
+
+<p>Currently Implemented Functionality:</p>
+
+<ul>
+<li>Resizable Columns</li>
+<li>Reorderable Columns</li>
+<li>Filterable Columns</li>
+<li>Sortable Columns</li>
+<li>Groupable Columns</li>
+<li>Hidable Columns</li>
+<li>In-cell Editing</li>
+<li>Paging</li>
+<li>Exporting data as an excel file via integration with <a href="https://github.com/mosbymc/XcelXporter">XcelXporter</a>
+</li>
+<li>Standard Numeric Formatting (c, p, or n)</li>
+<li>Custom Numeric Formatting via # and 0</li>
+<li>Formatting user input when allowing in-cell editing via integration with <a href="https://github.com/mosbymc/inputformatter">inputFormatter</a>
+
+<ul>
+<li>This allows formatting of string of characters like phone numbers or social security numbers.</li>
+</ul>
+</li>
+<li>Partial integration with <a href="https://github.com/mosbymc/validator">validator.js</a>... more to come</li>
+<li>Custom Classes and Data Attributes applied to Column Headers and Table Cells/Rows</li>
+<li>Grid Aggregates</li>
+<li>Group Aggregates</li>
+</ul>
+
+<p>All data manipulation functionality (sorting, filtering, grouping, editing, and paging) can occur on the client-side or server-side depending on your configuration options.</p>
+
+<p>Planned functionality &amp; upgrades:</p>
+
+<ul>
+<li>Dynamically add new columns (in progress)</li>
+<li>Dynamically add new rows (in progress)</li>
+<li>Nested drill-down grids</li>
+<li>Remove jQuery dependency (this will happen no time soon)</li>
+</ul>
+
+<p>The grid.html file is my test page for the functionality in the grid widget. It requires grid.js, and grid.css to run properly. You can view the test page
+by starting up the node server and navigating a browser to: http://localhost:3000/build/grid.html</p>
+
+<p>This test page shows a grid that is configured to use client-side paging via the gridData.js file. You will probably notice that there are no phone numbers
+in the 'Phone Number' column of the grid. This is because I created the phone numbers in my local data store, but have not yet updated the gridData.js file
+with the new data. The grid still creates the column because it is listed in the columns object of gridData.js; as it is intended to do.</p>
+
+<p>Note that while the grid does indeed support the above list of implemented functionalities, there are some bugs with it. If you're interested in this repo,
+then I would suggest cloning the grid to just play around with it and get familiar with how it works, but do not use this in any production site for the time being.
+The primary concern is with the in-cell editing. Most of the validation, formatting, and type checking is working, but there are still are few edges cases I am working
+on tracking down.</p>
+
+<p>My plan is to get the remaining bugs/issues sorted out and finish fleshing out the existing functionality. Afterwards, I'll start adding new features. Check back here later because
+I will continue to make commits to this project. In the meantime, you can check out my currently-meager wiki for some sparse <a href="https://github.com/mosbymc/HTML-Data-Grid-Widget/wiki">documentation on using the grid</a>.
+Included is the same grid config file I am using in my test project but with comments next to the properties to explain what they do.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Html-data-grid-widget maintained by <a href="https://github.com/mosbymc">mosbymc</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
