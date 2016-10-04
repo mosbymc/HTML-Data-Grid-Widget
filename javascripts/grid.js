@@ -37,7 +37,7 @@ var grid = (function _grid($) {
     function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
             var id = generateId();
-            gridElem = $(gridElem);
+            gridElem = $(gridElem).addClass('grid_elem');
             var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class=grid-wrapper></div>').appendTo(gridElem);
             var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class=grid-header-div></div>').appendTo(wrapperDiv);
             headerDiv.append('<div class=grid-header-wrapper></div>');
