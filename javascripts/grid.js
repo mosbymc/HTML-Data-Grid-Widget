@@ -1251,7 +1251,7 @@ var grid = (function _grid($) {
         if (value == null) return;
         switch (gridState[gridId].aggregates[field].type) {
             case 'count':
-                aggregationObj[field].value =(aggregationObj[field].value || 0) + 1;
+                aggregationObj[field].value = gridState[gridId].dataSource.rowCount || gridState[gridId].dataSource.data.length;
                 aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + aggregationObj[field].value;
                 return;
             case 'average':
