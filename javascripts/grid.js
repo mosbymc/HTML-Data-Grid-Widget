@@ -2272,7 +2272,7 @@ var grid = (function _grid($) {
                     for (i = 0; i < dirtyCells.length; i++) {
                         var index = dirtyCells[i].parents('tr').index();
                         var field = dirtyCells[i].data('field');
-                        var origIndex = gridState[id].dataSource.data[index][field]._initialRowIndex;
+                        var origIndex = gridState[id].dataSource.data[index]._initialRowIndex;
                         gridState[id].originalData[origIndex][field] = gridState[id].dataSource.data[index][field];
                         dirtyCells[i].find('.dirty').add('.dirty-blank').remove();
                     }
