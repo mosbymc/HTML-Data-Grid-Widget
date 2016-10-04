@@ -1313,6 +1313,7 @@ var grid = (function _grid($) {
                         drillDownCreate(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
                     }
                     else if (typeof gridData.drillDown === 'object') {
+                        if (!gridData.drillDown.dataSource) gridData.drillDown.dataSource = {};
                         gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
                         drillDownCreate(gridData.drillDown, gridDiv[0], gridId);
                     }
