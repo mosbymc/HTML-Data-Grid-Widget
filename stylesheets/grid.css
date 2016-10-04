@@ -328,16 +328,19 @@
   outline: 0;
   margin: 0;
 }
-.grid_elem .grid-content-div table tr:not(.drill-down-parent):hover {
+.grid_elem .grid-content-div table tbody tr {
+  background-color: #ffffff;
+}
+.grid_elem .grid-content-div table tbody tr:not(.drill-down-parent):hover {
   background-color: #ebebeb;
 }
-.grid_elem .grid-content-div table tr:last-child td {
+.grid_elem .grid-content-div table tbody tr:last-child td {
   border-bottom-width: 0;
 }
-.grid_elem .grid-content-div table tr td {
+.grid_elem .grid-content-div table tbody tr td {
   /*td:first-child {
-            border-left: none;
-          }*/
+              border-left: none;
+            }*/
   border-bottom: 1px solid #e6e6e6;
   /*border-left: 1px solid @border-color;*/
   border-collapse: separate;
@@ -355,7 +358,7 @@
   line-height: 1.6em;
   height: 1.6em;
 }
-.grid_elem .grid-content-div table tr td.drillDown_cell {
+.grid_elem .grid-content-div table tbody tr td.drillDown_cell {
   border-top-width: 0;
   color: #444;
   background-color: #fafafa;
@@ -365,7 +368,7 @@
   line-height: 1em;
   padding: 10px 7.5px;
 }
-.grid_elem .grid-content-div table tr td.drillDown_cell span.drillDown_span {
+.grid_elem .grid-content-div table tbody tr td.drillDown_cell span.drillDown_span {
   display: inline-block;
   vertical-align: middle;
   margin: auto 0;
@@ -376,7 +379,7 @@
   list-style: none;
   line-height: 0;
 }
-.grid_elem .grid-content-div table tr td.drillDown_cell span.drillDown_span .drillDown_acc {
+.grid_elem .grid-content-div table tbody tr td.drillDown_cell span.drillDown_span .drillDown_acc {
   border-collapse: separate;
   box-sizing: content-box;
   cursor: pointer;
@@ -393,18 +396,18 @@
   margin: 0 auto;
   width: 12px;
 }
-.grid_elem .grid-content-div table tr td.drillDown_cell span.drillDown_span .drillDown-desc {
+.grid_elem .grid-content-div table tbody tr td.drillDown_cell span.drillDown_span .drillDown-desc {
   background: url(../images/arrowDown.svg) no-repeat;
 }
-.grid_elem .grid-content-div table tr td.drillDown_cell span.drillDown_span .drillDown-asc {
+.grid_elem .grid-content-div table tbody tr td.drillDown_cell span.drillDown_span .drillDown-asc {
   background: url(../images/arrowUp.svg) no-repeat;
 }
-.grid_elem .grid-content-div table tr.selected,
-.grid_elem .grid-content-div table td.selected {
+.grid_elem .grid-content-div table tbody tr.selected,
+.grid_elem .grid-content-div table tbody td.selected {
   background-color: #00b0ff;
 }
-.grid_elem .grid-content-div table tr.selected:hover,
-.grid_elem .grid-content-div table td.selected:hover {
+.grid_elem .grid-content-div table tbody tr.selected:hover,
+.grid_elem .grid-content-div table tbody td.selected:hover {
   background-color: #00a2eb;
 }
 .grid_elem .summary-row-footer {
