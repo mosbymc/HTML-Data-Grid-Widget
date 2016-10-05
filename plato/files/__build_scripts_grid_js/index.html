@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">216.02</p>
+      <p class="stat">215.90</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">89.51</p>
+      <p class="stat">89.53</p>
     </div>
   </div>
 </div>
@@ -1627,8 +1627,8 @@
                 $(val).css(&#039;width&#039;, 27);
             }
             else if (columnNames[columnList[i]] != null) {
-                if (idx === headerCols.length - 1 &amp;&amp; totalColWidth &lt; (tableDiv.find(&#039;table&#039;).width() + (numColPadders * 27))) {
-                    $(val).css(&#039;width&#039;, columnNames[columnList[i]] + (tableDiv.find(&#039;table&#039;).width() - totalColWidth - (numColPadders * 27)));
+                if (idx === headerCols.length - 1 &amp;&amp; totalColWidth &lt; (tableDiv.find(&#039;table&#039;).width() + (numColPadders * 27) - 17)) {
+                    $(val).css(&#039;width&#039;, columnNames[columnList[i]] + (tableDiv.find(&#039;table&#039;).width() - totalColWidth - (numColPadders * 27) - 17));
 
                 }
                 else
