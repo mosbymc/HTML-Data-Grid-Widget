@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.46</p>
+      <p class="stat">55.52</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3949</p>
+      <p class="stat">3947</p>
     </div>
   </div>
   <div class="row historical">
@@ -722,8 +722,7 @@
                     th.on(&#039;mouseleave&#039;, mouseLeaveHandlerCallback);
                 }
 
-                if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (gridData.columns[col].editable || gridData.columns[col].selectable ||
-                    gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
+                if ((gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
                     createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
 
                 $(&#039;&lt;a class=&quot;header-anchor&quot; href=&quot;#&quot;&gt;&lt;/a&gt;&#039;).appendTo(th).text(text);
@@ -890,7 +889,7 @@
         }
 
         gridContent[0].addEventListener(&#039;scroll&#039;, function contentDivScrollHandler() {
-            var headWrap = gridContent.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-header-wrapper&#039;);
+            var headWrap = gridContent.parents(&#039;.grid-wrapper&#039;).first().find(&#039;.grid-header-wrapper&#039;);
             if (gridState[id].resizing) return;
             headWrap.scrollLeft(gridContent.scrollLeft());
         });
@@ -1612,6 +1611,8 @@
                 totalColWidth += columnNames[name] || 0;
             }
         }
+
+
         var headerCols = tableDiv.find(&#039;col&#039;);
 
         headerCols.each(function iterateColsCallback(idx, val) {
@@ -1782,7 +1783,7 @@
         var id = gridElem.find(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
         if ($(&#039;#grid_&#039; + id + &#039;_toolbar&#039;).length) return;	
 
-        if (gridData.groupable) {
+        if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; gridData.groupable) {
             var groupMenuBar = $(&#039;&lt;div id=&quot;grid_&#039; + id + &#039;_group_div&quot; class=&quot;group_div clearfix&quot; data-grid_id=&quot;&#039; + id + &#039;&quot;&gt;&#039; + groupMenuText + &#039;&lt;/div&gt;&#039;).prependTo(gridElem);
             groupMenuBar.on(&#039;drop&#039;, function handleDropCallback(e) {
                 var droppedCol = $(&#039;#&#039; + e.originalEvent.dataTransfer.getData(&#039;text&#039;));
@@ -3733,12 +3734,9 @@
     }
 
     function getGridColumns(gridId) {
-        var cols = [];
-        for (var col in gridState[gridId].columns) {
-            if (!gridState[gridId].columns[col].isHidden)
-                cols.push(col);
-        }
-        return cols;
+        return Object.keys(gridState[gridId].columns).filter(function collectNonHiddenColumns(col) {
+            return !this[col].isHidden;
+        }, gridState[gridId].columns);
     }
 
     function createExcelRequestObject(gridId) {

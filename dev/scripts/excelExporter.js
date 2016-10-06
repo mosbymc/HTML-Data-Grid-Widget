@@ -991,8 +991,8 @@ var excelExporter = (function _excelExporter() {
 
     function escape(string) {
         string = baseToString(string);
-        var reHasUnescapedHtml = new RegExp('[&<>"\'`]');
-        return (string && reHasUnescapedHtml.test(string)) ? string.replace(/[&<>"'`]/g, escapeHtmlChar) : string;
+        var reHasUnescapedHtml = new RegExp('[&<>"\']');
+        return (string && reHasUnescapedHtml.test(string)) ? string.replace(/[&<>"']/g, escapeHtmlChar) : string;
     }
 
     function baseToString(value) {
@@ -1004,12 +1004,11 @@ var excelExporter = (function _excelExporter() {
     }
 
     var htmlEscapes = {
-        '&': '&amp;',
+        '"': '&quot;',
+        '\'': '&apos;',
         '<': '&lt;',
         '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
-        '`': '&#96;'
+        '&': '&amp;',
     };
 
     var LETTER_REFS = {};

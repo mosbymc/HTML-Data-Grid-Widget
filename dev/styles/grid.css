@@ -354,7 +354,7 @@
   border-left: none;
   border-right: none;
   text-align: left;
-  white-space: normal;
+  white-space: nowrap;
   line-height: 1.6em;
   height: 1.6em;
 }

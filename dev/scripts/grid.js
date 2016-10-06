@@ -110,6 +110,7 @@
  - Fix group aggregates indentation - DONE
  - Create a 'reset' for css values at the grid level
  - Figure out why sorting a grouped columns makes the last column in the grid a bit longer each time - DONE
+ - Implement a dbl-click handler to auto-resize columns
  - Remove anchors as links for grid functionality - clicking them just requires the event to halt propagation
  - UPDATE TO ES6
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
@@ -970,8 +971,7 @@ var grid = (function _grid($) {
                     th.on('mouseleave', mouseLeaveHandlerCallback);
                 }
 
-                if (typeof gridData.parentGridId !== 'number' && (gridData.columns[col].editable || gridData.columns[col].selectable ||
-                    gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
+                if ((gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
                     createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
 
                 $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
@@ -1156,7 +1156,7 @@ var grid = (function _grid($) {
         }
 
         gridContent[0].addEventListener('scroll', function contentDivScrollHandler() {
-            var headWrap = gridContent.parents('.grid-wrapper').find('.grid-header-wrapper');
+            var headWrap = gridContent.parents('.grid-wrapper').first().find('.grid-header-wrapper');
             if (gridState[id].resizing) return;
             headWrap.scrollLeft(gridContent.scrollLeft());
         });
@@ -1964,6 +1964,16 @@ var grid = (function _grid($) {
                 totalColWidth += columnNames[name] || 0;
             }
         }
+
+        /*if (gridData.parentGridId != null && totalColWidth > gridElem.parents('.drill-down-cell').width()) {
+            var parentGridColGroups = gridState[gridData.parentGridId].grid.find('colgroup'),
+                widthDiff = totalColWidth - (gridElem.parents('.drill-down-parent').width() - 27),
+                finalCols = $(parentGridColGroups[0]).find('col').last().add($(parentGridColGroups[1]).find('col').last());
+            finalCols.each(function extendLastColumn(idx, val) {
+                $(val).css('width', widthDiff);
+            });
+        }*/
+
         var headerCols = tableDiv.find('col');
 
         headerCols.each(function iterateColsCallback(idx, val) {
@@ -2176,7 +2186,7 @@ var grid = (function _grid($) {
         var id = gridElem.find('.grid-wrapper').data('grid_id');
         if ($('#grid_' + id + '_toolbar').length) return;	//if the toolbar has already been created, don't create it again.
 
-        if (gridData.groupable) {
+        if (typeof gridData.parentGridId !== 'number' && gridData.groupable) {
             var groupMenuBar = $('<div id="grid_' + id + '_group_div" class="group_div clearfix" data-grid_id="' + id + '">' + groupMenuText + '</div>').prependTo(gridElem);
             groupMenuBar.on('drop', function handleDropCallback(e) {
                 //TODO: figure out why debugging this in the browser causes two server requests to be made;
@@ -4302,12 +4312,9 @@ var grid = (function _grid($) {
     }
 
     function getGridColumns(gridId) {
-        var cols = [];
-        for (var col in gridState[gridId].columns) {
-            if (!gridState[gridId].columns[col].isHidden)
-                cols.push(col);
-        }
-        return cols;
+        return Object.keys(gridState[gridId].columns).filter(function collectNonHiddenColumns(col) {
+            return !this[col].isHidden;
+        }, gridState[gridId].columns);
     }
 
     function createExcelRequestObject(gridId) {
