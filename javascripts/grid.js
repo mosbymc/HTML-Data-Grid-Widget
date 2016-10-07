@@ -13,27 +13,12 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
-/*exported grid*/
-/**
- * grid module - object for creating and manipulating grid widgets
- * @class grid
- * @function _grid
- * @param {object} $ - jQuery alias
- */
 var grid = (function _grid($) {
     'use strict';
     var dataTypes, events, aggregates, generateId,
         gridState = [],
         groupMenuText = 'Drag and drop a column header here to group by that column';
 
-    /**
-     * Exposed on the grid module. Called to create a grid widget.
-     * @function create
-     * @static
-     * @param {object} gridData - The dataSource object needed to initialize the grid
-     * @param {object} gridElem - The DOM element that should be used to create the grid widget
-     * @Returns {Object} - Returns an object containing the functions created for the grid widget instance
-     */
     function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
             var id = generateId();
@@ -52,7 +37,6 @@ var grid = (function _grid($) {
             (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
             gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function';
 
-            //if (Array.isArray(gridData)) createGridColumnsFromArray(gridData, gridElem);
             if (gridData.constructor === Array) createGridColumnsFromArray(gridData, gridElem);
             else {
                 createGridHeaders(gridData, gridElem);
@@ -83,14 +67,6 @@ var grid = (function _grid($) {
         grid.createGrid(gridData, gridElem);
     }
 
-    /**
-     * Adds publicly accessible methods to the DOM element that was
-     * passed to the 'create' function to initialize the grid widget
-     * @method createGridInstanceMethods
-     * @private
-     * @param {object} gridElem - The DOM element that should be used to create the grid widget
-     * @param {number} gridId - The id of this grid's instance
-     */
     function createGridInstanceMethods(gridElem, gridId) {
 
         Object.defineProperty(
@@ -107,16 +83,6 @@ var grid = (function _grid($) {
             gridElem[0].grid,
             'activeCellData',
             {
-                /**
-                 * Returns the DOM element for the current active cell in the grid and metadata about the cell
-                 * @method activeCellData
-                 * @for Grid DOM element
-                 * @protected
-                 * @readonly
-                 * @type string
-                 * @returns {object|null} - An object containing the active cell's current value, row index, column index,
-                 * column field, and the DOM element itself
-                 */
                 get: function _getActiveCellData() {
                     var cell = gridElem.find('.active-cell');
                     if (!cell.length)
@@ -134,10 +100,6 @@ var grid = (function _grid($) {
             gridElem[0].grid,
             'selected',
             {
-                /**
-                 * Returns the collection of selected grid items (row or columns) as an array.
-                 * @returns {Array} - The collection of selected grid items
-                 */
                 get: function _getSelectedItems() {
                     var selectedItems = [];
                     gridElem.find('.selected').each(function iteratedSelectedGridItems(idx, val) {
@@ -145,11 +107,6 @@ var grid = (function _grid($) {
                     });
                     return selectedItems;
                 },
-                /**
-                 * Sets the selected row and/or columns of the grid.
-                 * @param {Array} itemArray - Ay array of objects that have a zero-based 'rowIndex' property to indicate which row is to be selected.
-                 * Optionally each object may have a zero-based 'columnIndex' property that indicates which column of the row to select.
-                 */
                 set: function _setSelectedItems(itemArray) {
                     if (!itemArray || itemArray.constructor !== Array) return;
                     for (var i = 0; i < itemArray.length; i++) {
@@ -170,9 +127,6 @@ var grid = (function _grid($) {
             gridElem[0].grid,
             'selectedData',
             {
-                /**
-                 * Returns metadata about each selected item in the grid.
-                 */
                 get: function _getSelectedGridItemData() {
                     var data = [];
                     gridElem.find('.selected').each(function getSelectedElementData(index, value) {
@@ -197,21 +151,7 @@ var grid = (function _grid($) {
         Object.defineProperties(
             gridElem[0].grid, {
                 'bindEvents': {
-                    /**
-                     * Binds event handlers to events
-                     * @method bindEvents
-                     * @for Grid DOM element
-                     * @protected
-                     * @param {string} evt - a string representing an event that the grid can cause
-                     * @param {*} funcs - the event handler
-                     * @returns {boolean} - indicates that the provided function(s) were or were not added as event listeners.
-                     */
                     value: function _bindGridEvents(evt, funcs) {
-                        /*
-                         if (!funcs || (typeof funcs !== 'function' && funcs.constructor !== Array)) return false;
-                         if (typeof funcs === 'function') funcs = [funcs];
-                         if (~events.indexOf(evt)) {
-                         */
                         if (!funcs || (typeof funcs !== 'function' && !Array.isArray(funcs))) return false;
                         if (typeof funcs === 'function') funcs = [funcs];
                         if (events.includes(evt)) {
@@ -224,17 +164,7 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'unbindEvents': {
-                    /**
-                     * Unbinds an event handler from the specified event
-                     * @method unbindEvents
-                     * @for Grid DOM element
-                     * @protected
-                     * @param {string} evt - a string representing an event that the grid can cause
-                     * @param {*} funcs - the function object, or array of function objects to unbind
-                     * @returns {boolean} - indicates that the provided function(s) were or were not unbound
-                     */
                     value: function _unbindEvents(evt, funcs) {
-                        //if (~events.indexOf(evt) && (funcs || (typeof funcs === 'function' || funcs.constructor === Array))) {
                         if (events.includes(evt) && (funcs || (typeof funcs === 'function' || Array.isArray(funcs)))) {
                             if (typeof funcs === 'function') funcs = [funcs];
                             var tmpEvts = [];
@@ -253,12 +183,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'removeAllEventHandlers': {
-                    /**
-                     * Removes all registered event handlers from grid events
-                     * @method removeAllEventHandlers
-                     * @for Grid DOM element
-                     * @protected
-                     */
                     value: function _removeAllEventHandlers() {
                         for (var i = 0; i < events.length; i++) {
                             gridState[gridId].events[events[i]] = [];
@@ -268,16 +192,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'getHandledEvents': {
-                    /**
-                     * Returns all events for which a handler has been registered
-                     * @method getHandledEvents
-                     * @for Grid DOM element
-                     * @protected
-                     * @readonly
-                     * @default Array of grid events that currently have registered a handler
-                     * @type Array
-                     * @returns {Array} - The list of events that currently have a handler
-                     */
                     value: function _getHandledEvents() {
                         var evts = [];
                         for (var i = 0; i < events.length; i++) {
@@ -290,16 +204,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'getAvailableEvents': {
-                    /**
-                     * Returns a list of the events that the grid can cause
-                     * @method getAvailableEvents
-                     * @for Grid DOM element
-                     * @protected
-                     * @readonly
-                     * @default Array of available grid events to listen for
-                     * @type Array
-                     * @returns {Array} - The list of all events that a handler can be registered for
-                     */
                     value: function _getAvailableEvents() {
                         return events;
                     },
@@ -307,10 +211,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'hideColumn': {
-                    /**
-                     * Hides a column that is being displayed in the grid
-                     * @param {string} col - The name of the column to hide
-                     */
                     value: function _hideColumn(col) {
                         if (gridState[gridId].columns[col]) {
                             gridState[gridId].columns[col].isHidden = true;
@@ -334,10 +234,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'showColumn': {
-                    /**
-                     * Displays a column that was previously hidden from view in the grid
-                     * @param {string} col - The name of the hidden column
-                     */
                     value: function _showColumn(col) {
                         if (gridState[gridId].columns[col] && gridState[gridId].columns[col].isHidden) {
                             gridState[gridId].columns[col].isHidden = false;
@@ -352,13 +248,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'addColumn': {
-                    /**
-                     * Adds a new column to the grid
-                     * @param {string|Object} column - Either the name of the column to be added to the grid,
-                     * or a column object akin to what is passed into the grid to initialize the widget.
-                     * @param {Array} data - A collection of values for the new column. Need to match the existing
-                     * rows in the grid because they will be paired with them; both in the display and in the model.
-                     */
                     value: function _addColumn(column, data) {
                         if (typeof column !== 'object' && typeof column !== 'string' || !data || !data.length)
                             return;
@@ -398,10 +287,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'addRow': {
-                    /**
-                     * Adds a new row to the table; with either 'null' values if no data was passed in, or with the values given
-                     * @param {Object} data - A javascript model object with the same properties as the grid's model collection objects.
-                     */
                     value: function _addRow(data) {
                         var newModel = {}, prop;
                         if (!data) {
@@ -432,16 +317,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'getAggregates': {
-                    /**
-                     * Returns the aggregations for all columns
-                     * @method getAggregates
-                     * @for Grid DOM element
-                     * @protected
-                     * @readonly
-                     * @default aggregates object
-                     * @type object
-                     * @returns {Object} - The aggregations that are currently in use for this page of the grid
-                     */
                     value: function _getAggregates() {
                         return gridState[gridId].gridAggregations;
                     },
@@ -449,18 +324,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'getCurrentPageData': {
-                    /**
-                     * Returns the grid's page data.
-                     * @method getCurrentPageData
-                     * @for Grid DOM element
-                     * @protected
-                     * @readOnly
-                     * @default dataSource.data
-                     * @type Array
-                     * @param {int} index - The index of the grid page to return the data for.
-                     * @returns {Array} - An array with either all grid page data, or a single index's data if a
-                     * valid index was passed to the function
-                     */
                     value: function _getCurrentPageData(index) {
                         var rows = [],
                             result = [],
@@ -506,15 +369,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'getCurrentDataSourceData': {
-                    /**
-                     * Returns the grid's dataSource data
-                     * @method getCurrentDataSourceData
-                     * @for Grid DOM element
-                     * @protected
-                     * @param {int} index - The index of the dataSource.data to return the data for.
-                     * @returns {Array} - An array with either all grid page data, or a single index's data if a
-                     * valid index was passed to the function
-                     */
                     value: function _getCurrentDataSourceData(index) {
                         var i;
                         if (typeof index === 'number' && index > -1 && index <= gridState[gridId].dataSource.data.length) {
@@ -534,13 +388,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'updatePageData': {
-                    /**
-                     * Updates the grid's page data; will also update the dataSource
-                     * @method updatePageData
-                     * @for Grid DOM element
-                     * @protected
-                     * @param {object} data
-                     */
                     value: function _updatePageData(data) {
                         if (data != null && typeof data === 'object' && data.constructor === Array) {
                             gridState[gridId].dataSource.data = data;
@@ -557,13 +404,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'updateRowData': {
-                    /**
-                     * Updates the specified grid's row's data via the .index property
-                     * @method updateRowData
-                     * @for Grid DOM element
-                     * @protected
-                     * @param {object} rowData
-                     */
                     value: function _updateRowData(rowData) {
                         var appliedUpdate = false;
                         if (!rowData)
@@ -593,17 +433,8 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'updateCellData': {
-                    /**
-                     * Updates the specified grid's cell's data via the .index and .field properties
-                     * @method updateCellData
-                     * @for Grid DOM element
-                     * @protected
-                     * @param {object} cellData
-                     * @param {boolean} setAsDirty
-                     */
                     value: function _updateCellData(cellData, setAsDirty) {
                         if (!cellData) return;
-                        //if (cellData.constructor === Array) {
                         if (Array.isArray(cellData)) {
                             cellData.forEach(function cellIterationCallback(cell) {
                                 applyUpdate(cell, setAsDirty);
@@ -652,12 +483,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'destroy': {
-                    /**
-                     * Destroys the grid widget - includes the dataSource and the DOM element
-                     * @method destroy
-                     * @for Grid DOM element
-                     * @protected
-                     */
                     value: function _destroy() {
                         findChildren(gridState[gridId].grid.children());
                         delete gridState[gridId];
@@ -676,9 +501,6 @@ var grid = (function _grid($) {
                     configurable: false
                 },
                 'removeSelection': {
-                    /**
-                     * Removes all selected grid items
-                     */
                     value: function _removeSelection() {
                         gridElem.find('.selected').each(function removeSelectedClass(idx, val) {
                             $(val).removeClass('selected');
@@ -687,14 +509,6 @@ var grid = (function _grid($) {
                     writable: false,
                     configurable: false
                 }
-                /*,
-                'createDrillDown': {
-                    value: function _createDrillDown() {
-
-                    },
-                    writable: false,
-                    configurable: false
-                }*/
             });
 
         var keys = Object.getOwnPropertyNames(gridElem[0].grid);
@@ -703,15 +517,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Abstraction for getting grid data so the 'create' function doesn't
-     * care whether it was passed in, or if there is a server call to get it.
-     * @method getInitialGridData
-     * @for grid
-     * @private
-     * @param {object} dataSource - The dataSource for grid creation
-     * @param {function} callback - The callback function
-     */
     function getInitialGridData(dataSource, callback) {
         if (dataSource && typeof dataSource.data === 'object')
             callback(null, { data: dataSource.data, rowCount: dataSource.rowCount });
@@ -725,17 +530,6 @@ var grid = (function _grid($) {
         else callback(true, {});
     }
 
-    /**
-     * Initializes an instance of the grid after retrieving the dataSource data.
-     * Sets the internal instance of the grid's data, calls to create the footer and content
-     * @method initializeGrid
-     * @for grid
-     * @private
-     * @param {number} id
-     * @param {object} gridData
-     * @param {object} gridElem
-     * @param {number} parentId
-     */
     function initializeGrid(id, gridData, gridElem) {
         var storageData = cloneGridData(gridData);
         storageData.events = {
@@ -796,14 +590,6 @@ var grid = (function _grid($) {
         callGridEventHandlers(storageData.events.afterDataBind, storageData.grid, eventObj);
     }
 
-    /**
-     * Creates the grid's headers given the column metadata passed to the create function
-     * @method createGridHeaders
-     * @for grid
-     * @private
-     * @param {object} gridData
-     * @param {object} gridElem
-     */
     function createGridHeaders(gridData, gridElem) {
         var gridHeader = gridElem.find('.grid-header-div'),
             gridHeadWrap = gridHeader.find('.grid-header-wrapper'),
@@ -860,8 +646,7 @@ var grid = (function _grid($) {
                     th.on('mouseleave', mouseLeaveHandlerCallback);
                 }
 
-                if (typeof gridData.parentGridId !== 'number' && (gridData.columns[col].editable || gridData.columns[col].selectable ||
-                    gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
+                if ((gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
                     createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
 
                 $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
@@ -875,14 +660,6 @@ var grid = (function _grid($) {
         setColWidth(gridData, gridElem);
     }
 
-    /**
-     * Builds the header's aggregations row if specified to be displayed at the
-     * top of the grid
-     * @method buildHeaderAggregations
-     * @for grid
-     * @private
-     * @param {number} gridId
-     */
     function buildHeaderAggregations(gridId) {
         var aggrs = gridState[gridId].gridAggregations;
         if (aggrs) {
@@ -906,15 +683,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Creates the body of the grid. Sets the text in each cell and wires
-     * up the event listeners
-     * @method createGridContent
-     * @for grid
-     * @private
-     * @param {object} gridData
-     * @param {object} gridElem
-     */
     function createGridContent(gridData, gridElem) {
         var contentHeight,
             footerHeight = parseFloat(gridElem.find('.grid-footer-div').css('height')),
@@ -1002,7 +770,6 @@ var grid = (function _grid($) {
                         attachCustomCellHandler(columns[j], td, id);
                     }
                     if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
-                    //attach event handlers to save data
                     if (typeof gridData.parentGridId !== 'number' && (gridData.columns[columns[j]].editable && gridData.columns[columns[j]].editable !== 'drop-down')) {
                         makeCellEditable(id, td);
                         gridState[id].editable = true;
@@ -1046,24 +813,16 @@ var grid = (function _grid($) {
         }
 
         gridContent[0].addEventListener('scroll', function contentDivScrollHandler() {
-            var headWrap = gridContent.parents('.grid-wrapper').find('.grid-header-wrapper');
+            var headWrap = gridContent.parents('.grid-wrapper').first().find('.grid-header-wrapper');
             if (gridState[id].resizing) return;
             headWrap.scrollLeft(gridContent.scrollLeft());
         });
 
-        /*
-         This is set to make up for the vertical scroll bar that the gridContent div has.
-         It helps keep the header columns aligned with the content columns, and makes
-         the scroll handler for the content grid work correctly.
-         */
         var headerId = 'grid-header-' + gridContent.data('grid_content_id');
         var headDiv = $('#' + headerId);
         var sizeDiff = headDiv[0].clientWidth - gridContent[0].clientWidth;
         headDiv.css('paddingRight', sizeDiff);
 
-        //Once the column widths have been set (i.e. the first time creating the grid), they shouldn't change size again....
-        //any time the grid is paged, sorted, filtered, etc., the cell widths shouldn't change, the new data should just be dumped into
-        //the grid.
         copyGridWidth(gridElem);
 
         gridState[id].dataSource.data = gridData.dataSource.data;
@@ -1087,39 +846,26 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Creates group header rows, pads with extra columns based on number of grouped columns, and calculates/display group aggregatges
-     * if option is set
-     * @param {number} gridId - The id of the grid widget instance
-     * @param {number} rowIndex - The index of the current row in the grid data collection
-     * @param {Array} columns - A collection of grid columns that will be displayed
-     * @param {Object} currentGroupingValues - The values currently determining the rows that are grouped
-     * @param {Object} gridContent - The DOM table element for the grid's content
-     */
     function createGroupedRows(gridId, rowIndex, columns, currentGroupingValues, gridContent) {
         var j, k, item,
             foundDiff = false,
             groupedDiff = [],
             gridData = gridState[gridId];
         for (j = 0; j < gridData.groupedBy.length; j++) {
-            //If the current cached value for the same field is different than the current grid's data for the same field,
-            //then cache the same value and note the diff.
             if (!currentGroupingValues[gridData.groupedBy[j].field] || currentGroupingValues[gridData.groupedBy[j].field] !== gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field]) {
                 currentGroupingValues[gridData.groupedBy[j].field] = gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field];
                 groupedDiff[j] = 1;
                 foundDiff = true;
             }
             else {
-                //Otherwise, check the previous diff; if there isn't a diff, then set the current diff to none (i.e. 0),
-                //but if the previous diff was found, set the current diff.
                 if (!j || !groupedDiff[j - 1]) groupedDiff[j] = 0;
                 else groupedDiff[j] = 1;
             }
         }
-        if (foundDiff && rowIndex && gridData.groupAggregates) {   //If a diff was found...
-            for (j = groupedDiff.length - 1; j >= 0; j--) {     //...go backwards through the grouped aggregates...
-                var numItems = gridData.groupAggregations[j]._items_; //...save the current row's number of items...
-                if (groupedDiff[j]) {                               //...if there is a diff at the current row, print it to the screen
+        if (foundDiff && rowIndex && gridData.groupAggregates) {   
+            for (j = groupedDiff.length - 1; j >= 0; j--) {     
+                var numItems = gridData.groupAggregations[j]._items_; 
+                if (groupedDiff[j]) {                               
                     var groupAggregateRow = $('<tr class="grouped_row_header"></tr>').appendTo(gridContent);
                     for (k = 0; k < groupedDiff.length; k++) {
                         groupAggregateRow.append('<td colspan="' + 1 + '" class="grouped_cell"></td>');
@@ -1131,11 +877,11 @@ var grid = (function _grid($) {
                             groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[j][item].text || '') + '</td>');
                         }
                     }
-                    gridData.groupAggregations[j] = {       //Then reset the current row's aggregate object...
+                    gridData.groupAggregations[j] = {       
                         _items_: 0
                     };
-                    for (k = j - 1; k >= 0; k--) {  //...and go backward through the diffs starting from the prior index, and compare the number of items in each diff...
-                        if (groupedDiff[k] && gridData.groupAggregations[k]._items_ == numItems) {    //...if the number of items are equal, reset that diff as well
+                    for (k = j - 1; k >= 0; k--) {  
+                        if (groupedDiff[k] && gridData.groupAggregations[k]._items_ == numItems) {    
                             groupedDiff[k] = 0;
                             gridData.groupAggregations[k] = {
                                 _items_: 0
@@ -1223,11 +969,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Takes the server's aggregate calculations and formats them for grid consumption
-     * @param {number} gridId - The id of the grid widget instance
-     * @param {Object} aggregationObj - The object that hold the aggregates
-     */
     function constructAggregationsFromServer(gridId, aggregationObj) {
         for (var col in gridState[gridId].columns) {
             if (!aggregationObj[col]) aggregationObj[col] = {};
@@ -1236,7 +977,6 @@ var grid = (function _grid($) {
                 continue;
             }
             if (typeof gridState[gridId].dataSource.get === 'function') {
-                //TODO: why do I need to check for typing here? Can't I just use it if it's available and assume a string if not?
                 if (gridState[gridId].aggregates[col].type && gridState[gridId].aggregates[col].value) {
                     var text = getFormattedCellText(gridId, col, gridState[gridId].aggregates[col].value) || gridState[gridId].aggregates[col].value;
                     aggregationObj[col].text = aggregates[gridState[gridId].aggregates[col].type] + text;
@@ -1246,13 +986,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Used for calculating both client-side full-grid aggregates, as well as grouped aggregates
-     * @param {number} gridId - The id of the grid widget instance
-     * @param {string} field - The name of the field being aggregated
-     * @param {*} value - The value of the current row's field (i.e. a single cell in the grid)
-     * @param {Object} aggregationObj - The object used to cache the aggregates
-     */
     function addValueToAggregations(gridId, field, value, aggregationObj) {
         var text, total;
         if (!aggregationObj[field]) aggregationObj[field] = {};
@@ -1299,10 +1032,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Attaches handlers for click, mousemove, mousedown, mouseup, and scroll events depending on the value of the selectable attribute of the grid
-     * @param {object} tableBody - The body of the grid's content table
-     */
     function attachTableSelectHandler(tableBody) {
         var gridId = tableBody.parents('.grid-wrapper').data('grid_id');
         var isSelectable = gridState[gridId].selectable;
@@ -1377,16 +1106,9 @@ var grid = (function _grid($) {
             });
         }
 
-        /**
-         * Called by both the mousemove and scroll event handlers, this function determines the appearance of the overlay and the true
-         * selection dimensions based on the distance the mouse has moved since the mousedown event, and the amount/direction of scrolling
-         * @param {object} contentDiv - The div containing the table that holds the actual content (not the header table)
-         * @param {object} overlay - The overlay div used to display the user's active selection
-         */
         function setOverlayDimensions(contentDiv, overlay) {
             window.getSelection().removeAllRanges();
 
-            //TODO: I'm pretty sure I don't need all the mouse-pos and previous-x values to calculate the temporary top/left/bottom/right. Try to limit the required data
             var contentOffset = contentDiv.offset(),
                 ctHeight = contentDiv[0].clientHeight,
                 ctWidth = contentDiv[0].clientWidth,
@@ -1448,11 +1170,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Calculates both the displayed and actual top/bottom or left/right of the highlighting overlay
-     * @param {object} context - The context in which this function is being called (ie for top/bottom calc or left/right)
-     * @returns {{trueSize: number, smallDim: number, largeDim: number, scrollPos: number}}
-     */
     function determineOverlayDimensions(context) {
         var locAdjustment, scrollAdjustment, smallDim, largeDim,
             trueSize,
@@ -1537,12 +1254,6 @@ var grid = (function _grid($) {
         };
     }
 
-    /**
-     * This function is called after the mouseup event and uses the dimensions of the overlay to apply
-     * the 'selected' class to all grid elements that it overlaps
-     * @param {object} overlay - The overlay element created to display the user's active selection
-     * @param {number} gridId - The id of the grid widget instance
-     */
     function selectHighlighted(overlay, gridId) {
         var contentDiv = gridState[gridId].grid.find('.grid-content-div'),
             ctOffset = contentDiv.offset(),
@@ -1591,9 +1302,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Attaches click event handlers for each grouped header row in the grid
-     */
     function createGroupTrEventHandlers(gridId) {
         gridState[gridId].grid.find('.group_acc_link').on('click', function groupedAccordionsClickListenerCallback() {
             var elem = $(this),
@@ -1622,12 +1330,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Makes a grid cell editable on a click event. Used for grid cells whose values can be changed and whose column configuration
-     * has its editable property set to true
-     * @param {number} id - The id of the grid widget instance
-     * @param {object} td - The grid cell to attach the click listener to
-     */
     function makeCellEditable(id, td) {
         td.on('click', function editableCellClickHandler(e) {
             var gridContent = gridState[id].grid.find('.grid-content-div');
@@ -1716,12 +1418,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Makes a grid cell selectable on a click event. Used for grid cells whose values can be changed to a limited set
-     * or pre-specified values and whose column configuration provided the list of values and has its selectable property set to true
-     * @param {number} id - The id of the grid widget instance
-     * @param {object} td - The grid cell to attach the click listener to
-     */
     function makeCellSelectable(id, td) {
         td.on('click', function selectableCellClickHandler(e) {
             var gridContent = gridState[id].grid.find('.grid-content-div');
@@ -1735,7 +1431,7 @@ var grid = (function _grid($) {
             cell.text('');
             var index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row');
             var field = cell.data('field');
-            if (gridState[id].updating) return;		//can't edit a cell if the grid is updating
+            if (gridState[id].updating) return;		
 
             var gridValidation = gridState[id].useValidator ? gridState[id].columns[field].validation : null;
             var dataAttributes = '';
@@ -1800,14 +1496,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * If the validator is being used and a column has validation functions to run when editing values, this will determine
-     * the appropriate classes and data-attributes that should be applied to the cell's input in order for validation to run
-     * as well as set up a namespace for the validation functions to be execute in
-     * @param {object} columnValidation - The validation rules provided in the column's configuration
-     * @param {string} dataAttributes - The data-attributes for the cell's input
-     * @returns {string} - The final form of the data-attribute after the namespace has been created and all validation functions determined
-     */
     function setupCellValidation(columnValidation, dataAttributes) {
         if (!grid.validation) {
             Object.defineProperty(
@@ -1834,13 +1522,6 @@ var grid = (function _grid($) {
         return dataAttributes;
     }
 
-    /**
-     * Sets the column widths of the grid's header. If width properties are supplied as part
-     * of a column's metadata, the specified value is used; otherwise this function lets
-     * the column choose an auto-width.
-     * @param {object} gridData
-     * @param {object} gridElem
-     */
     function setColWidth(gridData, gridElem) {
         var columnNames = {},
             name,
@@ -1854,6 +1535,8 @@ var grid = (function _grid($) {
                 totalColWidth += columnNames[name] || 0;
             }
         }
+
+
         var headerCols = tableDiv.find('col');
 
         headerCols.each(function iterateColsCallback(idx, val) {
@@ -1879,14 +1562,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Copies the grid's column's widths to subsequent page data so that a consistent
-     * width is maintained.
-     * @method copyGridWidth
-     * @for grid
-     * @private
-     * @param {object} gridElem
-     */
     function copyGridWidth(gridElem) {
         var headerCols = gridElem.find('.grid-header-div').find('col');
         var contentCols = gridElem.find('.grid-content-div').find('col');
@@ -1902,14 +1577,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Attaches an event listener to a specific grid cell for the
-     * 'validated' event. Overrides the normal 'blur' behavior for cell editing
-     * @method attachValidationListener
-     * @for grid
-     * @private
-     * @param {object} elem
-     */
     function attachValidationListener(elem) {
         $(document).one('validated', function validationHandlerCallback(e, eventData) {
             if (eventData.element === elem) {
@@ -1926,15 +1593,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * On blur or successful validation if using the validator, removes the input from the
-     * grid cell, saves the data in the alteredData array and set a dirty flag on the grid dom
-     * element if the value changed
-     * @method saveCellEditData
-     * @for grid
-     * @private
-     * @param {object} input - The input element that was edited
-     */
     function saveCellEditData(input) {
         var val;
         if (input[0].type == 'checkbox') val = input.is(':checked');
@@ -1959,7 +1617,6 @@ var grid = (function _grid($) {
                     var tmpVal = parseFloat(val.replace(',', ''));
                     tmpVal === tmpVal ? saveVal = tmpVal : saveVal = 0;
                 }
-                //saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
                 break;
             case 'date':
                 re = new RegExp(dataTypes.date);
@@ -1998,15 +1655,6 @@ var grid = (function _grid($) {
         callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
 
-    /**
-     * On blur or successful validation if using the validator, removes the input from the
-     * grid cell, saves the data in the alteredData array and set a dirty flag on the grid dom
-     * element if the value changed
-     * @method saveCellSelectData
-     * @for grid
-     * @private
-     * @param {object} select - The select dom element
-     */
     function saveCellSelectData(select) {
         var gridContent = select.parents('.grid-wrapper').find('.grid-content-div'),
             val = select.val(),
@@ -2026,21 +1674,21 @@ var grid = (function _grid($) {
                 saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
                 break;
             case 'date':
-                saveVal = displayVal;   //this and time are the only types that have the same displayVal and saveVel
+                saveVal = displayVal;   
                 break;
             case 'time':
                 re = new RegExp(dataTypes.time);
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = displayVal;   //this and date are the only types that have the same displayVal and saveVal
+                saveVal = displayVal;   
                 break;
-            default: 		//string, boolean
+            default: 		
                 saveVal = val;
                 break;
         }
 
         parentCell.text(displayVal);
         var previousVal = gridState[id].dataSource.data[index][field];
-        if (previousVal !== saveVal) {	//if the value didn't change, don't "save" the new val, and don't apply the "dirty" span
+        if (previousVal !== saveVal) {	
             gridState[id].dataSource.data[index][field] = saveVal;
             if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
                 parentCell.prepend('<span class="dirty"></span>');
@@ -2055,22 +1703,13 @@ var grid = (function _grid($) {
         callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
 
-    /**
-     * Creates the toolbar div used for saving and deleting changes as well as grouping the grid's
-     * data by selected columns
-     * @param {object} gridData - The collection of data displayed in the grid
-     * @param {object} gridElem - The DOM element used for the grid widget
-     * @param {boolean} canEdit - Indicates if a column in the grid can be edited
-     */
     function createGridToolbar(gridData, gridElem, canEdit) {
         var id = gridElem.find('.grid-wrapper').data('grid_id');
-        if ($('#grid_' + id + '_toolbar').length) return;	//if the toolbar has already been created, don't create it again.
+        if ($('#grid_' + id + '_toolbar').length) return;	
 
-        if (gridData.groupable) {
+        if (typeof gridData.parentGridId !== 'number' && gridData.groupable) {
             var groupMenuBar = $('<div id="grid_' + id + '_group_div" class="group_div clearfix" data-grid_id="' + id + '">' + groupMenuText + '</div>').prependTo(gridElem);
             groupMenuBar.on('drop', function handleDropCallback(e) {
-                //TODO: figure out why debugging this in the browser causes two server requests to be made;
-                //TODO: 1 to get the grouped data that fails, and a second call when the page reloads for no apparent reason
                 var droppedCol = $('#' + e.originalEvent.dataTransfer.getData('text'));
                 droppedCol.data('dragging', false);
                 var dropIndicator = $('#drop_indicator_id_' + id);
@@ -2079,7 +1718,7 @@ var grid = (function _grid($) {
                     droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null,
                     groupedItems = {};
                 if (groupId == null || droppedId == null || groupId !== droppedId) return;
-                if (gridState[id].updating) return;		//can't group columns if grid is updating
+                if (gridState[id].updating) return;		
                 if (!groupMenuBar.children().length) groupMenuBar.text('');
                 var field = droppedCol.data('field'),
                     title = gridState[groupId].columns[field].title || field,
@@ -2093,10 +1732,10 @@ var grid = (function _grid($) {
                         return false;
                     }
                 });
-                if (foundDupe) return;  //can't group on the same column twice
+                if (foundDupe) return;  
 
                 droppedCol.data('grouped', true);
-                var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>'),//.appendTo(groupMenuBar),
+                var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>'),
                     groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
                 groupDirSpan.append('<span class="sort-asc-white groupSortSpan"></span>').append('<span>' + title + '</span>');
                 var cancelButton = $('<span class="remove"></span>').appendTo(groupItem),
@@ -2140,7 +1779,6 @@ var grid = (function _grid($) {
                 e.preventDefault();
                 var gridId = groupMenuBar.data('grid_id');
                 var dropIndicator = $('#drop_indicator_id_' + gridId);
-                //TODO: I believe I can just reuse the existing group indicator, but I may need to change where it lives as a child of the grid
                 if (!dropIndicator.length) {
                     dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator" data-grid_id="' + gridId + '"></div>');
                     dropIndicator.append('<span class="drop-indicator-top"></span><span class="drop-indicator-bottom"></span>');
@@ -2206,19 +1844,13 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Attaches handlers for changing the sort direction and canceling a grouping for each grouped item
-     * @param {Object} groupMenuBar - The DOM element that contains the grouped items
-     * @param {Object} groupDirSpan - The DOM element used for sorting and displaying the sort direction
-     * @param {Object} cancelButton - The DOM element use to remove a grouping
-     */
     function attachGroupItemEventHandlers(groupMenuBar, groupDirSpan, cancelButton) {
         groupDirSpan.on('click', function changeGroupSortDirHandler() {
             var groupElem = $(this),
                 id = groupElem.parents('.group_item').data('grid_id'),
                 sortSpan = groupElem.children('.groupSortSpan'),
                 groupElements = [];
-            if (gridState[id].updating) return;		//can't resort columns if grid is updating
+            if (gridState[id].updating) return;		
             if (sortSpan.hasClass('sort-asc-white')) sortSpan.removeClass('sort-asc-white').addClass('sort-desc-white');
             else sortSpan.removeClass('sort-desc-white').addClass('sort-asc-white');
             groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
@@ -2238,7 +1870,7 @@ var grid = (function _grid($) {
                 groupedCol = groupElem.parents('.group_item'),
                 id = groupedCol.data('grid_id'),
                 groupElements = [];
-            if (gridState[id].updating) return;		//can't resort columns if grid is updating
+            if (gridState[id].updating) return;		
             gridState[id].grid.find('colgroup').first().children().first().remove();
             gridState[id].grid.find('.grid-headerRow').children('.group_spacer').first().remove();
             gridState[id].grid.find('.summary-row-header').children('.group_spacer').first().remove();
@@ -2258,13 +1890,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Attaches the click handlers for the save and delete buttons on the toolbar for saving/deleting changes made to the grid data
-     * @param {number} id - the identifier of the grid instance
-     * @param {object} gridElem - the grid DOM element
-     * @param {object} saveAnchor - the save button DOM element
-     * @param {object} deleteAnchor - the delete button DOM element
-     */
     function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
         saveAnchor.on('click', function saveChangesHandler(e) {
             e.preventDefault();
@@ -2340,14 +1965,9 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Creates the menu for the grid's toolbar
-     * @param {object} menuAnchor - A DOM anchor element to attach the click handler to
-     * @param {number} gridId - The id of the current grid widget instance
-     */
     function attachMenuClickHandler(menuAnchor, gridId) {
         menuAnchor.on('click', function menuAnchorClickHandler(e) {
-            e.stopPropagation();	//stop event bubbling so that the click won't bubble to document click handler
+            e.stopPropagation();	
             e.preventDefault();
             var menu = gridState[gridId].grid.find('#menu_model_grid_id_' + gridId),
                 newMenu;
@@ -2408,12 +2028,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Creates the excel export sub-menu options and attached handlers
-     * @param {object} menu - The DOM menu-element
-     * @param {number}gridId - The id of the current grid widget instance
-     * @returns {*|HTMLElement}
-     */
     function createExcelExportMenuItems(menu, gridId) {
         var menuList = $('<ul class="menu-list"></ul>');
         var menuItem = $('<li class="menu_item"></li>');
@@ -2423,12 +2037,11 @@ var grid = (function _grid($) {
             if (!exportOptions.length) {
                 exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '" style="display: none;"></div>');
                 var exportList = $('<ul class="menu-list"></ul>');
-                var gridPage = $('<li data-value="page" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
-                var allData = $('<li data-value="all" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
-                exportList.append(gridPage).append(allData);
-                if (gridState[gridId].selectable) {
-                    var gridSelection = $('<li data-value="select" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
-                    exportList.append(gridSelection);
+                if (gridState[gridId].dataSource.rowCount <= gridState[gridId].pageSize)
+                    exportList.append('<li data-value="page" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
+                exportList.append('<li data-value="all" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
+                if (gridState[gridId].selectable && gridState[gridId].grid.find('.selected').length) {
+                    exportList.append('<li data-value="select" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
                 }
                 var options = exportList.find('li');
                 options.on('click', function excelExportItemClickHandler() {
@@ -2500,7 +2113,6 @@ var grid = (function _grid($) {
         return filterMenuItem;
     }
 
-    //TODO: break this out into smaller, separate functions
     function createFilterModalMenuItem(gridId) {
         var filterModalMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Advanced Filters</a>'));
         filterModalMenuItem.on('click', function openAdvancedFilterModal(e) {
@@ -2515,7 +2127,7 @@ var grid = (function _grid($) {
                 var groupSelector = '<select class="input group_conjunction"><option value="and">All</option><option value="or">Any</option></select> of the following:</span>';
                 advancedFiltersModal.append('<span class="group-select" data-filter_group_num="1">Match' + groupSelector);
                 var advancedFiltersContainer = $('<div class="filter_group_container" data-filter_group_num="1"></div>').appendTo(advancedFiltersModal);
-                addNewAdvancedFilter(advancedFiltersContainer, true /* isFirstFilter */);
+                addNewAdvancedFilter(advancedFiltersContainer, true );
 
                 $(document).on('click', function hideFilterModalHandler(e) {
                     var ct = $(e.target);
@@ -2566,7 +2178,7 @@ var grid = (function _grid($) {
 
                 var applyFiltersButton = $('<input type="button" value="Apply Filter(s)" class="advanced_filters_button"/>').appendTo(advancedFiltersModal);
                 applyFiltersButton.on('click', function applyAdvancedFiltersHandler() {
-                    if (gridState[gridId].updating) return;		//can't filter if grid is updating
+                    if (gridState[gridId].updating) return;		
                     gridState[gridId].grid.find('filterInput').val('');
 
                     advancedFiltersModal.find('.advanced_filter_value').each(function checkFilterValuesForValidContent(idx, val) {
@@ -2594,7 +2206,6 @@ var grid = (function _grid($) {
                             if (currValue.val() === '' && currValue.data('type') !== 'boolean') {
                                 parentDiv.remove();
                                 var filterGrp = currValue.parents('.filter_group_container');
-                                //If no child filters (regardless of how nested they may be) are found inside the group, remove the entire group
                                 if (!filterGrp.find('.filter_row_div').length) {
                                     advancedFiltersModal.find('span[data-filter_group_num="' + filterGrp.data('filter_group_num') + '"]').remove();
                                     filterGrp.remove();
@@ -2667,7 +2278,6 @@ var grid = (function _grid($) {
 
         if (value) {
             filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || 'string') });
-            //filterGroupArr.push({ field, value, operation, dataType: (gridState[gridId].columns[field].type || 'string') });
         }
     }
 
@@ -2681,7 +2291,7 @@ var grid = (function _grid($) {
         if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
         else if (filterModal.find('.filter_row_div').length === numFiltersAllowed - 1) filterModal.find('.add_filter_group').prop('disabled', true);
 
-        addNewAdvancedFilter($(e.currentTarget).closest('.filter_group_container'), false /* isFirstFilter */);
+        addNewAdvancedFilter($(e.currentTarget).closest('.filter_group_container'), false );
     }
 
     function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
@@ -2795,7 +2405,7 @@ var grid = (function _grid($) {
             .data('filter_group_num', filterGroupCount + 1)
             .css('left', (filterGroupContainer.outerWidth()));
         filterGroupContainer.append(removeGroup).append('</br>');
-        addNewAdvancedFilter(filterGroupContainer, true /* isFirstFilter */);
+        addNewAdvancedFilter(filterGroupContainer, true );
     }
 
     function deleteFilterButtonHandler(e) {
@@ -2931,11 +2541,6 @@ var grid = (function _grid($) {
         return menuList;
     }
 
-    /**
-     * Creates the footer for the grid widget
-     * @param {object} gridData - The metadata describing this grid widget instance
-     * @param {object} gridElem - The DOM element that contains the grid widget
-     */
     function createGridFooter(gridData, gridElem) {
         var gridFooter = gridElem.find('.grid-footer-div');
         var id = gridFooter.data('grid_footer_id');
@@ -2995,22 +2600,18 @@ var grid = (function _grid($) {
         setPagerEventListeners(gridFooter);
     }
 
-    /**
-     * Attaches click handlers to each pager
-     * @param {object} gridFooter - The grid's DOM footer element
-     */
     function setPagerEventListeners(gridFooter) {
         gridFooter.find('a').each(function iterateGridFooterAnchorsCallback(idx, val) {
             $(val).on('click', function gridFooterAnchorClickHandlerCallback(e) {
                 e.preventDefault();
                 var link = e.currentTarget.tagName === 'A' ? $(e.currentTarget) : $(e.srcElement).parents('.grid-page-link');
-                if (link.hasClass('link-disabled')) {	//If the pager link that was clicked on is disabled, return.
+                if (link.hasClass('link-disabled')) {	
                     return;
                 }
                 var gridFooter = link.parents('.grid-footer-div');
                 var allPagers = gridFooter.find('a');
                 var id = parseInt(link.parents('.grid-wrapper')[0].dataset.grid_id);
-                if (gridState[id].updating) return;		//can't page if grid is updating
+                if (gridState[id].updating) return;		
                 var gridData = gridState[id];
                 var pageSize = gridData.pageSize;
                 var pagerInfo = gridFooter.find('.pageinfo');
@@ -3065,20 +2666,16 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Attaches a click handler to each filter element in the grid's header
-     * @param {object} filterElem - The DOM element that has the click handler attached to it
-     */
     function attachFilterListener(filterElem) {
         filterElem.on('click', function filterClickCallback(e) {
-            e.stopPropagation();	//stop event bubbling so that the column won't also get sorted when the filter icon is clicked.
+            e.stopPropagation();	
             e.preventDefault();
             var filterAnchor = $(e.target);
             var filterCell = filterAnchor.parents('th');
             var type = filterAnchor.data('type');
             var grid = filterElem.parents('.grid-wrapper');
             var id = grid.data('grid_id');
-            if (gridState[id].updating) return;		//can't filter when the grid is updating
+            if (gridState[id].updating) return;		
             var filters = grid.find('.filter-div');
             var currFilter = null;
             var field = filterAnchor.data('field');
@@ -3105,13 +2702,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Creates the modal filter div and populates the filter types in the selector
-     * @param {string} type - The type of data to be filtered (string, number, boolean, date, time)
-     * @param {string} field - The column of data being filtered
-     * @param {object} grid - The DOM element for the grid widget
-     * @param {string} title - The title supplied in the metadata for the grid's column
-     */
     function createFilterDiv(type, field, grid, title) {
         var filterDiv = $('<div class="filter-div" data-parentfield="' + field + '" data-type="' + type + '"></div>').appendTo(grid);
         var domName = title ? title : type,
@@ -3129,7 +2719,6 @@ var grid = (function _grid($) {
         button = $('<input type="button" value="Filter" class="filterButton button" data-field="' + field + '"/>').appendTo(filterDiv);
         resetButton.on('click', resetButtonClickHandler);
         button.on('click', filterButtonClickHandler);
-        //TODO: why I am not validating date and time types here? Is it because the regular expressions were ready at the time?
         if (filterInput && type !=='time' && type !== 'date') filterInputValidation(filterInput);
     }
 
@@ -3166,10 +2755,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Attaches a keypress handler on the inputs in a filter modal
-     * @param {object} input - The DOM input element
-     */
     function filterInputValidation(input) {
         input.on('keypress', function restrictCharsHandler(e) {
             var code = e.charCode? e.charCode : e.keyCode,
@@ -3215,7 +2800,7 @@ var grid = (function _grid($) {
 
         filterModal.find('filter_error').remove();
 
-        if (gridState[gridId].updating) return;		//can't filter if grid is updating
+        if (gridState[gridId].updating) return;		
         gridState[gridId].filters = {};
         gridState[gridId].pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
@@ -3227,7 +2812,7 @@ var grid = (function _grid($) {
             field = $(this).data('field'),
             remainingFilters = [],
             gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
-        if (gridState[gridId].updating) return;		//can't filter if grid is updating
+        if (gridState[gridId].updating) return;		
         var gridData = gridState[gridId];
 
         if (value === '' && !gridData.filters.filterGroup.length) return;
@@ -3251,7 +2836,7 @@ var grid = (function _grid($) {
             selected = filterDiv.find('.filterSelect').val(),
             value = filterDiv.find('.filterInput').val(),
             gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
-        if (gridState[gridId].updating) return;		//can't filter if grid is updating
+        if (gridState[gridId].updating) return;		
         var gridData = gridState[gridId],
             type = filterDiv.data('type'),
             errors = filterDiv.find('.filter-div-error'),
@@ -3364,7 +2949,6 @@ var grid = (function _grid($) {
                 dropIndicator.css('display', 'none');
             }
         });
-        //elem.on('mouseleave', mouseLeaveHandlerCallback);
     }
 
     function handleDropCallback(e) {
@@ -3373,8 +2957,8 @@ var grid = (function _grid($) {
         var targetCol = $(e.currentTarget);
         var id = targetCol.parents('.grid-header-div').length ? targetCol.parents('.grid-wrapper').data('grid_id') : null;
         var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
-        if (id == null || droppedId == null || id !== droppedId) return;  //at least one of the involved dom elements is not a grid column, or they are from different grids
-        if (gridState[id].updating) return;		//can't resort columns if grid is updating
+        if (id == null || droppedId == null || id !== droppedId) return;  
+        if (gridState[id].updating) return;		
         if (droppedCol[0].cellIndex === targetCol[0].cellIndex) return;
         if (droppedCol[0].id === 'sliderDiv') return;
 
@@ -3484,40 +3068,32 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Sets a click handler for all sortable columns on the column header
-     * @param {object} elem - The DOM element that has the click handler attached
-     */
     function setSortableClickListener(elem) {
         elem.on('click', function handleHeaderClickCallback(e) {
             var headerDiv = elem.parents('.grid-header-div');
             var id = parseInt(headerDiv.data('grid_header_id'));
-            if (gridState[id].updating) return;		//can't sort if grid is updating
+            if (gridState[id].updating) return;		
             var field = elem.data('field'),
                 foundColumn = false;
 
             if (gridState[id].groupedBy.length) {
                 for (var j = 0; j < gridState[id].groupedBy.length; j++) {
-                    if (gridState[id].groupedBy[j].field === field) return; //can't sort on a grouped column
+                    if (gridState[id].groupedBy[j].field === field) return; 
                 }
             }
 
             for (var i = 0; i < gridState[id].sortedOn.length; i++) {
-                //if we find the field in the list of sorted columns....
                 if (gridState[id].sortedOn[i].field === field) {
                     foundColumn = true;
-                    //...if it had been sorted ascending, change it to descending...
                     if (gridState[id].sortedOn[i].sortDirection === 'asc') {
                         gridState[id].sortedOn[i].sortDirection = 'desc';
                         elem.find('.sortSpan').addClass('sort-desc').removeClass('sort-asc');
                     }
                     else {
-                        //...otherwise, remove it from the collection of sorted columns
                         gridState[id].sortedOn =  gridState[id].sortedOn.filter(function filterSortedColumns(item) {
                             return item.field !== field;
                         });
                         elem.find('.sortSpan').remove();
-                        //TODO: why am I doing this here?
                         gridState[id].alteredData = cloneGridData(gridState[id].originalData);
                     }
                 }
@@ -3533,12 +3109,6 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Add the filter icon to a filterable grid header and attaches an event listener when the icon is clicked
-     * @param {object} elem - The grid header element whose column values are filterable
-     * @param {object} gridData - The metadata describing the grid's behavior and attributes
-     * @param {string} col - The name of the field associated with the filterable grid column
-     */
     function setFilterableClickListener(elem, gridData, col) {
         var type = gridData.columns[col].type || 'string';
         var anchor = $('<a href="#"></a>').appendTo(elem);
@@ -3573,15 +3143,11 @@ var grid = (function _grid($) {
         });
     }
 
-    /**
-     * Handler for column resizing - alters the width of a grid column based on mouse movement
-     * @param {object} e - The drag event that was fired by the browser
-     */
     function handleResizeDragCallback(e) {
         e.preventDefault();
         var sliderDiv = $(e.currentTarget);
         var id = sliderDiv.parents('.grid-wrapper').data('grid_id');
-        if (gridState[id].updating) return;		//can't resize columns if grid is updating
+        if (gridState[id].updating) return;		
         var targetCell = document.getElementById(sliderDiv.data('targetindex'));
         var targetBox = targetCell.getBoundingClientRect();
         var endPos = e.originalEvent.pageX;
@@ -3621,12 +3187,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Swaps the cells of a grid when a column re-ordering happens
-     * @param {number} gridId - The id of the grid widget instance
-     * @param {number} droppedIndex - The column index of the column that was 'dropped'
-     * @param {number} targetIndex - The column index of the column that was the target of the dropped column
-     */
     function swapContentCells(gridId, droppedIndex, targetIndex) {
         var gridData = gridState[gridId];
         $('#grid-content-' + gridId).find('tr').filter(function filterNestedGridRows() {
@@ -3659,8 +3219,6 @@ var grid = (function _grid($) {
         });
     }
 
-    //All page request-related functions call here. This sets up the request object and then calls either
-    //the internal or the supplied GET function to get a new page of grid data.
     function preparePageDataGetRequest(id) {
         gridState[id].updating = true;
         var gridData = gridState[id];
@@ -3681,7 +3239,6 @@ var grid = (function _grid($) {
         if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function') gridData.dataSource.get(requestObj, getPageDataRequestCallback);
         else {
             if (!gridData.alteredData || gridData.pageRequest.eventType === 'filter-rem') gridData.alteredData = cloneGridData(gridData.originalData);
-            //else if (gridData.eventType === 'filter-rem') gridData.alteredData = cloneGridData(gridData.originalData);
             getPageData(requestObj, id, getPageDataRequestCallback);
         }
 
@@ -3710,12 +3267,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Used when saving changes made to grid data. If being used for server-side updates, this
-     * function will eventually call the provided function for saving changes to the grid. Otherwise,
-     * it will update its internal reference to the grid's data
-     * @param {number} id - The id of the grid widget instance
-     */
     function prepareGridDataUpdateRequest(id) {
         gridState[id].updating = true;
         var requestObj = {
@@ -3749,12 +3300,6 @@ var grid = (function _grid($) {
         }
     }
 
-    //Default GET function - used for client-side page updates
-    //As long as there isn't a "remove sort" functionality, and a filter hasn't been applied or removed,
-    //then I only need to do one of the data manipulations below. Adding or removing a filter complicates things,
-    //as does removing sorting. For now, I am going to do things the "dumb" way, but I may revisit this later to
-    //see if there is a faster way to manipulate the data.
-    //TODO: update this function based both on the multi-sort addition and the comment above
     function getPageData(requestObj, id, callback) {
         var eventType = gridState[id].pageRequest.eventType;
         var fullGridData = cloneGridData(gridState[id].alteredData);
@@ -3765,7 +3310,7 @@ var grid = (function _grid($) {
         }
         if (requestObj.filters && requestObj.filters.filterGroup && requestObj.filters.filterGroup.length) {
             fullGridData = expressionParser.createFilterTreeFromFilterObject(requestObj.filters).filterCollection(cloneGridData(gridState[id].originalData));
-            requestObj.pageNum = 1;		//reset the page to the first page when a filter is applied or removed.
+            requestObj.pageNum = 1;		
             gridState[id].alteredData = fullGridData;
         }
         if (requestObj.groupedBy && requestObj.groupedBy.length || requestObj.sortedOn.length) {
@@ -3778,10 +3323,6 @@ var grid = (function _grid($) {
         limitPageData(requestObj, fullGridData, callback);
     }
 
-    //==========================================================================================================================//
-    //																															//
-    //													HELPER FUNCTIONS														//
-    //==========================================================================================================================//
 
     function limitPageData(requestObj, fullGridData, callback) {
         var returnData;
@@ -3800,13 +3341,6 @@ var grid = (function _grid($) {
         callback({ rowCount: fullGridData.length, data: returnData });
     }
 
-    /**
-     * Using various equality operators, checks for truth based on the type of the operator(s)
-     * @param {string|number|boolean} val - The value that is being checked against a base value
-     * @param {*} base - The based value against which values are compared
-     * @param {string} type - The type of equality operator(s) to be used in the comparison
-     * @returns {boolean} - Returns a boolean indicating that whether the comparison was true of false
-     */
     function comparator(val, base, type) {
         switch (type) {
             case 'eq':
@@ -3828,13 +3362,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Manages sorting grid data based on the field and data type
-     * @param {Array} sortedItems - An array of objects describing which columns are to be sorted and in which directions
-     * @param {Array} gridData - An array containing the grid data to be sorted
-     * @param {number} gridId - The id of the grid instance
-     * @returns {Array} - Returns an array of sorted grid data
-     */
     function sortGridData (sortedItems, gridData, gridId) {
         for (var i = 0; i < sortedItems.length; i++) {
             if (i === 0)
@@ -3860,13 +3387,6 @@ var grid = (function _grid($) {
         return gridData;
     }
 
-    /**
-     * @method Merge-Sort algorithm for grid data client-side sorting
-     * @param {object} data - the grid's data
-     * @param {object} sortObj - object that contains the field that the grid data is being sorted on and the direction of the sort
-     * @param {string} type - the type of the data (string, number, time, date, boolean)
-     * @returns {*}
-     */
     function mergeSort(data, sortObj, type) {
         if (data.length < 2) return data;
         var middle = parseInt(data.length / 2);
@@ -3937,12 +3457,6 @@ var grid = (function _grid($) {
         return result;
     }
 
-    /**
-     * Calls all registered event handlers for a collection of events
-     * @param {Array} events - A collection of events to
-     * @param {Object} context - An object, array, or function to set as the context of the event handler
-     * @param  {Object} param - An object that contains metadata about the event
-     */
     function callGridEventHandlers(events, context, param) {
         if (events.length) {
             for (var x = 0; x < events.length; x++)
@@ -3958,14 +3472,6 @@ var grid = (function _grid($) {
         return -1;
     }
 
-    /**
-     * Formats the text in a grid cell - uses both column formats and column templates if provided
-     * @param {number} gridId - The id of the grid instance
-     * @param {string} column - The column of the grid that this data will be displayed in
-     * @param {string|number} value - The value to be formatted
-     * @returns {string|number} - Returns a formatted value if a column format and/or template were provided;
-     * otherwise, returns the value
-     */
     function getFormattedCellText(gridId, column, value) {
         var text,
             type = gridState[gridId].columns[column].type || 'string';
@@ -4010,12 +3516,6 @@ var grid = (function _grid($) {
         return text;
     }
 
-    /**
-     * Given a string, this function will ensure it is in a valid time format and has a legitimate
-     * time value. This returns a standard format as a response.
-     * @param {string} val - The value being tested for time legitimacy
-     * @returns {Array} - An array containing hours, minutes, seconds of the day (if 12 hour time format, also contains meridiem)
-     */
     function getNumbersFromTime(val) {
         var re = new RegExp(dataTypes.time);
         if (!re.test(val)) return [];
@@ -4042,23 +3542,11 @@ var grid = (function _grid($) {
         return retVal;
     }
 
-    /**
-     * Given the array the 'getNumbersFromTime' function produces, this function will turn the values
-     * into seconds for comparisons when filtering and sorting grid data.
-     * @param {Array} timeArray - An array of the type produced by the 'getNumbersFromTime' function
-     * @returns {number} - Returns a value in seconds for the time of day
-     */
     function convertTimeArrayToSeconds(timeArray) {
         var hourVal = parseInt(timeArray[0].toString()) === 12 || parseInt(timeArray[0].toString()) === 24 ? parseInt(timeArray[0].toString()) - 12 : parseInt(timeArray[0]);
         return 3660 * hourVal + 60 * parseInt(timeArray[1]) + parseInt(timeArray[2]);
     }
 
-    /**
-     * Validates that a given character is allowed with the given data type
-     * @param {number} code - The character's key code
-     * @param {string} dataType - The type of data to check for character validity
-     * @returns {boolean} - Returns the tested character if valid or null if not
-     */
     function validateCharacter(code, dataType) {
         var key = String.fromCharCode(code);
         if (dataTypes[dataType]) {
@@ -4068,13 +3556,6 @@ var grid = (function _grid($) {
         return true;
     }
 
-    /**
-     * Compares two values for equality after coercing both to the provided type
-     * @param {string|number} val1 - The first value to check for equality
-     * @param {string|number} val2 - The second value to check for equality
-     * @param {string} dataType - The type of data contained in the two values
-     * @returns {boolean} - Indicated equality or lack thereof
-     */
     function compareValuesByType (val1, val2, dataType) {
         switch (dataType) {
             case 'string':
@@ -4082,13 +3563,10 @@ var grid = (function _grid($) {
             case 'number':
                 return parseFloat(val1.toString()) === parseFloat(val2.toString());
             case 'boolean':
-                /*jshint -W018*/    //have to turn off jshint check for !! operation because there's not built-in way to turn it off in the config file and
-                //like most js devs, those of jshint aren't the most savvy JSers
                 return !!val1 === !!val2;
             case 'date':
                 var date1 = new Date(val1),
                     date2 = new Date(val2);
-                //invalid date values - creating a date from both values resulted in either NaN or 'Invalid Date', neither of which are equal to themselves.
                 if ((typeof date1 === 'object' ||typeof date1 === 'number') && (typeof date2 === 'object' || typeof date2 === 'number')) {
                     if (date1 !== date1 && date2 !== date2) return true;
                 }
@@ -4130,11 +3608,6 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Exports data from grid based on user's selection (current page data, all data, or selection data if the grid is selectable is turned on)
-     * @param {number} gridId - The id of the grid DOM instance
-     * @param {string} option - The export option selected by the user
-     */
     function exportDataAsExcelFile(gridId, option) {
         if (excelExporter && typeof excelExporter.createWorkBook === 'function') {
             determineGridDataToExport(gridId, (option || 'page'), function gridDataCallback(excelDataAndColumns) {
@@ -4143,18 +3616,10 @@ var grid = (function _grid($) {
         }
     }
 
-    /**
-     * Determines what grid data to export to excel based on user's selected menu option
-     * @param {number} gridId - The id of the grid DOM instance
-     * @param {string} option - The export option selected by the user
-     * @param {function} callback - The callback function; Needed for server-side data requests
-     */
     function determineGridDataToExport(gridId, option, callback) {
         var columns = getGridColumns(gridId);
         switch (option) {
             case 'select':
-                //TODO: this is a bad namespace; need to rework the unfortunate grid.grid section
-                //TODO: need to also create a better way to get the selected grid data as it appears in the dataSource
                 var selectedData = gridState[gridId].grid[0].grid.selectedData;
                 if (!selectedData.length) return;
                 var data = [], currentRow = selectedData[0].rowIndex;
@@ -4172,16 +3637,10 @@ var grid = (function _grid($) {
                 callback({ data: data, columns: columns});
                 break;
             case 'all':
-                if (typeof gridState[gridId].dataSource.get === 'function') {
-                    var reqObj = createExcelRequestObject(gridId);
-                    if (typeof gridState[gridId].dataSource.get === 'function') {
-                        gridState[gridId].dataSource.get(reqObj, function excelDataCallback(response) {
-                            callback({ data: response.data, columns: columns});
-                        });
-                    }
-                    else {
-                        callback({ data: gridState[gridId].originalData, columns: columns });
-                    }
+                if (typeof gridState[gridId].dataSource.get === 'function' && gridState[gridId].dataSource.rowCount > gridState[gridId].pageSize) {
+                    gridState[gridId].dataSource.get(createExcelRequestObject(gridId), function excelDataCallback(response) {
+                        callback({ data: response.data, columns: columns});
+                    });
                 }
                 else callback({ data: gridState[gridId].originalData, columns: columns });
                 break;
@@ -4192,12 +3651,9 @@ var grid = (function _grid($) {
     }
 
     function getGridColumns(gridId) {
-        var cols = [];
-        for (var col in gridState[gridId].columns) {
-            if (!gridState[gridId].columns[col].isHidden)
-                cols.push(col);
-        }
-        return cols;
+        return Object.keys(gridState[gridId].columns).filter(function collectNonHiddenColumns(col) {
+            return !this[col].isHidden;
+        }, gridState[gridId].columns);
     }
 
     function createExcelRequestObject(gridId) {
@@ -4236,13 +3692,6 @@ var grid = (function _grid($) {
 
     aggregates = { count: 'Count: ', average: 'Avg: ', max: 'Max: ', min: 'Min: ', total: 'Total: ' };
 
-    /**
-     * Given a time of day value, will return the value formatted as specified for a given column of the grid
-     * @param {string} time - A string representing a time of day (eg '9:45:56 AM' or '17:36:43.222')
-     * @param {string} column - The column of the grid that provided the format
-     * @param {string|number} gridId - The id value of the grid this operation is being performed on
-     * @returns {string} - Returns the time formatted as specified for the given grid column
-     */
     function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
             formattedTime,
@@ -4281,12 +3730,6 @@ var grid = (function _grid($) {
         return '';
     }
 
-    /**
-     * Takes a date value and a format and will return the date in the form provided
-     * @param {string} date - The date value to be formatted
-     * @param {string} format - The format that the date value should be in
-     * @returns {string|Date} - Returns a formatted date if able, otherwise will return a default JS date using the date provided as the seed
-     */
     function formatDateCellData(date, format) {
         if (!format) return date;
         var parseDate = Date.parse(date);
@@ -4298,12 +3741,6 @@ var grid = (function _grid($) {
         return '';
     }
 
-    /**
-     * Takes a number and a format string and will format the number according to the formatting rules
-     * @param {string|number} num - The number to be formatted before it is displayed in the grid
-     * @param {string} format - The format string that specifies how to format the number
-     * @returns {string|number} - Returns either the number it received if unable to properly format, or a string value of the formatted number
-     */
     function formatNumericCellData(num, format) {
         if (!format) return num;
         var formatSections = [];
@@ -4324,7 +3761,7 @@ var grid = (function _grid($) {
         num = roundNumber(+num, decimals);
         var sign = 0 > +num ? -1 : 1;
         num = num.toString();
-        num = num.replace(new RegExp(',', 'g'), '').replace('-', '');   //remove all commas: either the format didn't specify commas, or we will replace them later
+        num = num.replace(new RegExp(',', 'g'), '').replace('-', '');   
         var dataDecimalIndex = ~num.indexOf('.') ? num.indexOf('.') : num.length;
         dataSections[0] = num.substring(0, dataDecimalIndex).split('').reverse().join('');
         if (dataDecimalIndex < format.length)
@@ -4375,11 +3812,6 @@ var grid = (function _grid($) {
         return num;
     }
 
-    /**
-     * Given a format, this function will ensure it is valid and strip it of all invalid characters
-     * @param {string} format - A string denoting the format a value displayed in the grid should have.
-     * @returns {object} - Returns an object with the validated format string and metadata about how the value to be formatted should be treated
-     */
     function verifyFormat(format) {
         var formatSections = [];
         format = format.replace(/[^0#,.]/g , '');
@@ -4412,11 +3844,6 @@ var grid = (function _grid($) {
         };
     }
 
-    /**
-     * Given a format string for either currency or percent, will normalize it as a decimal format
-     * @param {string} format - A string denoting the currency or percent a value in a field should take.
-     * @returns {object} - Returns an object containing the normalized format string, as well as metadata on how to treat the value to be formatted.
-     */
     function createCurrencyNumberOrPercentFormat(format) {
         var charStripper = '\\d{0,2}]',
             cPOrN = ~format.indexOf('P') ? 'P' : ~format.indexOf('N') ? 'N' : 'C';
@@ -4449,32 +3876,16 @@ var grid = (function _grid($) {
         };
     }
 
-    /**
-     * Multiples a number by 100
-     * @param {number} val - the number to by multiplied by 100
-     * @returns {number} - returns the multiple of the number and 100
-     */
     function x100(val) {
         return val * 100;
     }
 
-    /**
-     * Rounds a number to a given decimal place
-     * @param {number} val - the number to be rounded
-     * @param {number} dec - the number of decimals to retain after rounding
-     * @returns {number} - Returns the value rounded to the nth decimal place
-     */
     function roundNumber(val, dec) {
         var pow = Math.pow(10, dec || 0);
         return Math.round((val*pow))/pow;
     }
 
-    /**
-     * Clones an object and returns a new object instance with the same values as the original
-     * @param {object|*} gridData - The object to be cloned
-     * @returns {*} - Returns a new instance of whatever type was given to the function
-     */
-    function cloneGridData(gridData) { //Clones grid data so pass-by-reference doesn't mess up the values in other grids.
+    function cloneGridData(gridData) { 
         if (gridData == null || typeof (gridData) !== 'object')
             return gridData;
 
@@ -4488,11 +3899,6 @@ var grid = (function _grid($) {
         return temp;
     }
 
-    /**
-     * Copies the contents of an array into a new array instance
-     * @param {Array} arr - The array to be copied
-     * @returns {Array} - Returns a new array instance containing the values in the original
-     */
     function cloneArray(arr) {
         var length = arr.length,
             newArr = new arr.constructor(length);
@@ -4509,20 +3915,10 @@ var grid = (function _grid($) {
         return newArr;
     }
 
-    /**
-     * Checks that a given variable is a DOM element
-     * @param {object} node - The variable being checked
-     * @returns {boolean} - Returns true if the variable is a DOM element, false if not
-     */
     function isDomElement(node) {
         return node && node instanceof Element && node instanceof Node && typeof node.ownerDocument === 'object';
     }
 
-    /**
-     * Checks that a given variable is a number and not NaN
-     * @param {number} value - The number that is being checked
-     * @returns {boolean} Returns true if the value is a number, false if not
-     */
     function isNumber(value) {
         return typeof value === 'number' && value === value;
     }
