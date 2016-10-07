@@ -1,7 +1,7 @@
 # HTML-Data-Grid-Widget
 A JQuery-dependent, HTML data-grid widget
 
-View the grid demo [here].(http://mosbymc.github.io/HTML-Data-Grid-Widget/)
+View the grid demo [here](http://mosbymc.github.io/HTML-Data-Grid-Widget/).
 
 ###Currently Implemented Functionality:###
 - Resizable Columns
