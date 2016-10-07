@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.70</p>
+      <p class="stat">55.69</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3956</p>
+      <p class="stat">3980</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">217.26</p>
+      <p class="stat">222.30</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">90.00</p>
+      <p class="stat">90.48</p>
     </div>
   </div>
 </div>
@@ -737,24 +737,43 @@
     }
 
     function buildHeaderAggregations(gridId) {
-        var aggrs = gridState[gridId].gridAggregations;
+        var gridData = gridState[gridId],
+            i, col;
+        if (typeof gridState[gridId].dataSource.get !== &#039;function&#039;) {
+            var dataTofilter = gridData.alteredData &amp;&amp; gridData.alteredData.length ? gridData.alteredData : gridData.originalData,
+                remRows = dataTofilter.filter(function getRemainingRows(val, idx) {
+                return idx &gt; gridData.pageNum * gridData.pageSize - 1 || idx &lt; gridData.pageNum * gridData.pageSize - gridData.pageSize;
+            });
+
+            for (i = 0; i &lt; remRows.length; i++) {
+                for (col in gridData.columns) {
+                    if (gridData.aggregates[col])
+                        addValueToAggregations(gridId, col, remRows[i][col], gridData.gridAggregations);
+                }
+            }
+        }
+
+        var aggrs = gridData.gridAggregations;
         if (aggrs) {
             var headerTHead = $(&#039;#grid-header-&#039; + gridId).find(&#039;thead&#039;);
             var aggRow = headerTHead.find(&#039;.summary-row-header&#039;);
             if (aggRow.length)
                 aggRow.remove();
             aggRow = $(&#039;&lt;tr class=summary-row-header&gt;&lt;/tr&gt;&#039;).appendTo(headerTHead);
-            if (gridState[gridId].groupedBy.length) {
-                for (var i = 0; i &lt; gridState[gridId].groupedBy.length; i++) {
+            if (gridData.groupedBy.length) {
+                for (i = 0; i &lt; gridData.groupedBy.length; i++) {
                     aggRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
                 }
             }
-            if (gridState[gridId].drillDown) {
+            if (gridData.drillDown) {
                 aggRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
             }
-            for (var col in aggrs) {
-                var text = aggrs[col].text || &#039;&#039;;
-                aggRow.append(&#039;&lt;td data-field=&quot;&#039; + col + &#039;&quot; class=summary-cell-header&gt;&#039; + text + &#039;&lt;/td&gt;&#039;);
+            for (col in gridData.columns) {
+                if (col in aggrs) {
+                    var text = aggrs[col].text || &#039;&#039;;
+                    aggRow.append(&#039;&lt;td data-field=&quot;&#039; + col + &#039;&quot; class=summary-cell-header&gt;&#039; + text + &#039;&lt;/td&gt;&#039;);
+                }
+                else aggRow.append(&#039;&lt;td data-field=&quot;&#039; + col + &#039;&quot; class=summary-cell-header&gt;&lt;/td&gt;&#039;);
             }
         }
     }
@@ -845,7 +864,10 @@
                     if (typeof gridData.columns[columns[j]].events === &#039;object&#039;) {
                         attachCustomCellHandler(columns[j], td, id);
                     }
-                    if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
+                    if (gridData.aggregates &amp;&amp; gridData.aggregates[columns[j]]  &amp;&amp; typeof gridData.dataSource.get !== &#039;function&#039;) {
+                        if (gridData.pageRequest.eventType !== &#039;page&#039;)
+                            addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
+                    }
                     if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (gridData.columns[columns[j]].editable &amp;&amp; gridData.columns[columns[j]].editable !== &#039;drop-down&#039;)) {
                         makeCellEditable(id, td);
                         gridState[id].editable = true;
@@ -866,7 +888,8 @@
                 }
             }
 
-            if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039; &amp;&amp; typeof gridData.dataSource.get !== &#039;function&#039;) buildHeaderAggregations(id);
+            if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039; &amp;&amp; typeof gridData.dataSource.get !== &#039;function&#039; &amp;&amp; gridData.pageRequest.eventType !== &#039;page&#039;)
+                buildHeaderAggregations(id);
 
             if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;bottom&#039;) {
                 var aggrs = gridState[id].gridAggregations;
@@ -975,7 +998,8 @@
                     };
                 }
                 for (item in gridData.columns) {
-                    addValueToAggregations(gridId, item, gridData.dataSource.data[rowIndex][item], gridData.groupAggregations[j]);
+                    if (gridData.aggregates &amp;&amp; gridData.aggregates[item])
+                        addValueToAggregations(gridId, item, gridData.dataSource.data[rowIndex][item], gridData.groupAggregations[j]);
                 }
                 gridData.groupAggregations[j]._items_++;
             }
@@ -1075,7 +1099,7 @@
                 var count = aggregationObj[field].count ? aggregationObj[field].count + 1 : 1;
                 value = parseFloat(value.toString());
                 total = aggregationObj[field].total ? aggregationObj[field].total + value : value;
-                var avg = parseFloat(parseFloat(total/count));
+                var avg = total/count;
                 text = getFormattedCellText(gridId, field, avg.toFixed(2)) || avg.toFixed(2);
                 aggregationObj[field].total = total;
                 aggregationObj[field].count = count;
@@ -3338,7 +3362,7 @@
             if (response) {
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
-                gridData.pageNum = (requestObj.pageSize * requestObj.pageNum) &gt; response.data.length ? Math.ceil(response.data.length / requestObj.pageSize) : requestObj.pageNum;
+                gridData.pageNum = requestObj.pageNum;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy || [];
                 gridData.sortedOn = requestObj.sortedOn || [];

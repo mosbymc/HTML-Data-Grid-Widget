@@ -994,24 +994,43 @@ var grid = (function _grid($) {
      * @param {number} gridId
      */
     function buildHeaderAggregations(gridId) {
-        var aggrs = gridState[gridId].gridAggregations;
+        var gridData = gridState[gridId],
+            i, col;
+        if (typeof gridState[gridId].dataSource.get !== 'function') {
+            var dataTofilter = gridData.alteredData && gridData.alteredData.length ? gridData.alteredData : gridData.originalData,
+                remRows = dataTofilter.filter(function getRemainingRows(val, idx) {
+                return idx > gridData.pageNum * gridData.pageSize - 1 || idx < gridData.pageNum * gridData.pageSize - gridData.pageSize;
+            });
+
+            for (i = 0; i < remRows.length; i++) {
+                for (col in gridData.columns) {
+                    if (gridData.aggregates[col])
+                        addValueToAggregations(gridId, col, remRows[i][col], gridData.gridAggregations);
+                }
+            }
+        }
+
+        var aggrs = gridData.gridAggregations;
         if (aggrs) {
             var headerTHead = $('#grid-header-' + gridId).find('thead');
             var aggRow = headerTHead.find('.summary-row-header');
             if (aggRow.length)
                 aggRow.remove();
             aggRow = $('<tr class=summary-row-header></tr>').appendTo(headerTHead);
-            if (gridState[gridId].groupedBy.length) {
-                for (var i = 0; i < gridState[gridId].groupedBy.length; i++) {
+            if (gridData.groupedBy.length) {
+                for (i = 0; i < gridData.groupedBy.length; i++) {
                     aggRow.append('<td class="group_spacer">&nbsp</td>');
                 }
             }
-            if (gridState[gridId].drillDown) {
+            if (gridData.drillDown) {
                 aggRow.append('<td class="group_spacer">&nbsp</td>');
             }
-            for (var col in aggrs) {
-                var text = aggrs[col].text || '';
-                aggRow.append('<td data-field="' + col + '" class=summary-cell-header>' + text + '</td>');
+            for (col in gridData.columns) {
+                if (col in aggrs) {
+                    var text = aggrs[col].text || '';
+                    aggRow.append('<td data-field="' + col + '" class=summary-cell-header>' + text + '</td>');
+                }
+                else aggRow.append('<td data-field="' + col + '" class=summary-cell-header></td>');
             }
         }
     }
@@ -1111,7 +1130,10 @@ var grid = (function _grid($) {
                     if (typeof gridData.columns[columns[j]].events === 'object') {
                         attachCustomCellHandler(columns[j], td, id);
                     }
-                    if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
+                    if (gridData.aggregates && gridData.aggregates[columns[j]]  && typeof gridData.dataSource.get !== 'function') {
+                        if (gridData.pageRequest.eventType !== 'page')
+                            addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
+                    }
                     //attach event handlers to save data
                     if (typeof gridData.parentGridId !== 'number' && (gridData.columns[columns[j]].editable && gridData.columns[columns[j]].editable !== 'drop-down')) {
                         makeCellEditable(id, td);
@@ -1133,7 +1155,8 @@ var grid = (function _grid($) {
                 }
             }
 
-            if (gridData.aggregates && gridData.aggregates.positionAt === 'top' && typeof gridData.dataSource.get !== 'function') buildHeaderAggregations(id);
+            if (gridData.aggregates && gridData.aggregates.positionAt === 'top' && typeof gridData.dataSource.get !== 'function' && gridData.pageRequest.eventType !== 'page')
+                buildHeaderAggregations(id);
 
             if (gridData.aggregates && gridData.aggregates.positionAt === 'bottom') {
                 var aggrs = gridState[id].gridAggregations;
@@ -1263,7 +1286,8 @@ var grid = (function _grid($) {
                     };
                 }
                 for (item in gridData.columns) {
-                    addValueToAggregations(gridId, item, gridData.dataSource.data[rowIndex][item], gridData.groupAggregations[j]);
+                    if (gridData.aggregates && gridData.aggregates[item])
+                        addValueToAggregations(gridId, item, gridData.dataSource.data[rowIndex][item], gridData.groupAggregations[j]);
                 }
                 gridData.groupAggregations[j]._items_++;
             }
@@ -1376,7 +1400,7 @@ var grid = (function _grid($) {
                 var count = aggregationObj[field].count ? aggregationObj[field].count + 1 : 1;
                 value = parseFloat(value.toString());
                 total = aggregationObj[field].total ? aggregationObj[field].total + value : value;
-                var avg = parseFloat(parseFloat(total/count));
+                var avg = total/count;
                 text = getFormattedCellText(gridId, field, avg.toFixed(2)) || avg.toFixed(2);
                 aggregationObj[field].total = total;
                 aggregationObj[field].count = count;
@@ -3824,7 +3848,7 @@ var grid = (function _grid($) {
             if (response) {
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
-                gridData.pageNum = (requestObj.pageSize * requestObj.pageNum) > response.data.length ? Math.ceil(response.data.length / requestObj.pageSize) : requestObj.pageNum;
+                gridData.pageNum = requestObj.pageNum;// (requestObj.pageSize * requestObj.pageNum) > response.rowCount ? Math.ceil(response.data.length / requestObj.pageSize) : requestObj.pageNum;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
                 gridData.groupedBy = requestObj.groupedBy || [];
                 gridData.sortedOn = requestObj.sortedOn || [];
