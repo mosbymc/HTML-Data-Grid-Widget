@@ -890,7 +890,7 @@ var grid = (function _grid($) {
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
-        storageData.parentGridId = gridData.parentGridId || null;
+        storageData.parentGridId = gridData.parentGridId != null ? gridData.parentGridId : null;
         if (storageData.dataSource.rowCount == null) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
@@ -3611,17 +3611,17 @@ var grid = (function _grid($) {
     }
 
     function mouseLeaveHandlerCallback(e) {
-        var target = $(e.currentTarget);
-        var targetOffset = target.offset();
-        var targetWidth = target.innerWidth();
-        var mousePos = { x: e.originalEvent.pageX, y: e.originalEvent.pageY };
-        var sliderDiv = $('#sliderDiv');
+        var target = $(e.currentTarget),
+            targetOffset = target.offset(),
+            targetWidth = target.innerWidth(),
+            mousePos = { x: e.originalEvent.pageX, y: e.originalEvent.pageY },
+            parentDiv = target.parents('.grid-header-wrapper'),
+            id = parentDiv.parent().data('grid_header_id'),
+            sliderDiv = $('#sliderDiv' + id);
 
         if (Math.abs(mousePos.x - (targetOffset.left + targetWidth)) < 10) {
             if (!sliderDiv.length) {
-                var parentDiv = target.parents('.grid-header-wrapper'),
-                    id = parentDiv.parent().data('grid_header_id');
-                sliderDiv = $('<div id=sliderDiv style="width:10px; height:' + target.innerHeight() + 'px; cursor: col-resize; position: absolute" draggable=true><div></div></div>').appendTo(parentDiv);
+                sliderDiv = $('<div id="sliderDiv' + id + '" style="width:10px; height:' + target.innerHeight() + 'px; cursor: col-resize; position: absolute" draggable=true><div></div></div>').appendTo(parentDiv);
                 sliderDiv.on('dragstart', function handleResizeDragStartCallback(e) {
                     e.originalEvent.dataTransfer.setData('text', e.currentTarget.id);
                     gridState[id].resizing = true;
@@ -3655,11 +3655,49 @@ var grid = (function _grid($) {
                     var headerCol = $($(colGroups[0]).children()[targetColIdx]),
                         contentCol = $($(colGroups[1]).children()[targetColIdx]);
 
-                    headerCol[0].style.width = '';
-                    contentCol[0].style.width = '';
-                    var newContentWidth = $(gridState[id].grid.find('#grid-content-' + id).find('tr').first().children('td')[targetColIdx]).width(),
-                        newHeaderWidth = $(gridState[id].grid.find('#grid-header-' + id).find('tr').first().children('th')[targetColIdx]).width(),
-                        newWidth = newContentWidth > newHeaderWidth ? newContentWidth : newHeaderWidth;
+                    var tables = gridState[id].grid.find('table').filter(function removeParentOrChildCols() {
+                        var cg = $(this);
+                        if (gridState[id].parentGridId != null) {
+                            return cg.parents('tr.drill-down-parent').length;
+                        }
+                        else return !cg.parents('tr.drill-down-parent').length;
+                    });
+
+                    var headerCell = $(tables[0]).find('th')[targetColIdx],
+                        aggregateCell = $(tables[0]).find('td')[targetColIdx] || null,
+                        headerMultiplier = 8.1,
+                        aggregateMultiplier = 7.5,
+                        contentMultiplier = 6.75,
+                        maxLength = headerCell.innerText.length * headerMultiplier,
+                        newWidth;
+
+                    if (gridState[id].columns[targetCol.data('field')].sortable)
+                        maxLength += 16;
+
+                    if (gridState[id].columns[targetCol.data('field')].filterable)
+                        maxLength += 40;
+
+                    if (aggregateCell && aggregateCell.innerText.length * aggregateMultiplier > maxLength)
+                        maxLength = aggregateCell.innerText.length * aggregateMultiplier;
+
+                    $(tables[1]).find('tr').each(function findTargetContentCells() {
+                        var row = $(this);
+                        if (gridState[id].parentGridId != null) {
+                            if (row.parents('tr.drill-down-parent').length) {
+                                if (row.find('td')[targetColIdx].innerText.length * contentMultiplier > maxLength)
+                                    maxLength = row.find('td')[targetColIdx].innerText.length * contentMultiplier;
+                            }
+                        }
+                        else {
+                            if (!row.parents('tr.drill-down-parent').length) {
+                                if (row.find('td')[targetColIdx].innerText.length * contentMultiplier > maxLength)
+                                    maxLength = row.find('td')[targetColIdx].innerText.length * contentMultiplier;
+                            }
+                        }
+                    });
+
+                    newWidth = Math.ceil(maxLength) + 24;
+                    tables.css('width', tables.width() - (headerCol.width() - newWidth));
                     headerCol.css('width', newWidth);
                     contentCol.css('width', newWidth);
                 });
