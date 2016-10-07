@@ -1343,7 +1343,11 @@ var grid = (function _grid($) {
             cell.text('');
 
             if (gridState[id].updating) return;
-            var index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
+            var row = cell.parents('tr').first(),
+                index = gridData.grid.find('tr').filter(function removeGroupAndChildRows() {
+                    var r =  $(this);
+                    return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
+                }).index(row),
                 field = cell.data('field'),
                 type = gridState[id].columns[field].type || '',
                 val = gridState[id].dataSource.data[index][field] || '',
@@ -1369,7 +1373,7 @@ var grid = (function _grid($) {
                     break;
                 case 'number':
                     if (typeof gridState[id].dataSource.data[index][field] === 'string')
-                        val = isNumber(parseFloat(gridState[id].dataSource.data[index][field])) ? isNumber(parseFloat(gridState[id].dataSource.data[index][field])) : 0;
+                        val = isNumber(parseFloat(gridState[id].dataSource.data[index][field])) ? parseFloat(gridState[id].dataSource.data[index][field]) : 0;
                     else
                         val = isNumber(gridState[id].dataSource.data[index][field]) ? gridState[id].dataSource.data[index][field] : 0;
                     inputVal = val;
@@ -1420,8 +1424,8 @@ var grid = (function _grid($) {
 
     function makeCellSelectable(id, td) {
         td.on('click', function selectableCellClickHandler(e) {
-            var gridContent = gridState[id].grid.find('.grid-content-div');
-            var gridData = gridState[id];
+            var gridContent = gridState[id].grid.find('.grid-content-div'),
+                gridData = gridState[id];
             if (e.target !== e.currentTarget) return;
             if (gridContent.find('.invalid').length) return;
             var cell = $(e.currentTarget);
@@ -1429,12 +1433,16 @@ var grid = (function _grid($) {
                 cell.data('dirty', true);
             else cell.data('dirty', false);
             cell.text('');
-            var index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row');
-            var field = cell.data('field');
+            var row = cell.parents('tr').first(),
+                index = gridData.grid.find('tr').filter(function removeGroupAndChildRows() {
+                    var r =  $(this);
+                    return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
+                }).index(row),
+                field = cell.data('field');
             if (gridState[id].updating) return;		
 
-            var gridValidation = gridState[id].useValidator ? gridState[id].columns[field].validation : null;
-            var dataAttributes = '';
+            var gridValidation = gridState[id].useValidator ? gridState[id].columns[field].validation : null,
+                dataAttributes = '';
 
             if (gridValidation) {
                 dataAttributes = setupCellValidation(gridValidation, dataAttributes);
@@ -1442,9 +1450,9 @@ var grid = (function _grid($) {
                 dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
             }
 
-            var select = $('<select class="input select active-cell"' + dataAttributes + '></select>').appendTo(cell);
-            var options = [];
-            var setVal = gridData.dataSource.data[index][field];
+            var select = $('<select class="input select active-cell"' + dataAttributes + '></select>').appendTo(cell),
+                options = [],
+                setVal = gridData.dataSource.data[index][field];
             if (null != setVal && '' !== setVal) options.push(setVal);
             for (var z = 0; z < gridData.columns[field].options.length; z++) {
                 if (!compareValuesByType(setVal, gridData.columns[field].options[z], (gridData.columns[field].type || 'string'))) {
@@ -1600,7 +1608,11 @@ var grid = (function _grid($) {
         var gridContent = input.parents('.grid-wrapper').find('.grid-content-div'),
             cell = input.parents('td'),
             id = gridContent.data('grid_content_id'),
-            index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
+            row = cell.parents('tr').first(),
+            index = gridState[id].grid.find('tr').filter(function removeGroupAndChildRows() {
+                var r =  $(this);
+                return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
+            }).index(row),
             field = cell.data('field'),
             type = gridState[id].columns[field].type || '',
             saveVal, re, setDirtyFlag = false,
@@ -1661,7 +1673,11 @@ var grid = (function _grid($) {
             parentCell = select.parents('td');
         select.remove();
         var id = gridContent.data('grid_content_id'),
-            index = parentCell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
+            row = parentCell.parents('tr').first(),
+            index = gridState[id].grid.find('tr').filter(function removeGroupAndChildRows() {
+                var r =  $(this);
+                return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
+            }).index(row),
             field = parentCell.data('field'),
             type = gridState[id].columns[field].type || '',
             displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field],
