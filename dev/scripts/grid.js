@@ -968,10 +968,6 @@ var grid = (function _grid($) {
                     gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
                 }
 
-                if (gridData.resizable) {
-                    th.on('mouseleave', mouseLeaveHandlerCallback);
-                }
-
                 if ((gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
                     createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
 
@@ -979,6 +975,11 @@ var grid = (function _grid($) {
             }
             else
                 $('<span class="header-anchor" href="#"></span>').appendTo(th).text(text);
+
+            if (gridData.resizable) {
+                th.on('mouseleave', mouseLeaveHandlerCallback);
+            }
+
             index++;
         }
         headerTable.css('width','');
@@ -3639,6 +3640,7 @@ var grid = (function _grid($) {
                 sliderDiv.on('dblclick', function doubleClickHandler() {
                     var targetCol = gridState[id].grid.find('#' + sliderDiv.data('targetindex')),
                     targetColIdx = targetCol.data('index');
+                    if (targetColIdx === Object.keys(gridState[id].columns).length - 1) return;
                     if (gridState[id].drillDown) ++targetColIdx;
                     if (gridState[id].groupedBy && gridState[id].groupedBy.length) {
                         targetColIdx = targetColIdx + gridState[id].groupedBy.length;
