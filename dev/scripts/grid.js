@@ -2543,12 +2543,11 @@ var grid = (function _grid($) {
             if (!exportOptions.length) {
                 exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '" style="display: none;"></div>');
                 var exportList = $('<ul class="menu-list"></ul>');
-                var gridPage = $('<li data-value="page" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
-                var allData = $('<li data-value="all" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
-                exportList.append(gridPage).append(allData);
-                if (gridState[gridId].selectable) {
-                    var gridSelection = $('<li data-value="select" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
-                    exportList.append(gridSelection);
+                if (gridState[gridId].dataSource.rowCount <= gridState[gridId].pageSize)
+                    exportList.append('<li data-value="page" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
+                exportList.append('<li data-value="all" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
+                if (gridState[gridId].selectable && gridState[gridId].grid.find('.selected').length) {
+                    exportList.append('<li data-value="select" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
                 }
                 var options = exportList.find('li');
                 options.on('click', function excelExportItemClickHandler() {
@@ -4292,16 +4291,10 @@ var grid = (function _grid($) {
                 callback({ data: data, columns: columns});
                 break;
             case 'all':
-                if (typeof gridState[gridId].dataSource.get === 'function') {
-                    var reqObj = createExcelRequestObject(gridId);
-                    if (typeof gridState[gridId].dataSource.get === 'function') {
-                        gridState[gridId].dataSource.get(reqObj, function excelDataCallback(response) {
-                            callback({ data: response.data, columns: columns});
-                        });
-                    }
-                    else {
-                        callback({ data: gridState[gridId].originalData, columns: columns });
-                    }
+                if (typeof gridState[gridId].dataSource.get === 'function' && gridState[gridId].dataSource.rowCount > gridState[gridId].pageSize) {
+                    gridState[gridId].dataSource.get(createExcelRequestObject(gridId), function excelDataCallback(response) {
+                        callback({ data: response.data, columns: columns});
+                    });
                 }
                 else callback({ data: gridState[gridId].originalData, columns: columns });
                 break;
