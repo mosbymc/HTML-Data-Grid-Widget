@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.54</p>
+      <p class="stat">55.70</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3940</p>
+      <p class="stat">3956</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">216.44</p>
+      <p class="stat">217.26</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">89.47</p>
+      <p class="stat">90.00</p>
     </div>
   </div>
 </div>
@@ -1419,7 +1419,11 @@
             cell.text(&#039;&#039;);
 
             if (gridState[id].updating) return;
-            var index = cell.parents(&#039;tr&#039;).index(&#039;#&#039; + gridContent[0].id + &#039; .data-row&#039;),
+            var row = cell.parents(&#039;tr&#039;).first(),
+                index = gridData.grid.find(&#039;tr&#039;).filter(function removeGroupAndChildRows() {
+                    var r =  $(this);
+                    return r.hasClass(&#039;data-row&#039;) &amp;&amp; !r.parents(&#039;.drill-down-parent&#039;).length &amp;&amp; !r.hasClass(&#039;drill-down-parent&#039;);
+                }).index(row),
                 field = cell.data(&#039;field&#039;),
                 type = gridState[id].columns[field].type || &#039;&#039;,
                 val = gridState[id].dataSource.data[index][field] || &#039;&#039;,
@@ -1445,7 +1449,7 @@
                     break;
                 case &#039;number&#039;:
                     if (typeof gridState[id].dataSource.data[index][field] === &#039;string&#039;)
-                        val = isNumber(parseFloat(gridState[id].dataSource.data[index][field])) ? isNumber(parseFloat(gridState[id].dataSource.data[index][field])) : 0;
+                        val = isNumber(parseFloat(gridState[id].dataSource.data[index][field])) ? parseFloat(gridState[id].dataSource.data[index][field]) : 0;
                     else
                         val = isNumber(gridState[id].dataSource.data[index][field]) ? gridState[id].dataSource.data[index][field] : 0;
                     inputVal = val;
@@ -1496,8 +1500,8 @@
 
     function makeCellSelectable(id, td) {
         td.on(&#039;click&#039;, function selectableCellClickHandler(e) {
-            var gridContent = gridState[id].grid.find(&#039;.grid-content-div&#039;);
-            var gridData = gridState[id];
+            var gridContent = gridState[id].grid.find(&#039;.grid-content-div&#039;),
+                gridData = gridState[id];
             if (e.target !== e.currentTarget) return;
             if (gridContent.find(&#039;.invalid&#039;).length) return;
             var cell = $(e.currentTarget);
@@ -1505,12 +1509,16 @@
                 cell.data(&#039;dirty&#039;, true);
             else cell.data(&#039;dirty&#039;, false);
             cell.text(&#039;&#039;);
-            var index = cell.parents(&#039;tr&#039;).index(&#039;#&#039; + gridContent[0].id + &#039; .data-row&#039;);
-            var field = cell.data(&#039;field&#039;);
+            var row = cell.parents(&#039;tr&#039;).first(),
+                index = gridData.grid.find(&#039;tr&#039;).filter(function removeGroupAndChildRows() {
+                    var r =  $(this);
+                    return r.hasClass(&#039;data-row&#039;) &amp;&amp; !r.parents(&#039;.drill-down-parent&#039;).length &amp;&amp; !r.hasClass(&#039;drill-down-parent&#039;);
+                }).index(row),
+                field = cell.data(&#039;field&#039;);
             if (gridState[id].updating) return;		
 
-            var gridValidation = gridState[id].useValidator ? gridState[id].columns[field].validation : null;
-            var dataAttributes = &#039;&#039;;
+            var gridValidation = gridState[id].useValidator ? gridState[id].columns[field].validation : null,
+                dataAttributes = &#039;&#039;;
 
             if (gridValidation) {
                 dataAttributes = setupCellValidation(gridValidation, dataAttributes);
@@ -1518,9 +1526,9 @@
                 dataAttributes += &#039; data-validateon=&quot;blur&quot; data-offsetHeight=&quot;-6&quot; data-offsetWidth=&quot;8&quot; data-modalid=&quot;&#039; + gridBodyId + &#039;&quot;&#039;;
             }
 
-            var select = $(&#039;&lt;select class=&quot;input select active-cell&quot;&#039; + dataAttributes + &#039;&gt;&lt;/select&gt;&#039;).appendTo(cell);
-            var options = [];
-            var setVal = gridData.dataSource.data[index][field];
+            var select = $(&#039;&lt;select class=&quot;input select active-cell&quot;&#039; + dataAttributes + &#039;&gt;&lt;/select&gt;&#039;).appendTo(cell),
+                options = [],
+                setVal = gridData.dataSource.data[index][field];
             if (null != setVal &amp;&amp; &#039;&#039; !== setVal) options.push(setVal);
             for (var z = 0; z &lt; gridData.columns[field].options.length; z++) {
                 if (!compareValuesByType(setVal, gridData.columns[field].options[z], (gridData.columns[field].type || &#039;string&#039;))) {
@@ -1676,7 +1684,11 @@
         var gridContent = input.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-content-div&#039;),
             cell = input.parents(&#039;td&#039;),
             id = gridContent.data(&#039;grid_content_id&#039;),
-            index = cell.parents(&#039;tr&#039;).index(&#039;#&#039; + gridContent[0].id + &#039; .data-row&#039;),
+            row = cell.parents(&#039;tr&#039;).first(),
+            index = gridState[id].grid.find(&#039;tr&#039;).filter(function removeGroupAndChildRows() {
+                var r =  $(this);
+                return r.hasClass(&#039;data-row&#039;) &amp;&amp; !r.parents(&#039;.drill-down-parent&#039;).length &amp;&amp; !r.hasClass(&#039;drill-down-parent&#039;);
+            }).index(row),
             field = cell.data(&#039;field&#039;),
             type = gridState[id].columns[field].type || &#039;&#039;,
             saveVal, re, setDirtyFlag = false,
@@ -1737,7 +1749,11 @@
             parentCell = select.parents(&#039;td&#039;);
         select.remove();
         var id = gridContent.data(&#039;grid_content_id&#039;),
-            index = parentCell.parents(&#039;tr&#039;).index(&#039;#&#039; + gridContent[0].id + &#039; .data-row&#039;),
+            row = parentCell.parents(&#039;tr&#039;).first(),
+            index = gridState[id].grid.find(&#039;tr&#039;).filter(function removeGroupAndChildRows() {
+                var r =  $(this);
+                return r.hasClass(&#039;data-row&#039;) &amp;&amp; !r.parents(&#039;.drill-down-parent&#039;).length &amp;&amp; !r.hasClass(&#039;drill-down-parent&#039;);
+            }).index(row),
             field = parentCell.data(&#039;field&#039;),
             type = gridState[id].columns[field].type || &#039;&#039;,
             displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field],
