@@ -34,7 +34,7 @@ Planned functionality & upgrades:
 - Remove jQuery dependency (this will happen no time soon)
 
 
-I just got my github project page for this repo up and running (here.)[http://mosbymc.github.io/HTML-Data-Grid-Widget/] I had been including a demo page within the main repo, but now, as part of the clean up I intend to do, I will be removing the unecessary .html files from the repo. For now, you can check out the grid at the project page linked above. I'll make sure to keep it updated with the latest code.
+I just got my github project page for this repo up and running [here.](http://mosbymc.github.io/HTML-Data-Grid-Widget/) I had been including a demo page within the main repo, but now, as part of the clean up I intend to do, I will be removing the unecessary .html files from the repo. For now, you can check out the grid at the project page linked above. I'll make sure to keep it updated with the latest code.
 
 Note that while the grid does indeed support the above list of implemented functionalities, there are some bugs with it. If you're interested in this repo,
 then I would suggest cloning the grid to just play around with it and get familiar with how it works, but do not use this in any production site for the time being.
