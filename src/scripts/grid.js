@@ -1569,9 +1569,8 @@ var grid = (function _grid($) {
                 $(val).css('width', 27);
             }
             else if (columnNames[columnList[i]] != null) {
-                if (idx === headerCols.length - 1 && totalColWidth < (tableDiv.find('table').width() + (numColPadders * 27) - 17)) {
-                    $(val).css('width', columnNames[columnList[i]] + (tableDiv.find('table').width() - totalColWidth - (numColPadders * 27) - 17));
-
+                if (idx === headerCols.length - 1 && totalColWidth < (tableDiv.find('table').width() + (numColPadders * 27) - 17) - columnNames[columnList[i]]) {
+                    return;
                 }
                 else
                     $(val).css('width', columnNames[columnList[i]]);
@@ -3069,14 +3068,15 @@ var grid = (function _grid($) {
 
         if (Math.abs(mousePos.x - (targetOffset.left + targetWidth)) < 10) {
             if (!sliderDiv.length) {
-                var parentDiv = target.parents('.grid-header-wrapper');
+                var parentDiv = target.parents('.grid-header-wrapper'),
+                    id = parentDiv.parent().data('grid_header_id');
                 sliderDiv = $('<div id=sliderDiv style="width:10px; height:' + target.innerHeight() + 'px; cursor: col-resize; position: absolute" draggable=true><div></div></div>').appendTo(parentDiv);
                 sliderDiv.on('dragstart', function handleResizeDragStartCallback(e) {
                     e.originalEvent.dataTransfer.setData('text', e.currentTarget.id);
-                    gridState[parentDiv.parent().data('grid_header_id')].resizing = true;
+                    gridState[id].resizing = true;
                 });
                 sliderDiv.on('dragend', function handleResizeDragEndCallback() {
-                    gridState[parentDiv.parent().data('grid_header_id')].resizing = false;
+                    gridState[id].resizing = false;
                 });
                 sliderDiv.on('dragover', function handleResizeDragOverCallback(e) {
                     e.preventDefault();
@@ -3085,6 +3085,33 @@ var grid = (function _grid($) {
                     e.preventDefault();
                 });
                 sliderDiv.on('drag', handleResizeDragCallback);
+                sliderDiv.on('dblclick', function doubleClickHandler() {
+                    var targetCol = gridState[id].grid.find('#' + sliderDiv.data('targetindex')),
+                    targetColIdx = targetCol.data('index');
+                    if (gridState[id].drillDown) ++targetColIdx;
+                    if (gridState[id].groupedBy && gridState[id].groupedBy.length) {
+                        targetColIdx = targetColIdx + gridState[id].groupedBy.length;
+                    }
+
+                    var colGroups = gridState[id].grid.find('colgroup').filter(function removeParentOrChildCols() {
+                        var cg = $(this);
+                        if (gridState[id].parentGridId != null) {
+                            return cg.parents('tr.drill-down-parent').length;
+                        }
+                        else return !cg.parents('tr.drill-down-parent').length;
+                    });
+
+                    var headerCol = $($(colGroups[0]).children()[targetColIdx]),
+                        contentCol = $($(colGroups[1]).children()[targetColIdx]);
+
+                    headerCol[0].style.width = '';
+                    contentCol[0].style.width = '';
+                    var newContentWidth = $(gridState[id].grid.find('#grid-content-' + id).find('tr').first().children('td')[targetColIdx]).width(),
+                        newHeaderWidth = $(gridState[id].grid.find('#grid-header-' + id).find('tr').first().children('th')[targetColIdx]).width(),
+                        newWidth = newContentWidth > newHeaderWidth ? newContentWidth : newHeaderWidth;
+                    headerCol.css('width', newWidth);
+                    contentCol.css('width', newWidth);
+                });
             }
             sliderDiv.data('targetindex', target[0].id);
             sliderDiv.css('top', targetOffset.top + 'px');

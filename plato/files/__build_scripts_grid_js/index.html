@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.69</p>
+      <p class="stat">55.71</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">3980</p>
+      <p class="stat">4007</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">222.30</p>
+      <p class="stat">222.63</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">90.48</p>
+      <p class="stat">91.33</p>
     </div>
   </div>
 </div>
@@ -1660,9 +1660,8 @@
                 $(val).css(&#039;width&#039;, 27);
             }
             else if (columnNames[columnList[i]] != null) {
-                if (idx === headerCols.length - 1 &amp;&amp; totalColWidth &lt; (tableDiv.find(&#039;table&#039;).width() + (numColPadders * 27) - 17)) {
-                    $(val).css(&#039;width&#039;, columnNames[columnList[i]] + (tableDiv.find(&#039;table&#039;).width() - totalColWidth - (numColPadders * 27) - 17));
-
+                if (idx === headerCols.length - 1 &amp;&amp; totalColWidth &lt; (tableDiv.find(&#039;table&#039;).width() + (numColPadders * 27) - 17) - columnNames[columnList[i]]) {
+                    return;
                 }
                 else
                     $(val).css(&#039;width&#039;, columnNames[columnList[i]]);
@@ -3160,14 +3159,15 @@
 
         if (Math.abs(mousePos.x - (targetOffset.left + targetWidth)) &lt; 10) {
             if (!sliderDiv.length) {
-                var parentDiv = target.parents(&#039;.grid-header-wrapper&#039;);
+                var parentDiv = target.parents(&#039;.grid-header-wrapper&#039;),
+                    id = parentDiv.parent().data(&#039;grid_header_id&#039;);
                 sliderDiv = $(&#039;&lt;div id=sliderDiv style=&quot;width:10px; height:&#039; + target.innerHeight() + &#039;px; cursor: col-resize; position: absolute&quot; draggable=true&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;&#039;).appendTo(parentDiv);
                 sliderDiv.on(&#039;dragstart&#039;, function handleResizeDragStartCallback(e) {
                     e.originalEvent.dataTransfer.setData(&#039;text&#039;, e.currentTarget.id);
-                    gridState[parentDiv.parent().data(&#039;grid_header_id&#039;)].resizing = true;
+                    gridState[id].resizing = true;
                 });
                 sliderDiv.on(&#039;dragend&#039;, function handleResizeDragEndCallback() {
-                    gridState[parentDiv.parent().data(&#039;grid_header_id&#039;)].resizing = false;
+                    gridState[id].resizing = false;
                 });
                 sliderDiv.on(&#039;dragover&#039;, function handleResizeDragOverCallback(e) {
                     e.preventDefault();
@@ -3176,6 +3176,33 @@
                     e.preventDefault();
                 });
                 sliderDiv.on(&#039;drag&#039;, handleResizeDragCallback);
+                sliderDiv.on(&#039;dblclick&#039;, function doubleClickHandler() {
+                    var targetCol = gridState[id].grid.find(&#039;#&#039; + sliderDiv.data(&#039;targetindex&#039;)),
+                    targetColIdx = targetCol.data(&#039;index&#039;);
+                    if (gridState[id].drillDown) ++targetColIdx;
+                    if (gridState[id].groupedBy &amp;&amp; gridState[id].groupedBy.length) {
+                        targetColIdx = targetColIdx + gridState[id].groupedBy.length;
+                    }
+
+                    var colGroups = gridState[id].grid.find(&#039;colgroup&#039;).filter(function removeParentOrChildCols() {
+                        var cg = $(this);
+                        if (gridState[id].parentGridId != null) {
+                            return cg.parents(&#039;tr.drill-down-parent&#039;).length;
+                        }
+                        else return !cg.parents(&#039;tr.drill-down-parent&#039;).length;
+                    });
+
+                    var headerCol = $($(colGroups[0]).children()[targetColIdx]),
+                        contentCol = $($(colGroups[1]).children()[targetColIdx]);
+
+                    headerCol[0].style.width = &#039;&#039;;
+                    contentCol[0].style.width = &#039;&#039;;
+                    var newContentWidth = $(gridState[id].grid.find(&#039;#grid-content-&#039; + id).find(&#039;tr&#039;).first().children(&#039;td&#039;)[targetColIdx]).width(),
+                        newHeaderWidth = $(gridState[id].grid.find(&#039;#grid-header-&#039; + id).find(&#039;tr&#039;).first().children(&#039;th&#039;)[targetColIdx]).width(),
+                        newWidth = newContentWidth &gt; newHeaderWidth ? newContentWidth : newHeaderWidth;
+                    headerCol.css(&#039;width&#039;, newWidth);
+                    contentCol.css(&#039;width&#039;, newWidth);
+                });
             }
             sliderDiv.data(&#039;targetindex&#039;, target[0].id);
             sliderDiv.css(&#039;top&#039;, targetOffset.top + &#039;px&#039;);
