@@ -1,8 +1,5 @@
 # Dev directories
 .tmp
-dev
-src
-routes
 
 # Dependency directory
 node_modules
@@ -14,7 +11,3 @@ node_modules
 .node_repl_history
 
 .idea
-closureExterns.js
-app.js
-gulp.config.js
-gulpfile.js
