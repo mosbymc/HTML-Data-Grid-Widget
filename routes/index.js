@@ -1,7 +1,7 @@
 var request =           require('request'),
     gridData =          require('../dev/scripts/data.js'),
     originalData =      require('./grid-server-data'),
-    drillDownData =     require('./drillDownConfig-server'),
+    drillDownData =     require('./drillDownServerConfig'),
     columns =           originalData.columns,
     drillDownColumns =  drillDownData.columns,
     gridDataHelpers =   require('./gridDataHelpers.js');

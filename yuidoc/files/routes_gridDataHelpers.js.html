@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>routes\gridDataHelpers.js - Grid Widget</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
+    <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
+    <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
+    <link rel="icon" href="../assets/favicon.ico">
+    <script src="http://yui.yahooapis.com/combo?3.9.1/build/yui/yui-min.js"></script>
+</head>
+<body class="yui3-skin-sam">
+
+<div id="doc">
+    <div id="hd" class="yui3-g header">
+        <div class="yui3-u-3-4">
+                <h1><img src="../assets/css/logo.png" title="Grid Widget" width="117" height="52"></h1>
+        </div>
+        <div class="yui3-u-1-4 version">
+            <em>API Docs for: 0.0.1</em>
+        </div>
+    </div>
+    <div id="bd" class="yui3-g">
+
+        <div class="yui3-u-1-4">
+            <div id="docs-sidebar" class="sidebar apidocs">
+                <div id="api-list">
+                    <h2 class="off-left">APIs</h2>
+                    <div id="api-tabview" class="tabview">
+                        <ul class="tabs">
+                            <li><a href="#api-classes">Classes</a></li>
+                            <li><a href="#api-modules">Modules</a></li>
+                        </ul>
+                
+                        <div id="api-tabview-filter">
+                            <input type="search" id="api-filter" placeholder="Type to filter APIs">
+                        </div>
+                
+                        <div id="api-tabview-panel">
+                            <ul id="api-classes" class="apis classes">
+                                <li><a href="../classes/grid.html">grid</a></li>
+                                <li><a href="../classes/Grid DOM element.html">Grid DOM element</a></li>
+                            </ul>
+                
+                
+                            <ul id="api-modules" class="apis modules">
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="yui3-u-3-4">
+                <div id="api-options">
+                    Show:
+                    <label for="api-show-inherited">
+                        <input type="checkbox" id="api-show-inherited" checked>
+                        Inherited
+                    </label>
+            
+                    <label for="api-show-protected">
+                        <input type="checkbox" id="api-show-protected">
+                        Protected
+                    </label>
+            
+                    <label for="api-show-private">
+                        <input type="checkbox" id="api-show-private">
+                        Private
+                    </label>
+                    <label for="api-show-deprecated">
+                        <input type="checkbox" id="api-show-deprecated">
+                        Deprecated
+                    </label>
+            
+                </div>
+            
+            <div class="apidocs">
+                <div id="docs-main">
+                    <div class="content">
+<h1 class="file-heading">File: routes\gridDataHelpers.js</h1>
+
+<div class="file">
+    <pre class="code prettyprint linenums">
+/**
+ * Created by Mark.Mosby on 3/2/2016.
+ */
+var gridDataHelpers = {};
+
+gridDataHelpers.groupColumns = function groupColumns(data, field) {
+    var groupings = {};
+    for (var i = 0; i &lt; data.length; i++) {
+        if (groupings[data[i][field]])
+            groupings[data[i][field]].push(data[i]);
+        else
+            groupings[data[i][field]] = [data[i]];
+    }
+
+    var groupedData = [];
+    for (var group in groupings) {
+        groupedData = groupedData.concat(groupings[group]);
+    }
+
+    return { groupings: groupings, groupedData: groupedData };
+};
+
+gridDataHelpers.filterGridData = function filterGridData(filterType, value, field, dataType, gridData) {
+    var filteredData = [], curVal, baseVal;
+
+    for (var i = 0, length = gridData.length; i &lt; length; i++) {
+        if (dataType === &#x27;time&#x27;) {
+            curVal = gridDataHelpers.getNumbersFromTime(gridData[i][field]);
+            baseVal = gridDataHelpers.getNumbersFromTime(value);
+
+            if (gridData[i][field].indexOf(&#x27;PM&#x27;) &gt; -1)
+                curVal[0] += 12;
+            if (value.indexOf(&#x27;PM&#x27;) &gt; -1)
+                baseVal[0] += 12;
+
+            curVal = gridDataHelpers.convertTimeArrayToSeconds(curVal);
+            baseVal = gridDataHelpers.convertTimeArrayToSeconds(baseVal);
+        }
+        else if (dataType === &#x27;number&#x27;) {
+            curVal = parseFloat(gridData[i][field]);
+            baseVal = parseFloat(value);
+        }
+        else if (dataType === &#x27;date&#x27;) {
+            curVal = new Date(gridData[i][field]);
+            baseVal = new Date(value);
+        }
+        else {
+            curVal = gridData[i][field];
+            baseVal = value;
+        }
+        if (gridDataHelpers.comparator(curVal, baseVal, filterType))
+            filteredData.push(gridData[i]);
+    }
+    return filteredData;
+};
+
+gridDataHelpers.comparator = function comparator(val, base, type) {
+    switch (type) {
+        case &#x27;eq&#x27;:
+            return val === base;
+        case &#x27;neq&#x27;:
+            return val !== base;
+        case &#x27;gte&#x27;:
+            return val &gt;= base;
+        case &#x27;gt&#x27;:
+            return val &gt; base;
+        case &#x27;lte&#x27;:
+            return val &lt;= base;
+        case &#x27;lt&#x27;:
+            return val &lt; base;
+        case &#x27;ct&#x27;:
+            return ~val.toLowerCase().indexOf(base.toLowerCase());
+        case &#x27;nct&#x27;:
+            return !~val.toLowerCase().indexOf(base.toLowerCase());
+    }
+};
+
+gridDataHelpers.mergeSort = function mergeSort(data, field, type) {
+    if (data.length &lt; 2) return data;
+    var middle = parseInt(data.length / 2);
+    var left   = data.slice(0, middle);
+    var right  = data.slice(middle, data.length);
+    return gridDataHelpers.merge(gridDataHelpers.mergeSort(left, field, type), gridDataHelpers.mergeSort(right, field, type), field, type);
+};
+
+gridDataHelpers.merge = function tmpMerge(left, right, field, type) {
+    var result = [], leftVal, rightVal;
+    while (left.length &amp;&amp; right.length) {
+        if (type === &#x27;time&#x27;) {
+            leftVal = gridDataHelpers.getNumbersFromTime(left[0][field]);
+            rightVal = gridDataHelpers.getNumbersFromTime(right[0][field]);
+
+            if (~left[0][field].indexOf(&#x27;PM&#x27;))
+                leftVal[0] += 12;
+            if (~right[0][field].indexOf(&#x27;PM&#x27;))
+                rightVal[0] += 12;
+
+            leftVal = gridDataHelpers.convertTimeArrayToSeconds(leftVal);
+            rightVal = gridDataHelpers.convertTimeArrayToSeconds(rightVal);
+        }
+        else if (type === &#x27;number&#x27;) {
+            leftVal = parseFloat(left[0][field]);
+            rightVal = parseFloat(right[0][field]);
+        }
+        else if (type === &#x27;date&#x27;) {
+            leftVal = new Date(left[0][field]);
+            rightVal = new Date(right[0][field]);
+        }
+        else {
+            leftVal = left[0][field];
+            rightVal = right[0][field];
+        }
+
+        gridDataHelpers.comparator(leftVal, rightVal, &#x27;lte&#x27;) ? result.push(left.shift()) : result.push(right.shift());
+    }
+
+    while (left.length)
+        result.push(left.shift());
+
+    while (right.length)
+        result.push(right.shift());
+
+    return result;
+};
+
+gridDataHelpers.getNumbersFromTime = function getNumbersFromTime(val) {
+    var re = new RegExp(dataTypes[&quot;time&quot;]);
+    if (!re.test(val))
+        return [];
+    var timeGroups = re.exec(val);
+    var hours = timeGroups[1] ? +timeGroups[1] : +timeGroups[6];
+    var minutes, seconds, meridiem, retVal = [];
+    if (timeGroups[2]) {
+        minutes = +timeGroups[3] || 0;
+        seconds = +timeGroups[4]  || 0;
+        meridiem = timeGroups[5] || null;
+    }
+    else if (timeGroups[6]) {
+        minutes = +timeGroups[8] || 0;
+        seconds = +timeGroups[9] || 0;
+    }
+    else{
+        minutes = 0;
+        seconds = 0;
+    }
+    retVal.push(hours);
+    retVal.push(minutes);
+    retVal.push(seconds);
+    if (meridiem)
+        retVal.push(meridiem);
+    return retVal;
+};
+
+gridDataHelpers.convertTimeArrayToSeconds = function convertTimeArrayToSeconds(timeArray) {
+    var hourVal = timeArray[0] === 12 || timeArray[0] === 24 ? timeArray[0] - 12 : timeArray[0];
+    return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
+};
+
+var dataTypes = {
+    string: &quot;\.*&quot;,
+    number: &quot;^\\-?([1-9]{1}[0-9]{0,2}(\\,[0-9]{3})*(\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(\\.[0-9]{0,2})?|0(\\.[0-9]{0,2})?|(\\.[0-9]{1,2})?)$&quot;,
+    boolean: &quot;^true|false$&quot;,
+    numeric: &quot;^\\-?([1-9]{1}[0-9]{0,2}(\\,[0-9]{3})*(\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(\\.[0-9]{0,2})?|0(\\.[0-9]{0,2})?|(\\.[0-9]{1,2})?)$&quot;,
+    numericTemp: &quot;^-?(?:[1-9]{1}[0-9]{0,2}(?:,[0-9]{3})*(?:\\.[0-9]{0,2})?|[1-9]{1}[0-9]{0,}(?:\\.[0-9]{0,2})?|0(?:\\.[0-9]{0,2})?|(?:\\.[0-9]{1,2})?)$&quot;,
+    integer: &quot;^\\-?\\d+$&quot;,
+    integerTemp: &quot;^\\-?\\d+$&quot;,
+    time: &quot;^(0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\2([0-5]\\d))?)?(?:(\\ [AP]M))$|^([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\7([0-5]\\d))?)$&quot;,
+    USDate: &quot;^(?=\\d)(?:(?:(?:(?:(?:0?[13578]|1[02])(\\/|-|\\.)31)\\1|(?:(?:0?[1,3-9]|1[0-2])(\\/|-|\\.)(?:29|30)\\2))(?:(?:1[6-9]|[2-9]\\d)?\\d{2})|(?:0?2(\\/|-|\\.)29\\3(?:(?:(?:1[6-9]|[2-9]\\d)&quot; +
+    &quot;?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(?:0?[1-9]|1\\d|2[0-8])\\4(?:(?:1[6-9]|[2-9]\\d)?\\d{2}))($|\\ (?=\\d)))?$&quot;,
+    EUDate: &quot;^((((31\\/(0?[13578]|1[02]))|((29|30)\\/(0?[1,3-9]|1[0-2])))\\/(1[6-9]|[2-9]\\d)?\\d{2})|(29\\/0?2\\/(((1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((16|[2468][048]|[3579][26])00))))&quot; +
+    &quot;|(0?[1-9]|1\\d|2[0-8])\\/((0?[1-9])|(1[0-2]))\\/((1[6-9]|[2-9]\\d)?\\d{2}))$&quot;,
+    dateTime: &quot;^((?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\3|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\6))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\9)|(?:(29|30)(\\/|-|\\.)(0?[1,3-9]|1[0-2])\\12)))))&quot; +
+    &quot;((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)29\\16)|(?:(29)(\\/|-|\\.)(0?2))\\18)(?:(?:(1[6-9]|[2-9]\\d)?(0[48]|[2468][048]|[13579][26])|((?:16|[2468][048]|[3579][26])00))))&quot; +
+    &quot;|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)((?:1[6-9]|[2-9]\\d)?\\d{2})))\\ ((0?[1-9]|1[012])&quot; +
+    &quot;(?:(?:(:|\\.)([0-5]\\d))(?:\\32([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\37([0-5]\\d))?)$)$&quot;
+};
+
+module.exports = gridDataHelpers;
+    </pre>
+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../assets/vendor/prettify/prettify-min.js"></script>
+<script>prettyPrint();</script>
+<script src="../assets/js/yui-prettify.js"></script>
+<script src="../assets/../api.js"></script>
+<script src="../assets/js/api-filter.js"></script>
+<script src="../assets/js/api-list.js"></script>
+<script src="../assets/js/api-search.js"></script>
+<script src="../assets/js/apidocs.js"></script>
+</body>
+</html>

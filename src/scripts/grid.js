@@ -7,15 +7,7 @@ var grid = (function _grid($) {
     function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
             var id = generateId();
-            if (id > 0) {   
-                var tmp = id - 1;
-                while (tmp > -1) {  
-                    if (gridState[tmp] != null && !$('body').find('#' + gridState[tmp].grid[0].id).length)     
-                        delete gridState[tmp];      
-                    tmp--;
-                }
-            }
-            gridElem = $(gridElem);
+            gridElem = $(gridElem).addClass('grid_elem');
             var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class=grid-wrapper></div>').appendTo(gridElem);
             var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class=grid-header-div></div>').appendTo(wrapperDiv);
             headerDiv.append('<div class=grid-header-wrapper></div>');
@@ -36,7 +28,7 @@ var grid = (function _grid($) {
                 getInitialGridData(gridData.dataSource, function initialGridDataCallback(err, res) {
                     if (!err) {
                         gridData.dataSource.data = res.data;
-                        gridData.dataSource.rowCount = res.rowCount || 25;
+                        gridData.dataSource.rowCount = res.rowCount != null ? res.rowCount : 25;
                         if (res.aggregations) {
                             for (var col in gridData.aggregates) {
                                 if (res.aggregations[col])
@@ -52,6 +44,12 @@ var grid = (function _grid($) {
                 });
             }
         }
+        return gridElem[0].grid;
+    }
+
+    function drillDownCreate(gridData, gridElem, parentId) {
+        gridData.parentGridId = parentId;
+        grid.createGrid(gridData, gridElem);
     }
 
     function createGridInstanceMethods(gridElem, gridId) {
@@ -139,9 +137,9 @@ var grid = (function _grid($) {
             gridElem[0].grid, {
                 'bindEvents': {
                     value: function _bindGridEvents(evt, funcs) {
-                        if (!funcs || (typeof funcs !== 'function' && funcs.constructor !== Array)) return false;
+                        if (!funcs || (typeof funcs !== 'function' && !Array.isArray(funcs))) return false;
                         if (typeof funcs === 'function') funcs = [funcs];
-                        if (~events.indexOf(evt)) {
+                        if (events.includes(evt)) {
                             gridState[gridId].events[evt] = gridState[gridId].events[evt].concat(funcs);
                             return true;
                         }
@@ -152,7 +150,7 @@ var grid = (function _grid($) {
                 },
                 'unbindEvents': {
                     value: function _unbindEvents(evt, funcs) {
-                        if (~events.indexOf(evt) && (funcs || (typeof funcs === 'function' || funcs.constructor === Array))) {
+                        if (events.includes(evt) && (funcs || (typeof funcs === 'function' || Array.isArray(funcs)))) {
                             if (typeof funcs === 'function') funcs = [funcs];
                             var tmpEvts = [];
                             for (var i = 0; i < gridState[gridId].events[evt].length; i++) {
@@ -201,23 +199,20 @@ var grid = (function _grid($) {
                     value: function _hideColumn(col) {
                         if (gridState[gridId].columns[col]) {
                             gridState[gridId].columns[col].isHidden = true;
-                            gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', 'none');
+                            var column = gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]'),
+                                columnIdx = column.data('index');
+                            column.css('display', 'none');
                             gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', 'none');
                             var colGroups = gridState[gridId].grid.find('colgroup');
                             var group1 = $(colGroups[0]).find('col');
                             var group2 = $(colGroups[1]).find('col');
-                            if (gridState[gridId].groupedBy.length) {
-                                for (var i = 0; i < group1.length; i++) {
-                                    if (!group1[i].hasClass('group_col')) {
-                                        $(group1[i]).remove();
-                                        $(group2[i]).remove();
-                                    }
-                                }
-                            }
-                            else {
-                                $(group1[0]).remove();
-                                $(group2[0]).remove();
-                            }
+                            var offset = columnIdx;
+                            if (gridState[gridId].drillDown)
+                                ++offset;
+                            if (gridState[gridId].groupedBy)
+                                offset += gridState[gridId].groupedBy.length;
+                            group1.eq(offset).remove();
+                            group2.eq(offset).remove();
                         }
                     },
                     writable: false,
@@ -229,8 +224,9 @@ var grid = (function _grid($) {
                             gridState[gridId].columns[col].isHidden = false;
                             gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
                             gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
-                            gridState[gridId].grid.find('colgroup').append('col');
+                            gridState[gridId].grid.find('colgroup').append('<col>');
                             setColWidth(gridState[gridId], gridState[gridId].grid);
+                            copyGridWidth(gridState[gridId].grid);
                         }
                     },
                     writable: false,
@@ -424,7 +420,7 @@ var grid = (function _grid($) {
                 'updateCellData': {
                     value: function _updateCellData(cellData, setAsDirty) {
                         if (!cellData) return;
-                        if (cellData.constructor === Array) {
+                        if (Array.isArray(cellData)) {
                             cellData.forEach(function cellIterationCallback(cell) {
                                 applyUpdate(cell, setAsDirty);
                             });
@@ -512,9 +508,9 @@ var grid = (function _grid($) {
         else if (typeof dataSource.get == 'function') {
             dataSource.get({ pageSize: 25, pageNum: 1 },
                 function gridDataCallback(data) {
-                if (data) callback(null, data);
-                else callback(true, {});
-            });
+                    if (data) callback(null, data);
+                    else callback(true, {});
+                });
         }
         else callback(true, {});
     }
@@ -562,7 +558,8 @@ var grid = (function _grid($) {
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
-        if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
+        storageData.parentGridId = gridData.parentGridId != null ? gridData.parentGridId : null;
+        if (storageData.dataSource.rowCount == null) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
         callGridEventHandlers(storageData.events.beforeDataBind, storageData.grid, eventObj);
@@ -596,6 +593,11 @@ var grid = (function _grid($) {
             }
         }
 
+        if (gridData.drillDown) {
+            colgroup.prepend('<col class="groupCol"/>');
+            headerRow.prepend('<th class="group_spacer">&nbsp</th>');
+        }
+
         for (var col in gridData.columns) {
             columnCount++;
             if (typeof gridData.columns[col] !== 'object') continue;
@@ -609,24 +611,34 @@ var grid = (function _grid($) {
                 }
             }
 
+            if (gridData.columns[col].type !== 'custom') {
+                if (gridData.sortable === true && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable === true)) {
+                    setSortableClickListener(th);
+                    gridData.sortable = true;
+                }
+
+                if (gridData.columns[col].filterable === true) {
+                    setFilterableClickListener(th, gridData, col);
+                    gridData.filterable = true;
+                    gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
+                }
+
+                if ((gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
+                    createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
+
+                $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
+            }
+            else
+                $('<span class="header-anchor" href="#"></span>').appendTo(th).text(text);
+
+            if (gridData.resizable) {
+                th.on('mouseleave', mouseLeaveHandlerCallback);
+            }
             if (gridData.reorderable === true && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable === true)) {
                 th.prop('draggable', true);
                 setDragAndDropListeners(th);
             }
-            if (gridData.sortable === true && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable === true)) {
-                setSortableClickListener(th);
-                gridData.sortable = true;
-            }
 
-            if (gridData.columns[col].filterable === true) {
-                setFilterableClickListener(th, gridData, col);
-                gridData.filterable = true;
-                gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
-            }
-
-            if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
-
-            $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
             index++;
         }
         headerTable.css('width','');
@@ -635,21 +647,43 @@ var grid = (function _grid($) {
     }
 
     function buildHeaderAggregations(gridId) {
-        var aggrs = gridState[gridId].gridAggregations;
+        var gridData = gridState[gridId],
+            i, col;
+        if (typeof gridState[gridId].dataSource.get !== 'function') {
+            var dataTofilter = gridData.alteredData && gridData.alteredData.length ? gridData.alteredData : gridData.originalData,
+                remRows = dataTofilter.filter(function getRemainingRows(val, idx) {
+                    return idx > gridData.pageNum * gridData.pageSize - 1 || idx < gridData.pageNum * gridData.pageSize - gridData.pageSize;
+                });
+
+            for (i = 0; i < remRows.length; i++) {
+                for (col in gridData.columns) {
+                    if (gridData.aggregates[col])
+                        addValueToAggregations(gridId, col, remRows[i][col], gridData.gridAggregations);
+                }
+            }
+        }
+
+        var aggrs = gridData.gridAggregations;
         if (aggrs) {
             var headerTHead = $('#grid-header-' + gridId).find('thead');
             var aggRow = headerTHead.find('.summary-row-header');
             if (aggRow.length)
                 aggRow.remove();
             aggRow = $('<tr class=summary-row-header></tr>').appendTo(headerTHead);
-            if (gridState[gridId].groupedBy.length) {
-                for (var i = 0; i < gridState[gridId].groupedBy.length; i++) {
+            if (gridData.groupedBy.length) {
+                for (i = 0; i < gridData.groupedBy.length; i++) {
                     aggRow.append('<td class="group_spacer">&nbsp</td>');
                 }
             }
-            for (var col in aggrs) {
-                var text = aggrs[col].text || '';
-                aggRow.append('<td data-field="' + col + '" class=summary-cell-header>' + text + '</td>');
+            if (gridData.drillDown) {
+                aggRow.append('<td class="group_spacer">&nbsp</td>');
+            }
+            for (col in gridData.columns) {
+                if (col in aggrs) {
+                    var text = aggrs[col].text || '';
+                    aggRow.append('<td data-field="' + col + '" class=summary-cell-header>' + text + '</td>');
+                }
+                else aggRow.append('<td data-field="' + col + '" class=summary-cell-header></td>');
             }
         }
     }
@@ -673,7 +707,8 @@ var grid = (function _grid($) {
             colGroup = $('<colgroup></colgroup>').appendTo(contentTable),
             contentTBody = $('<tbody></tbody>').appendTo(contentTable),
             text, i, j, k, item;
-        if (gridData.selectable) attachTableSelectHandler(contentTBody);
+        contentTBody.css('width', 'auto');
+        if (typeof gridData.parentGridId !== 'number' && gridData.selectable) attachTableSelectHandler(contentTBody);
         var columns = [];
         gridElem.find('th').each(function headerIterationCallback(idx, val) {
             if (!$(val).hasClass('group_spacer'))
@@ -686,88 +721,110 @@ var grid = (function _grid($) {
 
         if (gridData.groupAggregates) gridData.groupAggregations = {};
 
-        for (i = 0; i < rowEnd; i++) {
-            gridData.dataSource.data[i]._initialRowIndex = i;
-            if (gridData.groupedBy && gridData.groupedBy.length) createGroupedRows(id, i, columns, currentGroupingValues, contentTBody);
+        if (gridData.dataSource.data.length) {
+            for (i = 0; i < rowEnd; i++) {
+                gridData.dataSource.data[i]._initialRowIndex = i;
+                if (gridData.groupedBy && gridData.groupedBy.length) createGroupedRows(id, i, columns, currentGroupingValues, contentTBody);
 
-            var tr = $('<tr class="data-row"></tr>').appendTo(contentTBody);
-            if (i % 2) {
-                tr.addClass('alt-row');
-                if (rows && rows.alternateRows && rows.alternateRows.constructor === Array)
-                    for (j = 0; j < rows.alternateRows.length; j++) {
-                        tr.addClass(rows.alternateRows[j].toString());
+                var tr = $('<tr class="data-row"></tr>').appendTo(contentTBody);
+                if (typeof gridData.parentGridId === 'number') tr.addClass('drill-down-row');
+                if (i % 2) {
+                    tr.addClass('alt-row');
+                    if (rows && rows.alternateRows && rows.alternateRows.constructor === Array)
+                        for (j = 0; j < rows.alternateRows.length; j++) {
+                            tr.addClass(rows.alternateRows[j].toString());
+                        }
+                }
+
+                if (rows && rows.all && rows.all.constructor === Array) {
+                    for (j = 0; j < rows.all.length; j++) {
+                        tr.addClass(rows.all[j].toString());
                     }
-            }
+                }
 
-            if (rows && rows.all && rows.all.constructor === Array) {
-                for (j = 0; j < rows.all.length; j++) {
-                    tr.addClass(rows.all[j].toString());
+                if (gridData.groupedBy.length) {
+                    for (j = 0; j < gridData.groupedBy.length; j++) {
+                        tr.append('<td class="grouped_cell">&nbsp</td>');
+                    }
+                }
+
+                if (gridData.drillDown)
+                    tr.append('<td class="drillDown_cell"><span class="drillDown_span" data-state="closed"><a class="drillDown-asc drillDown_acc"></a></span></td>');
+
+                for (j = 0; j < columns.length; j++) {
+                    var td = $('<td data-field="' + columns[j] + '" class="grid-content-cell"></td>').appendTo(tr);
+                    if (gridData.columns[columns[j]].attributes && gridData.columns[columns[j]].attributes.cellClasses && gridData.columns[columns[j]].attributes.cellClasses.constructor === Array) {
+                        for (k = 0; k < gridData.columns[columns[j]].attributes.cellClasses.length; k++) {
+                            td.addClass(gridData.columns[columns[j]].attributes.cellClasses[k]);
+                        }
+                    }
+                    if (gridData.columns[columns[j]].type !== 'custom') {
+                        text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
+                        text = text == null ? '' : text;
+                        td.text(text);
+                    }
+                    else {
+                        td = gridData.columns[columns[j]].html ? $(gridData.columns[columns[j]].html).appendTo(td) : td;
+                        if (gridData.columns[columns[j]].class)
+                            td.addClass(gridData.columns[columns[j]].class);
+                        if (gridData.columns[columns[j]].text)
+                            td.text(gridData.columns[columns[j]].text);
+                    }
+
+                    if (typeof gridData.columns[columns[j]].events === 'object') {
+                        attachCustomCellHandler(columns[j], td, id);
+                    }
+                    if (gridData.aggregates && gridData.aggregates[columns[j]]  && typeof gridData.dataSource.get !== 'function') {
+                        if (gridData.pageRequest.eventType !== 'page')
+                            addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
+                    }
+                    if (typeof gridData.parentGridId !== 'number' && (gridData.columns[columns[j]].editable && gridData.columns[columns[j]].editable !== 'drop-down')) {
+                        makeCellEditable(id, td);
+                        gridState[id].editable = true;
+                    }
+                    else if (typeof gridData.parentGridId !== 'number' && (gridData.columns[columns[j]].editable === 'drop-down')) {
+                        makeCellSelectable(id, td);
+                        gridState[id].editable = true;
+                    }
                 }
             }
 
+            for (i = 0; i < columns.length; i++) {
+                colGroup.append('<col/>');
+            }
             if (gridData.groupedBy.length) {
                 for (j = 0; j < gridData.groupedBy.length; j++) {
-                    tr.append('<td class="grouped_cell">&nbsp</td>');
+                    colGroup.prepend('<col class="group_col"/>');
                 }
             }
 
-            for (j = 0; j < columns.length; j++) {
-                var td = $('<td data-field="' + columns[j] + '" class="grid-content-cell"></td>').appendTo(tr);
-                if (gridData.columns[columns[j]].attributes && gridData.columns[columns[j]].attributes.cellClasses && gridData.columns[columns[j]].attributes.cellClasses.constructor === Array) {
-                    for (k = 0; k < gridData.columns[columns[j]].attributes.cellClasses.length; k++) {
-                        td.addClass(gridData.columns[columns[j]].attributes.cellClasses[k]);
+            if (gridData.aggregates && gridData.aggregates.positionAt === 'top' && typeof gridData.dataSource.get !== 'function' && gridData.pageRequest.eventType !== 'page')
+                buildHeaderAggregations(id);
+
+            if (gridData.aggregates && gridData.aggregates.positionAt === 'bottom') {
+                var aggrs = gridState[id].gridAggregations;
+                if (aggrs) {
+                    var aggRow = $('<tr class="summary-row-footer"></tr>').appendTo(contentTBody);
+                    if (gridState[id].groupedBy.length) {
+                        for (i = 0; i < gridState[id].groupedBy.length; i++) {
+                            aggRow.append('<td class="group_spacer">&nbsp</td>');
+                        }
+                    }
+                    for (item in aggrs) {
+                        text = aggrs[item].value || '';
+                        aggRow.append('<td data-field="' + item + '" class=summary-cell-header>' + text + '</td>');
                     }
                 }
-                text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
-                text = text == null ? '' : text;
-                td.text(text);
-                if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
-                if (gridData.columns[columns[j]].editable && gridData.columns[columns[j]].editable !== 'drop-down') {
-                    makeCellEditable(id, td);
-                    gridState[id].editable = true;
-                }
-                else if (gridData.columns[columns[j]].editable === 'drop-down') {
-                    makeCellSelectable(id, td);
-                    gridState[id].editable = true;
-                }
             }
+
+            createGroupTrEventHandlers(id);
+            attachDrillDownAccordionHandler(id);
         }
 
-        for (i = 0; i < columns.length; i++) {
-            colGroup.append('<col/>');
-        }
-        if (gridData.groupedBy.length) {
-            for (j = 0; j < gridData.groupedBy.length; j++) {
-                colGroup.prepend('<col class="group_col"/>');
-            }
-        }
-
-        if (gridData.aggregates && gridData.aggregates.positionAt === 'top' && typeof gridData.dataSource.get !== 'function') buildHeaderAggregations(id);
-
-        if (gridData.aggregates && gridData.aggregates.positionAt === 'bottom') {
-            var aggrs = gridState[id].gridAggregations;
-            if (aggrs) {
-                var aggRow = $('<tr class="summary-row-footer"></tr>').appendTo(contentTBody);
-                if (gridState[id].groupedBy.length) {
-                    for (i = 0; i < gridState[id].groupedBy.length; i++) {
-                        aggRow.append('<td class="group_spacer">&nbsp</td>');
-                    }
-                }
-                for (item in aggrs) {
-                    text = aggrs[item].value || '';
-                    aggRow.append('<td data-field="' + item + '" class=summary-cell-header>' + text + '</td>');
-                }
-            }
-        }
-
-        createGroupTrEventHandlers();
-
-        gridContent.on('scroll', function contentDivScrollCallback(e) {
-            var cDiv = $(e.currentTarget);
-            var headWrap = cDiv.parents('.grid-wrapper').find('.grid-header-wrapper');
-            if (gridState[headWrap.parent().data('grid_header_id')].resizing)
-                return;
-            headWrap.scrollLeft(cDiv.scrollLeft());
+        gridContent[0].addEventListener('scroll', function contentDivScrollHandler() {
+            var headWrap = gridContent.parents('.grid-wrapper').first().find('.grid-header-wrapper');
+            if (gridState[id].resizing) return;
+            headWrap.scrollLeft(gridContent.scrollLeft());
         });
 
         var headerId = 'grid-header-' + gridContent.data('grid_content_id');
@@ -780,6 +837,22 @@ var grid = (function _grid($) {
         gridState[id].dataSource.data = gridData.dataSource.data;
         loader.remove();
         gridState[id].updating = false;
+    }
+
+    function attachCustomCellHandler(column, cellItem, gridId) {
+        for (var event in gridState[gridId].columns[column].events) {
+            if (typeof gridState[gridId].columns[column].events[event] === 'function') {
+                createEventHandler(cellItem, event);
+            }
+        }
+
+        function createEventHandler(cellItem, event) {
+            cellItem.on(event, function genericEventHandler() {
+                var row = $(this).parents('tr'),
+                    rowIdx = row.index();
+                gridState[gridId].columns[column].events[event].call(this, gridState[gridId].dataSource.data[rowIdx]);
+            });
+        }
     }
 
     function createGroupedRows(gridId, rowIndex, columns, currentGroupingValues, gridContent) {
@@ -798,14 +871,16 @@ var grid = (function _grid($) {
                 else groupedDiff[j] = 1;
             }
         }
-        if (foundDiff && rowIndex) {   
+        if (foundDiff && rowIndex && gridData.groupAggregates) {   
             for (j = groupedDiff.length - 1; j >= 0; j--) {     
                 var numItems = gridData.groupAggregations[j]._items_; 
                 if (groupedDiff[j]) {                               
                     var groupAggregateRow = $('<tr class="grouped_row_header"></tr>').appendTo(gridContent);
                     for (k = 0; k < groupedDiff.length; k++) {
-                        groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
+                        groupAggregateRow.append('<td colspan="' + 1 + '" class="grouped_cell"></td>');
                     }
+                    if (gridData.drillDown)
+                        groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
                     for (item in gridData.groupAggregations[j]) {
                         if (item !== '_items_') {
                             groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[j][item].text || '') + '</td>');
@@ -826,15 +901,18 @@ var grid = (function _grid($) {
             }
         }
         for (j = 0; j < groupedDiff.length; j++) {
-            if (!gridData.groupAggregations[j]) {
-                gridData.groupAggregations[j] = {
-                    _items_: 0
-                };
+            if (gridData.groupAggregates) {
+                if (gridData.groupAggregations && !gridData.groupAggregations[j]) {
+                    gridData.groupAggregations[j] = {
+                        _items_: 0
+                    };
+                }
+                for (item in gridData.columns) {
+                    if (gridData.aggregates && gridData.aggregates[item])
+                        addValueToAggregations(gridId, item, gridData.dataSource.data[rowIndex][item], gridData.groupAggregations[j]);
+                }
+                gridData.groupAggregations[j]._items_++;
             }
-            for (item in gridData.columns) {
-                addValueToAggregations(gridId, item, gridData.dataSource.data[rowIndex][item], gridData.groupAggregations[j]);
-            }
-            gridData.groupAggregations[j]._items_++;
             if (groupedDiff[j]) {
                 var groupedText = getFormattedCellText(gridId, gridData.groupedBy[j].field, gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field]) ||
                     gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field];
@@ -842,15 +920,63 @@ var grid = (function _grid($) {
                 var groupTitle = gridData.columns[gridData.groupedBy[j].field].title || gridData.groupedBy[j].field;
                 for (k = 0; k <= j; k++) {
                     var indent = k === j ? (columns.length + gridData.groupedBy.length - k) : 1;
+                    if (gridData.drillDown) ++indent;
                     groupTr.data('group-indent', indent);
                     var groupingCell = $('<td colspan="' + indent + '" class="grouped_cell"></td>').appendTo(groupTr);
                     if (k === j) {
-                        groupingCell.append('<p class="grouped"><a class="group-desc sortSpan group_acc_link"></a>' + groupTitle + ': ' + groupedText + '</p></td>');
+                        groupingCell.append('<p class="grouped"><a class="group-desc sortSpan group_acc_link" data-state="open"></a>' + groupTitle + ': ' + groupedText + '</p>');
                         break;
                     }
                 }
             }
         }
+    }
+
+    function attachDrillDownAccordionHandler(gridId) {
+        var gridData = gridState[gridId];
+        gridData.grid.find('.drillDown_span').on('click', function drillDownAccordionHandler() {
+            var accRow = $(this).parents('tr'),
+                accRowIdx = gridData.grid.find('.data-row').not('.drill-down-row').index(accRow);
+            if (accRow.find('.drillDown_span').data('state') === 'open') {
+                accRow.find('.drillDown_span').data('state', 'closed');
+                accRow.next().css('display', 'none');
+            }
+            else {
+                if (accRow.next().hasClass('drill-down-parent')) {
+                    accRow.find('.drillDown_span').data('state', 'open');
+                    accRow.next().css('display', 'inline-block');
+                }
+                else {
+                    var drillDownRow = $('<tr class="drill-down-parent"></tr>').insertAfter(accRow);
+                    if (gridData.groupedBy && gridData.groupedBy.length) {
+                        for (var i = 0; i < gridData.groupedBy.length; i++) {
+                            drillDownRow.append('<td class="grouped_cell"></td>');
+                        }
+                    }
+                    drillDownRow.append('<td class="grouped_cell"></td>');
+                    var drillDownCellLength = 0;
+                    gridData.grid.find('.grid-header-div').find('col').each(function getTotalGridLength() {
+                        if (!$(this).hasClass('groupCol'))
+                            drillDownCellLength += $(this).width();
+                    });
+                    var containerCell = $('<td class="drill-down-cell" colspan="' + Object.keys(gridData.columns).length + '" style="width: ' + drillDownCellLength + ';"></td>').appendTo(drillDownRow),
+                        newGridId = gridData.grid[0].id + generateId(),
+                        gridDiv = $('<div id="' + newGridId + '" class="drill_down_grid"></div>').appendTo(containerCell);
+                    accRow.find('.drillDown_span').data('state', 'open');
+                    var parentRowData = gridData.grid[0].grid.getCurrentDataSourceData(accRowIdx);
+
+                    if (typeof gridData.drillDown === 'function') {
+                        drillDownCreate(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
+                    }
+                    else if (typeof gridData.drillDown === 'object') {
+                        if (!gridData.drillDown.dataSource) gridData.drillDown.dataSource = {};
+                        gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
+                        gridData.drillDown.dataSource.rowCount = parentRowData[0].drillDownData ? parentRowData[0].drillDownData.length : 0;
+                        drillDownCreate(gridData.drillDown, gridDiv[0], gridId);
+                    }
+                }
+            }
+        });
     }
 
     function constructAggregationsFromServer(gridId, aggregationObj) {
@@ -876,14 +1002,14 @@ var grid = (function _grid($) {
         if (value == null) return;
         switch (gridState[gridId].aggregates[field].type) {
             case 'count':
-                aggregationObj[field].value =(aggregationObj[field].value || 0) + 1;
+                aggregationObj[field].value = gridState[gridId].dataSource.rowCount || gridState[gridId].dataSource.data.length;
                 aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + aggregationObj[field].value;
                 return;
             case 'average':
                 var count = aggregationObj[field].count ? aggregationObj[field].count + 1 : 1;
                 value = parseFloat(value.toString());
                 total = aggregationObj[field].total ? aggregationObj[field].total + value : value;
-                var avg = parseFloat(parseFloat(total/count));
+                var avg = total/count;
                 text = getFormattedCellText(gridId, field, avg.toFixed(2)) || avg.toFixed(2);
                 aggregationObj[field].total = total;
                 aggregationObj[field].count = count;
@@ -926,10 +1052,12 @@ var grid = (function _grid($) {
                         gridState[gridId].selecting = false;
                         return;
                     }
-                    $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
+                    gridState[gridId].grid.find('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
                         $(elem).removeClass('selected');
                     });
                     var target = $(e.target);
+                    if (target.hasClass('drill-down-parent') || target.parents('.drill-down-parent').length) return;
+                    if (target.hasClass('drillDown_cell') || target.parents('.drillDown_cell').length) return;
                     if (isSelectable === 'cell' && target[0].tagName.toUpperCase() === 'TD')
                         target.addClass('selected');
                     else if (target[0].tagName.toUpperCase() === 'TR')
@@ -941,7 +1069,10 @@ var grid = (function _grid($) {
         }
         if (isSelectable === 'multi-row' || isSelectable === 'multi-cell') {
             $(document).on('mousedown', function mouseDownDragCallback(event) {
-                if (event.target === tableBody[0] || $(event.target).parents('tbody')[0] === tableBody[0]) {
+                var target = $(event.target);
+                if (event.target === tableBody[0] || target.parents('tbody')[0] === tableBody[0]) {
+                    if (target.hasClass('drill-down-parent') || target.parents('.drill-down-parent').length) return;
+                    if (target.hasClass('drillDown_cell') || target.parents('.drillDown_cell').length) return;
                     gridState[gridId].selecting = true;
                     var contentDiv = tableBody.parents('.grid-content-div'),
                         overlay = $('<div class="selection-highlighter"></div>').appendTo(gridState[gridId].grid);
@@ -954,7 +1085,7 @@ var grid = (function _grid($) {
                     overlay.data('actual-height', 0).data('actual-width', 0).data('event-type', 'mouse');
 
                     $(document).one('mouseup', function mouseUpDragCallback() {
-                        $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
+                        gridState[gridId].grid.find('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
                             $(elem).removeClass('selected');
                         });
                         var overlay = $(".selection-highlighter");
@@ -1163,6 +1294,10 @@ var grid = (function _grid($) {
         }
 
         var gridElems = gridState[gridId].selectable === 'multi-cell' ? contentDiv.find('td') : contentDiv.find('tr');
+        gridElems = gridElems.filter(function filterDrillDownRows() {
+            var gridElem = $(this);
+            return !gridElem.hasClass('drill-down-parent') && !gridElem.parents('.drill-down-parent').length;
+        });
 
         gridElems.each(function highlightGridElemsCallback(idx, val) {
             var element = $(val),
@@ -1177,14 +1312,13 @@ var grid = (function _grid($) {
         });
     }
 
-    function createGroupTrEventHandlers() {
-        $('.group_acc_link').each(function iterateAccordionsCallback(idx, val) {
-            $(val).data('state', 'open');
-        }).on('click', function groupedAccordionsClickListenerCallback(e) {
-            var accRow = $(e.currentTarget).parents('tr'),
+    function createGroupTrEventHandlers(gridId) {
+        gridState[gridId].grid.find('.group_acc_link').on('click', function groupedAccordionsClickListenerCallback() {
+            var elem = $(this),
+                accRow = elem.parents('tr'),
                 indent = accRow.data('group-indent');
-            if ($(e.currentTarget).data('state') === 'open') {
-                $(e.currentTarget).data('state', 'closed').removeClass('group-desc').addClass('group-asc');
+            if (elem.data('state') === 'open') {
+                elem.data('state', 'closed').removeClass('group-desc').addClass('group-asc');
                 accRow.nextAll().each(function iterateAccordionRowSiblingsToCloseCallback(idx, val) {
                     var row = $(val),
                         rowIndent = row.data('group-indent');
@@ -1194,7 +1328,7 @@ var grid = (function _grid($) {
                 });
             }
             else {
-                $(e.currentTarget).data('state', 'open').removeClass('group-asc').addClass('group-desc');
+                elem.data('state', 'open').removeClass('group-asc').addClass('group-desc');
                 accRow.nextAll().each(function iterateAccordionRowSiblingsToOpenCallback(idx, val) {
                     var row = $(val),
                         rowIndent = row.data('group-indent');
@@ -1219,7 +1353,11 @@ var grid = (function _grid($) {
             cell.text('');
 
             if (gridState[id].updating) return;
-            var index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
+            var row = cell.parents('tr').first(),
+                index = gridData.grid.find('tr').filter(function removeGroupAndChildRows() {
+                    var r =  $(this);
+                    return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
+                }).index(row),
                 field = cell.data('field'),
                 type = gridState[id].columns[field].type || '',
                 val = gridState[id].dataSource.data[index][field] || '',
@@ -1245,7 +1383,7 @@ var grid = (function _grid($) {
                     break;
                 case 'number':
                     if (typeof gridState[id].dataSource.data[index][field] === 'string')
-                        val = isNumber(parseFloat(gridState[id].dataSource.data[index][field])) ? isNumber(parseFloat(gridState[id].dataSource.data[index][field])) : 0;
+                        val = isNumber(parseFloat(gridState[id].dataSource.data[index][field])) ? parseFloat(gridState[id].dataSource.data[index][field]) : 0;
                     else
                         val = isNumber(gridState[id].dataSource.data[index][field]) ? gridState[id].dataSource.data[index][field] : 0;
                     inputVal = val;
@@ -1296,8 +1434,8 @@ var grid = (function _grid($) {
 
     function makeCellSelectable(id, td) {
         td.on('click', function selectableCellClickHandler(e) {
-            var gridContent = gridState[id].grid.find('.grid-content-div');
-            var gridData = gridState[id];
+            var gridContent = gridState[id].grid.find('.grid-content-div'),
+                gridData = gridState[id];
             if (e.target !== e.currentTarget) return;
             if (gridContent.find('.invalid').length) return;
             var cell = $(e.currentTarget);
@@ -1305,12 +1443,16 @@ var grid = (function _grid($) {
                 cell.data('dirty', true);
             else cell.data('dirty', false);
             cell.text('');
-            var index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row');
-            var field = cell.data('field');
-            if (gridState[id].updating) return;		
+            var row = cell.parents('tr').first(),
+                index = gridData.grid.find('tr').filter(function removeGroupAndChildRows() {
+                    var r =  $(this);
+                    return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
+                }).index(row),
+                field = cell.data('field');
+            if (gridState[id].updating) return;     
 
-            var gridValidation = gridState[id].useValidator ? gridState[id].columns[field].validation : null;
-            var dataAttributes = '';
+            var gridValidation = gridState[id].useValidator ? gridState[id].columns[field].validation : null,
+                dataAttributes = '';
 
             if (gridValidation) {
                 dataAttributes = setupCellValidation(gridValidation, dataAttributes);
@@ -1318,9 +1460,9 @@ var grid = (function _grid($) {
                 dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
             }
 
-            var select = $('<select class="input select active-cell"' + dataAttributes + '></select>').appendTo(cell);
-            var options = [];
-            var setVal = gridData.dataSource.data[index][field];
+            var select = $('<select class="input select active-cell"' + dataAttributes + '></select>').appendTo(cell),
+                options = [],
+                setVal = gridData.dataSource.data[index][field];
             if (null != setVal && '' !== setVal) options.push(setVal);
             for (var z = 0; z < gridData.columns[field].options.length; z++) {
                 if (!compareValuesByType(setVal, gridData.columns[field].options[z], (gridData.columns[field].type || 'string'))) {
@@ -1402,24 +1544,36 @@ var grid = (function _grid($) {
         var columnNames = {},
             name,
             columnList = [];
-        var tableDiv = gridElem.find('.grid-header-wrapper');
+        var tableDiv = gridElem.find('.grid-header-wrapper'),
+            totalColWidth = 0;
         for (name in gridData.columns) {
             if (!gridData.columns[name].isHidden) {
                 columnNames[name] = isNumber(gridData.columns[name].width) ? gridData.columns[name].width : null;
                 columnList.push(name);
+                totalColWidth += columnNames[name] || 0;
             }
         }
-        var colGroups = tableDiv.find('col');
 
-        colGroups.each(function iterateColsCallback(idx, val) {
-            var i = idx;
-            if (gridData.groupedBy && gridData.groupedBy.length) {
-                i = (idx%(colGroups.length/2)) - gridData.groupedBy.length;
+
+        var headerCols = tableDiv.find('col');
+
+        headerCols.each(function iterateColsCallback(idx, val) {
+            var i = idx,
+                numColPadders = 0,
+                isGroupAndOrDrill = (gridData.groupedBy && gridData.groupedBy.length) || gridData.drillDown;
+            if (isGroupAndOrDrill) {
+                numColPadders = gridData.drillDown ? 1 : 0;
+                numColPadders += gridData.groupedBy && gridData.groupedBy.length ? gridData.groupedBy.length : 0;
+                i = idx - numColPadders;
             }
-            if (gridData.groupedBy && gridData.groupedBy.length && idx < gridData.groupedBy.length) {
+            if (isGroupAndOrDrill && idx < numColPadders) {
                 $(val).css('width', 27);
             }
             else if (columnNames[columnList[i]] != null) {
+                if (idx === headerCols.length - 1 && totalColWidth < (tableDiv.find('table').width() + (numColPadders * 27) - 17) - columnNames[columnList[i]]) {
+                    return;
+                }
+                else
                     $(val).css('width', columnNames[columnList[i]]);
             }
         });
@@ -1463,7 +1617,11 @@ var grid = (function _grid($) {
         var gridContent = input.parents('.grid-wrapper').find('.grid-content-div'),
             cell = input.parents('td'),
             id = gridContent.data('grid_content_id'),
-            index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
+            row = cell.parents('tr').first(),
+            index = gridState[id].grid.find('tr').filter(function removeGroupAndChildRows() {
+                var r =  $(this);
+                return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
+            }).index(row),
             field = cell.data('field'),
             type = gridState[id].columns[field].type || '',
             saveVal, re, setDirtyFlag = false,
@@ -1524,7 +1682,11 @@ var grid = (function _grid($) {
             parentCell = select.parents('td');
         select.remove();
         var id = gridContent.data('grid_content_id'),
-            index = parentCell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
+            row = parentCell.parents('tr').first(),
+            index = gridState[id].grid.find('tr').filter(function removeGroupAndChildRows() {
+                var r =  $(this);
+                return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
+            }).index(row),
             field = parentCell.data('field'),
             type = gridState[id].columns[field].type || '',
             displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field],
@@ -1544,14 +1706,14 @@ var grid = (function _grid($) {
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
                 saveVal = displayVal;   
                 break;
-            default: 		
+            default:        
                 saveVal = val;
                 break;
         }
 
         parentCell.text(displayVal);
         var previousVal = gridState[id].dataSource.data[index][field];
-        if (previousVal !== saveVal) {	
+        if (previousVal !== saveVal) {  
             gridState[id].dataSource.data[index][field] = saveVal;
             if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
                 parentCell.prepend('<span class="dirty"></span>');
@@ -1568,9 +1730,9 @@ var grid = (function _grid($) {
 
     function createGridToolbar(gridData, gridElem, canEdit) {
         var id = gridElem.find('.grid-wrapper').data('grid_id');
-        if ($('#grid_' + id + '_toolbar').length) return;	
+        if ($('#grid_' + id + '_toolbar').length) return;   
 
-        if (gridData.groupable) {
+        if (typeof gridData.parentGridId !== 'number' && gridData.groupable) {
             var groupMenuBar = $('<div id="grid_' + id + '_group_div" class="group_div clearfix" data-grid_id="' + id + '">' + groupMenuText + '</div>').prependTo(gridElem);
             groupMenuBar.on('drop', function handleDropCallback(e) {
                 var droppedCol = $('#' + e.originalEvent.dataTransfer.getData('text'));
@@ -1581,7 +1743,7 @@ var grid = (function _grid($) {
                     droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null,
                     groupedItems = {};
                 if (groupId == null || droppedId == null || groupId !== droppedId) return;
-                if (gridState[id].updating) return;		
+                if (gridState[id].updating) return;     
                 if (!groupMenuBar.children().length) groupMenuBar.text('');
                 var field = droppedCol.data('field'),
                     title = gridState[groupId].columns[field].title || field,
@@ -1597,6 +1759,7 @@ var grid = (function _grid($) {
                 });
                 if (foundDupe) return;  
 
+                droppedCol.data('grouped', true);
                 var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>'),
                     groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
                 groupDirSpan.append('<span class="sort-asc-white groupSortSpan"></span>').append('<span>' + title + '</span>');
@@ -1669,7 +1832,7 @@ var grid = (function _grid($) {
                         dropIndicator.css('left', lastItem.offset().left + lastItem.outerWidth());
                         dropIndicator.css('top', lastItem.offset().top);
                         dropIndicator.css('height', lastItem.outerHeight());
-                        dropIndicator.data('field', lastItem.data('field'));
+                        dropIndicator.data('field', '');
                     }
                 }
                 else {
@@ -1712,7 +1875,7 @@ var grid = (function _grid($) {
                 id = groupElem.parents('.group_item').data('grid_id'),
                 sortSpan = groupElem.children('.groupSortSpan'),
                 groupElements = [];
-            if (gridState[id].updating) return;		
+            if (gridState[id].updating) return;     
             if (sortSpan.hasClass('sort-asc-white')) sortSpan.removeClass('sort-asc-white').addClass('sort-desc-white');
             else sortSpan.removeClass('sort-desc-white').addClass('sort-asc-white');
             groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
@@ -1732,7 +1895,7 @@ var grid = (function _grid($) {
                 groupedCol = groupElem.parents('.group_item'),
                 id = groupedCol.data('grid_id'),
                 groupElements = [];
-            if (gridState[id].updating) return;		
+            if (gridState[id].updating) return;     
             gridState[id].grid.find('colgroup').first().children().first().remove();
             gridState[id].grid.find('.grid-headerRow').children('.group_spacer').first().remove();
             gridState[id].grid.find('.summary-row-header').children('.group_spacer').first().remove();
@@ -1744,6 +1907,7 @@ var grid = (function _grid($) {
                     sortDirection: item.find('.groupSortSpan').hasClass('sort-asc-white') ? 'asc' : 'desc'
                 });
             });
+            gridState[id].grid.find('.grid-header-div').find('th [data-field="' + groupElem.data('field') + '"]').data('grouped', false);
             if (!groupElements.length) groupMenuBar.text(groupMenuText);
             gridState[id].groupedBy = groupElements;
             gridState[id].pageRequest.eventType = 'group';
@@ -1753,6 +1917,7 @@ var grid = (function _grid($) {
 
     function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
         saveAnchor.on('click', function saveChangesHandler(e) {
+            e.preventDefault();
             if (gridState[id].updating) return;
             var gridMenu = $(e.currentTarget).parents('.grid_menu');
             if (gridMenu.length)
@@ -1768,7 +1933,7 @@ var grid = (function _grid($) {
                     for (i = 0; i < dirtyCells.length; i++) {
                         var index = dirtyCells[i].parents('tr').index();
                         var field = dirtyCells[i].data('field');
-                        var origIndex = gridState[id].dataSource.data[index][field]._initialRowIndex;
+                        var origIndex = gridState[id].dataSource.data[index]._initialRowIndex;
                         gridState[id].originalData[origIndex][field] = gridState[id].dataSource.data[index][field];
                         dirtyCells[i].find('.dirty').add('.dirty-blank').remove();
                     }
@@ -1798,6 +1963,7 @@ var grid = (function _grid($) {
         });
 
         deleteAnchor.on('click', function deleteChangeHandler(e) {
+            e.preventDefault();
             if (gridState[id].updating) return;
             var gridMenu = $(e.currentTarget).parents('.grid_menu');
             if (gridMenu.length)
@@ -1826,7 +1992,7 @@ var grid = (function _grid($) {
 
     function attachMenuClickHandler(menuAnchor, gridId) {
         menuAnchor.on('click', function menuAnchorClickHandler(e) {
-            e.stopPropagation();	
+            e.stopPropagation();    
             e.preventDefault();
             var menu = gridState[gridId].grid.find('#menu_model_grid_id_' + gridId),
                 newMenu;
@@ -1837,11 +2003,13 @@ var grid = (function _grid($) {
                     newMenu.append($('<ul class="menu-list"></ul>').append(createSaveDeleteMenuItems(gridId)));
                 }
                 if (gridState[gridId].columnToggle) {
-                    newMenu.append($('<hr/>'));
+                    if (newMenu.children().length)
+                        newMenu.append($('<hr/>'));
                     newMenu.append(createColumnToggleMenuOptions(newMenu, gridId));
                 }
                 if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable || gridState[gridId].groupable) {
-                    newMenu.append($('<hr/>'));
+                    if (newMenu.children().length)
+                        newMenu.append($('<hr/>'));
                     if (gridState[gridId].sortable) newMenu.append($('<ul class="menu-list"></ul>').append(createSortMenuItem()));
                     if (gridState[gridId].filterable) {
                         newMenu.append($('<ul class="menu-list"></ul>').append(createFilterMenuItems()));
@@ -1853,7 +2021,8 @@ var grid = (function _grid($) {
                     if (gridState[gridId].selectable) newMenu.append($('<ul class="menu-list"></ul>').append(createDeselectMenuOption(gridId)));
                 }
                 if (gridState[gridId].excelExport) {
-                    newMenu.append($('<hr/>'));
+                    if (newMenu.children().length)
+                        newMenu.append($('<hr/>'));
                     newMenu.append(createExcelExportMenuItems(newMenu, gridId));
                 }
                 gridState[gridId].grid.append(newMenu);
@@ -1865,6 +2034,12 @@ var grid = (function _grid($) {
                             gridState[gridId].grid.find('.menu_item_options').css('display', 'none');
                         }
                     }
+                });
+
+                $(document).on('scroll', function adjustMenuHandler() {
+                    var scrollMenuAnchorOffset = menuAnchor.offset();
+                    newMenu.css('top', (scrollMenuAnchorOffset.top - $(window).scrollTop()));
+                    newMenu.css('left', (scrollMenuAnchorOffset.left - $(window).scrollLeft()));
                 });
             }
             else {
@@ -1887,17 +2062,19 @@ var grid = (function _grid($) {
             if (!exportOptions.length) {
                 exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '" style="display: none;"></div>');
                 var exportList = $('<ul class="menu-list"></ul>');
-                var gridPage = $('<li data-value="page" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
-                var allData = $('<li data-value="all" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
-                exportList.append(gridPage).append(allData);
-                if (gridState[gridId].selectable) {
-                    var gridSelection = $('<li data-value="select" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
-                    exportList.append(gridSelection);
+                if (gridState[gridId].dataSource.rowCount <= gridState[gridId].pageSize)
+                    exportList.append('<li data-value="page" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
+                exportList.append('<li data-value="all" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
+                if (gridState[gridId].selectable && gridState[gridId].grid.find('.selected').length) {
+                    exportList.append('<li data-value="select" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
                 }
                 var options = exportList.find('li');
                 options.on('click', function excelExportItemClickHandler() {
                     exportDataAsExcelFile(gridId, this.dataset.value);
                     gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
+                    toggle(exportOptions, {duration: 20, callback: function checkForMouseOver() {
+
+                    }});
                 });
                 exportOptions.append(exportList);
                 gridState[gridId].grid.append(exportOptions);
@@ -1909,9 +2086,7 @@ var grid = (function _grid($) {
                     newMenuOffset = menu.offset();
                 exportOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
                 exportOptions.css('left', newMenuOffset.left + (menu.outerWidth() - exportOptions.outerWidth()));
-                toggle(exportOptions, {duration: 200, callback: function checkForMouseOver() {
-
-                }});
+                toggle(exportOptions, {duration: 200, callback: function checkForMouseOver() {}});
             }
         });
         menuList.on('mouseleave', function excelMenuItemHoverHandler(evt) {
@@ -1953,7 +2128,7 @@ var grid = (function _grid($) {
 
     function createSortMenuItem() {
         var sortMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove All Column Sorts</a>'));
-        sortMenuItem.on('click', RemoveAllColumnSorts);
+        sortMenuItem.on('click', removeAllColumnSorts);
         return sortMenuItem;
     }
 
@@ -1985,32 +2160,32 @@ var grid = (function _grid($) {
                         var filterModal = gridState[gridId].grid.find('.filter_modal');
                         filterModal.find('.advanced_filter_value')
                             .filter(':disabled').add('.invalid-grid-input').each(function removeEmptyFilters(idx, val) {
-                                var filterVal = $(val);
-                                var filterRow = filterVal.parent('.filter_row_div');
-                                if (filterVal.data('type') === 'boolean' && filterRow.children('.filterType').val() !== null)
-                                    return true;
-                                else if (filterRow.data('filter_idx') === 1) {
-                                    if (filterVal.hasClass('invalid-grid-input')) {
-                                        filterVal.removeClass('invalid-grid-input');
-                                        filterModal.find('span[data-filter_idx="' + filterModal.data('filter_idx') + '"]').remove();
-                                        filterVal.val('');
-                                        var columnSelector = filterRow.children('.filter_column_selector');
-                                        columnSelector.find('option').remove();
-                                        columnSelector.append('<option value="">Select a column</option>');
-                                        for (var column in gridState[gridId].columns) {
-                                            var curCol = gridState[gridId].columns[column];
-                                            if (curCol.filterable) {
-                                                columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
-                                            }
+                            var filterVal = $(val);
+                            var filterRow = filterVal.parent('.filter_row_div');
+                            if (filterVal.data('type') === 'boolean' && filterRow.children('.filterType').val() !== null)
+                                return true;
+                            else if (filterRow.data('filter_idx') === 1) {
+                                if (filterVal.hasClass('invalid-grid-input')) {
+                                    filterVal.removeClass('invalid-grid-input');
+                                    filterModal.find('span[data-filter_idx="' + filterModal.data('filter_idx') + '"]').remove();
+                                    filterVal.val('');
+                                    var columnSelector = filterRow.children('.filter_column_selector');
+                                    columnSelector.find('option').remove();
+                                    columnSelector.append('<option value="">Select a column</option>');
+                                    for (var column in gridState[gridId].columns) {
+                                        var curCol = gridState[gridId].columns[column];
+                                        if (curCol.filterable) {
+                                            columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
                                         }
-                                        filterVal.prop('disabled', true);
-                                        filterRow.children('.filterType').prop('disabled', true).find('option').remove();
                                     }
-                                    return true;
+                                    filterVal.prop('disabled', true);
+                                    filterRow.children('.filterType').prop('disabled', true).find('option').remove();
                                 }
-                                else
-                                    filterRow.remove();
-                            });
+                                return true;
+                            }
+                            else
+                                filterRow.remove();
+                        });
 
                         filterModal.find('.filter_group_container').each(function removeEmptyFilterGroups(idx, val) {
                             var filterGrp = $(val);
@@ -2028,7 +2203,7 @@ var grid = (function _grid($) {
 
                 var applyFiltersButton = $('<input type="button" value="Apply Filter(s)" class="advanced_filters_button"/>').appendTo(advancedFiltersModal);
                 applyFiltersButton.on('click', function applyAdvancedFiltersHandler() {
-                    if (gridState[gridId].updating) return;		
+                    if (gridState[gridId].updating) return;     
                     gridState[gridId].grid.find('filterInput').val('');
 
                     advancedFiltersModal.find('.advanced_filter_value').each(function checkFilterValuesForValidContent(idx, val) {
@@ -2077,44 +2252,6 @@ var grid = (function _grid($) {
                         gridState[gridId].pageRequest.eventType = 'filter-add';
                         preparePageDataGetRequest(gridId);
                     }
-
-                    function createFilterGroups(groupContainer, filterObject) {
-                        var groupConjunct = groupContainer.parents('.filter_modal').find('span[data-filter_group_num="' + groupContainer.data('filter_group_num') + '"]').children('select');
-                        filterObject.filterGroup = [];
-                        filterObject.conjunct = groupConjunct.val();
-                        findFilters(groupContainer, filterObject);
-                    }
-
-                    function findFilters(groupContainer, filterObject) {
-                        var gridId = groupContainer.parents('.filter_modal').data('grid_id');
-                        groupContainer.children('.filter_row_div').each(function iterateFilterDivsCallback() {
-                            createFilterObjects($(this), filterObject.filterGroup, gridId);
-                        });
-
-                        groupContainer.children('.filter_group_container').each(function createNestedFilterGroupsCallback(idx, val) {
-                            var nestedGroup = {};
-                            filterObject.filterGroup.push(nestedGroup);
-                            createFilterGroups($(val), nestedGroup);
-                        });
-                    }
-
-                    function createFilterObjects(filterDiv, filterGroupArr, gridId) {
-                        var field = filterDiv.find('.filter_column_selector').val(),
-                            operation, value,
-                            filterType = filterDiv.find('.filterType').val();
-                        if (filterType !== 'false' && filterType !== 'true') {
-                            operation = filterType;
-                            value = filterDiv.find('.advanced_filter_value').val();
-                        }
-                        else {
-                            operation = 'eq';
-                            value = filterType;
-                        }
-
-                        if (value) {
-                            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || 'string') });
-                        }
-                    }
                 });
                 gridState[gridId].grid.append(advancedFiltersModal);
             }
@@ -2129,6 +2266,44 @@ var grid = (function _grid($) {
             gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
         });
         return filterModalMenuItem;
+    }
+
+    function createFilterGroups(groupContainer, filterObject) {
+        var groupConjunct = groupContainer.parents('.filter_modal').find('span[data-filter_group_num="' + groupContainer.data('filter_group_num') + '"]').children('select');
+        filterObject.filterGroup = [];
+        filterObject.conjunct = groupConjunct.val();
+        findFilters(groupContainer, filterObject);
+    }
+
+    function findFilters(groupContainer, filterObject) {
+        var gridId = groupContainer.parents('.filter_modal').data('grid_id');
+        groupContainer.children('.filter_row_div').each(function iterateFilterDivsCallback() {
+            createFilterObjects($(this), filterObject.filterGroup, gridId);
+        });
+
+        groupContainer.children('.filter_group_container').each(function createNestedFilterGroupsCallback(idx, val) {
+            var nestedGroup = {};
+            filterObject.filterGroup.push(nestedGroup);
+            createFilterGroups($(val), nestedGroup);
+        });
+    }
+
+    function createFilterObjects(filterDiv, filterGroupArr, gridId) {
+        var field = filterDiv.find('.filter_column_selector').val(),
+            operation, value,
+            filterType = filterDiv.find('.filterType').val();
+        if (filterType !== 'false' && filterType !== 'true') {
+            operation = filterType;
+            value = filterDiv.find('.advanced_filter_value').val();
+        }
+        else {
+            operation = 'eq';
+            value = filterType;
+        }
+
+        if (value) {
+            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || 'string') });
+        }
     }
 
     function addFilterButtonHandler(e) {
@@ -2296,24 +2471,25 @@ var grid = (function _grid($) {
         return filterModal.find('.filter_row_div').length ? filterModal.find('.filter_row_div').last().data('filter_idx') + 1 : 1;
     }
 
-    function RemoveAllColumnSorts(e) {
+    function removeAllColumnSorts(e) {
         var gridMenu = $(e.currentTarget).parents('.grid_menu'),
             gridId = gridMenu.data('grid_id');
         $('.grid_menu').addClass('hiddenMenu');
 
-        gridState[gridId].find('.sortSpan').remove();
+        gridState[gridId].grid.find('.sortSpan').remove();
         gridState[gridId].sortedOn = [];
         gridState[gridId].pageRequest.eventType = 'sort';
         preparePageDataGetRequest(gridId);
+        e.preventDefault();
     }
 
     function createGroupMenuItem() {
         var groupMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove All Column Grouping</a>'));
-        groupMenuItem.on('click', RemoveAllColumnGrouping);
+        groupMenuItem.on('click', removeAllColumnGrouping);
         return groupMenuItem;
     }
 
-    function RemoveAllColumnGrouping(e) {
+    function removeAllColumnGrouping(e) {
         var gridMenu = $(e.currentTarget).parents('.grid_menu'),
             gridId = gridMenu.data('grid_id');
         $('.grid_menu').addClass('hiddenMenu');
@@ -2325,13 +2501,13 @@ var grid = (function _grid($) {
         for (var i = 0; i < groupItemsCount; i++) {
             headerColGroup.children().first().remove();
         }
-        gridState[gridId].grid.find('colgroup').first().children().first().remove();
         gridState[gridId].grid.find('.grid-headerRow').children('.group_spacer').remove();
         gridState[gridId].grid.find('.summary-row-header').children('.group_spacer').remove();
         gridState[gridId].grid.find('.group_div').text(groupMenuText);
         gridState[gridId].groupedBy = [];
         gridState[gridId].pageRequest.eventType = 'group';
         preparePageDataGetRequest(gridId);
+        e.preventDefault();
     }
 
     function createColumnToggleMenuOptions(menu, gridId) {
@@ -2393,9 +2569,9 @@ var grid = (function _grid($) {
     function createGridFooter(gridData, gridElem) {
         var gridFooter = gridElem.find('.grid-footer-div');
         var id = gridFooter.data('grid_footer_id');
-        var count = gridState[id].dataSource.rowCount;
+        var count = gridState[id].dataSource.rowCount || 0;
         var displayedRows = (count - gridState[id].pageSize) > 0 ? gridState[id].pageSize : count;
-        var totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 0;
+        var totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1;
         var pageNum = gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum;
 
         var first = $('<a href="#" class="grid-page-link" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridFooter);
@@ -2432,15 +2608,16 @@ var grid = (function _grid($) {
             sizeSelect.val(~pageOptions.indexOf(gridState[id].pageSize) ? gridState[id].pageSize : pageOptions[0]);
             sizeSelectorSpan.append('Rows per page');
 
-            sizeSelect.on('change', function pageSizeSelectorClickHandler() {
+            sizeSelect.on('change', function pageSizeSelectorClickHandler(e) {
                 var pageSize = $(this).val();
                 gridState[id].pageRequest.pageSize = parseInt(pageSize);
                 gridState[id].pageRequest.eventType = 'pageSize';
                 preparePageDataGetRequest(id);
+                e.preventDefault();
             });
         }
 
-        var rowStart = 1 + (displayedRows * (pageNum - 1));
+        var rowStart = displayedRows ? (1 + (displayedRows * (pageNum - 1))) : 0;
         var rowEnd = gridData.dataSource.rowCount < gridData.pageSize * pageNum ? gridData.dataSource.rowCount : gridData.pageSize * pageNum;
         text = rowStart + ' - ' + rowEnd + ' of ' + count + ' rows';
         gridFooter.append('<span class="pageinfo">' + text + '</span>');
@@ -2453,13 +2630,13 @@ var grid = (function _grid($) {
             $(val).on('click', function gridFooterAnchorClickHandlerCallback(e) {
                 e.preventDefault();
                 var link = e.currentTarget.tagName === 'A' ? $(e.currentTarget) : $(e.srcElement).parents('.grid-page-link');
-                if (link.hasClass('link-disabled')) {	
+                if (link.hasClass('link-disabled')) {   
                     return;
                 }
                 var gridFooter = link.parents('.grid-footer-div');
                 var allPagers = gridFooter.find('a');
                 var id = parseInt(link.parents('.grid-wrapper')[0].dataset.grid_id);
-                if (gridState[id].updating) return;		
+                if (gridState[id].updating) return;     
                 var gridData = gridState[id];
                 var pageSize = gridData.pageSize;
                 var pagerInfo = gridFooter.find('.pageinfo');
@@ -2516,14 +2693,14 @@ var grid = (function _grid($) {
 
     function attachFilterListener(filterElem) {
         filterElem.on('click', function filterClickCallback(e) {
-            e.stopPropagation();	
+            e.stopPropagation();    
             e.preventDefault();
             var filterAnchor = $(e.target);
             var filterCell = filterAnchor.parents('th');
             var type = filterAnchor.data('type');
             var grid = filterElem.parents('.grid-wrapper');
             var id = grid.data('grid_id');
-            if (gridState[id].updating) return;		
+            if (gridState[id].updating) return;     
             var filters = grid.find('.filter-div');
             var currFilter = null;
             var field = filterAnchor.data('field');
@@ -2582,6 +2759,7 @@ var grid = (function _grid($) {
                 break;
             case 'date':
             case 'time':
+            case 'datetime':
                 select.append('<option value="gte">Equal to or later than:</option>')
                     .append('<option value="gt">Later than:</option>')
                     .append('<option value="lte">Equal to or before:</option>')
@@ -2647,7 +2825,7 @@ var grid = (function _grid($) {
 
         filterModal.find('filter_error').remove();
 
-        if (gridState[gridId].updating) return;		
+        if (gridState[gridId].updating) return;     
         gridState[gridId].filters = {};
         gridState[gridId].pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
@@ -2659,22 +2837,23 @@ var grid = (function _grid($) {
             field = $(this).data('field'),
             remainingFilters = [],
             gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
-        if (gridState[gridId].updating) return;		
+        if (gridState[gridId].updating) return;     
         var gridData = gridState[gridId];
 
         if (value === '' && !gridData.filters.filterGroup.length) return;
         filterDiv.find('.filterInput').val('');
         filterDiv.addClass('hiddenFilter');
 
-        for (var i = 0; i < gridState[gridId].filters.groupFilters; i++) {
-            if (gridState[gridId].filters.groupFilters[i].field !== field) {
-                remainingFilters.push(gridState[gridId].filters.groupFilters[i]);
+        for (var i = 0; i < gridState[gridId].filters.filterGroup.length; i++) {
+            if (gridState[gridId].filters.filterGroup[i].field !== field) {
+                remainingFilters.push(gridState[gridId].filters.filterGroup[i]);
             }
         }
 
-        gridData.filters.groupFilters = remainingFilters;
+        gridData.filters.filterGroup = remainingFilters;
         gridData.pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
+        e.preventDefault();
     }
 
     function filterButtonClickHandler(e) {
@@ -2682,7 +2861,7 @@ var grid = (function _grid($) {
             selected = filterDiv.find('.filterSelect').val(),
             value = filterDiv.find('.filterInput').val(),
             gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
-        if (gridState[gridId].updating) return;		
+        if (gridState[gridId].updating) return;     
         var gridData = gridState[gridId],
             type = filterDiv.data('type'),
             errors = filterDiv.find('.filter-div-error'),
@@ -2693,9 +2872,14 @@ var grid = (function _grid($) {
 
         if (dataTypes[type]) {
             re = new RegExp(dataTypes[type]);
-            if (!re.test(value) && !errors.length) {
-                $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
-                return;
+            if (!re.test(value)) {
+                if (type === 'datetime' && new RegExp(dataTypes['date']).test(value)) {
+                    value += ' 00:00:00';
+                }
+                else {
+                    $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
+                    return;
+                }
             }
         }
 
@@ -2766,6 +2950,8 @@ var grid = (function _grid($) {
                 dropIndicator.append('<span class="drop-indicator-top"></span><span class="drop-indicator-bottom"></span>');
                 gridState[gridId].grid.append(dropIndicator);
             }
+            else
+                dropIndicator.css('display', 'block');
 
             var originalColumn;
             gridState[gridId].grid.find('.grid-header-cell').each(function iterateGridHeadersCallback(idx, val) {
@@ -2788,7 +2974,6 @@ var grid = (function _grid($) {
                 dropIndicator.css('display', 'none');
             }
         });
-        elem.on('mouseleave', mouseLeaveHandlerCallback);
     }
 
     function handleDropCallback(e) {
@@ -2798,7 +2983,7 @@ var grid = (function _grid($) {
         var id = targetCol.parents('.grid-header-div').length ? targetCol.parents('.grid-wrapper').data('grid_id') : null;
         var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
         if (id == null || droppedId == null || id !== droppedId) return;  
-        if (gridState[id].updating) return;		
+        if (gridState[id].updating) return;     
         if (droppedCol[0].cellIndex === targetCol[0].cellIndex) return;
         if (droppedCol[0].id === 'sliderDiv') return;
 
@@ -2830,6 +3015,16 @@ var grid = (function _grid($) {
 
         swapContentCells(parentDivId, droppedIndex, targetIndex);
 
+        if (gridState[id].groupedBy && gridState[id].groupedBy.length && gridState[id].groupedBy !== 'none') {
+            ++droppedIndex;
+            ++targetIndex;
+        }
+
+        if (gridState[id].drillDown) {
+            ++droppedIndex;
+            ++targetIndex;
+        }
+
         var targetWidth = colGroups[0].children[droppedIndex].style.width;
         var droppedWidth = colGroups[0].children[targetIndex].style.width;
 
@@ -2853,6 +3048,7 @@ var grid = (function _grid($) {
                 targetColSum.replaceWith(droppedColSumClone);
             }
         }
+        $('#drop_indicator_id_' + id).css('display', 'none');
         e.preventDefault();
         var evtObj = {
             element: gridState[id].grid,
@@ -2865,22 +3061,23 @@ var grid = (function _grid($) {
     }
 
     function mouseLeaveHandlerCallback(e) {
-        var target = $(e.currentTarget);
-        var targetOffset = target.offset();
-        var targetWidth = target.innerWidth();
-        var mousePos = { x: e.originalEvent.pageX, y: e.originalEvent.pageY };
-        var sliderDiv = $('#sliderDiv');
+        var target = $(e.currentTarget),
+            targetOffset = target.offset(),
+            targetWidth = target.innerWidth(),
+            mousePos = { x: e.originalEvent.pageX, y: e.originalEvent.pageY },
+            parentDiv = target.parents('.grid-header-wrapper'),
+            id = parentDiv.parent().data('grid_header_id'),
+            sliderDiv = $('#sliderDiv' + id);
 
         if (Math.abs(mousePos.x - (targetOffset.left + targetWidth)) < 10) {
             if (!sliderDiv.length) {
-                var parentDiv = target.parents('.grid-header-wrapper');
-                sliderDiv = $('<div id=sliderDiv style="width:10px; height:' + target.innerHeight() + 'px; cursor: col-resize; position: absolute" draggable=true><div></div></div>').appendTo(parentDiv);
+                sliderDiv = $('<div id="sliderDiv' + id + '" style="width:10px; height:' + target.innerHeight() + 'px; cursor: col-resize; position: absolute" draggable=true><div></div></div>').appendTo(parentDiv);
                 sliderDiv.on('dragstart', function handleResizeDragStartCallback(e) {
                     e.originalEvent.dataTransfer.setData('text', e.currentTarget.id);
-                    gridState[parentDiv.parent().data('grid_header_id')].resizing = true;
+                    gridState[id].resizing = true;
                 });
                 sliderDiv.on('dragend', function handleResizeDragEndCallback() {
-                    gridState[parentDiv.parent().data('grid_header_id')].resizing = false;
+                    gridState[id].resizing = false;
                 });
                 sliderDiv.on('dragover', function handleResizeDragOverCallback(e) {
                     e.preventDefault();
@@ -2889,6 +3086,72 @@ var grid = (function _grid($) {
                     e.preventDefault();
                 });
                 sliderDiv.on('drag', handleResizeDragCallback);
+                sliderDiv.on('dblclick', function doubleClickHandler() {
+                    var targetCol = gridState[id].grid.find('#' + sliderDiv.data('targetindex')),
+                        targetColIdx = targetCol.data('index');
+                    if (targetColIdx === Object.keys(gridState[id].columns).length - 1) return;
+                    if (gridState[id].drillDown) ++targetColIdx;
+                    if (gridState[id].groupedBy && gridState[id].groupedBy.length) {
+                        targetColIdx = targetColIdx + gridState[id].groupedBy.length;
+                    }
+
+                    var colGroups = gridState[id].grid.find('colgroup').filter(function removeParentOrChildCols() {
+                        var cg = $(this);
+                        if (gridState[id].parentGridId != null) {
+                            return cg.parents('tr.drill-down-parent').length;
+                        }
+                        else return !cg.parents('tr.drill-down-parent').length;
+                    });
+
+                    var headerCol = $($(colGroups[0]).children()[targetColIdx]),
+                        contentCol = $($(colGroups[1]).children()[targetColIdx]);
+
+                    var tables = gridState[id].grid.find('table').filter(function removeParentOrChildCols() {
+                        var cg = $(this);
+                        if (gridState[id].parentGridId != null) {
+                            return cg.parents('tr.drill-down-parent').length;
+                        }
+                        else return !cg.parents('tr.drill-down-parent').length;
+                    });
+
+                    var headerCell = $(tables[0]).find('th')[targetColIdx],
+                        aggregateCell = $(tables[0]).find('td')[targetColIdx] || null,
+                        headerMultiplier = 8.1,
+                        aggregateMultiplier = 7.5,
+                        contentMultiplier = 6.75,
+                        maxLength = headerCell.innerText.length * headerMultiplier,
+                        newWidth;
+
+                    if (gridState[id].columns[targetCol.data('field')].sortable)
+                        maxLength += 16;
+
+                    if (gridState[id].columns[targetCol.data('field')].filterable)
+                        maxLength += 40;
+
+                    if (aggregateCell && aggregateCell.innerText.length * aggregateMultiplier > maxLength)
+                        maxLength = aggregateCell.innerText.length * aggregateMultiplier;
+
+                    $(tables[1]).find('tr').each(function findTargetContentCells() {
+                        var row = $(this);
+                        if (gridState[id].parentGridId != null) {
+                            if (row.parents('tr.drill-down-parent').length) {
+                                if (row.find('td')[targetColIdx].innerText.length * contentMultiplier > maxLength)
+                                    maxLength = row.find('td')[targetColIdx].innerText.length * contentMultiplier;
+                            }
+                        }
+                        else {
+                            if (!row.parents('tr.drill-down-parent').length) {
+                                if (row.find('td')[targetColIdx].innerText.length * contentMultiplier > maxLength)
+                                    maxLength = row.find('td')[targetColIdx].innerText.length * contentMultiplier;
+                            }
+                        }
+                    });
+
+                    newWidth = Math.ceil(maxLength) + 24;
+                    tables.css('width', tables.width() - (headerCol.width() - newWidth));
+                    headerCol.css('width', newWidth);
+                    contentCol.css('width', newWidth);
+                });
             }
             sliderDiv.data('targetindex', target[0].id);
             sliderDiv.css('top', targetOffset.top + 'px');
@@ -2898,10 +3161,10 @@ var grid = (function _grid($) {
     }
 
     function setSortableClickListener(elem) {
-        elem.on('click', function handleHeaderClickCallback() {
+        elem.on('click', function handleHeaderClickCallback(e) {
             var headerDiv = elem.parents('.grid-header-div');
             var id = parseInt(headerDiv.data('grid_header_id'));
-            if (gridState[id].updating) return;		
+            if (gridState[id].updating) return;     
             var field = elem.data('field'),
                 foundColumn = false;
 
@@ -2934,6 +3197,7 @@ var grid = (function _grid($) {
             }
             gridState[id].pageRequest.eventType = 'sort';
             preparePageDataGetRequest(id);
+            e.preventDefault();
         });
     }
 
@@ -2975,7 +3239,7 @@ var grid = (function _grid($) {
         e.preventDefault();
         var sliderDiv = $(e.currentTarget);
         var id = sliderDiv.parents('.grid-wrapper').data('grid_id');
-        if (gridState[id].updating) return;		
+        if (gridState[id].updating) return;     
         var targetCell = document.getElementById(sliderDiv.data('targetindex'));
         var targetBox = targetCell.getBoundingClientRect();
         var endPos = e.originalEvent.pageX;
@@ -2988,8 +3252,10 @@ var grid = (function _grid($) {
             var gridWrapper = $(targetCell).parents('.grid-wrapper');
             var colGroups = gridWrapper.find('colgroup');
             var tables = gridWrapper.find('table');
-            if (gridState[id].groupedBy && gridState[id].groupedBy !== 'none')
-                index++;
+            if (gridState[id].groupedBy && gridState[id].groupedBy.length && gridState[id].groupedBy !== 'none')
+                index += gridState[id].groupedBy.length;
+            if (gridState[id].drillDown)
+                ++index;
 
             var contentDiv = gridWrapper.find('.grid-content-div');
             var scrollLeft = contentDiv.scrollLeft();
@@ -3015,15 +3281,23 @@ var grid = (function _grid($) {
 
     function swapContentCells(gridId, droppedIndex, targetIndex) {
         var gridData = gridState[gridId];
-        $('#grid-content-' + gridId).find('tr').each(function iterateContentRowsCallback(idx, val) {
+        $('#grid-content-' + gridId).find('tr').filter(function filterNestedGridRows() {
+            return !$(this).hasClass('drill-down-parent') && !$(this).parents('.drill-down-parent').length;
+        }).each(function iterateContentRowsCallback(idx, val) {
             if ($(val).hasClass('grouped_row_header'))
                 return true;
             var droppedIdx = 1 + parseInt(droppedIndex);
             var targetIdx = 1 + parseInt(targetIndex);
-            if (gridData.groupedBy && gridData.groupedBy !== 'none') {
+            if (gridData.groupedBy && gridData.groupedBy.length && gridData.groupedBy !== 'none') {
                 droppedIdx++;
                 targetIdx++;
             }
+
+            if (gridData.drillDown) {
+                ++droppedIdx;
+                ++targetIdx;
+            }
+
             var droppedCell = $(val).children('td:nth-child(' + droppedIdx + ')');
             var targetCell = $(val).children('td:nth-child(' + targetIdx + ')');
 
@@ -3049,14 +3323,14 @@ var grid = (function _grid($) {
         if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
         requestObj.pageSize = pageSize;
-        requestObj.pageNum = gridData.eventType === 'filter' ? 1 : pageNum;
+        requestObj.pageNum = gridData.pageRequest.eventType === 'filter' ? 1 : pageNum;
 
         gridData.grid.find('.grid-content-div').empty();
 
         callGridEventHandlers(gridState[id].events.pageRequested, gridData.grid, { element: gridData.grid });
         if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function') gridData.dataSource.get(requestObj, getPageDataRequestCallback);
         else {
-            if (!gridData.alteredData) gridData.alteredData = cloneGridData(gridData.originalData);
+            if (!gridData.alteredData || gridData.pageRequest.eventType === 'filter-rem') gridData.alteredData = cloneGridData(gridData.originalData);
             getPageData(requestObj, id, getPageDataRequestCallback);
         }
 
@@ -3066,9 +3340,9 @@ var grid = (function _grid($) {
                 gridData.pageSize = requestObj.pageSize;
                 gridData.pageNum = requestObj.pageNum;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
-                gridData.groupedBy = requestObj.groupedBy;
-                gridData.sortedOn = requestObj.sortedOn;
-                gridData.filters = requestObj.filters;
+                gridData.groupedBy = requestObj.groupedBy || [];
+                gridData.sortedOn = requestObj.sortedOn || [];
+                gridData.filters = requestObj.filters || {};
 
                 if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group')
                     setColWidth(gridData, gridState[id].grid);
@@ -3128,11 +3402,11 @@ var grid = (function _grid($) {
         }
         if (requestObj.filters && requestObj.filters.filterGroup && requestObj.filters.filterGroup.length) {
             fullGridData = expressionParser.createFilterTreeFromFilterObject(requestObj.filters).filterCollection(cloneGridData(gridState[id].originalData));
-            requestObj.pageNum = 1;		
+            requestObj.pageNum = 1;     
             gridState[id].alteredData = fullGridData;
         }
-        if (requestObj.groupedBy.length || requestObj.sortedOn.length) {
-            var sortedData = sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
+        if (requestObj.groupedBy && requestObj.groupedBy.length || requestObj.sortedOn.length) {
+            var sortedData = sortGridData((requestObj.groupedBy || []).concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
             gridState[id].alteredData = sortedData;
             limitPageData(requestObj, sortedData, callback);
             return;
@@ -3236,6 +3510,28 @@ var grid = (function _grid($) {
                 leftVal = new Date(left[0][sortObj.field]);
                 rightVal = new Date(right[0][sortObj.field]);
             }
+            else if (type === 'datetime') {
+                var re = new RegExp(dataTypes['datetime']),
+                    execVal1 = re.exec(left[0][sortObj.field]),
+                    execVal2 = re.exec(right[0][sortObj.field]);
+
+                var dateComp1 = execVal1[2],
+                    dateComp2 = execVal2[2],
+                    timeComp1 = execVal1[42],
+                    timeComp2 = execVal2[42];
+
+                timeComp1 = getNumbersFromTime(timeComp1);
+                timeComp2 = getNumbersFromTime(timeComp2);
+                if (timeComp1[3] && timeComp1[3] === 'PM')
+                    timeComp1[0] += 12;
+                if (timeComp2[3] && timeComp2[3] === 'PM')
+                    timeComp2[0] += 12;
+
+                dateComp1 = new Date(dateComp1);
+                dateComp2 = new Date(dateComp2);
+                leftVal = dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
+                rightVal = dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
+            }
             else {
                 leftVal = left[0][sortObj.field];
                 rightVal = right[0][sortObj.field];
@@ -3281,6 +3577,17 @@ var grid = (function _grid($) {
                 break;
             case 'time':
                 text = formatTimeCellData(value, column, gridId);
+                break;
+            case 'datetime':
+                var re = new RegExp(dataTypes['datetime']),
+                    execVal = re.exec(value),
+                    timeText = formatTimeCellData(execVal[42], column, gridId),
+                    dateComp = new Date(execVal[2]),
+                    dateFormat = gridState[gridId].columns[column].format || 'mm/dd/yyyy';
+                dateFormat = dateFormat.substring(0, (dateFormat.indexOf(' ') || dateFormat.indexOf('T')));
+                text = dateFormat.replace('dd', dateComp.getUTCDate().toString())
+                        .replace('mm', (dateComp.getUTCMonth() + 1).toString())
+                        .replace('yyyy', dateComp.getUTCFullYear().toString()) + ' ' + timeText;
                 break;
             case 'string':
             case 'boolean':
@@ -3328,8 +3635,8 @@ var grid = (function _grid($) {
     }
 
     function convertTimeArrayToSeconds(timeArray) {
-        var hourVal = timeArray[0] === 12 || timeArray[0] === 24 ? timeArray[0] - 12 : timeArray[0];
-        return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
+        var hourVal = parseInt(timeArray[0].toString()) === 12 || parseInt(timeArray[0].toString()) === 24 ? parseInt(timeArray[0].toString()) - 12 : parseInt(timeArray[0]);
+        return 3660 * hourVal + 60 * parseInt(timeArray[1]) + parseInt(timeArray[2]);
     }
 
     function validateCharacter(code, dataType) {
@@ -3364,6 +3671,30 @@ var grid = (function _grid($) {
                 if (value2[3] && value2[3] === 'PM')
                     value2[0] += 12;
                 return convertTimeArrayToSeconds(value1) === convertTimeArrayToSeconds(value2);
+            case 'datetime':
+                var re = new RegExp(dataTypes['datetime']),
+                    execVal1, execVal2;
+                if (re.test(val1) && re.test(val2)) {
+                    execVal1 = re.exec(val1);
+                    execVal2 = re.exec(val2);
+
+                    var dateComp1 = execVal1[2],
+                        dateComp2 = execVal2[2],
+                        timeComp1 = execVal1[42],
+                        timeComp2 = execVal2[42];
+
+                    timeComp1 = getNumbersFromTime(timeComp1);
+                    timeComp2 = getNumbersFromTime(timeComp2);
+                    if (timeComp1[3] && timeComp1[3] === 'PM')
+                        timeComp1[0] += 12;
+                    if (timeComp2[3] && timeComp2[3] === 'PM')
+                        timeComp2[0] += 12;
+
+                    dateComp1 = new Date(dateComp1);
+                    dateComp2 = new Date(dateComp2);
+                    return dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1) === dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
+                }
+                return true;
             default:
                 return val1.toString() === val2.toString();
         }
@@ -3398,9 +3729,8 @@ var grid = (function _grid($) {
                 callback({ data: data, columns: columns});
                 break;
             case 'all':
-                if (typeof gridState[gridId].dataSource.get === 'function') {
-                    var reqObj = createExcelRequestObject(gridId);
-                    gridState[gridId].dataSource.get(reqObj, function excelDataCallback(response) {
+                if (typeof gridState[gridId].dataSource.get === 'function' && gridState[gridId].dataSource.rowCount > gridState[gridId].pageSize) {
+                    gridState[gridId].dataSource.get(createExcelRequestObject(gridId), function excelDataCallback(response) {
                         callback({ data: response.data, columns: columns});
                     });
                 }
@@ -3413,37 +3743,17 @@ var grid = (function _grid($) {
     }
 
     function getGridColumns(gridId) {
-        var cols = [];
-        for (var col in gridState[gridId].columns) {
-            cols.push(col);
-        }
-        return cols;
+        return Object.keys(gridState[gridId].columns).filter(function collectNonHiddenColumns(col) {
+            return !this[col].isHidden;
+        }, gridState[gridId].columns);
     }
 
     function createExcelRequestObject(gridId) {
-        var gridData = gridState[gridId];
-        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        var filters = gridData.pageRequest.filters || gridData.filters || null;
-        var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
-        var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
-        var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
-        var groupedBy = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
-        var groupSortDirection = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
-
-        var requestObj = {};
-        if (gridData.sortable) requestObj.sortedOn = sortedOn;
-
-        if (gridData.filterable) {
-            requestObj.filters = filters;
-            requestObj.filteredOn = filteredOn;
-            requestObj.filterVal = filterVal;
-            requestObj.filterType = filterType;
-        }
-
-        if (gridData.groupable) {   
-            requestObj.groupedBy = groupedBy;
-            requestObj.groupSortDirection = groupSortDirection;
-        }
+        var gridData = gridState[gridId],
+            requestObj = {};
+        if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
+        if (gridData.filterable) requestObj.filters = gridData.filters.filterGroup && gridData.filters.filterGroup.length? gridData.filters : { conjunct: null, filterGroup: [] };
+        if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
         requestObj.pageSize = gridData.dataSource.rowCount;
         requestObj.pageNum = 1;
@@ -3461,6 +3771,12 @@ var grid = (function _grid($) {
         '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\22|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\25)((?:1[6-9]|[2-9]\\d)?\\d{2}))))' +
         '|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\29)(29))))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)' +
         '(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$',
+        datetime: '^(((?:(?:(?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\4|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\7))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\10)|(?:(29|30)(\\/|-|\\.)' +
+        '(0?[1,3-9]|1[0-2])\\13)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\17)|(?:(29)(\\/|-|\\.)(0?2))\\20)((?:(?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])' +
+        '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)' +
+        '((?:1[6-9]|[2-9]\\d)?\\d{2}))))|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\31)(29))))' +
+        '|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)(?:(?:(?:(0?[13578]|1[02])\\35(31))|(?:(0?[1,3-9]|1[0-2])\\35(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\35(0?[1-9]|1\\d|2[0-8])))))' +
+        '(?: |T)((0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\44([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\49([0-5]\\d))?)$))',
         dateChar: '\\d|\\-|\\/|\\.'
     };
 
@@ -3471,10 +3787,15 @@ var grid = (function _grid($) {
     function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
             formattedTime,
-            format = gridState[gridId].columns[column].format || '24',
-            timeFormat = gridState[gridId].columns[column].timeFormat;
+            format = gridState[gridId].columns[column].format,
+            timeFormat = gridState[gridId].columns[column].timeFormat || '24';
 
         if (timeArray.length < 2) return '';
+
+        if (~format.indexOf(' ') || ~format.indexOf('T')) {
+            var dateIdxEnd = ~format.indexOf(' ') ? format.indexOf(' ') : format.indexOf('T');
+            format = format.substring(dateIdxEnd + 1, format.length);
+        }
 
         if (timeFormat == '24' && timeArray.length === 4 && timeArray[3] === 'PM')
             timeArray[0] = timeArray[0] === '12' ? '00' : (parseInt(timeArray[0]) + 12).toString();
