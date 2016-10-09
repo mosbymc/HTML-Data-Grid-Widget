@@ -1,6 +1,8 @@
 # HTML-Data-Grid-Widget
 A JQuery-dependent, HTML data-grid widget
 
+To use the grid on your site, include the entire contents of the 'build' directory in your project. You can rename the build directory anything you wish, or even do without it. However, the three sub-directories of 'build', 'scripts', 'styles', and 'images' must all be in the same directory in your project, otherwise the relative urls will not point to the correct locations.
+
 View the grid demo [here](http://mosbymc.github.io/HTML-Data-Grid-Widget/).
 
 ###Currently Implemented Functionality:###
@@ -9,9 +11,11 @@ View the grid demo [here](http://mosbymc.github.io/HTML-Data-Grid-Widget/).
 - Filterable Columns
 - Sortable Columns
 - Groupable Columns
-- Hidable Columns
+- Toggleable Columns
 - In-cell Editing
 - Paging
+- Nested drill-down grids
+    - The [grid config file](https://github.com/mosbymc/HTML-Data-Grid-Widget/wiki/Grid-Configuration) takes a 'drillDown' property that can be either another grid config for the drill down, or a function that returns a grid config file after retrieve the specific drill down data for the parent row in question. Drill down grids, like their parent's can be paged on the client or the server.
 - Exporting data as an excel file via integration with [XcelXporter](https://github.com/mosbymc/XcelXporter)
 - Standard Numeric Formatting (c, p, or n)
 - Custom Numeric Formatting via # and 0
@@ -21,16 +25,15 @@ View the grid demo [here](http://mosbymc.github.io/HTML-Data-Grid-Widget/).
 - Custom Classes and Data Attributes applied to Column Headers and Table Cells/Rows
 - Grid Aggregates
 - Group Aggregates
+- Advanced filtering via integration with [ExpressionParser.js](https://github.com/mosbymc/ExpressionParser)
+    - This functionality allows for both AND and OR type filter conjunctions as well as an arbitrary number of nested filter groups.
 
-All data manipulation functionality (sorting, filtering, grouping, editing, and paging) can occur on the client-side or server-side depending on your configuration options.
+All data manipulation functionality (sorting, filtering, grouping, saving edits, and paging) can occur on the client-side or server-side depending on your configuration options.
 
 ###Planned functionality & upgrades:###
 - Dynamically add new columns (in progress)
 - Dynamically add new rows (in progress)
 - Locked Columns
-- Advanced filtering (AND/OR/NOT)
-- Nested drill-down grids
-- Advanced filtering (testing)
 - Remove jQuery dependency (this will happen no time soon)
 
 
