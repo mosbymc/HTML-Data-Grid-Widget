@@ -110,14 +110,21 @@
  - Fix group aggregates indentation - DONE
  - Create a 'reset' for css values at the grid level
  - Figure out why sorting a grouped columns makes the last column in the grid a bit longer each time - DONE
+ - Bring the expression parser module into the grid - DONE
+ - Make sure all grid functionalities are properly set only when the requisite property exists on the grid config object (like advanced filters)
  - Allow function properties on 'custom' data type columns to dynamically determine each cells data
  - Implement a dbl-click handler to auto-resize columns
  - Remove anchors as links for grid functionality - clicking them just requires the event to halt propagation
+ - Code clean up
+ - Remove excessive event handlers
+ - Documentation
+ - Test, test, test!
+ - Refactor
  - UPDATE TO ES6
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
- > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
- > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
- > and if that specific functionality has handled the added column or not without repeating the same data for each functionality
+   > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
+   > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
+   > and if that specific functionality has handled the added column or not without repeating the same data for each functionality
  - Add null/empty string values to filtering selectors
  - Add ability to lock/freeze columns
  - Restrict handling of rapid-fire events: scroll, mouse move, mouse out, mouse leave, drag, etc
@@ -134,7 +141,7 @@
  */
 var grid = (function _grid($) {
     'use strict';
-    var dataTypes, events, aggregates, generateId,
+    var dataTypes, events, aggregates, generateId, expressionParser,
         gridState = [],
         groupMenuText = 'Drag and drop a column header here to group by that column';
 
@@ -1003,8 +1010,8 @@ var grid = (function _grid($) {
         var gridData = gridState[gridId],
             i, col;
         if (typeof gridState[gridId].dataSource.get !== 'function') {
-            var dataTofilter = gridData.alteredData && gridData.alteredData.length ? gridData.alteredData : gridData.originalData,
-                remRows = dataTofilter.filter(function getRemainingRows(val, idx) {
+            var dataToFilter = gridData.alteredData && gridData.alteredData.length ? gridData.alteredData : gridData.originalData,
+                remRows = dataToFilter.filter(function getRemainingRows(val, idx) {
                     return idx > gridData.pageNum * gridData.pageSize - 1 || idx < gridData.pageNum * gridData.pageSize - gridData.pageSize;
                 });
 
@@ -1137,7 +1144,7 @@ var grid = (function _grid($) {
                         attachCustomCellHandler(columns[j], td, id);
                     }
                     if (gridData.aggregates && gridData.aggregates[columns[j]]  && typeof gridData.dataSource.get !== 'function') {
-                        if (gridData.pageRequest.eventType !== 'page')
+                        if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined)
                             addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
                     }
                     //attach event handlers to save data
@@ -1161,7 +1168,8 @@ var grid = (function _grid($) {
                 }
             }
 
-            if (gridData.aggregates && gridData.aggregates.positionAt === 'top' && typeof gridData.dataSource.get !== 'function' && gridData.pageRequest.eventType !== 'page')
+            if (gridData.aggregates && gridData.aggregates.positionAt === 'top' && typeof gridData.dataSource.get !== 'function' &&
+                (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined))
                 buildHeaderAggregations(id);
 
             if (gridData.aggregates && gridData.aggregates.positionAt === 'bottom') {
@@ -2777,7 +2785,7 @@ var grid = (function _grid($) {
                         gridState[gridId].basicFilters.filterGroup = [];
 
                         advancedFiltersModal.css('display', 'none');
-                        gridState[gridId].pageRequest.eventType = 'filter-add';
+                        gridState[gridId].pageRequest.eventType = 'filter';
                         preparePageDataGetRequest(gridId);
                     }
                 });
@@ -3246,7 +3254,7 @@ var grid = (function _grid($) {
             var filterAnchor = $(e.target);
             var filterCell = filterAnchor.parents('th');
             var type = filterAnchor.data('type');
-            var grid = filterElem.parents('.grid-wrapper');
+            var grid = filterElem.parents('.grid-wrapper').first();
             var id = grid.data('grid_id');
             if (gridState[id].updating) return;     //can't filter when the grid is updating
             var filters = grid.find('.filter-div');
@@ -3387,7 +3395,7 @@ var grid = (function _grid($) {
 
         if (gridState[gridId].updating) return;     //can't filter if grid is updating
         gridState[gridId].filters = {};
-        gridState[gridId].pageRequest.eventType = 'filter-rem';
+        gridState[gridId].pageRequest.eventType = 'filter';
         preparePageDataGetRequest(gridId);
     }
 
@@ -3396,7 +3404,7 @@ var grid = (function _grid($) {
             value = filterDiv.find('.filterInput').val(),
             field = $(this).data('field'),
             remainingFilters = [],
-            gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
+            gridId = filterDiv.parents('.grid-wrapper').first().data('grid_id');
         if (gridState[gridId].updating) return;     //can't filter if grid is updating
         var gridData = gridState[gridId];
 
@@ -3411,7 +3419,7 @@ var grid = (function _grid($) {
         }
 
         gridData.filters.filterGroup = remainingFilters;
-        gridData.pageRequest.eventType = 'filter-rem';
+        gridData.pageRequest.eventType = 'filter';
         preparePageDataGetRequest(gridId);
         e.preventDefault();
     }
@@ -3469,7 +3477,7 @@ var grid = (function _grid($) {
         gridState[gridId].advancedFilters = {};
 
         filterDiv.addClass('hiddenFilter');
-        gridData.pageRequest.eventType = 'filter-add';
+        gridData.pageRequest.eventType = 'filter';
         preparePageDataGetRequest(gridId);
     }
 
@@ -3917,8 +3925,7 @@ var grid = (function _grid($) {
         callGridEventHandlers(gridState[id].events.pageRequested, gridData.grid, { element: gridData.grid });
         if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function') gridData.dataSource.get(requestObj, getPageDataRequestCallback);
         else {
-            if (!gridData.alteredData || gridData.pageRequest.eventType === 'filter-rem') gridData.alteredData = cloneGridData(gridData.originalData);
-            //else if (gridData.eventType === 'filter-rem') gridData.alteredData = cloneGridData(gridData.originalData);
+            if (!gridData.alteredData || gridData.pageRequest.eventType === 'filter') gridData.alteredData = cloneGridData(gridData.originalData);
             getPageData(requestObj, id, getPageDataRequestCallback);
         }
 
@@ -3936,12 +3943,20 @@ var grid = (function _grid($) {
                     setColWidth(gridData, gridState[id].grid);
 
                 createGridContent(gridData, gridState[id].grid);
-                if (gridData.pageRequest.eventType === 'filter-add' || gridData.pageRequest.eventType === 'filter-rem' || gridData.pageRequest.eventType === 'pageSize') {
+                if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === 'pageSize') {
                     gridData.grid.find('.grid-footer-div').empty();
                     createGridFooter(gridData, gridData.grid);
                 }
-                if (gridData.pageRequest.eventType === 'filter' && gridData.aggregates && gridData.aggregates.positionAt === 'top')
+                if (gridData.pageRequest.eventType === 'filter' && gridData.aggregates && gridData.aggregates.positionAt === 'top') {
+                    if (response.aggregations) {
+                        for (var col in response.aggregations) {
+                            if (col in gridData.aggregates)
+                                gridData.aggregates[col].value = response.aggregations[col];
+                        }
+                        constructAggregationsFromServer(id, gridData.gridAggregations);
+                    }
                     buildHeaderAggregations(id);
+                }
                 gridData.pageRequest = {};
             }
         }
@@ -4018,6 +4033,7 @@ var grid = (function _grid($) {
     //==========================================================================================================================//
     //                                                                                                                          //
     //                                                  HELPER FUNCTIONS                                                        //
+    //                                                                                                                          //
     //==========================================================================================================================//
 
     function limitPageData(requestObj, fullGridData, callback) {
@@ -4047,17 +4063,33 @@ var grid = (function _grid($) {
     function comparator(val, base, type) {
         switch (type) {
             case 'eq':
+            case '===':
                 return val === base;
+            case '==':
+                return val == base;
             case 'neq':
+            case '!==':
                 return val !== base;
+            case '!=':
+                return val != base;
             case 'gte':
+            case '>=':
                 return val >= base;
             case 'gt':
+            case '>':
                 return val > base;
             case 'lte':
+            case '<=':
                 return val <= base;
             case 'lt':
+            case '<':
                 return val < base;
+            case 'not':
+            case '!':
+            case 'falsey':
+                return !val;
+            case 'truthy':
+                return !!val;
             case 'ct':
                 return !!~val.toLowerCase().indexOf(base.toLowerCase());
             case 'nct':
@@ -4113,54 +4145,12 @@ var grid = (function _grid($) {
     }
 
     function merge(left, right, sortObj, type) {
-        var result = [], leftVal, rightVal;
+        var result = [], leftVal, rightVal,
+            normalizedValues;
         while (left.length && right.length) {
-            if (type === 'time') {
-                leftVal = getNumbersFromTime(left[0][sortObj.field]);
-                rightVal = getNumbersFromTime(right[0][sortObj.field]);
-
-                if (~left[0][sortObj.field].indexOf('PM'))
-                    leftVal[0] += 12;
-                if (~right[0][sortObj.field].indexOf('PM'))
-                    rightVal[0] += 12;
-
-                leftVal = convertTimeArrayToSeconds(leftVal);
-                rightVal = convertTimeArrayToSeconds(rightVal);
-            }
-            else if (type === 'number') {
-                leftVal = parseFloat(left[0][sortObj.field]);
-                rightVal = parseFloat(right[0][sortObj.field]);
-            }
-            else if (type === 'date') {
-                leftVal = new Date(left[0][sortObj.field]);
-                rightVal = new Date(right[0][sortObj.field]);
-            }
-            else if (type === 'datetime') {
-                var re = new RegExp(dataTypes['datetime']),
-                    execVal1 = re.exec(left[0][sortObj.field]),
-                    execVal2 = re.exec(right[0][sortObj.field]);
-
-                var dateComp1 = execVal1[2],
-                    dateComp2 = execVal2[2],
-                    timeComp1 = execVal1[42],
-                    timeComp2 = execVal2[42];
-
-                timeComp1 = getNumbersFromTime(timeComp1);
-                timeComp2 = getNumbersFromTime(timeComp2);
-                if (timeComp1[3] && timeComp1[3] === 'PM')
-                    timeComp1[0] += 12;
-                if (timeComp2[3] && timeComp2[3] === 'PM')
-                    timeComp2[0] += 12;
-
-                dateComp1 = new Date(dateComp1);
-                dateComp2 = new Date(dateComp2);
-                leftVal = dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
-                rightVal = dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
-            }
-            else {
-                leftVal = left[0][sortObj.field];
-                rightVal = right[0][sortObj.field];
-            }
+            normalizedValues = normalizeValues(type, left[0][sortObj.field], right[0][sortObj.field]);
+            leftVal = normalizedValues.value1;
+            rightVal = normalizedValues.value2;
             var operator = sortObj.sortDirection === 'asc' ? 'lte' : 'gte';
             comparator(leftVal, rightVal, operator) ? result.push(left.shift()) : result.push(right.shift());
         }
@@ -4172,6 +4162,71 @@ var grid = (function _grid($) {
             result.push(right.shift());
 
         return result;
+    }
+
+    function normalizeValues(dataType, val1, val2) {
+        var first, second;
+        switch(dataType) {
+            case 'time':
+                first = getNumbersFromTime(val1);
+                second = getNumbersFromTime(val2);
+
+                if (val1.indexOf('PM') > -1) first[0] += 12;
+                if (val2.indexOf('PM') > -1) second[0] += 12;
+
+                first = convertTimeArrayToSeconds(first);
+                second = convertTimeArrayToSeconds(second);
+                break;
+            case 'datetime':
+                var re = new RegExp(dataTypes['datetime']),
+                    execVal1, execVal2;
+                if (re.test(val1) && re.test(val2)) {
+                    execVal1 = re.exec(val1);
+                    execVal2 = re.exec(val2);
+
+                    var dateComp1 = execVal1[2],
+                        dateComp2 = execVal2[2],
+                        timeComp1 = execVal1[42],
+                        timeComp2 = execVal2[42];
+
+                    timeComp1 = getNumbersFromTime(timeComp1);
+                    timeComp2 = getNumbersFromTime(timeComp2);
+                    if (timeComp1[3] && timeComp1[3] === 'PM')
+                        timeComp1[0] += 12;
+                    if (timeComp2[3] && timeComp2[3] === 'PM')
+                        timeComp2[0] += 12;
+
+                    dateComp1 = new Date(dateComp1);
+                    dateComp2 = new Date(dateComp2);
+                    first = dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
+                    second = dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
+                }
+                else {
+                    first = 0;
+                    second = 0;
+                }
+                break;
+            case 'number':
+                first = parseFloat(val1);
+                second = parseFloat(val2);
+                break;
+            case 'date':
+                first = new Date(val1);
+                second = new Date(val2);
+                break;
+            case 'boolean':
+                first = val1.toString();
+                second = val2.toString();
+                break;
+            default:
+                first = val1.toString();
+                second = val2.toString();
+                break;
+        }
+        return {
+            value1: first,
+            value2: second
+        };
     }
 
     /**
@@ -4222,7 +4277,7 @@ var grid = (function _grid($) {
                     execVal = re.exec(value),
                     timeText = formatTimeCellData(execVal[42], column, gridId),
                     dateComp = new Date(execVal[2]),
-                    dateFormat = gridState[gridId].columns[column].format || 'mm/dd/yyyy';
+                    dateFormat = gridState[gridId].columns[column].format || 'mm/dd/yyyy hh:mm:ss';
                 dateFormat = dateFormat.substring(0, (dateFormat.indexOf(' ') || dateFormat.indexOf('T')));
                 text = dateFormat.replace('dd', dateComp.getUTCDate().toString())
                         .replace('mm', (dateComp.getUTCMonth() + 1).toString())
@@ -4474,7 +4529,7 @@ var grid = (function _grid($) {
     function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
             formattedTime,
-            format = gridState[gridId].columns[column].format,
+            format = gridState[gridId].columns[column].format || 'hh:mm:ss',
             timeFormat = gridState[gridId].columns[column].timeFormat || '24';
 
         if (timeArray.length < 2) return '';
@@ -4754,6 +4809,257 @@ var grid = (function _grid($) {
     function isNumber(value) {
         return typeof value === 'number' && value === value;
     }
+
+    //===================================       expression parser       ===================================//
+    expressionParser = (function _expressionParser() {
+        var stack = {
+            init: function _init() {
+                this.data = [];
+                this.top = 0;
+            },
+            push: function _push(item) {
+                this.data[this.top++] = item;
+            },
+            pop: function _pop() {
+                return this.data[--this.top];
+            },
+            peek: function _peek() {
+                return this.data[this.top - 1];
+            },
+            clear: function _clear() {
+                this.top = 0;
+            },
+            length: function _length() {
+                return this.top;
+            }
+        },
+            associativity = { RTL: 1, LTR: 2 },
+            booleanExpressionTree = {
+            init: function _init() {
+                this.tree = null;
+                this.context = null;
+                this.rootNode = null;
+                return this;
+            }
+        };
+
+        booleanExpressionTree.setTree = function _setTree(tree) {
+            this.queue = tree;
+            this.rootNode = tree[this.queue.length - 1];
+            return this;
+        };
+        booleanExpressionTree.createTree = function _createTree() {
+            this.queue.pop();
+            if (this.queue.length)
+                this.rootNode.addChildren(this.queue);
+        };
+        booleanExpressionTree.filterCollection = function _filterCollection(collection) {
+            return collection.filter(function collectionMap(curr) {
+                this.context = curr;
+                return this.rootNode.evaluate(curr);
+            }, this);
+        };
+        booleanExpressionTree.internalGetContext = function _internalGetContext() {
+            return this.context;
+        };
+        booleanExpressionTree.getContext = function _getContext() {
+            return this.internalGetContext.bind(this);
+        };
+        booleanExpressionTree.isTrue = function _isTrue(item) {
+            this.context = item;
+            return this.rootNode.value;
+        };
+
+        var astNode = {
+            createNode: function _createNode(node) {
+                var operatorCharacteristics = getOperatorPrecedence(node);
+                if (operatorCharacteristics) {
+                    this.operator = node;
+                    this.numberOfOperands = getNumberOfOperands(this.operator);
+                    this.precedence = operatorCharacteristics.precedence;
+                    this.associativity = operatorCharacteristics.associativity;
+                    this.children = [];
+                }
+                else {
+                    this.field = node.field;
+                    this.standard = node.value;
+                    this.operation = node.operation;
+                    this.dataType = node.dataType;
+                    this.context = null;
+                }
+                this._value = null;
+                this.getContext = null;
+                this.queue = null;
+            }
+        };
+
+        astNode.createTree = function _createTree(queue) {
+            this.queue = queue.reverse();
+            this.tree = this.queue;
+            this.addChildren(this.queue);
+        };
+
+        astNode.addChildren = function _addChildren(tree) {
+            if (this.children && this.children.length < this.numberOfOperands) {
+                var child = tree.pop();
+                child.addChildren(tree);
+                this.children.push(child);
+                child = tree.pop();
+                child.addChildren(tree);
+                this.children.push(child);
+            }
+            return this;
+        };
+
+        astNode.addChild = function _addChild(child) {
+            if (this.children && this.children.length < this.numberOfOperands)
+                this.children.push(child);
+            return this;
+        };
+
+        astNode.evaluate = function _evaluate() {
+            if (this.children && this.children.length) {
+                switch (this.operator) {
+                    case 'or':
+                        return this.children[1].evaluate() || this.children[0].evaluate();
+                    case 'and':
+                        return this.children[1].evaluate() && this.children[0].evaluate();
+                    case 'xor':
+                        return !!(this.children[1].evaluate() ^ this.children[0].evaluate());
+                    case 'nor':
+                        return !(this.children[1].evaluate() || this.children[0].evaluate());
+                    case 'nand':
+                        return !(this.children[1].evaluate() && this.children[0].evaluate());
+                    case 'xnor':
+                        return !(this.children[1].evaluate() ^ this.children[0].evaluate());
+                }
+            }
+            else {
+                var initialVal = this.getContext()[this.field],
+                    normalizedValues = normalizeValues(this.dataType, initialVal, this.standard);
+                this._value = comparator(normalizedValues.value1, normalizedValues.value2, this.operation);
+                return this._value;
+            }
+        };
+
+        astNode.getValue = function _getValue() {
+            if (this._value == null) this._value = this.evaluate();
+            return this._value;
+        };
+
+        Object.defineProperty(astNode, 'value', {
+            get: function _getValue() {
+                if (!this._value) this._value = this.evaluate();
+                return this._value;
+            }
+        });
+
+        function getNodeContext(bet) {
+            return bet.internalGetContext.bind(bet);
+        }
+
+        function createFilterTreeFromFilterObject(filterObject) {
+            var ret = Object.create(booleanExpressionTree);
+            ret.init();
+            var operandStack = Object.create(stack);
+            operandStack.init();
+            var queue = [],
+                topOfStack;
+
+            iterateFilterGroup(filterObject, operandStack, queue, getNodeContext(ret));
+
+            while (operandStack.length()) {
+                topOfStack = operandStack.peek();
+                if (topOfStack.operator !== '(') queue.push(operandStack.pop());
+                else operandStack.pop();
+            }
+
+            ret.setTree(queue);
+            ret.createTree();
+            return ret;
+        }
+
+        function iterateFilterGroup(filterObject, stack, queue, contextGetter) {
+            var conjunction = filterObject.conjunct,
+                idx = 0,
+                topOfStack;
+
+            while (idx < filterObject.filterGroup.length) {
+                if (idx > 0) {
+                    var conjunctObj = Object.create(astNode);
+                    conjunctObj.createNode(conjunction);
+                    pushConjunctionOntoStack(conjunctObj, stack, queue);
+                }
+                if (filterObject.filterGroup[idx].conjunct) {
+                    var paren = Object.create(astNode);
+                    paren.createNode('(');
+                    stack.push(paren);
+                    iterateFilterGroup(filterObject.filterGroup[idx], stack, queue, contextGetter);
+                    while (stack.length()) {
+                        topOfStack = stack.peek();
+                        if (topOfStack.operator !== '(') queue.push(stack.pop());
+                        else {
+                            stack.pop();
+                            break;
+                        }
+                    }
+                }
+                else {
+                    var leafNode = Object.create(astNode);
+                    leafNode.createNode(filterObject.filterGroup[idx]);
+                    leafNode.getContext = contextGetter;
+                    queue.push(leafNode);
+                }
+                ++idx;
+            }
+        }
+
+        function pushConjunctionOntoStack(conjunction, stack, queue) {
+            while (stack.length()) {
+                var topOfStack = stack.peek();
+                if ((conjunction.associativity === associativity.LTR && conjunction.precedence <= topOfStack.precedence) ||
+                    (conjunction.associativity === associativity.RTL && conjunction.precedence < topOfStack.precedence))
+                    queue.push(stack.pop());
+                else
+                    break;
+            }
+            stack.push(conjunction);
+        }
+
+        function getNumberOfOperands(operator) {
+            switch (operator) {
+                case '!':
+                    return 1;
+                case '(':
+                case ')':
+                    return 0;
+                default:
+                    return 2;
+            }
+        }
+
+        function getOperatorPrecedence(operator) {
+            switch (operator) {
+                case '!':
+                    return { precedence: 1, associativity: associativity.LTR };
+                case 'and':
+                    return { precedence: 2, associativity: associativity.RTL };
+                case 'xor':
+                    return { precedence: 3, associativity: associativity.RTL };
+                case 'or':
+                    return { precedence: 4, associativity: associativity.RTL };
+                case '(':
+                case ')':
+                    return { precedence: null, associativity: null };
+                default:
+                    return null;
+            }
+        }
+
+        return {
+            createFilterTreeFromFilterObject: createFilterTreeFromFilterObject
+        };
+    })();
 
     generateId = (function guid(seed) {
         return function _generateId() {

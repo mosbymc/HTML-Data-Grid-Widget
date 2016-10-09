@@ -24,8 +24,7 @@
     "excelExporter",
     "toggle",
     "createFilterTreeFromFilterObject",
-    "conjunct",
-    "expressionParser"
+    "conjunct"
   ],
   "loopfunc": true,
   "boss": true,
