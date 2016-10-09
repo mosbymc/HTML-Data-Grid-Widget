@@ -558,6 +558,10 @@ var grid = (function _grid($) {
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
+        if (storageData.advancedFiltering) {
+            storageData.advancedFiltering.groupsCount = isNumber(storageData.advancedFiltering.groupsCount) ? storageData.advancedFiltering.groupsCount : 5;
+            storageData.advancedFiltering.filtersCount = isNumber(storageData.advancedFiltering.filtersCount) ? storageData.advancedFiltering.filtersCount : 10;
+        }
         storageData.parentGridId = gridData.parentGridId != null ? gridData.parentGridId : null;
         if (storageData.dataSource.rowCount == null) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
@@ -2434,11 +2438,16 @@ var grid = (function _grid($) {
     }
 
     function deleteFilterButtonHandler(e) {
-        var filterRowDiv = $(e.currentTarget).parents('.filter_row_div'),
+        var target = $(e.currentTarget);
+        var filterRowDiv = target.parents('.filter_row_div'),
             addNewFilterButton = filterRowDiv.find('.new_filter'),
-            filterModal = $(e.currentTarget).parents('.filter_modal');
+            filterModal = target.parents('.filter_modal'),
+            newFilterGroupButton = filterRowDiv.find('.add_filter_group');
         if (addNewFilterButton.length) {
             filterRowDiv.prev().append(addNewFilterButton.detach());
+        }
+        if (newFilterGroupButton.length) {
+            filterRowDiv.prev().append(newFilterGroupButton.detach());
         }
         filterRowDiv.remove();
 
@@ -2449,6 +2458,7 @@ var grid = (function _grid($) {
             allowedFilters = gridState[gridId].advancedFiltering.filtersCount;
         if (allowedFilters > numFilters)
             filterModal.find('.add_filter_group').prop('disabled', false);
+        e.stopPropagation();
     }
 
     function clearFirstFilterButtonHandler(e) {

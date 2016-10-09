@@ -10,6 +10,17 @@ var gridData2 = {
     selectable: 'multi-row',
     excelExport: true,
     columnToggle: true,
+    advancedFiltering: {
+        groupsCount: 4,
+        filtersCount: 8
+    },
+    pagingOptions: [25, 50, 100],
+    //menu: ['filter', 'excel', 'save', 'sort', 'selection'],
+    //pageSize: 50,
+    rows: {
+        alternateRows: ["testAlt"],
+        all: ["testAll"]
+    },
     drillDown: function _drillDown(parentRowIdx, parentRowData) {
         return {
             reorderable: true,
@@ -75,13 +86,6 @@ var gridData2 = {
             }
         }
     },
-    advancedFiltering: {
-        groupsCount: 4,
-        filtersCount: 8
-    },
-    pagingOptions: [25, 50, 100],
-    //menu: ['filter', 'excel', 'save', 'sort', 'selection'],
-    //pageSize: 50,
     aggregates: {
         Service: {
             type: "count"
@@ -117,10 +121,6 @@ var gridData2 = {
             type: ""
         },
         positionAt: "top"
-    },
-    rows: {
-        alternateRows: ["testAlt"],
-        all: ["testAll"]
     },
     columns: {
         Service: {

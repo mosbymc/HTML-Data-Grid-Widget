@@ -110,6 +110,7 @@
  - Fix group aggregates indentation - DONE
  - Create a 'reset' for css values at the grid level
  - Figure out why sorting a grouped columns makes the last column in the grid a bit longer each time - DONE
+ - Allow function properties on 'custom' data type columns to dynamically determine each cells data
  - Implement a dbl-click handler to auto-resize columns
  - Remove anchors as links for grid functionality - clicking them just requires the event to halt propagation
  - UPDATE TO ES6
@@ -258,7 +259,7 @@ var grid = (function _grid($) {
                 },
                 /**
                  * Sets the selected row and/or columns of the grid.
-                 * @param {Array} itemArray - Ay array of objects that have a zero-based 'rowIndex' property to indicate which row is to be selected.
+                 * @param {Array} itemArray - An array of objects that have a zero-based 'rowIndex' property to indicate which row is to be selected.
                  * Optionally each object may have a zero-based 'columnIndex' property that indicates which column of the row to select.
                  */
                 set: function _setSelectedItems(itemArray) {
@@ -845,7 +846,6 @@ var grid = (function _grid($) {
      * @param {number} id
      * @param {object} gridData
      * @param {object} gridElem
-     * @param {number} parentId
      */
     function initializeGrid(id, gridData, gridElem) {
         var storageData = cloneGridData(gridData);
@@ -890,6 +890,10 @@ var grid = (function _grid($) {
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
+        if (storageData.advancedFiltering) {
+            storageData.advancedFiltering.groupsCount = isNumber(storageData.advancedFiltering.groupsCount) ? storageData.advancedFiltering.groupsCount : 5;
+            storageData.advancedFiltering.filtersCount = isNumber(storageData.advancedFiltering.filtersCount) ? storageData.advancedFiltering.filtersCount : 10;
+        }
         storageData.parentGridId = gridData.parentGridId != null ? gridData.parentGridId : null;
         if (storageData.dataSource.rowCount == null) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
@@ -2959,11 +2963,16 @@ var grid = (function _grid($) {
     }
 
     function deleteFilterButtonHandler(e) {
-        var filterRowDiv = $(e.currentTarget).parents('.filter_row_div'),
+        var target = $(e.currentTarget);
+        var filterRowDiv = target.parents('.filter_row_div'),
             addNewFilterButton = filterRowDiv.find('.new_filter'),
-            filterModal = $(e.currentTarget).parents('.filter_modal');
+            filterModal = target.parents('.filter_modal'),
+            newFilterGroupButton = filterRowDiv.find('.add_filter_group');
         if (addNewFilterButton.length) {
             filterRowDiv.prev().append(addNewFilterButton.detach());
+        }
+        if (newFilterGroupButton.length) {
+            filterRowDiv.prev().append(newFilterGroupButton.detach());
         }
         filterRowDiv.remove();
 
@@ -2974,6 +2983,7 @@ var grid = (function _grid($) {
             allowedFilters = gridState[gridId].advancedFiltering.filtersCount;
         if (allowedFilters > numFilters)
             filterModal.find('.add_filter_group').prop('disabled', false);
+        e.stopPropagation();
     }
 
     function clearFirstFilterButtonHandler(e) {
