@@ -612,10 +612,6 @@ var grid = (function _grid($) {
             }
 
             if (gridData.columns[col].type !== 'custom') {
-                if (gridData.reorderable === true && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable === true)) {
-                    th.prop('draggable', true);
-                    setDragAndDropListeners(th);
-                }
                 if (gridData.sortable === true && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable === true)) {
                     setSortableClickListener(th);
                     gridData.sortable = true;
@@ -637,6 +633,10 @@ var grid = (function _grid($) {
 
             if (gridData.resizable) {
                 th.on('mouseleave', mouseLeaveHandlerCallback);
+            }
+            if (gridData.reorderable === true && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable === true)) {
+                th.prop('draggable', true);
+                setDragAndDropListeners(th);
             }
 
             index++;

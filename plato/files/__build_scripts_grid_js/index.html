@@ -703,10 +703,6 @@
             }
 
             if (gridData.columns[col].type !== &#039;custom&#039;) {
-                if (gridData.reorderable === true &amp;&amp; (typeof gridData.columns[col].reorderable === &#039;undefined&#039; || gridData.columns[col].reorderable === true)) {
-                    th.prop(&#039;draggable&#039;, true);
-                    setDragAndDropListeners(th);
-                }
                 if (gridData.sortable === true &amp;&amp; (typeof gridData.columns[col].sortable === &#039;undefined&#039; || gridData.columns[col].sortable === true)) {
                     setSortableClickListener(th);
                     gridData.sortable = true;
@@ -728,6 +724,10 @@
 
             if (gridData.resizable) {
                 th.on(&#039;mouseleave&#039;, mouseLeaveHandlerCallback);
+            }
+            if (gridData.reorderable === true &amp;&amp; (typeof gridData.columns[col].reorderable === &#039;undefined&#039; || gridData.columns[col].reorderable === true)) {
+                th.prop(&#039;draggable&#039;, true);
+                setDragAndDropListeners(th);
             }
 
             index++;
