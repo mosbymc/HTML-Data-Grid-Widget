@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.67</p>
+      <p class="stat">56.25</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4057</p>
+      <p class="stat">4355</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">223.18</p>
+      <p class="stat">230.17</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">92.46</p>
+      <p class="stat">97.44</p>
     </div>
   </div>
 </div>
@@ -91,7 +91,7 @@
   <div class="row">
     <textarea id="file-source" class="col-md-12">var grid = (function _grid($) {
     &#039;use strict&#039;;
-    var dataTypes, events, aggregates, generateId,
+    var dataTypes, events, aggregates, generateId, expressionParser,
         gridState = [],
         groupMenuText = &#039;Drag and drop a column header here to group by that column&#039;;
 
@@ -745,8 +745,8 @@
         var gridData = gridState[gridId],
             i, col;
         if (typeof gridState[gridId].dataSource.get !== &#039;function&#039;) {
-            var dataTofilter = gridData.alteredData &amp;&amp; gridData.alteredData.length ? gridData.alteredData : gridData.originalData,
-                remRows = dataTofilter.filter(function getRemainingRows(val, idx) {
+            var dataToFilter = gridData.alteredData &amp;&amp; gridData.alteredData.length ? gridData.alteredData : gridData.originalData,
+                remRows = dataToFilter.filter(function getRemainingRows(val, idx) {
                     return idx &gt; gridData.pageNum * gridData.pageSize - 1 || idx &lt; gridData.pageNum * gridData.pageSize - gridData.pageSize;
                 });
 
@@ -870,7 +870,7 @@
                         attachCustomCellHandler(columns[j], td, id);
                     }
                     if (gridData.aggregates &amp;&amp; gridData.aggregates[columns[j]]  &amp;&amp; typeof gridData.dataSource.get !== &#039;function&#039;) {
-                        if (gridData.pageRequest.eventType !== &#039;page&#039;)
+                        if (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === undefined)
                             addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
                     }
                     if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (gridData.columns[columns[j]].editable &amp;&amp; gridData.columns[columns[j]].editable !== &#039;drop-down&#039;)) {
@@ -893,7 +893,8 @@
                 }
             }
 
-            if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039; &amp;&amp; typeof gridData.dataSource.get !== &#039;function&#039; &amp;&amp; gridData.pageRequest.eventType !== &#039;page&#039;)
+            if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039; &amp;&amp; typeof gridData.dataSource.get !== &#039;function&#039; &amp;&amp;
+                (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === undefined))
                 buildHeaderAggregations(id);
 
             if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;bottom&#039;) {
@@ -2344,7 +2345,7 @@
                         gridState[gridId].basicFilters.filterGroup = [];
 
                         advancedFiltersModal.css(&#039;display&#039;, &#039;none&#039;);
-                        gridState[gridId].pageRequest.eventType = &#039;filter-add&#039;;
+                        gridState[gridId].pageRequest.eventType = &#039;filter&#039;;
                         preparePageDataGetRequest(gridId);
                     }
                 });
@@ -2799,7 +2800,7 @@
             var filterAnchor = $(e.target);
             var filterCell = filterAnchor.parents(&#039;th&#039;);
             var type = filterAnchor.data(&#039;type&#039;);
-            var grid = filterElem.parents(&#039;.grid-wrapper&#039;);
+            var grid = filterElem.parents(&#039;.grid-wrapper&#039;).first();
             var id = grid.data(&#039;grid_id&#039;);
             if (gridState[id].updating) return;     
             var filters = grid.find(&#039;.filter-div&#039;);
@@ -2928,7 +2929,7 @@
 
         if (gridState[gridId].updating) return;     
         gridState[gridId].filters = {};
-        gridState[gridId].pageRequest.eventType = &#039;filter-rem&#039;;
+        gridState[gridId].pageRequest.eventType = &#039;filter&#039;;
         preparePageDataGetRequest(gridId);
     }
 
@@ -2937,7 +2938,7 @@
             value = filterDiv.find(&#039;.filterInput&#039;).val(),
             field = $(this).data(&#039;field&#039;),
             remainingFilters = [],
-            gridId = filterDiv.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
+            gridId = filterDiv.parents(&#039;.grid-wrapper&#039;).first().data(&#039;grid_id&#039;);
         if (gridState[gridId].updating) return;     
         var gridData = gridState[gridId];
 
@@ -2952,7 +2953,7 @@
         }
 
         gridData.filters.filterGroup = remainingFilters;
-        gridData.pageRequest.eventType = &#039;filter-rem&#039;;
+        gridData.pageRequest.eventType = &#039;filter&#039;;
         preparePageDataGetRequest(gridId);
         e.preventDefault();
     }
@@ -3010,7 +3011,7 @@
         gridState[gridId].advancedFilters = {};
 
         filterDiv.addClass(&#039;hiddenFilter&#039;);
-        gridData.pageRequest.eventType = &#039;filter-add&#039;;
+        gridData.pageRequest.eventType = &#039;filter&#039;;
         preparePageDataGetRequest(gridId);
     }
 
@@ -3431,7 +3432,7 @@
         callGridEventHandlers(gridState[id].events.pageRequested, gridData.grid, { element: gridData.grid });
         if (gridData.dataSource.get &amp;&amp; typeof gridData.dataSource.get === &#039;function&#039;) gridData.dataSource.get(requestObj, getPageDataRequestCallback);
         else {
-            if (!gridData.alteredData || gridData.pageRequest.eventType === &#039;filter-rem&#039;) gridData.alteredData = cloneGridData(gridData.originalData);
+            if (!gridData.alteredData || gridData.pageRequest.eventType === &#039;filter&#039;) gridData.alteredData = cloneGridData(gridData.originalData);
             getPageData(requestObj, id, getPageDataRequestCallback);
         }
 
@@ -3449,12 +3450,20 @@
                     setColWidth(gridData, gridState[id].grid);
 
                 createGridContent(gridData, gridState[id].grid);
-                if (gridData.pageRequest.eventType === &#039;filter-add&#039; || gridData.pageRequest.eventType === &#039;filter-rem&#039; || gridData.pageRequest.eventType === &#039;pageSize&#039;) {
+                if (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === &#039;pageSize&#039;) {
                     gridData.grid.find(&#039;.grid-footer-div&#039;).empty();
                     createGridFooter(gridData, gridData.grid);
                 }
-                if (gridData.pageRequest.eventType === &#039;filter&#039; &amp;&amp; gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039;)
+                if (gridData.pageRequest.eventType === &#039;filter&#039; &amp;&amp; gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039;) {
+                    if (response.aggregations) {
+                        for (var col in response.aggregations) {
+                            if (col in gridData.aggregates)
+                                gridData.aggregates[col].value = response.aggregations[col];
+                        }
+                        constructAggregationsFromServer(id, gridData.gridAggregations);
+                    }
                     buildHeaderAggregations(id);
+                }
                 gridData.pageRequest = {};
             }
         }
@@ -3537,17 +3546,33 @@
     function comparator(val, base, type) {
         switch (type) {
             case &#039;eq&#039;:
+            case &#039;===&#039;:
                 return val === base;
+            case &#039;==&#039;:
+                return val == base;
             case &#039;neq&#039;:
+            case &#039;!==&#039;:
                 return val !== base;
+            case &#039;!=&#039;:
+                return val != base;
             case &#039;gte&#039;:
+            case &#039;&gt;=&#039;:
                 return val &gt;= base;
             case &#039;gt&#039;:
+            case &#039;&gt;&#039;:
                 return val &gt; base;
             case &#039;lte&#039;:
+            case &#039;&lt;=&#039;:
                 return val &lt;= base;
             case &#039;lt&#039;:
+            case &#039;&lt;&#039;:
                 return val &lt; base;
+            case &#039;not&#039;:
+            case &#039;!&#039;:
+            case &#039;falsey&#039;:
+                return !val;
+            case &#039;truthy&#039;:
+                return !!val;
             case &#039;ct&#039;:
                 return !!~val.toLowerCase().indexOf(base.toLowerCase());
             case &#039;nct&#039;:
@@ -3589,54 +3614,12 @@
     }
 
     function merge(left, right, sortObj, type) {
-        var result = [], leftVal, rightVal;
+        var result = [], leftVal, rightVal,
+            normalizedValues;
         while (left.length &amp;&amp; right.length) {
-            if (type === &#039;time&#039;) {
-                leftVal = getNumbersFromTime(left[0][sortObj.field]);
-                rightVal = getNumbersFromTime(right[0][sortObj.field]);
-
-                if (~left[0][sortObj.field].indexOf(&#039;PM&#039;))
-                    leftVal[0] += 12;
-                if (~right[0][sortObj.field].indexOf(&#039;PM&#039;))
-                    rightVal[0] += 12;
-
-                leftVal = convertTimeArrayToSeconds(leftVal);
-                rightVal = convertTimeArrayToSeconds(rightVal);
-            }
-            else if (type === &#039;number&#039;) {
-                leftVal = parseFloat(left[0][sortObj.field]);
-                rightVal = parseFloat(right[0][sortObj.field]);
-            }
-            else if (type === &#039;date&#039;) {
-                leftVal = new Date(left[0][sortObj.field]);
-                rightVal = new Date(right[0][sortObj.field]);
-            }
-            else if (type === &#039;datetime&#039;) {
-                var re = new RegExp(dataTypes[&#039;datetime&#039;]),
-                    execVal1 = re.exec(left[0][sortObj.field]),
-                    execVal2 = re.exec(right[0][sortObj.field]);
-
-                var dateComp1 = execVal1[2],
-                    dateComp2 = execVal2[2],
-                    timeComp1 = execVal1[42],
-                    timeComp2 = execVal2[42];
-
-                timeComp1 = getNumbersFromTime(timeComp1);
-                timeComp2 = getNumbersFromTime(timeComp2);
-                if (timeComp1[3] &amp;&amp; timeComp1[3] === &#039;PM&#039;)
-                    timeComp1[0] += 12;
-                if (timeComp2[3] &amp;&amp; timeComp2[3] === &#039;PM&#039;)
-                    timeComp2[0] += 12;
-
-                dateComp1 = new Date(dateComp1);
-                dateComp2 = new Date(dateComp2);
-                leftVal = dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
-                rightVal = dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
-            }
-            else {
-                leftVal = left[0][sortObj.field];
-                rightVal = right[0][sortObj.field];
-            }
+            normalizedValues = normalizeValues(type, left[0][sortObj.field], right[0][sortObj.field]);
+            leftVal = normalizedValues.value1;
+            rightVal = normalizedValues.value2;
             var operator = sortObj.sortDirection === &#039;asc&#039; ? &#039;lte&#039; : &#039;gte&#039;;
             comparator(leftVal, rightVal, operator) ? result.push(left.shift()) : result.push(right.shift());
         }
@@ -3648,6 +3631,71 @@
             result.push(right.shift());
 
         return result;
+    }
+
+    function normalizeValues(dataType, val1, val2) {
+        var first, second;
+        switch(dataType) {
+            case &#039;time&#039;:
+                first = getNumbersFromTime(val1);
+                second = getNumbersFromTime(val2);
+
+                if (val1.indexOf(&#039;PM&#039;) &gt; -1) first[0] += 12;
+                if (val2.indexOf(&#039;PM&#039;) &gt; -1) second[0] += 12;
+
+                first = convertTimeArrayToSeconds(first);
+                second = convertTimeArrayToSeconds(second);
+                break;
+            case &#039;datetime&#039;:
+                var re = new RegExp(dataTypes[&#039;datetime&#039;]),
+                    execVal1, execVal2;
+                if (re.test(val1) &amp;&amp; re.test(val2)) {
+                    execVal1 = re.exec(val1);
+                    execVal2 = re.exec(val2);
+
+                    var dateComp1 = execVal1[2],
+                        dateComp2 = execVal2[2],
+                        timeComp1 = execVal1[42],
+                        timeComp2 = execVal2[42];
+
+                    timeComp1 = getNumbersFromTime(timeComp1);
+                    timeComp2 = getNumbersFromTime(timeComp2);
+                    if (timeComp1[3] &amp;&amp; timeComp1[3] === &#039;PM&#039;)
+                        timeComp1[0] += 12;
+                    if (timeComp2[3] &amp;&amp; timeComp2[3] === &#039;PM&#039;)
+                        timeComp2[0] += 12;
+
+                    dateComp1 = new Date(dateComp1);
+                    dateComp2 = new Date(dateComp2);
+                    first = dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
+                    second = dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
+                }
+                else {
+                    first = 0;
+                    second = 0;
+                }
+                break;
+            case &#039;number&#039;:
+                first = parseFloat(val1);
+                second = parseFloat(val2);
+                break;
+            case &#039;date&#039;:
+                first = new Date(val1);
+                second = new Date(val2);
+                break;
+            case &#039;boolean&#039;:
+                first = val1.toString();
+                second = val2.toString();
+                break;
+            default:
+                first = val1.toString();
+                second = val2.toString();
+                break;
+        }
+        return {
+            value1: first,
+            value2: second
+        };
     }
 
     function callGridEventHandlers(events, context, param) {
@@ -3684,7 +3732,7 @@
                     execVal = re.exec(value),
                     timeText = formatTimeCellData(execVal[42], column, gridId),
                     dateComp = new Date(execVal[2]),
-                    dateFormat = gridState[gridId].columns[column].format || &#039;mm/dd/yyyy&#039;;
+                    dateFormat = gridState[gridId].columns[column].format || &#039;mm/dd/yyyy hh:mm:ss&#039;;
                 dateFormat = dateFormat.substring(0, (dateFormat.indexOf(&#039; &#039;) || dateFormat.indexOf(&#039;T&#039;)));
                 text = dateFormat.replace(&#039;dd&#039;, dateComp.getUTCDate().toString())
                         .replace(&#039;mm&#039;, (dateComp.getUTCMonth() + 1).toString())
@@ -3888,7 +3936,7 @@
     function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
             formattedTime,
-            format = gridState[gridId].columns[column].format,
+            format = gridState[gridId].columns[column].format || &#039;hh:mm:ss&#039;,
             timeFormat = gridState[gridId].columns[column].timeFormat || &#039;24&#039;;
 
         if (timeArray.length &lt; 2) return &#039;&#039;;
@@ -4115,6 +4163,256 @@
     function isNumber(value) {
         return typeof value === &#039;number&#039; &amp;&amp; value === value;
     }
+
+    expressionParser = (function _expressionParser() {
+        var stack = {
+            init: function _init() {
+                this.data = [];
+                this.top = 0;
+            },
+            push: function _push(item) {
+                this.data[this.top++] = item;
+            },
+            pop: function _pop() {
+                return this.data[--this.top];
+            },
+            peek: function _peek() {
+                return this.data[this.top - 1];
+            },
+            clear: function _clear() {
+                this.top = 0;
+            },
+            length: function _length() {
+                return this.top;
+            }
+        },
+            associativity = { RTL: 1, LTR: 2 },
+            booleanExpressionTree = {
+            init: function _init() {
+                this.tree = null;
+                this.context = null;
+                this.rootNode = null;
+                return this;
+            }
+        };
+
+        booleanExpressionTree.setTree = function _setTree(tree) {
+            this.queue = tree;
+            this.rootNode = tree[this.queue.length - 1];
+            return this;
+        };
+        booleanExpressionTree.createTree = function _createTree() {
+            this.queue.pop();
+            if (this.queue.length)
+                this.rootNode.addChildren(this.queue);
+        };
+        booleanExpressionTree.filterCollection = function _filterCollection(collection) {
+            return collection.filter(function collectionMap(curr) {
+                this.context = curr;
+                return this.rootNode.evaluate(curr);
+            }, this);
+        };
+        booleanExpressionTree.internalGetContext = function _internalGetContext() {
+            return this.context;
+        };
+        booleanExpressionTree.getContext = function _getContext() {
+            return this.internalGetContext.bind(this);
+        };
+        booleanExpressionTree.isTrue = function _isTrue(item) {
+            this.context = item;
+            return this.rootNode.value;
+        };
+
+        var astNode = {
+            createNode: function _createNode(node) {
+                var operatorCharacteristics = getOperatorPrecedence(node);
+                if (operatorCharacteristics) {
+                    this.operator = node;
+                    this.numberOfOperands = getNumberOfOperands(this.operator);
+                    this.precedence = operatorCharacteristics.precedence;
+                    this.associativity = operatorCharacteristics.associativity;
+                    this.children = [];
+                }
+                else {
+                    this.field = node.field;
+                    this.standard = node.value;
+                    this.operation = node.operation;
+                    this.dataType = node.dataType;
+                    this.context = null;
+                }
+                this._value = null;
+                this.getContext = null;
+                this.queue = null;
+            }
+        };
+
+        astNode.createTree = function _createTree(queue) {
+            this.queue = queue.reverse();
+            this.tree = this.queue;
+            this.addChildren(this.queue);
+        };
+
+        astNode.addChildren = function _addChildren(tree) {
+            if (this.children &amp;&amp; this.children.length &lt; this.numberOfOperands) {
+                var child = tree.pop();
+                child.addChildren(tree);
+                this.children.push(child);
+                child = tree.pop();
+                child.addChildren(tree);
+                this.children.push(child);
+            }
+            return this;
+        };
+
+        astNode.addChild = function _addChild(child) {
+            if (this.children &amp;&amp; this.children.length &lt; this.numberOfOperands)
+                this.children.push(child);
+            return this;
+        };
+
+        astNode.evaluate = function _evaluate() {
+            if (this.children &amp;&amp; this.children.length) {
+                switch (this.operator) {
+                    case &#039;or&#039;:
+                        return this.children[1].evaluate() || this.children[0].evaluate();
+                    case &#039;and&#039;:
+                        return this.children[1].evaluate() &amp;&amp; this.children[0].evaluate();
+                    case &#039;xor&#039;:
+                        return !!(this.children[1].evaluate() ^ this.children[0].evaluate());
+                    case &#039;nor&#039;:
+                        return !(this.children[1].evaluate() || this.children[0].evaluate());
+                    case &#039;nand&#039;:
+                        return !(this.children[1].evaluate() &amp;&amp; this.children[0].evaluate());
+                    case &#039;xnor&#039;:
+                        return !(this.children[1].evaluate() ^ this.children[0].evaluate());
+                }
+            }
+            else {
+                var initialVal = this.getContext()[this.field],
+                    normalizedValues = normalizeValues(this.dataType, initialVal, this.standard);
+                this._value = comparator(normalizedValues.value1, normalizedValues.value2, this.operation);
+                return this._value;
+            }
+        };
+
+        astNode.getValue = function _getValue() {
+            if (this._value == null) this._value = this.evaluate();
+            return this._value;
+        };
+
+        Object.defineProperty(astNode, &#039;value&#039;, {
+            get: function _getValue() {
+                if (!this._value) this._value = this.evaluate();
+                return this._value;
+            }
+        });
+
+        function getNodeContext(bet) {
+            return bet.internalGetContext.bind(bet);
+        }
+
+        function createFilterTreeFromFilterObject(filterObject) {
+            var ret = Object.create(booleanExpressionTree);
+            ret.init();
+            var operandStack = Object.create(stack);
+            operandStack.init();
+            var queue = [],
+                topOfStack;
+
+            iterateFilterGroup(filterObject, operandStack, queue, getNodeContext(ret));
+
+            while (operandStack.length()) {
+                topOfStack = operandStack.peek();
+                if (topOfStack.operator !== &#039;(&#039;) queue.push(operandStack.pop());
+                else operandStack.pop();
+            }
+
+            ret.setTree(queue);
+            ret.createTree();
+            return ret;
+        }
+
+        function iterateFilterGroup(filterObject, stack, queue, contextGetter) {
+            var conjunction = filterObject.conjunct,
+                idx = 0,
+                topOfStack;
+
+            while (idx &lt; filterObject.filterGroup.length) {
+                if (idx &gt; 0) {
+                    var conjunctObj = Object.create(astNode);
+                    conjunctObj.createNode(conjunction);
+                    pushConjunctionOntoStack(conjunctObj, stack, queue);
+                }
+                if (filterObject.filterGroup[idx].conjunct) {
+                    var paren = Object.create(astNode);
+                    paren.createNode(&#039;(&#039;);
+                    stack.push(paren);
+                    iterateFilterGroup(filterObject.filterGroup[idx], stack, queue, contextGetter);
+                    while (stack.length()) {
+                        topOfStack = stack.peek();
+                        if (topOfStack.operator !== &#039;(&#039;) queue.push(stack.pop());
+                        else {
+                            stack.pop();
+                            break;
+                        }
+                    }
+                }
+                else {
+                    var leafNode = Object.create(astNode);
+                    leafNode.createNode(filterObject.filterGroup[idx]);
+                    leafNode.getContext = contextGetter;
+                    queue.push(leafNode);
+                }
+                ++idx;
+            }
+        }
+
+        function pushConjunctionOntoStack(conjunction, stack, queue) {
+            while (stack.length()) {
+                var topOfStack = stack.peek();
+                if ((conjunction.associativity === associativity.LTR &amp;&amp; conjunction.precedence &lt;= topOfStack.precedence) ||
+                    (conjunction.associativity === associativity.RTL &amp;&amp; conjunction.precedence &lt; topOfStack.precedence))
+                    queue.push(stack.pop());
+                else
+                    break;
+            }
+            stack.push(conjunction);
+        }
+
+        function getNumberOfOperands(operator) {
+            switch (operator) {
+                case &#039;!&#039;:
+                    return 1;
+                case &#039;(&#039;:
+                case &#039;)&#039;:
+                    return 0;
+                default:
+                    return 2;
+            }
+        }
+
+        function getOperatorPrecedence(operator) {
+            switch (operator) {
+                case &#039;!&#039;:
+                    return { precedence: 1, associativity: associativity.LTR };
+                case &#039;and&#039;:
+                    return { precedence: 2, associativity: associativity.RTL };
+                case &#039;xor&#039;:
+                    return { precedence: 3, associativity: associativity.RTL };
+                case &#039;or&#039;:
+                    return { precedence: 4, associativity: associativity.RTL };
+                case &#039;(&#039;:
+                case &#039;)&#039;:
+                    return { precedence: null, associativity: null };
+                default:
+                    return null;
+            }
+        }
+
+        return {
+            createFilterTreeFromFilterObject: createFilterTreeFromFilterObject
+        };
+    })();
 
     generateId = (function guid(seed) {
         return function _generateId() {
