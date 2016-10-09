@@ -27,6 +27,8 @@ All data manipulation functionality (sorting, filtering, grouping, editing, and 
 ###Planned functionality & upgrades:###
 - Dynamically add new columns (in progress)
 - Dynamically add new rows (in progress)
+- Locked Columns
+- Advanced filtering (AND/OR/NOT)
 - Nested drill-down grids
 - Advanced filtering (testing)
 - Remove jQuery dependency (this will happen no time soon)

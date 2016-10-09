@@ -1,14 +1,84 @@
-var gridData = {
+var gridData2 = {
     height: 400,
     useValidator: true,
     useFormatter: true,
     sortable: true,
     reorderable: true,
+    resizable: true,
     groupable: true,
     groupAggregates: true,
     selectable: 'multi-row',
     excelExport: true,
     columnToggle: true,
+    drillDown: function _drillDown(parentRowIdx, parentRowData) {
+        return {
+            reorderable: true,
+            sortable: true,
+            resizable: true,
+            columns: {
+                MechanicName: {
+                    title: 'Mechanic',
+                    filterable: true,
+                    width: 180,
+                    type: 'string'
+                },
+                Make: {
+                    filterable: true,
+                    width: 125,
+                    type: 'string'
+                },
+                Model: {
+                    filterable: true,
+                    width: 125,
+                    type: 'string'
+                },
+                Year: {
+                    filterable: true,
+                    width: 100,
+                    type: 'date'
+                },
+                Doors: {
+                    filterable: true,
+                    width: 175,
+                    type: 'number',
+                    title: 'Number of doors'
+                },
+                EngineType: {
+                    title: 'Engine Type',
+                    width: 150,
+                    type: 'string',
+                    filterable: true
+                },
+                EngineSize: {
+                    title: 'Engine Size',
+                    width: 150,
+                    type: 'string',
+                    filterable: true
+                }
+            },
+            dataSource: {
+                get: function _getGridData(req, cb) {
+                    $.ajax({
+                        type: 'GET',
+                        url: '../grid/drilldown/getpage?parentId=' + parentRowData.id,
+                        data: req,
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json"
+                    })
+                        .done(function pageDataSuccessCallback(data) {
+                            cb(data);
+                        })
+                        .fail(function pageDataFailureCallback() {
+                            cb();
+                        });
+                }
+            }
+        }
+    },
+    advancedFiltering: {
+        groupsCount: 4,
+        filtersCount: 8
+    },
     pagingOptions: [25, 50, 100],
     //menu: ['filter', 'excel', 'save', 'sort', 'selection'],
     //pageSize: 50,
@@ -41,6 +111,9 @@ var gridData = {
             type: "total"
         },
         Markup: {
+            type: ""
+        },
+        Icon: {
             type: ""
         },
         positionAt: "top"
@@ -182,7 +255,21 @@ var gridData = {
             type: "boolean",
             editable: true,
             filterable: true,
-            //width: 100
+            width: 100
+        },
+        Icon: {
+            title: 'GridIcon',
+            type: 'custom',
+            image: '../images/close.png',
+            width: 100,
+            //class: 'x',
+            html: '<a href="#"><span class="x"></span></a>',
+            events: {
+                click: function _customClick(row) {
+                    console.log(row);
+                    console.log('working');
+                }
+            }
         }
     },
     dataSource: {
@@ -194,16 +281,16 @@ var gridData = {
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
                 /*success: function _success(json) {
-                    var tmp = json;
-                    cb(json);
-                }*/
+                 var tmp = json;
+                 cb(json);
+                 }*/
             })
-            .done(function pageDataSuccessCallback(data) {
-                cb(data);
-            })
-            .fail(function pageDataFailureCallback(){
-                cb();
-            });
+                .done(function pageDataSuccessCallback(data) {
+                    cb(data);
+                })
+                .fail(function pageDataFailureCallback() {
+                    cb();
+                });
         },
         put: function _updateGridData(req, cb) {
             $.ajax({

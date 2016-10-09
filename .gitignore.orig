@@ -1,0 +1,25 @@
+# Dev directories
+.tmp
+dev
+src
+routes
+
+# Dependency directory
+node_modules
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+<<<<<<< HEAD
+.idea
+closureExterns.js
+app.js
+gulp.config.js
+gulpfile.js
+esdoc.json
+=======
+.idea
+>>>>>>> develop

@@ -1,0 +1,3165 @@
+{
+    "project": {
+        "name": "Grid Widget",
+        "description": "An HTML grid widget",
+        "version": "0.0.1"
+    },
+    "files": {
+        "dev\\scripts\\grid.js": {
+            "name": "dev\\scripts\\grid.js",
+            "modules": {},
+            "classes": {
+                "grid": 1
+            },
+            "fors": {
+                "Grid DOM element": 1,
+                "grid": 1
+            },
+            "namespaces": {}
+        },
+        "dev\\scripts\\jquery-1.11.1.js": {
+            "name": "dev\\scripts\\jquery-1.11.1.js",
+            "modules": {},
+            "classes": {},
+            "fors": {},
+            "namespaces": {}
+        },
+        "plato\\assets\\scripts\\vendor\\codemirror\\util\\closetag.js": {
+            "name": "plato\\assets\\scripts\\vendor\\codemirror\\util\\closetag.js",
+            "modules": {},
+            "classes": {},
+            "fors": {},
+            "namespaces": {}
+        },
+        "plato\\assets\\scripts\\vendor\\lodash.min.js": {
+            "name": "plato\\assets\\scripts\\vendor\\lodash.min.js",
+            "modules": {},
+            "classes": {},
+            "fors": {},
+            "namespaces": {}
+        },
+        "routes\\gridDataHelpers.js": {
+            "name": "routes\\gridDataHelpers.js",
+            "modules": {},
+            "classes": {},
+            "fors": {},
+            "namespaces": {}
+        },
+        "tests\\common\\jquery-1.11.1.js": {
+            "name": "tests\\common\\jquery-1.11.1.js",
+            "modules": {},
+            "classes": {},
+            "fors": {},
+            "namespaces": {}
+        },
+        "tests\\common\\qunit.js": {
+            "name": "tests\\common\\qunit.js",
+            "modules": {},
+            "classes": {},
+            "fors": {},
+            "namespaces": {}
+        }
+    },
+    "modules": {},
+    "classes": {
+        "grid": {
+            "name": "grid",
+            "shortname": "grid",
+            "classitems": [],
+            "plugins": [],
+            "extensions": [],
+            "plugin_for": [],
+            "extension_for": [],
+            "file": "dev\\scripts\\grid.js",
+            "line": 96,
+            "description": "grid module - object for creating and manipulating grid widgets",
+            "itemtype": "method",
+            "params": [
+                {
+                    "name": "$",
+                    "description": "- jQuery alias",
+                    "type": "Object"
+                }
+            ]
+        },
+        "Grid DOM element": {
+            "name": "Grid DOM element",
+            "shortname": "Grid DOM element",
+            "classitems": [],
+            "plugins": [],
+            "extensions": [],
+            "plugin_for": [],
+            "extension_for": []
+        }
+    },
+    "elements": {},
+    "classitems": [
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 106,
+            "description": "Exposed on the grid module. Called to create a grid widget.",
+            "itemtype": "method",
+            "name": "create",
+            "static": 1,
+            "params": [
+                {
+                    "name": "gridData",
+                    "description": "- The dataSource object needed to initialize the grid",
+                    "type": "Object"
+                },
+                {
+                    "name": "gridElem",
+                    "description": "- The DOM element that should be used to create the grid widget",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 163,
+            "description": "Adds publicly accessible methods to the DOM element that was\npassed to the 'create' function to initialize the grid widget",
+            "itemtype": "method",
+            "name": "createGridInstanceMethods",
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "gridElem",
+                    "description": "- The DOM element that should be used to create the grid widget",
+                    "type": "Object"
+                },
+                {
+                    "name": "gridId",
+                    "description": "- The id of this grid's instance",
+                    "type": "Number"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 187,
+            "description": "Returns the DOM element for the current active cell in the grid and metadata about the cell",
+            "itemtype": "method",
+            "name": "activeCellData",
+            "access": "protected",
+            "tagname": "",
+            "readonly": "",
+            "type": "string",
+            "return": {
+                "description": "- An object containing the active cell's current value, row index, column index,\ncolumn field, and the DOM element itself",
+                "type": "Object|null"
+            },
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 214,
+            "description": "Returns the collection of selected grid items (row or columns) as an array.",
+            "return": {
+                "description": "- The collection of selected grid items",
+                "type": "Array"
+            },
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 225,
+            "description": "Sets the selected row and/or columns of the grid.",
+            "params": [
+                {
+                    "name": "itemArray",
+                    "description": "- Ay array of objects that have a zero-based 'rowIndex' property to indicate which row is to be selected.\nOptionally each object may have a zero-based 'columnIndex' property that indicates which column of the row to select.",
+                    "type": "Array"
+                }
+            ],
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 250,
+            "description": "Returns metadata about each selected item in the grid.",
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 279,
+            "description": "Binds event handlers to events",
+            "itemtype": "method",
+            "name": "bindEvents",
+            "access": "protected",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "evt",
+                    "description": "- a string representing an event that the grid can cause",
+                    "type": "String"
+                },
+                {
+                    "name": "funcs",
+                    "description": "- the event handler",
+                    "type": "*"
+                }
+            ],
+            "return": {
+                "description": "- indicates that the provided function(s) were or were not added as event listeners.",
+                "type": "Boolean"
+            },
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 301,
+            "description": "Unbinds an event handler from the specified event",
+            "itemtype": "method",
+            "name": "unbindEvents",
+            "access": "protected",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "evt",
+                    "description": "- a string representing an event that the grid can cause",
+                    "type": "String"
+                },
+                {
+                    "name": "funcs",
+                    "description": "- the function object, or array of function objects to unbind",
+                    "type": "*"
+                }
+            ],
+            "return": {
+                "description": "- indicates that the provided function(s) were or were not unbound",
+                "type": "Boolean"
+            },
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 329,
+            "description": "Removes all registered event handlers from grid events",
+            "itemtype": "method",
+            "name": "removeAllEventHandlers",
+            "access": "protected",
+            "tagname": "",
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 344,
+            "description": "Returns all events for which a handler has been registered",
+            "itemtype": "method",
+            "name": "getHandledEvents",
+            "access": "protected",
+            "tagname": "",
+            "readonly": "",
+            "default": "Array of grid events that currently have registered a handler",
+            "type": "Array",
+            "return": {
+                "description": "- The list of events that currently have a handler",
+                "type": "Array"
+            },
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 366,
+            "description": "Returns a list of the events that the grid can cause",
+            "itemtype": "method",
+            "name": "getAvailableEvents",
+            "access": "protected",
+            "tagname": "",
+            "readonly": "",
+            "default": "Array of available grid events to listen for",
+            "type": "Array",
+            "return": {
+                "description": "- The list of all events that a handler can be registered for",
+                "type": "Array"
+            },
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 383,
+            "description": "Returns the aggregations for all columns",
+            "itemtype": "method",
+            "name": "getAggregates",
+            "access": "protected",
+            "tagname": "",
+            "readonly": "",
+            "default": "aggregates object",
+            "type": "object",
+            "return": {
+                "description": "- The aggregations that are currently in use for this page of the grid",
+                "type": "Object"
+            },
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 400,
+            "description": "Returns the grid's page data.",
+            "itemtype": "method",
+            "name": "getCurrentPageData",
+            "access": "protected",
+            "tagname": "",
+            "readonly": "",
+            "default": "dataSource.data",
+            "type": "Array",
+            "params": [
+                {
+                    "name": "index",
+                    "description": "- The index of the grid page to return the data for.",
+                    "type": "Int"
+                }
+            ],
+            "return": {
+                "description": "- An array with either all grid page data, or a single index's data if a\nvalid index was passed to the function",
+                "type": "Array"
+            },
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 457,
+            "description": "Returns the grid's dataSource data",
+            "itemtype": "method",
+            "name": "getCurrentDataSourceData",
+            "access": "protected",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "index",
+                    "description": "- The index of the dataSource.data to return the data for.",
+                    "type": "Int"
+                }
+            ],
+            "return": {
+                "description": "- An array with either all grid page data, or a single index's data if a\nvalid index was passed to the function",
+                "type": "Array"
+            },
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 485,
+            "description": "Updates the grid's page data; will also update the dataSource",
+            "itemtype": "method",
+            "name": "updatePageData",
+            "access": "protected",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "data",
+                    "description": "",
+                    "type": "Object"
+                }
+            ],
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 508,
+            "description": "Updates the specified grid's row's data via the .index property",
+            "itemtype": "method",
+            "name": "updateRowData",
+            "access": "protected",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "rowData",
+                    "description": "",
+                    "type": "Object"
+                }
+            ],
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 544,
+            "description": "Updates the specified grid's cell's data via the .index and .field properties",
+            "itemtype": "method",
+            "name": "updateCellData",
+            "access": "protected",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "cellData",
+                    "description": "",
+                    "type": "Object"
+                },
+                {
+                    "name": "setAsDirty",
+                    "description": "",
+                    "type": "Boolean"
+                }
+            ],
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 602,
+            "description": "Destroys the grid widget - includes the dataSource and the DOM element",
+            "itemtype": "method",
+            "name": "destroy",
+            "access": "protected",
+            "tagname": "",
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 626,
+            "description": "Removes all selected grid items",
+            "class": "Grid DOM element"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 645,
+            "description": "Abstraction for getting grid data so the 'create' function doesn't\ncare whether it was passed in, or if there is a server call to get it.",
+            "itemtype": "method",
+            "name": "getInitialGridData",
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "dataSource",
+                    "description": "- The dataSource for grid creation",
+                    "type": "Object"
+                },
+                {
+                    "name": "callback",
+                    "description": "- The callback function",
+                    "type": "Function"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 667,
+            "description": "Initializes an instance of the grid after retrieving the dataSource data.\nSets the internal instance of the grid's data, calls to create the footer and content",
+            "itemtype": "method",
+            "name": "initializeGrid",
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "id",
+                    "description": "",
+                    "type": "Number"
+                },
+                {
+                    "name": "gridData",
+                    "description": "",
+                    "type": "Object"
+                },
+                {
+                    "name": "gridElem",
+                    "description": "",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 729,
+            "description": "Adds new columns to the grid based on a collection of objects passed to the function",
+            "params": [
+                {
+                    "name": "newData",
+                    "description": "- A collection of new column names and values to add to the grid",
+                    "type": "Array"
+                },
+                {
+                    "name": "gridElem",
+                    "description": "- The grid DOM widget",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 754,
+            "description": "Creates the grid's headers given the column metadata passed to the create function",
+            "itemtype": "method",
+            "name": "createGridHeaders",
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "gridData",
+                    "description": "",
+                    "type": "Object"
+                },
+                {
+                    "name": "gridElem",
+                    "description": "",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 813,
+            "description": "Builds the header's aggregations row if specified to be displayed at the\ntop of the grid",
+            "itemtype": "method",
+            "name": "buildHeaderAggregations",
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "gridData",
+                    "description": "",
+                    "type": "Object"
+                },
+                {
+                    "name": "gridId",
+                    "description": "",
+                    "type": "Number"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 840,
+            "description": "Gets the aggregations - either passed in with metadata if server-side paging,\nor calculates the aggregations if client-side paging.",
+            "itemtype": "method",
+            "name": "buildAggregatesRow",
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "gridData",
+                    "description": "",
+                    "type": "Object"
+                },
+                {
+                    "name": "gridId",
+                    "description": "",
+                    "type": "Number"
+                }
+            ],
+            "return": {
+                "description": "",
+                "type": "Object"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 922,
+            "description": "Creates the body of the grid. Sets the text in each cell and wires\nup the event listeners",
+            "itemtype": "method",
+            "name": "createGridContent",
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "gridData",
+                    "description": "",
+                    "type": "Object"
+                },
+                {
+                    "name": "gridElem",
+                    "description": "",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1053,
+            "description": "Attaches handlers for click, mousemove, mousedown, mouseup, and scroll events depending on the value of the selectable attribute of the grid",
+            "params": [
+                {
+                    "name": "tableBody",
+                    "description": "- The body of the grid's content table",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1126,
+            "description": "Called by both the mousemove and scroll event handlers, this function determines the appearance of the overlay and the true\nselection dimensions based on the distance the mouse has moved since the mousedown event, and the amount/direction of scrolling",
+            "params": [
+                {
+                    "name": "contentDiv",
+                    "description": "- The div containing the table that holds the actual content (not the header table)",
+                    "type": "Object"
+                },
+                {
+                    "name": "overlay",
+                    "description": "- The overlay div used to display the user's active selection",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1197,
+            "description": "Calculates both the displayed and actual top/bottom or left/right of the highlighting overlay",
+            "params": [
+                {
+                    "name": "context",
+                    "description": "- The context in which this function is being called (ie for top/bottom calc or left/right)",
+                    "type": "Object"
+                }
+            ],
+            "return": {
+                "description": "}",
+                "type": "TrueSize: number, smallDim: number, largeDim: number, scrollPos: number"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1286,
+            "description": "This function is called after the mouseup event and uses the dimensions of the overlay to apply\nthe 'selected' class to all grid elements that it overlaps",
+            "params": [
+                {
+                    "name": "overlay",
+                    "description": "- The overlay element created to display the user's active selection",
+                    "type": "Object"
+                },
+                {
+                    "name": "gridId",
+                    "description": "- The id of the grid widget instance",
+                    "type": "Number"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1336,
+            "description": "Attaches click event handlers for each grouped header row in the grid",
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1355,
+            "description": "Makes a grid cell editable on a click event. Used for grid cells whose values can be changed and whose column configuration\nhas its editable property set to true",
+            "params": [
+                {
+                    "name": "id",
+                    "description": "- The id of the grid widget instance",
+                    "type": "Number"
+                },
+                {
+                    "name": "td",
+                    "description": "- The grid cell to attach the click listener to",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1441,
+            "description": "Makes a grid cell selectable on a click event. Used for grid cells whose values can be changed to a limited set\nor pre-specified values and whose column configuration provided the list of values and has its selectable property set to true",
+            "params": [
+                {
+                    "name": "id",
+                    "description": "- The id of the grid widget instance",
+                    "type": "Number"
+                },
+                {
+                    "name": "td",
+                    "description": "- The grid cell to attach the click listener to",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1495,
+            "description": "If the validator is being used and a column has validation functions to run when editing values, this will determine\nthe appropriate classes and data-attributes that should be applied to the cell's input in order for validation to run\nas well as set up a namespace for the validation functions to be execute in",
+            "params": [
+                {
+                    "name": "columnValidation",
+                    "description": "- The validation rules provided in the column's configuration",
+                    "type": "Object"
+                },
+                {
+                    "name": "dataAttributes",
+                    "description": "- The data-attributes for the cell's input",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "- The final form of the data-attribute after the namespace has been created and all validation functions determined",
+                "type": "String"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1529,
+            "description": "Sets the column widths of the grid's header. If width properties are supplied as part\nof a column's metadata, the specified value is used; otherwise this function lets\nthe column choose an auto-width.",
+            "params": [
+                {
+                    "name": "gridData",
+                    "description": "",
+                    "type": "Object"
+                },
+                {
+                    "name": "gridElem",
+                    "description": "",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1561,
+            "description": "Copies the grid's column's widths to subsequent page data so that a consistent\nwidth is maintained.",
+            "itemtype": "method",
+            "name": "copyGridWidth",
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "gridElem",
+                    "description": "",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1584,
+            "description": "Attaches an event listener to a specific grid cell for the\n'validated' event. Overrides the normal 'blur' behavior for cell editing",
+            "itemtype": "method",
+            "name": "attachValidationListener",
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "elem",
+                    "description": "",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1608,
+            "description": "On blur or successful validation if using the validator, removes the input from the\ngrid cell, saves the data in the alteredData array and set a dirty flag on the grid dom\nelement if the value changed",
+            "itemtype": "method",
+            "name": "saveCellEditData",
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "input",
+                    "description": "- The input element that was edited",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1662,
+            "description": "On blur or successful validation if using the validator, removes the input from the\ngrid cell, saves the data in the alteredData array and set a dirty flag on the grid dom\nelement if the value changed",
+            "itemtype": "method",
+            "name": "saveCellSelectData",
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "select",
+                    "description": "- The select dom element",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1711,
+            "description": "Creates the toolbar div used for saving and deleting changes as well as grouping the grid's\ndata by selected columns",
+            "params": [
+                {
+                    "name": "gridData",
+                    "description": "- The collection of data displayed in the grid",
+                    "type": "Array"
+                },
+                {
+                    "name": "gridElem",
+                    "description": "- The DOM element used for the grid widget",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1811,
+            "description": "Handler for the change event when a user selects a column from the group-by selector input.\nThis will call the function to get a new page of grid data based on the choosen grouping.",
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1843,
+            "description": "Creates the footer for the grid widget",
+            "params": [
+                {
+                    "name": "gridData",
+                    "description": "- The metadata describing this grid widget instance",
+                    "type": "Object"
+                },
+                {
+                    "name": "gridElem",
+                    "description": "- The DOM element that contains the grid widget",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1904,
+            "description": "Attaches click handlers to each pager",
+            "params": [
+                {
+                    "name": "gridFooter",
+                    "description": "- The grid's DOM footer element",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 1974,
+            "description": "Attaches a click handler to each filter element in the grid's header",
+            "params": [
+                {
+                    "name": "filterElem",
+                    "description": "- The DOM element that has the click handler attached to it",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2014,
+            "description": "Creates the modal filter div and populates the filter types in the selector",
+            "params": [
+                {
+                    "name": "type",
+                    "description": "- The type of data to be filtered (string, number, boolean, date, time)",
+                    "type": "String"
+                },
+                {
+                    "name": "field",
+                    "description": "- The column of data being filtered",
+                    "type": "String"
+                },
+                {
+                    "name": "grid",
+                    "description": "- The DOM element for the grid widget",
+                    "type": "Object"
+                },
+                {
+                    "name": "title",
+                    "description": "- The title supplied in the metadata for the grid's column",
+                    "type": "String"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2064,
+            "description": "Attaches a keypress handler on the inputs in a filter modal",
+            "params": [
+                {
+                    "name": "input",
+                    "description": "- The DOM input element",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2270,
+            "description": "Sets a click handler for all sortable columns on the column header",
+            "params": [
+                {
+                    "name": "elem",
+                    "description": "- The DOM element that has the click handler attached",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2314,
+            "description": "Add the filter icon to a filterable grid header and attaches an event listener when the icon is clicked",
+            "params": [
+                {
+                    "name": "elem",
+                    "description": "- The grid header element whose column values are filterable",
+                    "type": "Object"
+                },
+                {
+                    "name": "gridData",
+                    "description": "- The metadata describing the grid's behavior and attributes",
+                    "type": "Object"
+                },
+                {
+                    "name": "col",
+                    "description": "- The name of the field associated with the filterable grid column",
+                    "type": "String"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2354,
+            "description": "Handler for column resizing - alters the width of a grid column based on mouse movement",
+            "params": [
+                {
+                    "name": "e",
+                    "description": "- The drag event that was fired by the browser",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2400,
+            "description": "Swaps the cells of a grid when a column re-ordering happens",
+            "params": [
+                {
+                    "name": "gridId",
+                    "description": "- The id of the grid widget instance",
+                    "type": "Number"
+                },
+                {
+                    "name": "droppedIndex",
+                    "description": "- The column index of the column that was 'dropped'",
+                    "type": "Number"
+                },
+                {
+                    "name": "targetIndex",
+                    "description": "- The column index of the column that was the target of the dropped column",
+                    "type": "Number"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2504,
+            "description": "Used when saving changes made to grid data. If being used for server-side updates, this\nfunction will eventually call the provided function for saving changes to the grid. Otherwise,\nit will update its internal reference to the grid's data",
+            "params": [
+                {
+                    "name": "id",
+                    "description": "- The id of the grid widget instance",
+                    "type": "Number"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2612,
+            "description": "Filters the grid's data when being used for client-side updates. Based on the filtered column, value, and type\nthis function will determine which data should remain in the collection",
+            "params": [
+                {
+                    "name": "filterType",
+                    "description": "- The type of filter selected by the user (=, !=, >, >=, etc)",
+                    "type": "String"
+                },
+                {
+                    "name": "value",
+                    "description": "- The value against which the filter should apply to the grid data",
+                    "type": "String|number|boolean"
+                },
+                {
+                    "name": "field",
+                    "description": "- The name of the column to apply the filter to",
+                    "type": "String"
+                },
+                {
+                    "name": "dataType",
+                    "description": "- The type of data being filtered (string, number, boolean, time, date)",
+                    "type": "String"
+                },
+                {
+                    "name": "gridData",
+                    "description": "- The collection of grid data to filter",
+                    "type": "Array"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2651,
+            "description": "Using various equality operators, checks to for truth based on the type of the operator(s)",
+            "params": [
+                {
+                    "name": "val",
+                    "description": "- The value that is being checked against a base value",
+                    "type": "String|number|boolean"
+                },
+                {
+                    "name": "base",
+                    "description": "- The based value against which values are compared",
+                    "type": "*"
+                },
+                {
+                    "name": "type",
+                    "description": "- The type of equality operator(s) to be used in the comparison",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "- Returns a boolean indicating that whether the comparison was true of false",
+                "type": "Boolean"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2679,
+            "description": "Manages sorting grid data based on the field and data type",
+            "params": [
+                {
+                    "name": "sortedItems",
+                    "description": "- An array of objects describing which columns are to be sorted and in which directions",
+                    "type": "Array"
+                },
+                {
+                    "name": "gridData",
+                    "description": "- An array containing the grid data to be sorted",
+                    "type": "Array"
+                },
+                {
+                    "name": "gridId",
+                    "description": "- The id of the grid instance",
+                    "type": "Number"
+                }
+            ],
+            "return": {
+                "description": "- Returns an array of sorted grid data",
+                "type": "Array"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2711,
+            "itemtype": "method",
+            "name": "Merge-Sort algorithm for grid data client-side sorting",
+            "params": [
+                {
+                    "name": "data",
+                    "description": "- the grid's data",
+                    "type": "Object"
+                },
+                {
+                    "name": "sortObj",
+                    "description": "- object that contains the field that the grid data is being sorted on and the direction of the sort",
+                    "type": "Object"
+                },
+                {
+                    "name": "type",
+                    "description": "- the type of the data (string, number, time, date, boolean)",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "",
+                "type": "*"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2766,
+            "description": "Calls all registered event handlers for a collection of events",
+            "params": [
+                {
+                    "name": "events",
+                    "description": "- A collection of events to",
+                    "type": "Array"
+                },
+                {
+                    "name": "context",
+                    "description": "- An object, array, or function to set as the context of the event handler",
+                    "type": "Object"
+                },
+                {
+                    "name": "param",
+                    "description": "- An object that contains metadata about the event",
+                    "type": "Object"
+                }
+            ],
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2787,
+            "description": "Formats the text in a grid cell - uses both column formats and column templates if provided",
+            "params": [
+                {
+                    "name": "gridId",
+                    "description": "- The id of the grid instance",
+                    "type": "Number"
+                },
+                {
+                    "name": "column",
+                    "description": "- The column of the grid that this data will be displayed in",
+                    "type": "String"
+                },
+                {
+                    "name": "value",
+                    "description": "- The value to be formatted",
+                    "type": "String|number"
+                }
+            ],
+            "return": {
+                "description": "- Returns a formatted value if a column format and/or template were provided;\notherwise, returns the value",
+                "type": "String|number"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2826,
+            "description": "Given a string, this function will ensure it is in a valid time format and has a legitimate\ntime value. This returns a standard format as a response.",
+            "params": [
+                {
+                    "name": "val",
+                    "description": "- The value being tested for time legitimacy",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "- An array containing hours, minutes, seconds of the day (if 12 hour time format, also contains meridiem)",
+                "type": "Array"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2858,
+            "description": "Given the array the 'getNumbersFromTime' function produces, this function will turn the values\ninto seconds for comparisons when filtering and sorting grid data.",
+            "params": [
+                {
+                    "name": "timeArray",
+                    "description": "- An array of the type produced by the 'getNumbersFromTime' function",
+                    "type": "Array"
+                }
+            ],
+            "return": {
+                "description": "- Returns a value in seconds for the time of day",
+                "type": "Number"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2869,
+            "description": "Validates that a given character is allowed with the given data type",
+            "params": [
+                {
+                    "name": "code",
+                    "description": "- The character's key code",
+                    "type": "Number"
+                },
+                {
+                    "name": "dataType",
+                    "description": "- The type of data to check for character validity",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "- Returns the tested character if valid or null if not",
+                "type": "Boolean"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2884,
+            "description": "Compares two values for equality after coercing both to the provided type",
+            "params": [
+                {
+                    "name": "val1",
+                    "description": "- The first value to check for equality",
+                    "type": "String|number"
+                },
+                {
+                    "name": "val2",
+                    "description": "- The second value to check for equality",
+                    "type": "String|number"
+                },
+                {
+                    "name": "dataType",
+                    "description": "- The type of data contained in the two values",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "- Indicated equality or lack thereof",
+                "type": "Boolean"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 2963,
+            "description": "Given a time of day value, will return the value formatted as specified for a given column of the grid",
+            "params": [
+                {
+                    "name": "time",
+                    "description": "- A string representing a time of day (eg '9:45:56 AM' or '17:36:43.222')",
+                    "type": "String"
+                },
+                {
+                    "name": "column",
+                    "description": "- The column of the grid that provided the format",
+                    "type": "String"
+                },
+                {
+                    "name": "gridId",
+                    "description": "- The id value of the grid this operation is being performed on",
+                    "type": "String|number"
+                }
+            ],
+            "return": {
+                "description": "- Returns the time formatted as specified for the given grid column",
+                "type": "String"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 3003,
+            "description": "Takes a date value and a format and will return the date in the form provided",
+            "params": [
+                {
+                    "name": "date",
+                    "description": "- The date value to be formatted",
+                    "type": "String"
+                },
+                {
+                    "name": "format",
+                    "description": "- The format that the date value should be in",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "- Returns a formatted date if able, otherwise will return a default JS date using the date provided as the seed",
+                "type": "String|Date"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 3020,
+            "description": "Takes a number and a format string and will format the number according to the formatting rules",
+            "params": [
+                {
+                    "name": "num",
+                    "description": "- The number to be formatted before it is displayed in the grid",
+                    "type": "String|number"
+                },
+                {
+                    "name": "format",
+                    "description": "- The format string that specifies how to format the number",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "- Returns either the number it received if unable to properly format, or a string value of the formatted number",
+                "type": "String|number"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 3096,
+            "description": "Given a format, this function will ensure it is valid and strip it of all invalid characters",
+            "params": [
+                {
+                    "name": "format",
+                    "description": "- A string denoting the format a value displayed in the grid should have.",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "- Returns an object with the validated format string and metadata about how the value to be formatted should be treated",
+                "type": "Object"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 3133,
+            "description": "Given a format string for either currency or percent, will normalize it as a decimal format",
+            "params": [
+                {
+                    "name": "format",
+                    "description": "- A string denoting the currency or percent a value in a field should take.",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "- Returns an object containing the normalized format string, as well as metadata on how to treat the value to be formatted.",
+                "type": "Object"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 3168,
+            "description": "Multiples a number by 100",
+            "params": [
+                {
+                    "name": "val",
+                    "description": "- the number to by multiplied by 100",
+                    "type": "Number"
+                }
+            ],
+            "return": {
+                "description": "- returns the multiple of the number and 100",
+                "type": "Number"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 3177,
+            "description": "Rounds a number to a given decimal place",
+            "params": [
+                {
+                    "name": "val",
+                    "description": "- the number to be rounded",
+                    "type": "Number"
+                },
+                {
+                    "name": "dec",
+                    "description": "- the number of decimals to retain after rounding",
+                    "type": "Number"
+                }
+            ],
+            "return": {
+                "description": "- Returns the value rounded to the nth decimal place",
+                "type": "Number"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 3188,
+            "description": "Clones an object and returns a new object instance with the same values as the original",
+            "params": [
+                {
+                    "name": "gridData",
+                    "description": "- The object to be cloned",
+                    "type": "Object|*"
+                }
+            ],
+            "return": {
+                "description": "- Returns a new instance of whatever type was given to the function",
+                "type": "*"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 3207,
+            "description": "Copies the contents of an array into a new array instance",
+            "params": [
+                {
+                    "name": "arr",
+                    "description": "- The array to be copied",
+                    "type": "Array"
+                }
+            ],
+            "return": {
+                "description": "- Returns a new array instance containing the values in the original",
+                "type": "Array"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 3228,
+            "description": "Checks that a given variable is a DOM element",
+            "params": [
+                {
+                    "name": "node",
+                    "description": "- The variable being checked",
+                    "type": "Object"
+                }
+            ],
+            "return": {
+                "description": "- Returns true if the variable is a DOM element, false if not",
+                "type": "Boolean"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\grid.js",
+            "line": 3237,
+            "description": "Checks that a given variable is a number and not NaN",
+            "params": [
+                {
+                    "name": "value",
+                    "description": "- The number that is being checked",
+                    "type": "Number"
+                }
+            ],
+            "return": {
+                "description": "Returns true if the value is a number, false if not",
+                "type": "Boolean"
+            },
+            "class": "grid"
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 882,
+            "description": "Create key-value caches of limited size",
+            "return": {
+                "description": "Returns the Object data after storing it on itself with\n\tproperty name the (space-suffixed) string and (if the cache is larger than Expr.cacheLength)\n\tdeleting the oldest entry",
+                "type": "Function(string, Object)"
+            },
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 902,
+            "description": "Mark a function for special use by Sizzle",
+            "params": [
+                {
+                    "name": "fn",
+                    "description": "The function to mark",
+                    "type": "Function"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 911,
+            "description": "Support testing using an element",
+            "params": [
+                {
+                    "name": "fn",
+                    "description": "Passed the created div and expects a boolean result",
+                    "type": "Function"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 932,
+            "description": "Adds the same handler for all of the specified attrs",
+            "params": [
+                {
+                    "name": "attrs",
+                    "description": "Pipe-separated list of attributes",
+                    "type": "String"
+                },
+                {
+                    "name": "handler",
+                    "description": "The method that will be applied",
+                    "type": "Function"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 946,
+            "description": "Checks document order of two siblings",
+            "params": [
+                {
+                    "name": "a",
+                    "description": "",
+                    "type": "Element"
+                },
+                {
+                    "name": "b",
+                    "description": "",
+                    "type": "Element"
+                }
+            ],
+            "return": {
+                "description": "Returns less than 0 if a precedes b, greater than 0 if a follows b",
+                "type": "Number"
+            },
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 975,
+            "description": "Returns a function to use in pseudos for input types",
+            "params": [
+                {
+                    "name": "type",
+                    "description": "",
+                    "type": "String"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 986,
+            "description": "Returns a function to use in pseudos for buttons",
+            "params": [
+                {
+                    "name": "type",
+                    "description": "",
+                    "type": "String"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 997,
+            "description": "Returns a function to use in pseudos for positionals",
+            "params": [
+                {
+                    "name": "fn",
+                    "description": "",
+                    "type": "Function"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 1019,
+            "description": "Checks a node for validity as a Sizzle context",
+            "params": [
+                {
+                    "name": "context",
+                    "description": "",
+                    "type": "Element|Object="
+                }
+            ],
+            "return": {
+                "description": "The input node if acceptable, otherwise a falsy value",
+                "type": "Element|Object|Boolean"
+            },
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 1031,
+            "description": "Detects XML nodes",
+            "params": [
+                {
+                    "name": "elem",
+                    "description": "An element or a document",
+                    "type": "Element|Object"
+                }
+            ],
+            "return": {
+                "description": "True iff elem is a non-HTML XML node",
+                "type": "Boolean"
+            },
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 1043,
+            "description": "Sets document-related variables once based on the current document",
+            "params": [
+                {
+                    "name": "doc",
+                    "description": "An element or document object to use to set the document",
+                    "type": "Element|Object",
+                    "optional": true
+                }
+            ],
+            "return": {
+                "description": "Returns the current document",
+                "type": "Object"
+            },
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 1476,
+            "description": "Document sorting and removing duplicates",
+            "params": [
+                {
+                    "name": "results",
+                    "description": "",
+                    "type": "ArrayLike"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 1509,
+            "description": "Utility function for retrieving the text value of an array of DOM nodes",
+            "params": [
+                {
+                    "name": "elem",
+                    "description": "",
+                    "type": "Array|Element"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 2476,
+            "description": "A low-level selection function that works with Sizzle's compiled\n selector functions",
+            "params": [
+                {
+                    "name": "selector",
+                    "description": "A selector or a pre-compiled\n selector function built with Sizzle.compile",
+                    "type": "String|Function"
+                },
+                {
+                    "name": "context",
+                    "description": "",
+                    "type": "Element"
+                },
+                {
+                    "name": "results",
+                    "description": "",
+                    "type": "Array",
+                    "optional": true
+                },
+                {
+                    "name": "seed",
+                    "description": "A set of elements to match against",
+                    "type": "Array",
+                    "optional": true
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 3453,
+            "description": "Clean-up method for dom ready events",
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 3467,
+            "description": "The ready event handler and self cleanup method",
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 3614,
+            "description": "Determines whether an object can have data",
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 6001,
+            "description": "Retrieve the actual display of a element",
+            "params": [
+                {
+                    "name": "name",
+                    "description": "nodeName of the element",
+                    "type": "String"
+                },
+                {
+                    "name": "doc",
+                    "description": "Document object",
+                    "type": "Object"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 6025,
+            "description": "Try to determine the default display value of an element",
+            "params": [
+                {
+                    "name": "nodeName",
+                    "description": "",
+                    "type": "String"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 9936,
+            "description": "Load a url into a page",
+            "class": ""
+        },
+        {
+            "file": "dev\\scripts\\jquery-1.11.1.js",
+            "line": 10011,
+            "description": "Gets a window from an element",
+            "class": ""
+        },
+        {
+            "file": "plato\\assets\\scripts\\vendor\\codemirror\\util\\closetag.js",
+            "line": 1,
+            "description": "Tag-closer extension for CodeMirror.\n\nThis extension adds an \"autoCloseTags\" option that can be set to\neither true to get the default behavior, or an object to further\nconfigure its behavior.\n\nThese are supported options:\n\n`whenClosing` (default true)\n  Whether to autoclose when the '/' of a closing tag is typed.\n`whenOpening` (default true)\n  Whether to autoclose the tag when the final '>' of an opening\n  tag is typed.\n`dontCloseTags` (default is empty tags for HTML, none for XML)\n  An array of tag names that should not be autoclosed.\n`indentTags` (default is block tags for HTML, none for XML)\n  An array of tag names that should, when opened, cause a\n  blank line to be added inside the tag, and the blank line and\n  closing line to be indented.\n\nSee demos/closetag.html for a usage example.",
+            "class": ""
+        },
+        {
+            "file": "plato\\assets\\scripts\\vendor\\lodash.min.js",
+            "line": 1,
+            "license": "Lo-Dash 2.4.1 (Custom Build) lodash.com/license | Underscore.js 1.5.2 underscorejs.org/LICENSE\nBuild: `lodash modern -o ./dist/lodash.js`",
+            "class": ""
+        },
+        {
+            "file": "routes\\gridDataHelpers.js",
+            "line": 1,
+            "description": "Created by Mark.Mosby on 3/2/2016.",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 882,
+            "description": "Create key-value caches of limited size",
+            "return": {
+                "description": "Returns the Object data after storing it on itself with\n\tproperty name the (space-suffixed) string and (if the cache is larger than Expr.cacheLength)\n\tdeleting the oldest entry",
+                "type": "Function(string, Object)"
+            },
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 902,
+            "description": "Mark a function for special use by Sizzle",
+            "params": [
+                {
+                    "name": "fn",
+                    "description": "The function to mark",
+                    "type": "Function"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 911,
+            "description": "Support testing using an element",
+            "params": [
+                {
+                    "name": "fn",
+                    "description": "Passed the created div and expects a boolean result",
+                    "type": "Function"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 932,
+            "description": "Adds the same handler for all of the specified attrs",
+            "params": [
+                {
+                    "name": "attrs",
+                    "description": "Pipe-separated list of attributes",
+                    "type": "String"
+                },
+                {
+                    "name": "handler",
+                    "description": "The method that will be applied",
+                    "type": "Function"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 946,
+            "description": "Checks document order of two siblings",
+            "params": [
+                {
+                    "name": "a",
+                    "description": "",
+                    "type": "Element"
+                },
+                {
+                    "name": "b",
+                    "description": "",
+                    "type": "Element"
+                }
+            ],
+            "return": {
+                "description": "Returns less than 0 if a precedes b, greater than 0 if a follows b",
+                "type": "Number"
+            },
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 975,
+            "description": "Returns a function to use in pseudos for input types",
+            "params": [
+                {
+                    "name": "type",
+                    "description": "",
+                    "type": "String"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 986,
+            "description": "Returns a function to use in pseudos for buttons",
+            "params": [
+                {
+                    "name": "type",
+                    "description": "",
+                    "type": "String"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 997,
+            "description": "Returns a function to use in pseudos for positionals",
+            "params": [
+                {
+                    "name": "fn",
+                    "description": "",
+                    "type": "Function"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 1019,
+            "description": "Checks a node for validity as a Sizzle context",
+            "params": [
+                {
+                    "name": "context",
+                    "description": "",
+                    "type": "Element|Object="
+                }
+            ],
+            "return": {
+                "description": "The input node if acceptable, otherwise a falsy value",
+                "type": "Element|Object|Boolean"
+            },
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 1031,
+            "description": "Detects XML nodes",
+            "params": [
+                {
+                    "name": "elem",
+                    "description": "An element or a document",
+                    "type": "Element|Object"
+                }
+            ],
+            "return": {
+                "description": "True iff elem is a non-HTML XML node",
+                "type": "Boolean"
+            },
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 1043,
+            "description": "Sets document-related variables once based on the current document",
+            "params": [
+                {
+                    "name": "doc",
+                    "description": "An element or document object to use to set the document",
+                    "type": "Element|Object",
+                    "optional": true
+                }
+            ],
+            "return": {
+                "description": "Returns the current document",
+                "type": "Object"
+            },
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 1476,
+            "description": "Document sorting and removing duplicates",
+            "params": [
+                {
+                    "name": "results",
+                    "description": "",
+                    "type": "ArrayLike"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 1509,
+            "description": "Utility function for retrieving the text value of an array of DOM nodes",
+            "params": [
+                {
+                    "name": "elem",
+                    "description": "",
+                    "type": "Array|Element"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 2476,
+            "description": "A low-level selection function that works with Sizzle's compiled\n selector functions",
+            "params": [
+                {
+                    "name": "selector",
+                    "description": "A selector or a pre-compiled\n selector function built with Sizzle.compile",
+                    "type": "String|Function"
+                },
+                {
+                    "name": "context",
+                    "description": "",
+                    "type": "Element"
+                },
+                {
+                    "name": "results",
+                    "description": "",
+                    "type": "Array",
+                    "optional": true
+                },
+                {
+                    "name": "seed",
+                    "description": "A set of elements to match against",
+                    "type": "Array",
+                    "optional": true
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 3453,
+            "description": "Clean-up method for dom ready events",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 3467,
+            "description": "The ready event handler and self cleanup method",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 3614,
+            "description": "Determines whether an object can have data",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 6001,
+            "description": "Retrieve the actual display of a element",
+            "params": [
+                {
+                    "name": "name",
+                    "description": "nodeName of the element",
+                    "type": "String"
+                },
+                {
+                    "name": "doc",
+                    "description": "Document object",
+                    "type": "Object"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 6025,
+            "description": "Try to determine the default display value of an element",
+            "params": [
+                {
+                    "name": "nodeName",
+                    "description": "",
+                    "type": "String"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 9936,
+            "description": "Load a url into a page",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\jquery-1.11.1.js",
+            "line": 10011,
+            "description": "Gets a window from an element",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 81,
+            "description": "Makes a clone of an object using only Array or Object as base,\nand copies over the own enumerable properties.",
+            "params": [
+                {
+                    "name": "obj",
+                    "description": "",
+                    "type": "Object"
+                }
+            ],
+            "return": {
+                "description": "New object with only the own properties (recursively).",
+                "type": "Object"
+            },
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 241,
+            "description": "Config object: Maintain internal state\nLater exposed as QUnit.config\n`config` initialized at top of scope",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2283,
+            "description": "The data structure representing a diff is an array of tuples:\n[[DIFF_DELETE, 'Hello'], [DIFF_INSERT, 'Goodbye'], [DIFF_EQUAL, ' world.']]\nwhich means: delete 'Hello', add 'Goodbye' and keep ' world.'",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2292,
+            "description": "Find the differences between two texts.  Simplifies the problem by stripping\nany common prefix or suffix off the texts before diffing.",
+            "params": [
+                {
+                    "name": "text1",
+                    "description": "Old string to be diffed.",
+                    "type": "String"
+                },
+                {
+                    "name": "text2",
+                    "description": "New string to be diffed.",
+                    "type": "String"
+                },
+                {
+                    "name": "optChecklines",
+                    "description": "Optional speedup flag. If present and false,\n    then don't run a line-level diff first to identify the changed areas.\n    Defaults to true, which does a faster, slightly less optimal diff.",
+                    "type": "Boolean="
+                }
+            ],
+            "return": {
+                "description": "Array of diff tuples.",
+                "type": "!Array.<!DiffMatchPatch.Diff>"
+            },
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2356,
+            "description": "Reduce the number of edits by eliminating operationally trivial equalities.",
+            "params": [
+                {
+                    "name": "diffs",
+                    "description": "Array of diff tuples.",
+                    "type": "!Array.<!DiffMatchPatch.Diff>"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2366,
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2449,
+            "description": "Convert a diff array into a pretty HTML report.",
+            "params": [
+                {
+                    "name": "diffs",
+                    "description": "Array of diff tuples.",
+                    "type": "!Array.<!DiffMatchPatch.Diff>"
+                },
+                {
+                    "name": "string",
+                    "description": "to be beautified.",
+                    "type": "Integer"
+                }
+            ],
+            "return": {
+                "description": "HTML representation.",
+                "type": "String"
+            },
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2476,
+            "description": "Determine the common prefix of two strings.",
+            "params": [
+                {
+                    "name": "text1",
+                    "description": "First string.",
+                    "type": "String"
+                },
+                {
+                    "name": "text2",
+                    "description": "Second string.",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "The number of characters common to the start of each\n    string.",
+                "type": "Number"
+            },
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2508,
+            "description": "Determine the common suffix of two strings.",
+            "params": [
+                {
+                    "name": "text1",
+                    "description": "First string.",
+                    "type": "String"
+                },
+                {
+                    "name": "text2",
+                    "description": "Second string.",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "The number of characters common to the end of each string.",
+                "type": "Number"
+            },
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2541,
+            "description": "Find the differences between two texts.  Assumes that the texts do not\nhave any common prefix or suffix.",
+            "params": [
+                {
+                    "name": "text1",
+                    "description": "Old string to be diffed.",
+                    "type": "String"
+                },
+                {
+                    "name": "text2",
+                    "description": "New string to be diffed.",
+                    "type": "String"
+                },
+                {
+                    "name": "checklines",
+                    "description": "Speedup flag.  If false, then don't run a\n    line-level diff first to identify the changed areas.\n    If true, then run a faster, slightly less optimal diff.",
+                    "type": "Boolean"
+                },
+                {
+                    "name": "deadline",
+                    "description": "Time when the diff should be complete by.",
+                    "type": "Number"
+                }
+            ],
+            "return": {
+                "description": "Array of diff tuples.",
+                "type": "!Array.<!DiffMatchPatch.Diff>"
+            },
+            "access": "private",
+            "tagname": "",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2623,
+            "description": "Do the two texts share a substring which is at least half the length of the\nlonger text?\nThis speedup can produce non-minimal diffs.",
+            "params": [
+                {
+                    "name": "text1",
+                    "description": "First string.",
+                    "type": "String"
+                },
+                {
+                    "name": "text2",
+                    "description": "Second string.",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "Five element Array, containing the prefix of\n    text1, the suffix of text1, the prefix of text2, the suffix of\n    text2 and the common middle.  Or null if there was no match.",
+                "type": "Array.<string>"
+            },
+            "access": "private",
+            "tagname": "",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2646,
+            "description": "Does a substring of shorttext exist within longtext such that the substring\nis at least half the length of longtext?\nClosure, but does not reference any external variables.",
+            "params": [
+                {
+                    "name": "longtext",
+                    "description": "Longer string.",
+                    "type": "String"
+                },
+                {
+                    "name": "shorttext",
+                    "description": "Shorter string.",
+                    "type": "String"
+                },
+                {
+                    "name": "i",
+                    "description": "Start index of quarter length substring within longtext.",
+                    "type": "Number"
+                }
+            ],
+            "return": {
+                "description": "Five element Array, containing the prefix of\n    longtext, the suffix of longtext, the prefix of shorttext, the suffix\n    of shorttext and the common middle.  Or null if there was no match.",
+                "type": "Array.<string>"
+            },
+            "access": "private",
+            "tagname": "",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2722,
+            "description": "Do a quick line-level diff on both strings, then rediff the parts for\ngreater accuracy.\nThis speedup can produce non-minimal diffs.",
+            "params": [
+                {
+                    "name": "text1",
+                    "description": "Old string to be diffed.",
+                    "type": "String"
+                },
+                {
+                    "name": "text2",
+                    "description": "New string to be diffed.",
+                    "type": "String"
+                },
+                {
+                    "name": "deadline",
+                    "description": "Time when the diff should be complete by.",
+                    "type": "Number"
+                }
+            ],
+            "return": {
+                "description": "Array of diff tuples.",
+                "type": "!Array.<!DiffMatchPatch.Diff>"
+            },
+            "access": "private",
+            "tagname": "",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2792,
+            "description": "Find the 'middle snake' of a diff, split the problem in two\nand return the recursively constructed diff.\nSee Myers 1986 paper: An O(ND) Difference Algorithm and Its Variations.",
+            "params": [
+                {
+                    "name": "text1",
+                    "description": "Old string to be diffed.",
+                    "type": "String"
+                },
+                {
+                    "name": "text2",
+                    "description": "New string to be diffed.",
+                    "type": "String"
+                },
+                {
+                    "name": "deadline",
+                    "description": "Time at which to bail if not yet complete.",
+                    "type": "Number"
+                }
+            ],
+            "return": {
+                "description": "Array of diff tuples.",
+                "type": "!Array.<!DiffMatchPatch.Diff>"
+            },
+            "access": "private",
+            "tagname": "",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2917,
+            "description": "Given the location of the 'middle snake', split the diff in two parts\nand recurse.",
+            "params": [
+                {
+                    "name": "text1",
+                    "description": "Old string to be diffed.",
+                    "type": "String"
+                },
+                {
+                    "name": "text2",
+                    "description": "New string to be diffed.",
+                    "type": "String"
+                },
+                {
+                    "name": "x",
+                    "description": "Index of split point in text1.",
+                    "type": "Number"
+                },
+                {
+                    "name": "y",
+                    "description": "Index of split point in text2.",
+                    "type": "Number"
+                },
+                {
+                    "name": "deadline",
+                    "description": "Time at which to bail if not yet complete.",
+                    "type": "Number"
+                }
+            ],
+            "return": {
+                "description": "Array of diff tuples.",
+                "type": "!Array.<!DiffMatchPatch.Diff>"
+            },
+            "access": "private",
+            "tagname": "",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2942,
+            "description": "Reduce the number of edits by eliminating semantically trivial equalities.",
+            "params": [
+                {
+                    "name": "diffs",
+                    "description": "Array of diff tuples.",
+                    "type": "!Array.<!DiffMatchPatch.Diff>"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 2953,
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 3073,
+            "description": "Determine if the suffix of one string is the prefix of another.",
+            "params": [
+                {
+                    "name": "text1",
+                    "description": "First string.",
+                    "type": "String"
+                },
+                {
+                    "name": "text2",
+                    "description": "Second string.",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "The number of characters common to the end of the first\n    string and the start of the second string.",
+                "type": "Number"
+            },
+            "access": "private",
+            "tagname": "",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 3123,
+            "description": "Split two texts into an array of strings.  Reduce the texts to a string of\nhashes where each Unicode character represents one line.",
+            "params": [
+                {
+                    "name": "text1",
+                    "description": "First string.",
+                    "type": "String"
+                },
+                {
+                    "name": "text2",
+                    "description": "Second string.",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "}\n    An object containing the encoded text1, the encoded text2 and\n    the array of unique strings.\n    The zeroth element of the array of unique strings is intentionally blank.",
+                "type": "{chars1: string, chars2: string, lineArray: !Array.<string>"
+            },
+            "access": "private",
+            "tagname": "",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 3143,
+            "description": "Split a text into an array of strings.  Reduce the texts to a string of\nhashes where each Unicode character represents one line.\nModifies linearray and linehash through being a closure.",
+            "params": [
+                {
+                    "name": "text",
+                    "description": "String to encode.",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "Encoded string.",
+                "type": "String"
+            },
+            "access": "private",
+            "tagname": "",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 3190,
+            "description": "Rehydrate the text in a diff from a string of line hashes to real lines of\ntext.",
+            "params": [
+                {
+                    "name": "diffs",
+                    "description": "Array of diff tuples.",
+                    "type": "!Array.<!DiffMatchPatch.Diff>"
+                },
+                {
+                    "name": "lineArray",
+                    "description": "Array of unique strings.",
+                    "type": "!Array.<string>"
+                }
+            ],
+            "access": "private",
+            "tagname": "",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 3209,
+            "description": "Reorder and merge like edit sections.  Merge equalities.\nAny edit section can move as long as it doesn't cross an equality.",
+            "params": [
+                {
+                    "name": "diffs",
+                    "description": "Array of diff tuples.",
+                    "type": "!Array.<!DiffMatchPatch.Diff>"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 3448,
+            "description": "Escape text for attribute or text content.",
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 3474,
+            "params": [
+                {
+                    "name": "elem",
+                    "description": "",
+                    "type": "HTMLElement"
+                },
+                {
+                    "name": "type",
+                    "description": "",
+                    "type": "String"
+                },
+                {
+                    "name": "fn",
+                    "description": "",
+                    "type": "Function"
+                }
+            ],
+            "class": ""
+        },
+        {
+            "file": "tests\\common\\qunit.js",
+            "line": 3498,
+            "params": [
+                {
+                    "name": "elems",
+                    "description": "",
+                    "type": "Array|NodeList"
+                },
+                {
+                    "name": "type",
+                    "description": "",
+                    "type": "String"
+                },
+                {
+                    "name": "fn",
+                    "description": "",
+                    "type": "Function"
+                }
+            ],
+            "class": ""
+        }
+    ],
+    "warnings": [
+        {
+            "message": "replacing incorrect tag: function with method",
+            "line": " dev\\scripts\\grid.js:96"
+        },
+        {
+            "message": "replacing incorrect tag: function with method",
+            "line": " dev\\scripts\\grid.js:106"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:187"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:214"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:279"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:301"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:344"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:366"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:383"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:400"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:457"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:840"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:1197"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:1495"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:2651"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:2679"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:2711"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:2787"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:2826"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:2858"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:2869"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:2884"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:2963"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:3003"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:3020"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:3096"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:3133"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:3168"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:3177"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:3188"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:3207"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:3228"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\grid.js:3237"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\jquery-1.11.1.js:882"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\jquery-1.11.1.js:946"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\jquery-1.11.1.js:1019"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\jquery-1.11.1.js:1031"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " dev\\scripts\\jquery-1.11.1.js:1043"
+        },
+        {
+            "message": "unknown tag: license",
+            "line": " plato\\assets\\scripts\\vendor\\lodash.min.js:1"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " tests\\common\\jquery-1.11.1.js:882"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " tests\\common\\jquery-1.11.1.js:946"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " tests\\common\\jquery-1.11.1.js:1019"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " tests\\common\\jquery-1.11.1.js:1031"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " tests\\common\\jquery-1.11.1.js:1043"
+        },
+        {
+            "message": "Missing item type\nReturns the collection of selected grid items (row or columns) as an array.",
+            "line": " dev\\scripts\\grid.js:214"
+        },
+        {
+            "message": "Missing item type\nSets the selected row and/or columns of the grid.",
+            "line": " dev\\scripts\\grid.js:225"
+        },
+        {
+            "message": "Missing item type\nReturns metadata about each selected item in the grid.",
+            "line": " dev\\scripts\\grid.js:250"
+        },
+        {
+            "message": "Missing item type\nRemoves all selected grid items",
+            "line": " dev\\scripts\\grid.js:626"
+        },
+        {
+            "message": "Missing item type\nAdds new columns to the grid based on a collection of objects passed to the function",
+            "line": " dev\\scripts\\grid.js:729"
+        },
+        {
+            "message": "Missing item type\nAttaches handlers for click, mousemove, mousedown, mouseup, and scroll events depending on the value of the selectable attribute of the grid",
+            "line": " dev\\scripts\\grid.js:1053"
+        },
+        {
+            "message": "Missing item type\nCalled by both the mousemove and scroll event handlers, this function determines the appearance of the overlay and the true\nselection dimensions based on the distance the mouse has moved since the mousedown event, and the amount/direction of scrolling",
+            "line": " dev\\scripts\\grid.js:1126"
+        },
+        {
+            "message": "Missing item type\nCalculates both the displayed and actual top/bottom or left/right of the highlighting overlay",
+            "line": " dev\\scripts\\grid.js:1197"
+        },
+        {
+            "message": "Missing item type\nThis function is called after the mouseup event and uses the dimensions of the overlay to apply\nthe 'selected' class to all grid elements that it overlaps",
+            "line": " dev\\scripts\\grid.js:1286"
+        },
+        {
+            "message": "Missing item type\nAttaches click event handlers for each grouped header row in the grid",
+            "line": " dev\\scripts\\grid.js:1336"
+        },
+        {
+            "message": "Missing item type\nMakes a grid cell editable on a click event. Used for grid cells whose values can be changed and whose column configuration\nhas its editable property set to true",
+            "line": " dev\\scripts\\grid.js:1355"
+        },
+        {
+            "message": "Missing item type\nMakes a grid cell selectable on a click event. Used for grid cells whose values can be changed to a limited set\nor pre-specified values and whose column configuration provided the list of values and has its selectable property set to true",
+            "line": " dev\\scripts\\grid.js:1441"
+        },
+        {
+            "message": "Missing item type\nIf the validator is being used and a column has validation functions to run when editing values, this will determine\nthe appropriate classes and data-attributes that should be applied to the cell's input in order for validation to run\nas well as set up a namespace for the validation functions to be execute in",
+            "line": " dev\\scripts\\grid.js:1495"
+        },
+        {
+            "message": "Missing item type\nSets the column widths of the grid's header. If width properties are supplied as part\nof a column's metadata, the specified value is used; otherwise this function lets\nthe column choose an auto-width.",
+            "line": " dev\\scripts\\grid.js:1529"
+        },
+        {
+            "message": "Missing item type\nCreates the toolbar div used for saving and deleting changes as well as grouping the grid's\ndata by selected columns",
+            "line": " dev\\scripts\\grid.js:1711"
+        },
+        {
+            "message": "Missing item type\nHandler for the change event when a user selects a column from the group-by selector input.\nThis will call the function to get a new page of grid data based on the choosen grouping.",
+            "line": " dev\\scripts\\grid.js:1811"
+        },
+        {
+            "message": "Missing item type\nCreates the footer for the grid widget",
+            "line": " dev\\scripts\\grid.js:1843"
+        },
+        {
+            "message": "Missing item type\nAttaches click handlers to each pager",
+            "line": " dev\\scripts\\grid.js:1904"
+        },
+        {
+            "message": "Missing item type\nAttaches a click handler to each filter element in the grid's header",
+            "line": " dev\\scripts\\grid.js:1974"
+        },
+        {
+            "message": "Missing item type\nCreates the modal filter div and populates the filter types in the selector",
+            "line": " dev\\scripts\\grid.js:2014"
+        },
+        {
+            "message": "Missing item type\nAttaches a keypress handler on the inputs in a filter modal",
+            "line": " dev\\scripts\\grid.js:2064"
+        },
+        {
+            "message": "Missing item type\nSets a click handler for all sortable columns on the column header",
+            "line": " dev\\scripts\\grid.js:2270"
+        },
+        {
+            "message": "Missing item type\nAdd the filter icon to a filterable grid header and attaches an event listener when the icon is clicked",
+            "line": " dev\\scripts\\grid.js:2314"
+        },
+        {
+            "message": "Missing item type\nHandler for column resizing - alters the width of a grid column based on mouse movement",
+            "line": " dev\\scripts\\grid.js:2354"
+        },
+        {
+            "message": "Missing item type\nSwaps the cells of a grid when a column re-ordering happens",
+            "line": " dev\\scripts\\grid.js:2400"
+        },
+        {
+            "message": "Missing item type\nUsed when saving changes made to grid data. If being used for server-side updates, this\nfunction will eventually call the provided function for saving changes to the grid. Otherwise,\nit will update its internal reference to the grid's data",
+            "line": " dev\\scripts\\grid.js:2504"
+        },
+        {
+            "message": "Missing item type\nFilters the grid's data when being used for client-side updates. Based on the filtered column, value, and type\nthis function will determine which data should remain in the collection",
+            "line": " dev\\scripts\\grid.js:2612"
+        },
+        {
+            "message": "Missing item type\nUsing various equality operators, checks to for truth based on the type of the operator(s)",
+            "line": " dev\\scripts\\grid.js:2651"
+        },
+        {
+            "message": "Missing item type\nManages sorting grid data based on the field and data type",
+            "line": " dev\\scripts\\grid.js:2679"
+        },
+        {
+            "message": "Missing item type\nCalls all registered event handlers for a collection of events",
+            "line": " dev\\scripts\\grid.js:2766"
+        },
+        {
+            "message": "Missing item type\nFormats the text in a grid cell - uses both column formats and column templates if provided",
+            "line": " dev\\scripts\\grid.js:2787"
+        },
+        {
+            "message": "Missing item type\nGiven a string, this function will ensure it is in a valid time format and has a legitimate\ntime value. This returns a standard format as a response.",
+            "line": " dev\\scripts\\grid.js:2826"
+        },
+        {
+            "message": "Missing item type\nGiven the array the 'getNumbersFromTime' function produces, this function will turn the values\ninto seconds for comparisons when filtering and sorting grid data.",
+            "line": " dev\\scripts\\grid.js:2858"
+        },
+        {
+            "message": "Missing item type\nValidates that a given character is allowed with the given data type",
+            "line": " dev\\scripts\\grid.js:2869"
+        },
+        {
+            "message": "Missing item type\nCompares two values for equality after coercing both to the provided type",
+            "line": " dev\\scripts\\grid.js:2884"
+        },
+        {
+            "message": "Missing item type\nGiven a time of day value, will return the value formatted as specified for a given column of the grid",
+            "line": " dev\\scripts\\grid.js:2963"
+        },
+        {
+            "message": "Missing item type\nTakes a date value and a format and will return the date in the form provided",
+            "line": " dev\\scripts\\grid.js:3003"
+        },
+        {
+            "message": "Missing item type\nTakes a number and a format string and will format the number according to the formatting rules",
+            "line": " dev\\scripts\\grid.js:3020"
+        },
+        {
+            "message": "Missing item type\nGiven a format, this function will ensure it is valid and strip it of all invalid characters",
+            "line": " dev\\scripts\\grid.js:3096"
+        },
+        {
+            "message": "Missing item type\nGiven a format string for either currency or percent, will normalize it as a decimal format",
+            "line": " dev\\scripts\\grid.js:3133"
+        },
+        {
+            "message": "Missing item type\nMultiples a number by 100",
+            "line": " dev\\scripts\\grid.js:3168"
+        },
+        {
+            "message": "Missing item type\nRounds a number to a given decimal place",
+            "line": " dev\\scripts\\grid.js:3177"
+        },
+        {
+            "message": "Missing item type\nClones an object and returns a new object instance with the same values as the original",
+            "line": " dev\\scripts\\grid.js:3188"
+        },
+        {
+            "message": "Missing item type\nCopies the contents of an array into a new array instance",
+            "line": " dev\\scripts\\grid.js:3207"
+        },
+        {
+            "message": "Missing item type\nChecks that a given variable is a DOM element",
+            "line": " dev\\scripts\\grid.js:3228"
+        },
+        {
+            "message": "Missing item type\nChecks that a given variable is a number and not NaN",
+            "line": " dev\\scripts\\grid.js:3237"
+        },
+        {
+            "message": "Missing item type\nCreate key-value caches of limited size",
+            "line": " dev\\scripts\\jquery-1.11.1.js:882"
+        },
+        {
+            "message": "Missing item type\nMark a function for special use by Sizzle",
+            "line": " dev\\scripts\\jquery-1.11.1.js:902"
+        },
+        {
+            "message": "Missing item type\nSupport testing using an element",
+            "line": " dev\\scripts\\jquery-1.11.1.js:911"
+        },
+        {
+            "message": "Missing item type\nAdds the same handler for all of the specified attrs",
+            "line": " dev\\scripts\\jquery-1.11.1.js:932"
+        },
+        {
+            "message": "Missing item type\nChecks document order of two siblings",
+            "line": " dev\\scripts\\jquery-1.11.1.js:946"
+        },
+        {
+            "message": "Missing item type\nReturns a function to use in pseudos for input types",
+            "line": " dev\\scripts\\jquery-1.11.1.js:975"
+        },
+        {
+            "message": "Missing item type\nReturns a function to use in pseudos for buttons",
+            "line": " dev\\scripts\\jquery-1.11.1.js:986"
+        },
+        {
+            "message": "Missing item type\nReturns a function to use in pseudos for positionals",
+            "line": " dev\\scripts\\jquery-1.11.1.js:997"
+        },
+        {
+            "message": "Missing item type\nChecks a node for validity as a Sizzle context",
+            "line": " dev\\scripts\\jquery-1.11.1.js:1019"
+        },
+        {
+            "message": "Missing item type\nDetects XML nodes",
+            "line": " dev\\scripts\\jquery-1.11.1.js:1031"
+        },
+        {
+            "message": "Missing item type\nSets document-related variables once based on the current document",
+            "line": " dev\\scripts\\jquery-1.11.1.js:1043"
+        },
+        {
+            "message": "Missing item type\nDocument sorting and removing duplicates",
+            "line": " dev\\scripts\\jquery-1.11.1.js:1476"
+        },
+        {
+            "message": "Missing item type\nUtility function for retrieving the text value of an array of DOM nodes",
+            "line": " dev\\scripts\\jquery-1.11.1.js:1509"
+        },
+        {
+            "message": "Missing item type\nA low-level selection function that works with Sizzle's compiled\n selector functions",
+            "line": " dev\\scripts\\jquery-1.11.1.js:2476"
+        },
+        {
+            "message": "Missing item type\nClean-up method for dom ready events",
+            "line": " dev\\scripts\\jquery-1.11.1.js:3453"
+        },
+        {
+            "message": "Missing item type\nThe ready event handler and self cleanup method",
+            "line": " dev\\scripts\\jquery-1.11.1.js:3467"
+        },
+        {
+            "message": "Missing item type\nDetermines whether an object can have data",
+            "line": " dev\\scripts\\jquery-1.11.1.js:3614"
+        },
+        {
+            "message": "Missing item type\nRetrieve the actual display of a element",
+            "line": " dev\\scripts\\jquery-1.11.1.js:6001"
+        },
+        {
+            "message": "Missing item type\nTry to determine the default display value of an element",
+            "line": " dev\\scripts\\jquery-1.11.1.js:6025"
+        },
+        {
+            "message": "Missing item type\nLoad a url into a page",
+            "line": " dev\\scripts\\jquery-1.11.1.js:9936"
+        },
+        {
+            "message": "Missing item type\nGets a window from an element",
+            "line": " dev\\scripts\\jquery-1.11.1.js:10011"
+        },
+        {
+            "message": "Missing item type\nTag-closer extension for CodeMirror.\n\nThis extension adds an \"autoCloseTags\" option that can be set to\neither true to get the default behavior, or an object to further\nconfigure its behavior.\n\nThese are supported options:\n\n`whenClosing` (default true)\n  Whether to autoclose when the '/' of a closing tag is typed.\n`whenOpening` (default true)\n  Whether to autoclose the tag when the final '>' of an opening\n  tag is typed.\n`dontCloseTags` (default is empty tags for HTML, none for XML)\n  An array of tag names that should not be autoclosed.\n`indentTags` (default is block tags for HTML, none for XML)\n  An array of tag names that should, when opened, cause a\n  blank line to be added inside the tag, and the blank line and\n  closing line to be indented.\n\nSee demos/closetag.html for a usage example.",
+            "line": " plato\\assets\\scripts\\vendor\\codemirror\\util\\closetag.js:1"
+        },
+        {
+            "message": "Missing item type",
+            "line": " plato\\assets\\scripts\\vendor\\lodash.min.js:1"
+        },
+        {
+            "message": "Missing item type\nCreated by Mark.Mosby on 3/2/2016.",
+            "line": " routes\\gridDataHelpers.js:1"
+        },
+        {
+            "message": "Missing item type\nCreate key-value caches of limited size",
+            "line": " tests\\common\\jquery-1.11.1.js:882"
+        },
+        {
+            "message": "Missing item type\nMark a function for special use by Sizzle",
+            "line": " tests\\common\\jquery-1.11.1.js:902"
+        },
+        {
+            "message": "Missing item type\nSupport testing using an element",
+            "line": " tests\\common\\jquery-1.11.1.js:911"
+        },
+        {
+            "message": "Missing item type\nAdds the same handler for all of the specified attrs",
+            "line": " tests\\common\\jquery-1.11.1.js:932"
+        },
+        {
+            "message": "Missing item type\nChecks document order of two siblings",
+            "line": " tests\\common\\jquery-1.11.1.js:946"
+        },
+        {
+            "message": "Missing item type\nReturns a function to use in pseudos for input types",
+            "line": " tests\\common\\jquery-1.11.1.js:975"
+        },
+        {
+            "message": "Missing item type\nReturns a function to use in pseudos for buttons",
+            "line": " tests\\common\\jquery-1.11.1.js:986"
+        },
+        {
+            "message": "Missing item type\nReturns a function to use in pseudos for positionals",
+            "line": " tests\\common\\jquery-1.11.1.js:997"
+        },
+        {
+            "message": "Missing item type\nChecks a node for validity as a Sizzle context",
+            "line": " tests\\common\\jquery-1.11.1.js:1019"
+        },
+        {
+            "message": "Missing item type\nDetects XML nodes",
+            "line": " tests\\common\\jquery-1.11.1.js:1031"
+        },
+        {
+            "message": "Missing item type\nSets document-related variables once based on the current document",
+            "line": " tests\\common\\jquery-1.11.1.js:1043"
+        },
+        {
+            "message": "Missing item type\nDocument sorting and removing duplicates",
+            "line": " tests\\common\\jquery-1.11.1.js:1476"
+        },
+        {
+            "message": "Missing item type\nUtility function for retrieving the text value of an array of DOM nodes",
+            "line": " tests\\common\\jquery-1.11.1.js:1509"
+        },
+        {
+            "message": "Missing item type\nA low-level selection function that works with Sizzle's compiled\n selector functions",
+            "line": " tests\\common\\jquery-1.11.1.js:2476"
+        },
+        {
+            "message": "Missing item type\nClean-up method for dom ready events",
+            "line": " tests\\common\\jquery-1.11.1.js:3453"
+        },
+        {
+            "message": "Missing item type\nThe ready event handler and self cleanup method",
+            "line": " tests\\common\\jquery-1.11.1.js:3467"
+        },
+        {
+            "message": "Missing item type\nDetermines whether an object can have data",
+            "line": " tests\\common\\jquery-1.11.1.js:3614"
+        },
+        {
+            "message": "Missing item type\nRetrieve the actual display of a element",
+            "line": " tests\\common\\jquery-1.11.1.js:6001"
+        },
+        {
+            "message": "Missing item type\nTry to determine the default display value of an element",
+            "line": " tests\\common\\jquery-1.11.1.js:6025"
+        },
+        {
+            "message": "Missing item type\nLoad a url into a page",
+            "line": " tests\\common\\jquery-1.11.1.js:9936"
+        },
+        {
+            "message": "Missing item type\nGets a window from an element",
+            "line": " tests\\common\\jquery-1.11.1.js:10011"
+        },
+        {
+            "message": "Missing item type\nMakes a clone of an object using only Array or Object as base,\nand copies over the own enumerable properties.",
+            "line": " tests\\common\\qunit.js:81"
+        },
+        {
+            "message": "Missing item type\nConfig object: Maintain internal state\nLater exposed as QUnit.config\n`config` initialized at top of scope",
+            "line": " tests\\common\\qunit.js:241"
+        },
+        {
+            "message": "Missing item type\nThe data structure representing a diff is an array of tuples:\n[[DIFF_DELETE, 'Hello'], [DIFF_INSERT, 'Goodbye'], [DIFF_EQUAL, ' world.']]\nwhich means: delete 'Hello', add 'Goodbye' and keep ' world.'",
+            "line": " tests\\common\\qunit.js:2283"
+        },
+        {
+            "message": "Missing item type\nFind the differences between two texts.  Simplifies the problem by stripping\nany common prefix or suffix off the texts before diffing.",
+            "line": " tests\\common\\qunit.js:2292"
+        },
+        {
+            "message": "Missing item type\nReduce the number of edits by eliminating operationally trivial equalities.",
+            "line": " tests\\common\\qunit.js:2356"
+        },
+        {
+            "message": "Missing item type",
+            "line": " tests\\common\\qunit.js:2366"
+        },
+        {
+            "message": "Missing item type\nConvert a diff array into a pretty HTML report.",
+            "line": " tests\\common\\qunit.js:2449"
+        },
+        {
+            "message": "Missing item type\nDetermine the common prefix of two strings.",
+            "line": " tests\\common\\qunit.js:2476"
+        },
+        {
+            "message": "Missing item type\nDetermine the common suffix of two strings.",
+            "line": " tests\\common\\qunit.js:2508"
+        },
+        {
+            "message": "Missing item type\nFind the differences between two texts.  Assumes that the texts do not\nhave any common prefix or suffix.",
+            "line": " tests\\common\\qunit.js:2541"
+        },
+        {
+            "message": "Missing item type\nDo the two texts share a substring which is at least half the length of the\nlonger text?\nThis speedup can produce non-minimal diffs.",
+            "line": " tests\\common\\qunit.js:2623"
+        },
+        {
+            "message": "Missing item type\nDoes a substring of shorttext exist within longtext such that the substring\nis at least half the length of longtext?\nClosure, but does not reference any external variables.",
+            "line": " tests\\common\\qunit.js:2646"
+        },
+        {
+            "message": "Missing item type\nDo a quick line-level diff on both strings, then rediff the parts for\ngreater accuracy.\nThis speedup can produce non-minimal diffs.",
+            "line": " tests\\common\\qunit.js:2722"
+        },
+        {
+            "message": "Missing item type\nFind the 'middle snake' of a diff, split the problem in two\nand return the recursively constructed diff.\nSee Myers 1986 paper: An O(ND) Difference Algorithm and Its Variations.",
+            "line": " tests\\common\\qunit.js:2792"
+        },
+        {
+            "message": "Missing item type\nGiven the location of the 'middle snake', split the diff in two parts\nand recurse.",
+            "line": " tests\\common\\qunit.js:2917"
+        },
+        {
+            "message": "Missing item type\nReduce the number of edits by eliminating semantically trivial equalities.",
+            "line": " tests\\common\\qunit.js:2942"
+        },
+        {
+            "message": "Missing item type",
+            "line": " tests\\common\\qunit.js:2953"
+        },
+        {
+            "message": "Missing item type\nDetermine if the suffix of one string is the prefix of another.",
+            "line": " tests\\common\\qunit.js:3073"
+        },
+        {
+            "message": "Missing item type\nSplit two texts into an array of strings.  Reduce the texts to a string of\nhashes where each Unicode character represents one line.",
+            "line": " tests\\common\\qunit.js:3123"
+        },
+        {
+            "message": "Missing item type\nSplit a text into an array of strings.  Reduce the texts to a string of\nhashes where each Unicode character represents one line.\nModifies linearray and linehash through being a closure.",
+            "line": " tests\\common\\qunit.js:3143"
+        },
+        {
+            "message": "Missing item type\nRehydrate the text in a diff from a string of line hashes to real lines of\ntext.",
+            "line": " tests\\common\\qunit.js:3190"
+        },
+        {
+            "message": "Missing item type\nReorder and merge like edit sections.  Merge equalities.\nAny edit section can move as long as it doesn't cross an equality.",
+            "line": " tests\\common\\qunit.js:3209"
+        },
+        {
+            "message": "Missing item type\nEscape text for attribute or text content.",
+            "line": " tests\\common\\qunit.js:3448"
+        },
+        {
+            "message": "Missing item type",
+            "line": " tests\\common\\qunit.js:3474"
+        },
+        {
+            "message": "Missing item type",
+            "line": " tests\\common\\qunit.js:3498"
+        }
+    ]
+}

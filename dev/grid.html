@@ -6,20 +6,28 @@
     <link rel="stylesheet" href="http://localhost:3000/dev/styles/form.css" />
     <script type="text/javascript" src="/dev/scripts/jquery-1.11.1.js"></script>
     <script type="text/javascript" src="/dev/scripts/gridData2.js"></script>
+    <script type="text/javascript" src="/dev/scripts/gridData.js"></script>
+    <script type="text/javascript" src="/dev/scripts/gridData.tmp.js"></script>
     <script type="text/javascript" src="/dev/scripts/jszip.min.js"></script>
     <script type="text/javascript" src="/dev/scripts/grid.js"></script>
     <script type="text/javascript" src="/dev/scripts/validator.js"></script>
     <script type="text/javascript" src="/dev/scripts/formatter.js"></script>
     <script type="text/javascript" src="/dev/scripts/excelExporter.js"></script>
     <script type="text/javascript" src="/dev/scripts/toggle.js"></script>
+    <script type="text/javascript" src="/dev/scripts/expressionParser.js"></script>
+    <!--<script type="text/javascript" src="/dev/scripts/system.js"></script>-->
     <!--<script type="text/javascript" src="http://cdn.datatables.net/1.11.1/js/jquery.dataTables.min.js"></script>-->
     <script type="text/javascript">
         function init() {
-            grid.createGrid(gridData, document.getElementById("mGrid"));
+            grid.createGrid(gridData2, document.getElementById("mGrid"));
+
+            grid.createGrid(gridDataTmp, document.getElementById('mGrid2'));
         }
     </script>
 </head>
 <body id="body" onload="init()">
 <div id="mGrid" style="width:1600px; margin-left:auto; margin-right:auto; margin-top:100px;"></div>
+<br><br><br><br><br>
+<div id="mGrid2" style="width:1600px; margin-left:auto; margin-right:auto; margin-top:100px;"></div>
 </body>
 </html>

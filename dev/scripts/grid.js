@@ -12,7 +12,7 @@
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-*/
+ */
 /*
  TODO:
  - Need to reattach event listeners for sorting and filtering when columns are reordered. - DONE
@@ -48,7 +48,7 @@
  - Add "undo" filter/sort/group ability in toolbar - DONE
  - During paging, grouped and/or sorted data is being un-grouped (filtered data too likely) - DONE
  - Fix paging on filtered data - DONE
- - Redo summary row so that it works with server-side paging as well - DONE
+ - Refactor aggregates row so that it works with server-side paging as well - DONE
  - Fix reordering on grouped grid - DONE
  - See about only giving the dataSource.data the needed data for the current grid page - DONE
  - Add a template field for column data - DONE
@@ -65,7 +65,7 @@
  - Implement true aggregates + fix naming of row grouping - DONE
  - Check aggregations for existence of column before trying to build row's aggregates - DONE
  - Fix filtering/sorting on time - DONE
- - Rework setting column widths - DONE
+ - Refactor column width calculations - DONE
  - Fix sorting chevron to not display on top of filter icon when column name is same size as column - DONE
  - Examine headers and fix DOM structure - DONE
  - Remove unused regex values & update 'inputTypes' to use validateCharacter function - DONE
@@ -90,17 +90,36 @@
  - Add multiple-grouping capability - DONE
  - Add number formatting (n) - DONE
  - Add group-aggregate calculations - DONE
- - Re-work how aggregates are calculated - DONE
+ - Refactor aggregate calculations - DONE
  - Add functionality to show/hide columns - DONE
  - Dynamically add new columns - DONE
  - Ensure 'null' does not display in row where no data is provided - DONE
  - Fix dirty span display on empty grid cells - DONE
+ - Implement reorderable group items to support 're-grouping' - DONE
+ - Make dirty cells check against original data, not the previous value in the cell/dataSource - DONE
+ - Fix grid from forgetting a cell has changed values - DONE
+ - Fix drop-downs from populating options with same value twice when cell value is same an provided option - DONE
+ - Add menu option to specify OR, AND, NOT filters - DONE
+ - Add ability to create an arbitrary number of nested filter groups - DONE
+ - Add grid config option to restrict number of nested filter groups - DONE
+ - Remove all empty filter rows from DOM when closing advanced filters modal - DONE
+ - Fix paging when on a non-first page and the rows/page is increased  - DONE
+ - Update existing filtering to new filter object model - DONE
+ - Make sure that when adding advanced filters, and vise versa - DONE
+ - Fix boolean filtering - DONE
+ - Fix group aggregates indentation - DONE
+ - Create a 'reset' for css values at the grid level
+ - Figure out why sorting a grouped columns makes the last column in the grid a bit longer each time - DONE
+ - Implement a dbl-click handler to auto-resize columns
+ - Remove anchors as links for grid functionality - clicking them just requires the event to halt propagation
+ - UPDATE TO ES6
  - Determine a shared way to check for and reset the columnAdded property of the grid state cache
-    > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
-    > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
-    > and if that specific functionality has handled the added column or not without repeating the same data for each functionality
- - Implement reorderable group items to support 're-grouping'
- - Make dirty cells check against original data, not the previous value in the cell/dataSource
+ > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
+ > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
+ > and if that specific functionality has handled the added column or not without repeating the same data for each functionality
+ - Add null/empty string values to filtering selectors
+ - Add ability to lock/freeze columns
+ - Restrict handling of rapid-fire events: scroll, mouse move, mouse out, mouse leave, drag, etc
  - Add integration tests if possible
  - Add type checking - passed in grid data
  - Thoroughly test date & time regex usages
@@ -124,19 +143,12 @@ var grid = (function _grid($) {
      * @static
      * @param {object} gridData - The dataSource object needed to initialize the grid
      * @param {object} gridElem - The DOM element that should be used to create the grid widget
+     * @Returns {Object} - Returns an object containing the functions created for the grid widget instance
      */
     function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
             var id = generateId();
-            if (id > 0) {   //test to check if previously created grids still exist
-                var tmp = id - 1;
-                while (tmp > -1) {  //iterate through all previous grids
-                    if (gridState[tmp] != null && !$('body').find('#' + gridState[tmp].grid[0].id).length)     //if not found in the body
-                        delete gridState[tmp];      //remove the data from storage
-                    tmp--;
-                }
-            }
-            gridElem = $(gridElem);
+            gridElem = $(gridElem).addClass('grid_elem');
             var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class=grid-wrapper></div>').appendTo(gridElem);
             var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class=grid-header-div></div>').appendTo(wrapperDiv);
             headerDiv.append('<div class=grid-header-wrapper></div>');
@@ -151,13 +163,14 @@ var grid = (function _grid($) {
             (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
             gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function';
 
+            //if (Array.isArray(gridData)) createGridColumnsFromArray(gridData, gridElem);
             if (gridData.constructor === Array) createGridColumnsFromArray(gridData, gridElem);
             else {
                 createGridHeaders(gridData, gridElem);
                 getInitialGridData(gridData.dataSource, function initialGridDataCallback(err, res) {
                     if (!err) {
                         gridData.dataSource.data = res.data;
-                        gridData.dataSource.rowCount = res.rowCount || 25;
+                        gridData.dataSource.rowCount = res.rowCount != null ? res.rowCount : 25;
                         if (res.aggregations) {
                             for (var col in gridData.aggregates) {
                                 if (res.aggregations[col])
@@ -173,6 +186,12 @@ var grid = (function _grid($) {
                 });
             }
         }
+        return gridElem[0].grid;
+    }
+
+    function drillDownCreate(gridData, gridElem, parentId) {
+        gridData.parentGridId = parentId;
+        grid.createGrid(gridData, gridElem);
     }
 
     /**
@@ -299,9 +318,14 @@ var grid = (function _grid($) {
                      * @returns {boolean} - indicates that the provided function(s) were or were not added as event listeners.
                      */
                     value: function _bindGridEvents(evt, funcs) {
-                        if (!funcs || (typeof funcs !== 'function' && funcs.constructor !== Array)) return false;
+                        /*
+                         if (!funcs || (typeof funcs !== 'function' && funcs.constructor !== Array)) return false;
+                         if (typeof funcs === 'function') funcs = [funcs];
+                         if (~events.indexOf(evt)) {
+                         */
+                        if (!funcs || (typeof funcs !== 'function' && !Array.isArray(funcs))) return false;
                         if (typeof funcs === 'function') funcs = [funcs];
-                        if (~events.indexOf(evt)) {
+                        if (events.includes(evt)) {
                             gridState[gridId].events[evt] = gridState[gridId].events[evt].concat(funcs);
                             return true;
                         }
@@ -321,7 +345,8 @@ var grid = (function _grid($) {
                      * @returns {boolean} - indicates that the provided function(s) were or were not unbound
                      */
                     value: function _unbindEvents(evt, funcs) {
-                        if (~events.indexOf(evt) && (funcs || (typeof funcs === 'function' || funcs.constructor === Array))) {
+                        //if (~events.indexOf(evt) && (funcs || (typeof funcs === 'function' || funcs.constructor === Array))) {
+                        if (events.includes(evt) && (funcs || (typeof funcs === 'function' || Array.isArray(funcs)))) {
                             if (typeof funcs === 'function') funcs = [funcs];
                             var tmpEvts = [];
                             for (var i = 0; i < gridState[gridId].events[evt].length; i++) {
@@ -400,23 +425,20 @@ var grid = (function _grid($) {
                     value: function _hideColumn(col) {
                         if (gridState[gridId].columns[col]) {
                             gridState[gridId].columns[col].isHidden = true;
-                            gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', 'none');
+                            var column = gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]'),
+                                columnIdx = column.data('index');
+                            column.css('display', 'none');
                             gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', 'none');
                             var colGroups = gridState[gridId].grid.find('colgroup');
                             var group1 = $(colGroups[0]).find('col');
                             var group2 = $(colGroups[1]).find('col');
-                            if (gridState[gridId].groupedBy.length) {
-                                for (var i = 0; i < group1.length; i++) {
-                                    if (!group1[i].hasClass('group_col')) {
-                                        $(group1[i]).remove();
-                                        $(group2[i]).remove();
-                                    }
-                                }
-                            }
-                            else {
-                                $(group1[0]).remove();
-                                $(group2[0]).remove();
-                            }
+                            var offset = columnIdx;
+                            if (gridState[gridId].drillDown)
+                                ++offset;
+                            if (gridState[gridId].groupedBy)
+                                offset += gridState[gridId].groupedBy.length;
+                            group1.eq(offset).remove();
+                            group2.eq(offset).remove();
                         }
                     },
                     writable: false,
@@ -432,8 +454,9 @@ var grid = (function _grid($) {
                             gridState[gridId].columns[col].isHidden = false;
                             gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
                             gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
-                            gridState[gridId].grid.find('colgroup').append('col');
+                            gridState[gridId].grid.find('colgroup').append('<col>');
                             setColWidth(gridState[gridId], gridState[gridId].grid);
+                            copyGridWidth(gridState[gridId].grid);
                         }
                     },
                     writable: false,
@@ -494,7 +517,7 @@ var grid = (function _grid($) {
                         var newModel = {}, prop;
                         if (!data) {
                             for (prop in gridState[gridId].dataSource.data[0]) {
-                                newModel[prop] = null;
+                                if (prop !== '_initialRowIndex') newModel[prop] = null;
                             }
                         }
                         else if (typeof data === 'object') {
@@ -503,8 +526,10 @@ var grid = (function _grid($) {
                                 else newModel[prop] = null;
                             }
                         }
-                        newModel._initialRowIndex = gridState[gridId].dataSource.data.length;
-                        gridState[gridId].dataSource.data.push(newModel);
+                        gridState[gridId].originalData.push(newModel);
+                        var dataSourceModel = cloneGridData(newModel);
+                        dataSourceModel._initialRowIndex = gridState[gridId].dataSource.data.length;
+                        gridState[gridId].dataSource.data.push(dataSourceModel);
                         gridState[gridId].dataSource.rowCount++;
 
                         gridState[gridId].pageSize = gridState[gridId].pageSize + 1;
@@ -689,7 +714,8 @@ var grid = (function _grid($) {
                      */
                     value: function _updateCellData(cellData, setAsDirty) {
                         if (!cellData) return;
-                        if (cellData.constructor === Array) {
+                        //if (cellData.constructor === Array) {
+                        if (Array.isArray(cellData)) {
                             cellData.forEach(function cellIterationCallback(cell) {
                                 applyUpdate(cell, setAsDirty);
                             });
@@ -772,6 +798,14 @@ var grid = (function _grid($) {
                     writable: false,
                     configurable: false
                 }
+                /*,
+                 'createDrillDown': {
+                 value: function _createDrillDown() {
+
+                 },
+                 writable: false,
+                 configurable: false
+                 }*/
             });
 
         var keys = Object.getOwnPropertyNames(gridElem[0].grid);
@@ -795,9 +829,9 @@ var grid = (function _grid($) {
         else if (typeof dataSource.get == 'function') {
             dataSource.get({ pageSize: 25, pageNum: 1 },
                 function gridDataCallback(data) {
-                if (data) callback(null, data);
-                else callback(true, {});
-            });
+                    if (data) callback(null, data);
+                    else callback(true, {});
+                });
         }
         else callback(true, {});
     }
@@ -811,6 +845,7 @@ var grid = (function _grid($) {
      * @param {number} id
      * @param {object} gridData
      * @param {object} gridElem
+     * @param {number} parentId
      */
     function initializeGrid(id, gridData, gridElem) {
         var storageData = cloneGridData(gridData);
@@ -849,10 +884,14 @@ var grid = (function _grid($) {
         storageData.putRequest = {};
         storageData.resizing = false;
         storageData.sortedOn = [];
-        storageData.filteredOn = [];
+        storageData.basicFilters = { conjunct: 'and', filterGroup: null };
+        storageData.advancedFilters = {};
+        storageData.filters = {};
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
-        if (!storageData.dataSource.rowCount) storageData.dataSource.rowCount = gridData.dataSource.data.length;
+        storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
+        storageData.parentGridId = gridData.parentGridId != null ? gridData.parentGridId : null;
+        if (storageData.dataSource.rowCount == null) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
         var eventObj = { element: storageData.grid };
         callGridEventHandlers(storageData.events.beforeDataBind, storageData.grid, eventObj);
@@ -885,10 +924,8 @@ var grid = (function _grid($) {
             headerTHead = $('<thead></thead>').appendTo(headerTable),
             headerRow = $('<tr class=grid-headerRow></tr>').appendTo(headerTHead),
             index = 0,
-            id = gridHeader.data('grid_header_id'), i;
+            id = gridHeader.data('grid_header_id'), i, columnCount = 0;
 
-        //TODO: I think this will work for data that is already grouped; specifically when adding a new column. However, it may work or be
-        //TODO: adjusted to work with data coming from the server on widget creation
         if (gridData.groupedBy && gridData.groupedBy.length) {
             for (i = 0; i < gridData.groupedBy.length; i++) {
                 colgroup.prepend('<col class="group_col"/>');
@@ -896,7 +933,13 @@ var grid = (function _grid($) {
             }
         }
 
+        if (gridData.drillDown) {
+            colgroup.prepend('<col class="groupCol"/>');
+            headerRow.prepend('<th class="group_spacer">&nbsp</th>');
+        }
+
         for (var col in gridData.columns) {
+            columnCount++;
             if (typeof gridData.columns[col] !== 'object') continue;
             $('<col/>').appendTo(colgroup);
             var text = gridData.columns[col].title || col;
@@ -908,27 +951,39 @@ var grid = (function _grid($) {
                 }
             }
 
+            if (gridData.columns[col].type !== 'custom') {
+                //th.text(text);
+                if (gridData.sortable === true && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable === true)) {
+                    setSortableClickListener(th);
+                    gridData.sortable = true;
+                }
+
+                if (gridData.columns[col].filterable === true) {
+                    setFilterableClickListener(th, gridData, col);
+                    gridData.filterable = true;
+                    gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
+                }
+
+                if ((gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
+                    createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
+
+                $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
+            }
+            else
+                $('<span class="header-anchor" href="#"></span>').appendTo(th).text(text);
+
+            if (gridData.resizable) {
+                th.on('mouseleave', mouseLeaveHandlerCallback);
+            }
             if (gridData.reorderable === true && (typeof gridData.columns[col].reorderable === 'undefined' || gridData.columns[col].reorderable === true)) {
                 th.prop('draggable', true);
                 setDragAndDropListeners(th);
             }
-            if (gridData.sortable === true && (typeof gridData.columns[col].sortable === 'undefined' || gridData.columns[col].sortable === true)) {
-                setSortableClickListener(th);
-                gridData.sortable = true;
-            }
 
-            if (gridData.columns[col].filterable === true) {
-                gridState[gridHeader.data('grid_header_id')].filterable = true;
-                setFilterableClickListener(th, gridData, col);
-                gridData.filterable = true;
-            }
-
-            if (gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable) createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
-
-            $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
             index++;
         }
         headerTable.css('width','');
+        gridData.numColumns = columnCount;
         setColWidth(gridData, gridElem);
     }
 
@@ -941,21 +996,43 @@ var grid = (function _grid($) {
      * @param {number} gridId
      */
     function buildHeaderAggregations(gridId) {
-        var aggrs = gridState[gridId].gridAggregations;
+        var gridData = gridState[gridId],
+            i, col;
+        if (typeof gridState[gridId].dataSource.get !== 'function') {
+            var dataTofilter = gridData.alteredData && gridData.alteredData.length ? gridData.alteredData : gridData.originalData,
+                remRows = dataTofilter.filter(function getRemainingRows(val, idx) {
+                    return idx > gridData.pageNum * gridData.pageSize - 1 || idx < gridData.pageNum * gridData.pageSize - gridData.pageSize;
+                });
+
+            for (i = 0; i < remRows.length; i++) {
+                for (col in gridData.columns) {
+                    if (gridData.aggregates[col])
+                        addValueToAggregations(gridId, col, remRows[i][col], gridData.gridAggregations);
+                }
+            }
+        }
+
+        var aggrs = gridData.gridAggregations;
         if (aggrs) {
             var headerTHead = $('#grid-header-' + gridId).find('thead');
             var aggRow = headerTHead.find('.summary-row-header');
             if (aggRow.length)
                 aggRow.remove();
             aggRow = $('<tr class=summary-row-header></tr>').appendTo(headerTHead);
-            if (gridState[gridId].groupedBy.length) {
-                for (var i = 0; i < gridState[gridId].groupedBy.length; i++) {
+            if (gridData.groupedBy.length) {
+                for (i = 0; i < gridData.groupedBy.length; i++) {
                     aggRow.append('<td class="group_spacer">&nbsp</td>');
                 }
             }
-            for (var col in aggrs) {
-                var text = aggrs[col].text || '';
-                aggRow.append('<td data-field="' + col + '" class=summary-cell-header>' + text + '</td>');
+            if (gridData.drillDown) {
+                aggRow.append('<td class="group_spacer">&nbsp</td>');
+            }
+            for (col in gridData.columns) {
+                if (col in aggrs) {
+                    var text = aggrs[col].text || '';
+                    aggRow.append('<td data-field="' + col + '" class=summary-cell-header>' + text + '</td>');
+                }
+                else aggRow.append('<td data-field="' + col + '" class=summary-cell-header></td>');
             }
         }
     }
@@ -988,7 +1065,8 @@ var grid = (function _grid($) {
             colGroup = $('<colgroup></colgroup>').appendTo(contentTable),
             contentTBody = $('<tbody></tbody>').appendTo(contentTable),
             text, i, j, k, item;
-        if (gridData.selectable) attachTableSelectHandler(contentTBody);
+        contentTBody.css('width', 'auto');
+        if (typeof gridData.parentGridId !== 'number' && gridData.selectable) attachTableSelectHandler(contentTBody);
         var columns = [];
         gridElem.find('th').each(function headerIterationCallback(idx, val) {
             if (!$(val).hasClass('group_spacer'))
@@ -1001,89 +1079,111 @@ var grid = (function _grid($) {
 
         if (gridData.groupAggregates) gridData.groupAggregations = {};
 
-        for (i = 0; i < rowEnd; i++) {
-            gridData.dataSource.data[i]._initialRowIndex = i;
-            if (gridData.groupedBy && gridData.groupedBy.length) createGroupedRows(id, i, columns, currentGroupingValues, contentTBody);
+        if (gridData.dataSource.data.length) {
+            for (i = 0; i < rowEnd; i++) {
+                gridData.dataSource.data[i]._initialRowIndex = i;
+                if (gridData.groupedBy && gridData.groupedBy.length) createGroupedRows(id, i, columns, currentGroupingValues, contentTBody);
 
-            var tr = $('<tr class="data-row"></tr>').appendTo(contentTBody);
-            if (i % 2) {
-                tr.addClass('alt-row');
-                if (rows && rows.alternateRows && rows.alternateRows.constructor === Array)
-                    for (j = 0; j < rows.alternateRows.length; j++) {
-                        tr.addClass(rows.alternateRows[j].toString());
+                var tr = $('<tr class="data-row"></tr>').appendTo(contentTBody);
+                if (typeof gridData.parentGridId === 'number') tr.addClass('drill-down-row');
+                if (i % 2) {
+                    tr.addClass('alt-row');
+                    if (rows && rows.alternateRows && rows.alternateRows.constructor === Array)
+                        for (j = 0; j < rows.alternateRows.length; j++) {
+                            tr.addClass(rows.alternateRows[j].toString());
+                        }
+                }
+
+                if (rows && rows.all && rows.all.constructor === Array) {
+                    for (j = 0; j < rows.all.length; j++) {
+                        tr.addClass(rows.all[j].toString());
                     }
-            }
+                }
 
-            if (rows && rows.all && rows.all.constructor === Array) {
-                for (j = 0; j < rows.all.length; j++) {
-                    tr.addClass(rows.all[j].toString());
+                if (gridData.groupedBy.length) {
+                    for (j = 0; j < gridData.groupedBy.length; j++) {
+                        tr.append('<td class="grouped_cell">&nbsp</td>');
+                    }
+                }
+
+                if (gridData.drillDown)
+                    tr.append('<td class="drillDown_cell"><span class="drillDown_span" data-state="closed"><a class="drillDown-asc drillDown_acc"></a></span></td>');
+
+                for (j = 0; j < columns.length; j++) {
+                    var td = $('<td data-field="' + columns[j] + '" class="grid-content-cell"></td>').appendTo(tr);
+                    if (gridData.columns[columns[j]].attributes && gridData.columns[columns[j]].attributes.cellClasses && gridData.columns[columns[j]].attributes.cellClasses.constructor === Array) {
+                        for (k = 0; k < gridData.columns[columns[j]].attributes.cellClasses.length; k++) {
+                            td.addClass(gridData.columns[columns[j]].attributes.cellClasses[k]);
+                        }
+                    }
+                    if (gridData.columns[columns[j]].type !== 'custom') {
+                        text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
+                        text = text == null ? '' : text;
+                        td.text(text);
+                    }
+                    else {
+                        td = gridData.columns[columns[j]].html ? $(gridData.columns[columns[j]].html).appendTo(td) : td;
+                        if (gridData.columns[columns[j]].class)
+                            td.addClass(gridData.columns[columns[j]].class);
+                        if (gridData.columns[columns[j]].text)
+                            td.text(gridData.columns[columns[j]].text);
+                    }
+
+                    if (typeof gridData.columns[columns[j]].events === 'object') {
+                        attachCustomCellHandler(columns[j], td, id);
+                    }
+                    if (gridData.aggregates && gridData.aggregates[columns[j]]  && typeof gridData.dataSource.get !== 'function') {
+                        if (gridData.pageRequest.eventType !== 'page')
+                            addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
+                    }
+                    //attach event handlers to save data
+                    if (typeof gridData.parentGridId !== 'number' && (gridData.columns[columns[j]].editable && gridData.columns[columns[j]].editable !== 'drop-down')) {
+                        makeCellEditable(id, td);
+                        gridState[id].editable = true;
+                    }
+                    else if (typeof gridData.parentGridId !== 'number' && (gridData.columns[columns[j]].editable === 'drop-down')) {
+                        makeCellSelectable(id, td);
+                        gridState[id].editable = true;
+                    }
                 }
             }
 
+            for (i = 0; i < columns.length; i++) {
+                colGroup.append('<col/>');
+            }
             if (gridData.groupedBy.length) {
                 for (j = 0; j < gridData.groupedBy.length; j++) {
-                    tr.append('<td class="grouped_cell">&nbsp</td>');
+                    colGroup.prepend('<col class="group_col"/>');
                 }
             }
 
-            for (j = 0; j < columns.length; j++) {
-                var td = $('<td data-field="' + columns[j] + '" class="grid-content-cell"></td>').appendTo(tr);
-                if (gridData.columns[columns[j]].attributes && gridData.columns[columns[j]].attributes.cellClasses && gridData.columns[columns[j]].attributes.cellClasses.constructor === Array) {
-                    for (k = 0; k < gridData.columns[columns[j]].attributes.cellClasses.length; k++) {
-                        td.addClass(gridData.columns[columns[j]].attributes.cellClasses[k]);
+            if (gridData.aggregates && gridData.aggregates.positionAt === 'top' && typeof gridData.dataSource.get !== 'function' && gridData.pageRequest.eventType !== 'page')
+                buildHeaderAggregations(id);
+
+            if (gridData.aggregates && gridData.aggregates.positionAt === 'bottom') {
+                var aggrs = gridState[id].gridAggregations;
+                if (aggrs) {
+                    var aggRow = $('<tr class="summary-row-footer"></tr>').appendTo(contentTBody);
+                    if (gridState[id].groupedBy.length) {
+                        for (i = 0; i < gridState[id].groupedBy.length; i++) {
+                            aggRow.append('<td class="group_spacer">&nbsp</td>');
+                        }
+                    }
+                    for (item in aggrs) {
+                        text = aggrs[item].value || '';
+                        aggRow.append('<td data-field="' + item + '" class=summary-cell-header>' + text + '</td>');
                     }
                 }
-                text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
-                text = text == null ? '' : text;
-                td.text(text);
-                if (gridData.aggregates) addValueToAggregations(id, columns[j], gridData.dataSource.data[i][columns[j]], gridData.gridAggregations);
-                //attach event handlers to save data
-                if (gridData.columns[columns[j]].editable && gridData.columns[columns[j]].editable !== 'drop-down') {
-                    makeCellEditable(id, td);
-                    gridState[id].editable = true;
-                }
-                else if (gridData.columns[columns[j]].editable === 'drop-down') {
-                    makeCellSelectable(id, td);
-                    gridState[id].editable = true;
-                }
             }
+
+            createGroupTrEventHandlers(id);
+            attachDrillDownAccordionHandler(id);
         }
 
-        for (i = 0; i < columns.length; i++) {
-            colGroup.append('<col/>');
-        }
-        if (gridData.groupedBy.length) {
-            for (j = 0; j < gridData.groupedBy.length; j++) {
-                colGroup.prepend('<col class="group_col"/>');
-            }
-        }
-
-        if (gridData.aggregates && gridData.aggregates.positionAt === 'top' && typeof gridData.dataSource.get !== 'function') buildHeaderAggregations(id);
-
-        if (gridData.aggregates && gridData.aggregates.positionAt === 'bottom') {
-            var aggrs = gridState[id].gridAggregations;
-            if (aggrs) {
-                var aggRow = $('<tr class="summary-row-footer"></tr>').appendTo(contentTBody);
-                if (gridState[id].groupedBy.length) {
-                    for (i = 0; i < gridState[id].groupedBy.length; i++) {
-                        aggRow.append('<td class="group_spacer">&nbsp</td>');
-                    }
-                }
-                for (item in aggrs) {
-                    text = aggrs[item].value || '';
-                    aggRow.append('<td data-field="' + item + '" class=summary-cell-header>' + text + '</td>');
-                }
-            }
-        }
-
-        createGroupTrEventHandlers();
-
-        gridContent.on('scroll', function contentDivScrollCallback(e) {
-            var cDiv = $(e.currentTarget);
-            var headWrap = cDiv.parents('.grid-wrapper').find('.grid-header-wrapper');
-            if (gridState[headWrap.parent().data('grid_header_id')].resizing)
-                return;
-            headWrap.scrollLeft(cDiv.scrollLeft());
+        gridContent[0].addEventListener('scroll', function contentDivScrollHandler() {
+            var headWrap = gridContent.parents('.grid-wrapper').first().find('.grid-header-wrapper');
+            if (gridState[id].resizing) return;
+            headWrap.scrollLeft(gridContent.scrollLeft());
         });
 
         /*
@@ -1104,6 +1204,22 @@ var grid = (function _grid($) {
         gridState[id].dataSource.data = gridData.dataSource.data;
         loader.remove();
         gridState[id].updating = false;
+    }
+
+    function attachCustomCellHandler(column, cellItem, gridId) {
+        for (var event in gridState[gridId].columns[column].events) {
+            if (typeof gridState[gridId].columns[column].events[event] === 'function') {
+                createEventHandler(cellItem, event);
+            }
+        }
+
+        function createEventHandler(cellItem, event) {
+            cellItem.on(event, function genericEventHandler() {
+                var row = $(this).parents('tr'),
+                    rowIdx = row.index();
+                gridState[gridId].columns[column].events[event].call(this, gridState[gridId].dataSource.data[rowIdx]);
+            });
+        }
     }
 
     /**
@@ -1135,14 +1251,16 @@ var grid = (function _grid($) {
                 else groupedDiff[j] = 1;
             }
         }
-        if (foundDiff && rowIndex) {   //If a diff was found...
+        if (foundDiff && rowIndex && gridData.groupAggregates) {   //If a diff was found...
             for (j = groupedDiff.length - 1; j >= 0; j--) {     //...go backwards through the grouped aggregates...
                 var numItems = gridData.groupAggregations[j]._items_; //...save the current row's number of items...
                 if (groupedDiff[j]) {                               //...if there is a diff at the current row, print it to the screen
                     var groupAggregateRow = $('<tr class="grouped_row_header"></tr>').appendTo(gridContent);
                     for (k = 0; k < groupedDiff.length; k++) {
-                        groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
+                        groupAggregateRow.append('<td colspan="' + 1 + '" class="grouped_cell"></td>');
                     }
+                    if (gridData.drillDown)
+                        groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
                     for (item in gridData.groupAggregations[j]) {
                         if (item !== '_items_') {
                             groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[j][item].text || '') + '</td>');
@@ -1163,15 +1281,18 @@ var grid = (function _grid($) {
             }
         }
         for (j = 0; j < groupedDiff.length; j++) {
-            if (!gridData.groupAggregations[j]) {
-                gridData.groupAggregations[j] = {
-                    _items_: 0
-                };
+            if (gridData.groupAggregates) {
+                if (gridData.groupAggregations && !gridData.groupAggregations[j]) {
+                    gridData.groupAggregations[j] = {
+                        _items_: 0
+                    };
+                }
+                for (item in gridData.columns) {
+                    if (gridData.aggregates && gridData.aggregates[item])
+                        addValueToAggregations(gridId, item, gridData.dataSource.data[rowIndex][item], gridData.groupAggregations[j]);
+                }
+                gridData.groupAggregations[j]._items_++;
             }
-            for (item in gridData.columns) {
-                addValueToAggregations(gridId, item, gridData.dataSource.data[rowIndex][item], gridData.groupAggregations[j]);
-            }
-            gridData.groupAggregations[j]._items_++;
             if (groupedDiff[j]) {
                 var groupedText = getFormattedCellText(gridId, gridData.groupedBy[j].field, gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field]) ||
                     gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field];
@@ -1179,15 +1300,63 @@ var grid = (function _grid($) {
                 var groupTitle = gridData.columns[gridData.groupedBy[j].field].title || gridData.groupedBy[j].field;
                 for (k = 0; k <= j; k++) {
                     var indent = k === j ? (columns.length + gridData.groupedBy.length - k) : 1;
+                    if (gridData.drillDown) ++indent;
                     groupTr.data('group-indent', indent);
                     var groupingCell = $('<td colspan="' + indent + '" class="grouped_cell"></td>').appendTo(groupTr);
                     if (k === j) {
-                        groupingCell.append('<p class="grouped"><a class="group-desc sortSpan group_acc_link"></a>' + groupTitle + ': ' + groupedText + '</p></td>');
+                        groupingCell.append('<p class="grouped"><a class="group-desc sortSpan group_acc_link" data-state="open"></a>' + groupTitle + ': ' + groupedText + '</p>');
                         break;
                     }
                 }
             }
         }
+    }
+
+    function attachDrillDownAccordionHandler(gridId) {
+        var gridData = gridState[gridId];
+        gridData.grid.find('.drillDown_span').on('click', function drillDownAccordionHandler() {
+            var accRow = $(this).parents('tr'),
+                accRowIdx = gridData.grid.find('.data-row').not('.drill-down-row').index(accRow);
+            if (accRow.find('.drillDown_span').data('state') === 'open') {
+                accRow.find('.drillDown_span').data('state', 'closed');
+                accRow.next().css('display', 'none');
+            }
+            else {
+                if (accRow.next().hasClass('drill-down-parent')) {
+                    accRow.find('.drillDown_span').data('state', 'open');
+                    accRow.next().css('display', 'inline-block');
+                }
+                else {
+                    var drillDownRow = $('<tr class="drill-down-parent"></tr>').insertAfter(accRow);
+                    if (gridData.groupedBy && gridData.groupedBy.length) {
+                        for (var i = 0; i < gridData.groupedBy.length; i++) {
+                            drillDownRow.append('<td class="grouped_cell"></td>');
+                        }
+                    }
+                    drillDownRow.append('<td class="grouped_cell"></td>');
+                    var drillDownCellLength = 0;
+                    gridData.grid.find('.grid-header-div').find('col').each(function getTotalGridLength() {
+                        if (!$(this).hasClass('groupCol'))
+                            drillDownCellLength += $(this).width();
+                    });
+                    var containerCell = $('<td class="drill-down-cell" colspan="' + Object.keys(gridData.columns).length + '" style="width: ' + drillDownCellLength + ';"></td>').appendTo(drillDownRow),
+                        newGridId = gridData.grid[0].id + generateId(),
+                        gridDiv = $('<div id="' + newGridId + '" class="drill_down_grid"></div>').appendTo(containerCell);
+                    accRow.find('.drillDown_span').data('state', 'open');
+                    var parentRowData = gridData.grid[0].grid.getCurrentDataSourceData(accRowIdx);
+
+                    if (typeof gridData.drillDown === 'function') {
+                        drillDownCreate(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
+                    }
+                    else if (typeof gridData.drillDown === 'object') {
+                        if (!gridData.drillDown.dataSource) gridData.drillDown.dataSource = {};
+                        gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
+                        gridData.drillDown.dataSource.rowCount = parentRowData[0].drillDownData ? parentRowData[0].drillDownData.length : 0;
+                        drillDownCreate(gridData.drillDown, gridDiv[0], gridId);
+                    }
+                }
+            }
+        });
     }
 
     /**
@@ -1226,14 +1395,14 @@ var grid = (function _grid($) {
         if (value == null) return;
         switch (gridState[gridId].aggregates[field].type) {
             case 'count':
-                aggregationObj[field].value =(aggregationObj[field].value || 0) + 1;
+                aggregationObj[field].value = gridState[gridId].dataSource.rowCount || gridState[gridId].dataSource.data.length;
                 aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + aggregationObj[field].value;
                 return;
             case 'average':
                 var count = aggregationObj[field].count ? aggregationObj[field].count + 1 : 1;
                 value = parseFloat(value.toString());
                 total = aggregationObj[field].total ? aggregationObj[field].total + value : value;
-                var avg = parseFloat(parseFloat(total/count));
+                var avg = total/count;
                 text = getFormattedCellText(gridId, field, avg.toFixed(2)) || avg.toFixed(2);
                 aggregationObj[field].total = total;
                 aggregationObj[field].count = count;
@@ -1280,10 +1449,12 @@ var grid = (function _grid($) {
                         gridState[gridId].selecting = false;
                         return;
                     }
-                    $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
+                    gridState[gridId].grid.find('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
                         $(elem).removeClass('selected');
                     });
                     var target = $(e.target);
+                    if (target.hasClass('drill-down-parent') || target.parents('.drill-down-parent').length) return;
+                    if (target.hasClass('drillDown_cell') || target.parents('.drillDown_cell').length) return;
                     if (isSelectable === 'cell' && target[0].tagName.toUpperCase() === 'TD')
                         target.addClass('selected');
                     else if (target[0].tagName.toUpperCase() === 'TR')
@@ -1295,7 +1466,10 @@ var grid = (function _grid($) {
         }
         if (isSelectable === 'multi-row' || isSelectable === 'multi-cell') {
             $(document).on('mousedown', function mouseDownDragCallback(event) {
-                if (event.target === tableBody[0] || $(event.target).parents('tbody')[0] === tableBody[0]) {
+                var target = $(event.target);
+                if (event.target === tableBody[0] || target.parents('tbody')[0] === tableBody[0]) {
+                    if (target.hasClass('drill-down-parent') || target.parents('.drill-down-parent').length) return;
+                    if (target.hasClass('drillDown_cell') || target.parents('.drillDown_cell').length) return;
                     gridState[gridId].selecting = true;
                     var contentDiv = tableBody.parents('.grid-content-div'),
                         overlay = $('<div class="selection-highlighter"></div>').appendTo(gridState[gridId].grid);
@@ -1308,7 +1482,7 @@ var grid = (function _grid($) {
                     overlay.data('actual-height', 0).data('actual-width', 0).data('event-type', 'mouse');
 
                     $(document).one('mouseup', function mouseUpDragCallback() {
-                        $('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
+                        gridState[gridId].grid.find('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
                             $(elem).removeClass('selected');
                         });
                         var overlay = $(".selection-highlighter");
@@ -1535,6 +1709,10 @@ var grid = (function _grid($) {
         }
 
         var gridElems = gridState[gridId].selectable === 'multi-cell' ? contentDiv.find('td') : contentDiv.find('tr');
+        gridElems = gridElems.filter(function filterDrillDownRows() {
+            var gridElem = $(this);
+            return !gridElem.hasClass('drill-down-parent') && !gridElem.parents('.drill-down-parent').length;
+        });
 
         gridElems.each(function highlightGridElemsCallback(idx, val) {
             var element = $(val),
@@ -1552,14 +1730,13 @@ var grid = (function _grid($) {
     /**
      * Attaches click event handlers for each grouped header row in the grid
      */
-    function createGroupTrEventHandlers() {
-        $('.group_acc_link').each(function iterateAccordionsCallback(idx, val) {
-            $(val).data('state', 'open');
-        }).on('click', function groupedAccordionsClickListenerCallback(e) {
-            var accRow = $(e.currentTarget).parents('tr'),
+    function createGroupTrEventHandlers(gridId) {
+        gridState[gridId].grid.find('.group_acc_link').on('click', function groupedAccordionsClickListenerCallback() {
+            var elem = $(this),
+                accRow = elem.parents('tr'),
                 indent = accRow.data('group-indent');
-            if ($(e.currentTarget).data('state') === 'open') {
-                $(e.currentTarget).data('state', 'closed').removeClass('group-desc').addClass('group-asc');
+            if (elem.data('state') === 'open') {
+                elem.data('state', 'closed').removeClass('group-desc').addClass('group-asc');
                 accRow.nextAll().each(function iterateAccordionRowSiblingsToCloseCallback(idx, val) {
                     var row = $(val),
                         rowIndent = row.data('group-indent');
@@ -1569,7 +1746,7 @@ var grid = (function _grid($) {
                 });
             }
             else {
-                $(e.currentTarget).data('state', 'open').removeClass('group-asc').addClass('group-desc');
+                elem.data('state', 'open').removeClass('group-asc').addClass('group-desc');
                 accRow.nextAll().each(function iterateAccordionRowSiblingsToOpenCallback(idx, val) {
                     var row = $(val),
                         rowIndent = row.data('group-indent');
@@ -1594,10 +1771,17 @@ var grid = (function _grid($) {
             if (e.target !== e.currentTarget) return;
             if (gridContent.find('.invalid').length) return;
             var cell = $(e.currentTarget);
+            if (cell.children('span').hasClass('dirty'))
+                cell.data('dirty', true);
+            else cell.data('dirty', false);
             cell.text('');
 
             if (gridState[id].updating) return;
-            var index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
+            var row = cell.parents('tr').first(),
+                index = gridData.grid.find('tr').filter(function removeGroupAndChildRows() {
+                    var r =  $(this);
+                    return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
+                }).index(row),
                 field = cell.data('field'),
                 type = gridState[id].columns[field].type || '',
                 val = gridState[id].dataSource.data[index][field] || '',
@@ -1617,10 +1801,15 @@ var grid = (function _grid($) {
             switch (type) {
                 case 'boolean':
                     input = $('<input type="checkbox" class="input checkbox active-cell"' + dataAttributes + '/>').appendTo(cell);
-                    input[0].checked = typeof val === 'string' ? val === 'true' : !!val;
+                    val = typeof gridState[id].dataSource.data[index][field] === 'string' ? gridState[id].dataSource.data[index][field] === 'true' : !!val;
+                    input[0].checked = val;
                     dataType = 'boolean';
                     break;
                 case 'number':
+                    if (typeof gridState[id].dataSource.data[index][field] === 'string')
+                        val = isNumber(parseFloat(gridState[id].dataSource.data[index][field])) ? parseFloat(gridState[id].dataSource.data[index][field]) : 0;
+                    else
+                        val = isNumber(gridState[id].dataSource.data[index][field]) ? gridState[id].dataSource.data[index][field] : 0;
                     inputVal = val;
                     input = $('<input type="text" value="' + inputVal + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
                     dataType = 'number';
@@ -1675,18 +1864,25 @@ var grid = (function _grid($) {
      */
     function makeCellSelectable(id, td) {
         td.on('click', function selectableCellClickHandler(e) {
-            var gridContent = gridState[id].grid.find('.grid-content-div');
-            var gridData = gridState[id];
+            var gridContent = gridState[id].grid.find('.grid-content-div'),
+                gridData = gridState[id];
             if (e.target !== e.currentTarget) return;
             if (gridContent.find('.invalid').length) return;
             var cell = $(e.currentTarget);
+            if (cell.children('span').hasClass('dirty'))
+                cell.data('dirty', true);
+            else cell.data('dirty', false);
             cell.text('');
-            var index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row');
-            var field = cell.data('field');
-            if (gridState[id].updating) return;		//can't edit a cell if the grid is updating
+            var row = cell.parents('tr').first(),
+                index = gridData.grid.find('tr').filter(function removeGroupAndChildRows() {
+                    var r =  $(this);
+                    return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
+                }).index(row),
+                field = cell.data('field');
+            if (gridState[id].updating) return;     //can't edit a cell if the grid is updating
 
-            var gridValidation = gridState[id].useValidator ? gridState[id].columns[field].validation : null;
-            var dataAttributes = '';
+            var gridValidation = gridState[id].useValidator ? gridState[id].columns[field].validation : null,
+                dataAttributes = '';
 
             if (gridValidation) {
                 dataAttributes = setupCellValidation(gridValidation, dataAttributes);
@@ -1694,15 +1890,42 @@ var grid = (function _grid($) {
                 dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
             }
 
-            var select = $('<select class="input select active-cell"' + dataAttributes + '></select>').appendTo(cell);
-            var options = [];
-            var setVal = gridData.dataSource.data[index][field];
+            var select = $('<select class="input select active-cell"' + dataAttributes + '></select>').appendTo(cell),
+                options = [],
+                setVal = gridData.dataSource.data[index][field];
             if (null != setVal && '' !== setVal) options.push(setVal);
             for (var z = 0; z < gridData.columns[field].options.length; z++) {
-                if (setVal !== gridData.columns[field].options[z]) {
+                if (!compareValuesByType(setVal, gridData.columns[field].options[z], (gridData.columns[field].type || 'string'))) {
                     options.push(gridData.columns[field].options[z]);
                 }
             }
+            options.sort(function comparator(first, second) {
+                switch (gridData.columns[field].type || 'string') {
+                    case 'number':
+                        var firstNum = parseFloat(first.toString());
+                        var secondNum = parseFloat(second.toString());
+                        return firstNum > secondNum ?  1 : firstNum < secondNum ? -1 : 0;
+                    case 'string':
+                    case 'boolean':
+                        return first > second ? 1 : first < second ? -1 : 0;
+                    case 'time':
+                        var firstTime = getNumbersFromTime(first);
+                        var secondTime = getNumbersFromTime(second);
+
+                        if (~first.indexOf('PM'))
+                            firstTime[0] += 12;
+                        if (~second.indexOf('PM'))
+                            secondTime[0] += 12;
+
+                        firstTime = convertTimeArrayToSeconds(firstTime);
+                        secondTime = convertTimeArrayToSeconds(secondTime);
+                        return firstTime > secondTime ? 1 : firstTime < secondTime ? -1 : 0;
+                    case 'date':
+                        var firstDate = new Date(first);
+                        var secondDate = new Date(second);
+                        return firstDate > secondDate ? 1 : firstDate < secondDate ? -1 : 0;
+                }
+            });
             for (var k = 0; k < options.length; k++) {
                 var opt = $('<option value="' + options[k] + '">' + options[k] + '</option>');
                 select.append(opt);
@@ -1766,24 +1989,44 @@ var grid = (function _grid($) {
         var columnNames = {},
             name,
             columnList = [];
-        var tableDiv = gridElem.find('.grid-header-wrapper');
+        var tableDiv = gridElem.find('.grid-header-wrapper'),
+            totalColWidth = 0;
         for (name in gridData.columns) {
             if (!gridData.columns[name].isHidden) {
                 columnNames[name] = isNumber(gridData.columns[name].width) ? gridData.columns[name].width : null;
                 columnList.push(name);
+                totalColWidth += columnNames[name] || 0;
             }
         }
-        var colGroups = tableDiv.find('col');
 
-        colGroups.each(function iterateColsCallback(idx, val) {
-            var i = idx;
-            if (gridData.groupedBy && gridData.groupedBy.length) {
-                i = (idx%(colGroups.length/2)) - gridData.groupedBy.length;
+        /*if (gridData.parentGridId != null && totalColWidth > gridElem.parents('.drill-down-cell').width()) {
+         var parentGridColGroups = gridState[gridData.parentGridId].grid.find('colgroup'),
+         widthDiff = totalColWidth - (gridElem.parents('.drill-down-parent').width() - 27),
+         finalCols = $(parentGridColGroups[0]).find('col').last().add($(parentGridColGroups[1]).find('col').last());
+         finalCols.each(function extendLastColumn(idx, val) {
+         $(val).css('width', widthDiff);
+         });
+         }*/
+
+        var headerCols = tableDiv.find('col');
+
+        headerCols.each(function iterateColsCallback(idx, val) {
+            var i = idx,
+                numColPadders = 0,
+                isGroupAndOrDrill = (gridData.groupedBy && gridData.groupedBy.length) || gridData.drillDown;
+            if (isGroupAndOrDrill) {
+                numColPadders = gridData.drillDown ? 1 : 0;
+                numColPadders += gridData.groupedBy && gridData.groupedBy.length ? gridData.groupedBy.length : 0;
+                i = idx - numColPadders;
             }
-            if (gridData.groupedBy && gridData.groupedBy.length && idx < gridData.groupedBy.length) {
+            if (isGroupAndOrDrill && idx < numColPadders) {
                 $(val).css('width', 27);
             }
             else if (columnNames[columnList[i]] != null) {
+                if (idx === headerCols.length - 1 && totalColWidth < (tableDiv.find('table').width() + (numColPadders * 27) - 17) - columnNames[columnList[i]]) {
+                    return;
+                }
+                else
                     $(val).css('width', columnNames[columnList[i]]);
             }
         });
@@ -1852,10 +2095,14 @@ var grid = (function _grid($) {
         var gridContent = input.parents('.grid-wrapper').find('.grid-content-div'),
             cell = input.parents('td'),
             id = gridContent.data('grid_content_id'),
-            index = cell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
+            row = cell.parents('tr').first(),
+            index = gridState[id].grid.find('tr').filter(function removeGroupAndChildRows() {
+                var r =  $(this);
+                return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
+            }).index(row),
             field = cell.data('field'),
             type = gridState[id].columns[field].type || '',
-            saveVal, re,
+            saveVal, re, setDirtyFlag = false,
             formattedVal = getFormattedCellText(id, field, val),
             displayVal = formattedVal == null ? '' : formattedVal;
 
@@ -1864,7 +2111,12 @@ var grid = (function _grid($) {
             case 'number':
                 re = new RegExp(dataTypes.number);
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
+                if (typeof gridState[id].dataSource.data[index][field] === 'string') saveVal = val;
+                else {
+                    var tmpVal = parseFloat(val.replace(',', ''));
+                    tmpVal === tmpVal ? saveVal = tmpVal : saveVal = 0;
+                }
+                //saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
                 break;
             case 'date':
                 re = new RegExp(dataTypes.date);
@@ -1876,6 +2128,10 @@ var grid = (function _grid($) {
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
                 saveVal = displayVal;
                 break;
+            case 'boolean':
+                displayVal = val.toString();
+                saveVal = val;
+                break;
             default:
                 saveVal = val;
                 break;
@@ -1886,10 +2142,15 @@ var grid = (function _grid($) {
         var previousVal = gridState[id].dataSource.data[index][field];
         if (previousVal !== saveVal) {
             gridState[id].dataSource.data[index][field] = saveVal;
-            if ('' !== saveVal && previousVal != null)
-                cell.prepend('<span class="dirty"></span>');
-            else if (previousVal != null)
-                cell.prepend('<span class="dirty-blank"></span>');
+            if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
+                setDirtyFlag = true;
+                if ('' !== saveVal) cell.prepend('<span class="dirty"></span>');
+                else if (previousVal != null) cell.prepend('<span class="dirty-blank"></span>');
+            }
+        }
+        if (!setDirtyFlag && cell.data('dirty')) {
+            if ('' !== saveVal) cell.prepend('<span class="dirty"></span>');
+            else cell.prepend('<span class="dirty-blank"></span>');
         }
         callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
@@ -1909,11 +2170,15 @@ var grid = (function _grid($) {
             parentCell = select.parents('td');
         select.remove();
         var id = gridContent.data('grid_content_id'),
-            index = parentCell.parents('tr').index('#' + gridContent[0].id + ' .data-row'),
+            row = parentCell.parents('tr').first(),
+            index = gridState[id].grid.find('tr').filter(function removeGroupAndChildRows() {
+                var r =  $(this);
+                return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
+            }).index(row),
             field = parentCell.data('field'),
             type = gridState[id].columns[field].type || '',
             displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field],
-            re, saveVal;
+            re, saveVal, setDirtyFlag = false;
 
         switch (type) {
             case 'number':
@@ -1929,16 +2194,24 @@ var grid = (function _grid($) {
                 if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
                 saveVal = displayVal;   //this and date are the only types that have the same displayVal and saveVal
                 break;
-            default: 		//string, boolean
+            default:        //string, boolean
                 saveVal = val;
                 break;
         }
 
         parentCell.text(displayVal);
         var previousVal = gridState[id].dataSource.data[index][field];
-        if (previousVal !== saveVal) {	//if the value didn't change, don't "save" the new val, and don't apply the "dirty" span
-            parentCell.prepend('<span class="dirty"></span>');
+        if (previousVal !== saveVal) {  //if the value didn't change, don't "save" the new val, and don't apply the "dirty" span
             gridState[id].dataSource.data[index][field] = saveVal;
+            if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
+                parentCell.prepend('<span class="dirty"></span>');
+                setDirtyFlag = true;
+            }
+            gridState[id].dataSource.data[index][field] = saveVal;
+        }
+        if (!setDirtyFlag && parentCell.data('dirty')) {
+            if ('' !== saveVal) parentCell.prepend('<span class="dirty"></span>');
+            else parentCell.prepend('<span class="dirty-blank"></span>');
         }
         callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
     }
@@ -1952,36 +2225,47 @@ var grid = (function _grid($) {
      */
     function createGridToolbar(gridData, gridElem, canEdit) {
         var id = gridElem.find('.grid-wrapper').data('grid_id');
-        if ($('#grid_' + id + '_toolbar').length) return;	//if the toolbar has already been created, don't create it again.
+        if ($('#grid_' + id + '_toolbar').length) return;   //if the toolbar has already been created, don't create it again.
 
-        if (gridData.groupable) {
-            var groupMenuBar = $('<div id="grid_' + id + 'group_div" class="group_div clearfix" data-grid_id="' + id + '">' + groupMenuText + '</div>').prependTo(gridElem);
+        if (typeof gridData.parentGridId !== 'number' && gridData.groupable) {
+            var groupMenuBar = $('<div id="grid_' + id + '_group_div" class="group_div clearfix" data-grid_id="' + id + '">' + groupMenuText + '</div>').prependTo(gridElem);
             groupMenuBar.on('drop', function handleDropCallback(e) {
                 //TODO: figure out why debugging this in the browser causes two server requests to be made;
                 //TODO: 1 to get the grouped data that fails, and a second call when the page reloads for no apparent reason
                 var droppedCol = $('#' + e.originalEvent.dataTransfer.getData('text'));
-                var groupId = $(e.currentTarget).data('grid_id');
-                var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
+                droppedCol.data('dragging', false);
+                var dropIndicator = $('#drop_indicator_id_' + id);
+                dropIndicator.css('display', 'none');
+                var groupId = $(e.currentTarget).data('grid_id'),
+                    droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null,
+                    groupedItems = {};
                 if (groupId == null || droppedId == null || groupId !== droppedId) return;
-                if (gridState[id].updating) return;		//can't group columns if grid is updating
+                if (gridState[id].updating) return;     //can't group columns if grid is updating
                 if (!groupMenuBar.children().length) groupMenuBar.text('');
                 var field = droppedCol.data('field'),
                     title = gridState[groupId].columns[field].title || field,
                     foundDupe = false;
 
                 groupMenuBar.find('.group_item').each(function iterateGroupItemsCallback(idx, val) {
-                    if ($(val).data('field') === field) {
+                    var item = $(val);
+                    groupedItems[item.data('field')] = item;
+                    if (item.data('field') === field) {
                         foundDupe = true;
                         return false;
                     }
                 });
                 if (foundDupe) return;  //can't group on the same column twice
 
-                var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>').appendTo(groupMenuBar),
+                droppedCol.data('grouped', true);
+                var groupItem = $('<div class="group_item" data-grid_id="' + groupId + '" data-field="' + field + '"></div>'),//.appendTo(groupMenuBar),
                     groupDirSpan = $('<span class="group_sort"></span>').appendTo(groupItem);
                 groupDirSpan.append('<span class="sort-asc-white groupSortSpan"></span>').append('<span>' + title + '</span>');
                 var cancelButton = $('<span class="remove"></span>').appendTo(groupItem),
                     groupings = [];
+
+                if (dropIndicator.data('field')) groupItem.insertBefore(groupedItems[dropIndicator.data('field')]);
+                else groupItem.appendTo(groupMenuBar);
+
                 groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
                     var item = $(val);
                     groupings.push({
@@ -2015,6 +2299,51 @@ var grid = (function _grid($) {
             });
             groupMenuBar.on('dragover', function handleHeaderDragOverCallback(e) {
                 e.preventDefault();
+                var gridId = groupMenuBar.data('grid_id');
+                var dropIndicator = $('#drop_indicator_id_' + gridId);
+                //TODO: I believe I can just reuse the existing group indicator, but I may need to change where it lives as a child of the grid
+                if (!dropIndicator.length) {
+                    dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator" data-grid_id="' + gridId + '"></div>');
+                    dropIndicator.append('<span class="drop-indicator-top"></span><span class="drop-indicator-bottom"></span>');
+                    gridState[gridId].grid.append(dropIndicator);
+                }
+
+                var groupedItems = groupMenuBar.find('.group_item');
+                if (groupedItems.length) {
+                    var placedIndicator = false;
+
+                    groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
+                        var groupItem = $(val);
+                        var groupItemOffset = groupItem.offset();
+                        if (groupItemOffset.left < e.originalEvent.x && groupItemOffset.left + groupItem.width() > e.originalEvent.x) {
+                            dropIndicator.css('left', groupItemOffset.left);
+                            dropIndicator.css('top', groupItemOffset.top);
+                            dropIndicator.css('height', groupItem.outerHeight());
+                            dropIndicator.data('field', groupItem.data('field'));
+                            placedIndicator = true;
+                            return false;
+                        }
+                    });
+
+                    if (!placedIndicator) {
+                        var lastItem = groupMenuBar.find('.group_item').last();
+                        dropIndicator.css('left', lastItem.offset().left + lastItem.outerWidth());
+                        dropIndicator.css('top', lastItem.offset().top);
+                        dropIndicator.css('height', lastItem.outerHeight());
+                        dropIndicator.data('field', '');
+                    }
+                }
+                else {
+                    dropIndicator.css('height', groupMenuBar.outerHeight());
+                    dropIndicator.css('left', groupMenuBar.offset().left);
+                    dropIndicator.css('top', groupMenuBar.offset().top);
+                }
+                dropIndicator.css('display', 'block');
+            });
+
+            groupMenuBar.on('dragexit', function handleHeaderDragOverCallback(e) {
+                e.preventDefault();
+                $('#drop_indicator_id_' + groupMenuBar.data('grid_id')).css('display', 'none');
             });
         }
 
@@ -2050,7 +2379,7 @@ var grid = (function _grid($) {
                 id = groupElem.parents('.group_item').data('grid_id'),
                 sortSpan = groupElem.children('.groupSortSpan'),
                 groupElements = [];
-            if (gridState[id].updating) return;		//can't resort columns if grid is updating
+            if (gridState[id].updating) return;     //can't resort columns if grid is updating
             if (sortSpan.hasClass('sort-asc-white')) sortSpan.removeClass('sort-asc-white').addClass('sort-desc-white');
             else sortSpan.removeClass('sort-desc-white').addClass('sort-asc-white');
             groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
@@ -2070,7 +2399,7 @@ var grid = (function _grid($) {
                 groupedCol = groupElem.parents('.group_item'),
                 id = groupedCol.data('grid_id'),
                 groupElements = [];
-            if (gridState[id].updating) return;		//can't resort columns if grid is updating
+            if (gridState[id].updating) return;     //can't resort columns if grid is updating
             gridState[id].grid.find('colgroup').first().children().first().remove();
             gridState[id].grid.find('.grid-headerRow').children('.group_spacer').first().remove();
             gridState[id].grid.find('.summary-row-header').children('.group_spacer').first().remove();
@@ -2082,6 +2411,7 @@ var grid = (function _grid($) {
                     sortDirection: item.find('.groupSortSpan').hasClass('sort-asc-white') ? 'asc' : 'desc'
                 });
             });
+            gridState[id].grid.find('.grid-header-div').find('th [data-field="' + groupElem.data('field') + '"]').data('grouped', false);
             if (!groupElements.length) groupMenuBar.text(groupMenuText);
             gridState[id].groupedBy = groupElements;
             gridState[id].pageRequest.eventType = 'group';
@@ -2098,6 +2428,7 @@ var grid = (function _grid($) {
      */
     function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
         saveAnchor.on('click', function saveChangesHandler(e) {
+            e.preventDefault();
             if (gridState[id].updating) return;
             var gridMenu = $(e.currentTarget).parents('.grid_menu');
             if (gridMenu.length)
@@ -2113,7 +2444,7 @@ var grid = (function _grid($) {
                     for (i = 0; i < dirtyCells.length; i++) {
                         var index = dirtyCells[i].parents('tr').index();
                         var field = dirtyCells[i].data('field');
-                        var origIndex = gridState[id].dataSource.data[index][field]._initialRowIndex;
+                        var origIndex = gridState[id].dataSource.data[index]._initialRowIndex;
                         gridState[id].originalData[origIndex][field] = gridState[id].dataSource.data[index][field];
                         dirtyCells[i].find('.dirty').add('.dirty-blank').remove();
                     }
@@ -2143,6 +2474,7 @@ var grid = (function _grid($) {
         });
 
         deleteAnchor.on('click', function deleteChangeHandler(e) {
+            e.preventDefault();
             if (gridState[id].updating) return;
             var gridMenu = $(e.currentTarget).parents('.grid_menu');
             if (gridMenu.length)
@@ -2176,7 +2508,7 @@ var grid = (function _grid($) {
      */
     function attachMenuClickHandler(menuAnchor, gridId) {
         menuAnchor.on('click', function menuAnchorClickHandler(e) {
-            e.stopPropagation();	//stop event bubbling so that the click won't bubble to document click handler
+            e.stopPropagation();    //stop event bubbling so that the click won't bubble to document click handler
             e.preventDefault();
             var menu = gridState[gridId].grid.find('#menu_model_grid_id_' + gridId),
                 newMenu;
@@ -2187,18 +2519,26 @@ var grid = (function _grid($) {
                     newMenu.append($('<ul class="menu-list"></ul>').append(createSaveDeleteMenuItems(gridId)));
                 }
                 if (gridState[gridId].columnToggle) {
-                    newMenu.append($('<hr/>'));
+                    if (newMenu.children().length)
+                        newMenu.append($('<hr/>'));
                     newMenu.append(createColumnToggleMenuOptions(newMenu, gridId));
                 }
                 if (gridState[gridId].sortable || gridState[gridId].filterable || gridState[gridId].selectable || gridState[gridId].groupable) {
-                    newMenu.append($('<hr/>'));
+                    if (newMenu.children().length)
+                        newMenu.append($('<hr/>'));
                     if (gridState[gridId].sortable) newMenu.append($('<ul class="menu-list"></ul>').append(createSortMenuItem()));
-                    if (gridState[gridId].filterable) newMenu.append($('<ul class="menu-list"></ul>').append(createFilterMenuItems()));
+                    if (gridState[gridId].filterable) {
+                        newMenu.append($('<ul class="menu-list"></ul>').append(createFilterMenuItems()));
+                        if (gridState[gridId].advancedFiltering) {
+                            newMenu.append($('<ul class="menu-list"></ul>').append(createFilterModalMenuItem(gridId)));
+                        }
+                    }
                     if (gridState[gridId].groupable) newMenu.append($('<ul class="menu-list"></ul>').append(createGroupMenuItem()));
                     if (gridState[gridId].selectable) newMenu.append($('<ul class="menu-list"></ul>').append(createDeselectMenuOption(gridId)));
                 }
                 if (gridState[gridId].excelExport) {
-                    newMenu.append($('<hr/>'));
+                    if (newMenu.children().length)
+                        newMenu.append($('<hr/>'));
                     newMenu.append(createExcelExportMenuItems(newMenu, gridId));
                 }
                 gridState[gridId].grid.append(newMenu);
@@ -2206,11 +2546,16 @@ var grid = (function _grid($) {
                     var elem = $(e.target);
                     if (!elem.hasClass('grid_menu') && !elem.hasClass('menu_item_options')) {
                         if (!elem.parents('.grid_menu').length && !elem.parents('.menu_item_options').length) {
-                            var gridMenu = $('.grid_menu');
-                            gridMenu.addClass('hiddenMenu');
+                            gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
                             gridState[gridId].grid.find('.menu_item_options').css('display', 'none');
                         }
                     }
+                });
+
+                $(document).on('scroll', function adjustMenuHandler() {
+                    var scrollMenuAnchorOffset = menuAnchor.offset();
+                    newMenu.css('top', (scrollMenuAnchorOffset.top - $(window).scrollTop()));
+                    newMenu.css('left', (scrollMenuAnchorOffset.left - $(window).scrollLeft()));
                 });
             }
             else {
@@ -2239,17 +2584,19 @@ var grid = (function _grid($) {
             if (!exportOptions.length) {
                 exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '" style="display: none;"></div>');
                 var exportList = $('<ul class="menu-list"></ul>');
-                var gridPage = $('<li data-value="page" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
-                var allData = $('<li data-value="all" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
-                exportList.append(gridPage).append(allData);
-                if (gridState[gridId].selectable) {
-                    var gridSelection = $('<li data-value="select" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
-                    exportList.append(gridSelection);
+                if (gridState[gridId].dataSource.rowCount <= gridState[gridId].pageSize)
+                    exportList.append('<li data-value="page" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
+                exportList.append('<li data-value="all" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
+                if (gridState[gridId].selectable && gridState[gridId].grid.find('.selected').length) {
+                    exportList.append('<li data-value="select" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
                 }
                 var options = exportList.find('li');
                 options.on('click', function excelExportItemClickHandler() {
                     exportDataAsExcelFile(gridId, this.dataset.value);
                     gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
+                    toggle(exportOptions, {duration: 20, callback: function checkForMouseOver() {
+
+                    }});
                 });
                 exportOptions.append(exportList);
                 gridState[gridId].grid.append(exportOptions);
@@ -2261,9 +2608,7 @@ var grid = (function _grid($) {
                     newMenuOffset = menu.offset();
                 exportOptions.css('top', (groupAnchorOffset.top - 3 - $(window).scrollTop()));
                 exportOptions.css('left', newMenuOffset.left + (menu.outerWidth() - exportOptions.outerWidth()));
-                toggle(exportOptions, {duration: 200, callback: function checkForMouseOver() {
-
-                }});
+                toggle(exportOptions, {duration: 200, callback: function checkForMouseOver() {}});
             }
         });
         menuList.on('mouseleave', function excelMenuItemHoverHandler(evt) {
@@ -2305,7 +2650,7 @@ var grid = (function _grid($) {
 
     function createSortMenuItem() {
         var sortMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove All Column Sorts</a>'));
-        sortMenuItem.on('click', RemoveAllColumnSorts);
+        sortMenuItem.on('click', removeAllColumnSorts);
         return sortMenuItem;
     }
 
@@ -2315,24 +2660,361 @@ var grid = (function _grid($) {
         return filterMenuItem;
     }
 
-    function RemoveAllColumnSorts(e) {
+    //TODO: break this out into smaller, separate functions
+    function createFilterModalMenuItem(gridId) {
+        var filterModalMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Advanced Filters</a>'));
+        filterModalMenuItem.on('click', function openAdvancedFilterModal(e) {
+            e.stopPropagation();
+            var advancedFiltersModal = gridState[gridId].grid.find('.filter_modal');
+            if (!advancedFiltersModal.length) {
+                var toolbarHeight = gridState[gridId].grid.find('.toolbar').height(),
+                    groupHeight = gridState[gridId].grid.find('.group_div').height(),
+                    wrapperHeight = gridState[gridId].grid.find('.grid-wrapper').length ? gridState[gridId].grid.find('.grid-wrapper').height() : 0;
+
+                advancedFiltersModal = $('<div class="filter_modal" data-grid_id="' + gridId + '">').css('max-height', wrapperHeight + toolbarHeight + groupHeight - 3);
+                var groupSelector = '<select class="input group_conjunction"><option value="and">All</option><option value="or">Any</option></select> of the following:</span>';
+                advancedFiltersModal.append('<span class="group-select" data-filter_group_num="1">Match' + groupSelector);
+                var advancedFiltersContainer = $('<div class="filter_group_container" data-filter_group_num="1"></div>').appendTo(advancedFiltersModal);
+                addNewAdvancedFilter(advancedFiltersContainer, true /* isFirstFilter */);
+
+                $(document).on('click', function hideFilterModalHandler(e) {
+                    var ct = $(e.target);
+                    if (!ct.hasClass('filter_modal') && !ct.parents('.filter_modal').length) {
+                        var filterModal = gridState[gridId].grid.find('.filter_modal');
+                        filterModal.find('.advanced_filter_value')
+                            .filter(':disabled').add('.invalid-grid-input').each(function removeEmptyFilters(idx, val) {
+                            var filterVal = $(val);
+                            var filterRow = filterVal.parent('.filter_row_div');
+                            if (filterVal.data('type') === 'boolean' && filterRow.children('.filterType').val() !== null)
+                                return true;
+                            else if (filterRow.data('filter_idx') === 1) {
+                                if (filterVal.hasClass('invalid-grid-input')) {
+                                    filterVal.removeClass('invalid-grid-input');
+                                    filterModal.find('span[data-filter_idx="' + filterModal.data('filter_idx') + '"]').remove();
+                                    filterVal.val('');
+                                    var columnSelector = filterRow.children('.filter_column_selector');
+                                    columnSelector.find('option').remove();
+                                    columnSelector.append('<option value="">Select a column</option>');
+                                    for (var column in gridState[gridId].columns) {
+                                        var curCol = gridState[gridId].columns[column];
+                                        if (curCol.filterable) {
+                                            columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
+                                        }
+                                    }
+                                    filterVal.prop('disabled', true);
+                                    filterRow.children('.filterType').prop('disabled', true).find('option').remove();
+                                }
+                                return true;
+                            }
+                            else
+                                filterRow.remove();
+                        });
+
+                        filterModal.find('.filter_group_container').each(function removeEmptyFilterGroups(idx, val) {
+                            var filterGrp = $(val);
+                            if (!filterGrp.children('.filter_row_div').length) {
+                                var filterGrpNum = filterGrp.data('filter_group_num');
+                                filterModal.find('span[data-filter_group_num="' + filterGrpNum + '"]').remove();
+                                filterGrp.remove();
+                            }
+                        });
+
+                        filterModal.css('display', 'none');
+                    }
+                    else e.stopPropagation();
+                });
+
+                var applyFiltersButton = $('<input type="button" value="Apply Filter(s)" class="advanced_filters_button"/>').appendTo(advancedFiltersModal);
+                applyFiltersButton.on('click', function applyAdvancedFiltersHandler() {
+                    if (gridState[gridId].updating) return;     //can't filter if grid is updating
+                    gridState[gridId].grid.find('filterInput').val('');
+
+                    advancedFiltersModal.find('.advanced_filter_value').each(function checkFilterValuesForValidContent(idx, val) {
+                        var currValue = $(val),
+                            dataType = currValue.data('type');
+                        if (dataType) {
+                            var parentDiv = currValue.parent('.filter_row_div'),
+                                parentIdx = parentDiv.data('filter_idx');
+                            if (dataTypes[dataType]) {
+                                var re = new RegExp(dataTypes[dataType]);
+                                if (!re.test(currValue.val()) && !parentDiv.find('.filter_error_span').length) {
+                                    currValue.addClass('invalid-grid-input');
+                                    if (!parentDiv.find('span[data-filter_idx="' + parentIdx + '"]').length) {
+                                        var errorSpan = $('<span class="filter_error_span hidden_error" data-filter_idx="' + parentIdx + '">Invalid ' + dataType + '</span>');
+                                        parentDiv.append(errorSpan);
+                                        errorSpan.css('top', parentDiv.offset().top / 2);
+                                        errorSpan.css('left', parentDiv.width() - errorSpan.width());
+                                    }
+                                }
+                                else {
+                                    parentDiv.find('.filter_error_span').remove();
+                                    currValue.removeClass('invalid-grid-input');
+                                }
+                            }
+                            if (currValue.val() === '' && currValue.data('type') !== 'boolean') {
+                                parentDiv.remove();
+                                var filterGrp = currValue.parents('.filter_group_container');
+                                //If no child filters (regardless of how nested they may be) are found inside the group, remove the entire group
+                                if (!filterGrp.find('.filter_row_div').length) {
+                                    advancedFiltersModal.find('span[data-filter_group_num="' + filterGrp.data('filter_group_num') + '"]').remove();
+                                    filterGrp.remove();
+                                }
+                            }
+                        }
+                    });
+
+                    if (advancedFiltersModal.find('.filter_error_span').length) return;
+
+                    var advancedFilters = {};
+                    createFilterGroups(advancedFiltersContainer, advancedFilters);
+                    if (advancedFilters.filterGroup.length) {
+                        gridState[gridId].filters = advancedFilters;
+                        gridState[gridId].advancedFilters = advancedFilters;
+                        gridState[gridId].basicFilters.filterGroup = [];
+
+                        advancedFiltersModal.css('display', 'none');
+                        gridState[gridId].pageRequest.eventType = 'filter-add';
+                        preparePageDataGetRequest(gridId);
+                    }
+                });
+                gridState[gridId].grid.append(advancedFiltersModal);
+            }
+            else advancedFiltersModal.css('display', 'block');
+
+            var gridOffset = gridState[gridId].grid.offset(),
+                gridWidth = gridState[gridId].grid.width(),
+                toolbarOffset = gridState[gridId].grid.find('.toolbar').offset();
+
+            var leftLoc = gridOffset.left - (advancedFiltersModal.outerWidth() / 2) + (gridWidth / 2);
+            advancedFiltersModal.css('top', toolbarOffset.top).css('left', leftLoc);
+            gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
+        });
+        return filterModalMenuItem;
+    }
+
+    function createFilterGroups(groupContainer, filterObject) {
+        var groupConjunct = groupContainer.parents('.filter_modal').find('span[data-filter_group_num="' + groupContainer.data('filter_group_num') + '"]').children('select');
+        filterObject.filterGroup = [];
+        filterObject.conjunct = groupConjunct.val();
+        findFilters(groupContainer, filterObject);
+    }
+
+    function findFilters(groupContainer, filterObject) {
+        var gridId = groupContainer.parents('.filter_modal').data('grid_id');
+        groupContainer.children('.filter_row_div').each(function iterateFilterDivsCallback() {
+            createFilterObjects($(this), filterObject.filterGroup, gridId);
+        });
+
+        groupContainer.children('.filter_group_container').each(function createNestedFilterGroupsCallback(idx, val) {
+            var nestedGroup = {};
+            filterObject.filterGroup.push(nestedGroup);
+            createFilterGroups($(val), nestedGroup);
+        });
+    }
+
+    function createFilterObjects(filterDiv, filterGroupArr, gridId) {
+        var field = filterDiv.find('.filter_column_selector').val(),
+            operation, value,
+            filterType = filterDiv.find('.filterType').val();
+        if (filterType !== 'false' && filterType !== 'true') {
+            operation = filterType;
+            value = filterDiv.find('.advanced_filter_value').val();
+        }
+        else {
+            operation = 'eq';
+            value = filterType;
+        }
+
+        if (value) {
+            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || 'string') });
+            //filterGroupArr.push({ field, value, operation, dataType: (gridState[gridId].columns[field].type || 'string') });
+        }
+    }
+
+    function addFilterButtonHandler(e) {
+        var filterModal = $(e.currentTarget).parents('.filter_modal'),
+            gridId = filterModal.data('grid_id'),
+            numFiltersAllowed = gridState[gridId].numColumns;
+        if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.filtersCount === 'number')
+            numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
+
+        if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
+        else if (filterModal.find('.filter_row_div').length === numFiltersAllowed - 1) filterModal.find('.add_filter_group').prop('disabled', true);
+
+        addNewAdvancedFilter($(e.currentTarget).closest('.filter_group_container'), false /* isFirstFilter */);
+    }
+
+    function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
+        var gridId = advancedFiltersContainer.parents('.filter_modal').data('grid_id'),
+            filterRowIdx = getFilterRowIdx(advancedFiltersContainer.parents('.filter_modal')),
+            filterRowDiv = $('<div class="filter_row_div" data-filter_idx="' + filterRowIdx + '"></div>');
+        isFirstFilter ? advancedFiltersContainer.append(filterRowDiv) : advancedFiltersContainer.children('.filter_row_div').last().after(filterRowDiv);
+
+        var columnSelector = $('<select class="input filter_column_selector"></select>').appendTo(filterRowDiv);
+        columnSelector.addClass('select');
+        columnSelector.append('<option value="">Select a column</option>');
+        for (var column in gridState[gridId].columns) {
+            var curCol = gridState[gridId].columns[column];
+            if (curCol.filterable) {
+                columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
+            }
+        }
+
+        var filterTypeSelector = $('<select class="input select filterType" disabled></select>').appendTo(filterRowDiv);
+        var filterValue = $('<input type="text" class="advanced_filter_value" disabled />');
+        filterValue.appendTo(filterRowDiv);
+        filterValue.on('keypress', function validateFilterValueHandler(e) {
+            var code = e.charCode? e.charCode : e.keyCode,
+                type = $(this).data('type');
+            if (!validateCharacter.call(this, code, type)) {
+                e.preventDefault();
+                return false;
+            }
+        })
+            .on('mouseover', function displayErrorMessageHandler() {
+                filterRowDiv.find('span[data-filter_idx="' + filterRowDiv.data('filter_idx') + '"]').removeClass('hidden_error');
+            })
+            .on('mouseout', function hideErrorMessageHandler() {
+                filterRowDiv.find('span[data-filter_idx="' + filterRowDiv.data('filter_idx') + '"]').addClass('hidden_error');
+            });
+
+        var deleteHandler = isFirstFilter ? clearFirstFilterButtonHandler : deleteFilterButtonHandler;
+
+        $('<input type="button" value="X" class="filter_row_button"/>').appendTo(filterRowDiv).on('click', deleteHandler);
+
+        if (!isFirstFilter) {
+            var addNewFilterButton = filterRowDiv.prev().find('.new_filter'),
+                addFilterGroup = filterRowDiv.prev().find('.add_filter_group');
+            addNewFilterButton.detach();
+            addFilterGroup.detach();
+            filterRowDiv.append(addNewFilterButton).append(addFilterGroup);
+        }
+        else {
+            $('<input type="button" value="+" class="filter_row_button new_filter"/>')
+                .appendTo(filterRowDiv)
+                .on('click', addFilterButtonHandler);
+
+            $('<input type="button" value="+ Group" class="advanced_filters_button add_filter_group"/>')
+                .appendTo(filterRowDiv)
+                .on('click', addFilterGroupHandler);
+        }
+
+        columnSelector.on('change', function columnSelectorCallback() {
+            filterTypeSelector.find('option').remove();
+            filterTypeSelector.prop('disabled', false);
+            filterRowDiv.find('.advanced_filter_value').val('');
+            createFilterOptionsByDataType(filterTypeSelector, gridState[gridId].columns[columnSelector.val()].type || 'string');
+
+            if (gridState[gridId].columns[columnSelector.val()].type !== 'boolean')
+                filterValue.prop('disabled', false);
+            else
+                filterValue.prop('disabled', true);
+            filterValue.data('type', (gridState[gridId].columns[columnSelector.val()].type || 'string'));
+        });
+    }
+
+    function addFilterGroupHandler() {
+        var numGroupsAllowed = 0,
+            filterModal = $(this).parents('.filter_modal'),
+            gridId = filterModal.data('grid_id'),
+            filterGroups = filterModal.find('.filter_group_container'),
+            parentGroup = $(this).parents('.filter_group_container').first(),
+            filterGroupCount = filterGroups.length,
+            numFiltersAllowed = gridState[gridId].numColumns;
+        if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.groupsCount === 'number')
+            numGroupsAllowed = gridState[gridId].advancedFiltering.groupsCount;
+        else numGroupsAllowed = 3;
+
+        if (filterGroupCount >= numGroupsAllowed) return;
+        else if (filterGroupCount === numGroupsAllowed - 1)
+            filterModal.find('.add_filter_group').prop('disabled', true);
+
+        if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.filtersCount === 'number')
+            numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
+
+        if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
+        else if (filterModal.find('.filter_row_div').length === numFiltersAllowed - 1) filterModal.find('.add_filter_group').prop('disabled', true);
+
+        var previousGroupNum = parseInt(filterGroups.last().data('filter_group_num'));
+
+        var groupSelector = '<select class="input group_conjunction"><option value="and">All</option><option value="or">Any</option></select> of the following:</span>';
+        parentGroup.append('<span class="group-select" data-filter_group_num="' + (previousGroupNum + 1) + '">Match' + groupSelector);
+
+        var filterGroupContainer = $('<div class="filter_group_container" data-filter_group_num="' + (previousGroupNum + 1) + '"></div>');
+        parentGroup.append(filterGroupContainer);
+        var removeGroup = $('<span class="remove_filter_group"></span>')
+            .on('click', function closeFilterGroupHandler(e) {
+                var filterContainerGroup = $(e.currentTarget).closest('.filter_group_container');
+                filterContainerGroup.prev('.group-select').remove();
+                filterContainerGroup.remove();
+
+                if (filterModal.find('.group_conjunction').length < numGroupsAllowed)
+                    filterModal.find('.add_filter_group').prop('disabled', false);
+                e.stopPropagation();
+            })
+            .data('filter_group_num', filterGroupCount + 1)
+            .css('left', (filterGroupContainer.outerWidth()));
+        filterGroupContainer.append(removeGroup).append('</br>');
+        addNewAdvancedFilter(filterGroupContainer, true /* isFirstFilter */);
+    }
+
+    function deleteFilterButtonHandler(e) {
+        var filterRowDiv = $(e.currentTarget).parents('.filter_row_div'),
+            addNewFilterButton = filterRowDiv.find('.new_filter'),
+            filterModal = $(e.currentTarget).parents('.filter_modal');
+        if (addNewFilterButton.length) {
+            filterRowDiv.prev().append(addNewFilterButton.detach());
+        }
+        filterRowDiv.remove();
+
+        var gridId = filterModal.data('grid_id'),
+            numFilters = filterModal.find('.filter_row_div').length,
+            allowedFilters = gridState[gridId].numColumns;
+        if (typeof gridState[gridId].advancedFiltering === 'object'&& typeof gridState[gridId].advancedFiltering.filtersCount === 'number')
+            allowedFilters = gridState[gridId].advancedFiltering.filtersCount;
+        if (allowedFilters > numFilters)
+            filterModal.find('.add_filter_group').prop('disabled', false);
+    }
+
+    function clearFirstFilterButtonHandler(e) {
+        var filterRowDiv = $(e.currentTarget).parents('.filter_row_div'),
+            columnSelector = filterRowDiv.find('.filter_column_selector'),
+            gridId = filterRowDiv.parents('.filter_modal').data('grid_id');
+        columnSelector.find('option').remove();
+        columnSelector.append('<option value="">Select a column</option>');
+        for (var column in gridState[gridId].columns) {
+            var curCol = gridState[gridId].columns[column];
+            if (curCol.filterable) {
+                columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
+            }
+        }
+        filterRowDiv.find('.filterType').prop('disabled', true).find('option').remove();
+        filterRowDiv.find('.advanced_filter_value').val('').prop('disabled', true);
+    }
+
+    function getFilterRowIdx(filterModal) {
+        return filterModal.find('.filter_row_div').length ? filterModal.find('.filter_row_div').last().data('filter_idx') + 1 : 1;
+    }
+
+    function removeAllColumnSorts(e) {
         var gridMenu = $(e.currentTarget).parents('.grid_menu'),
             gridId = gridMenu.data('grid_id');
         $('.grid_menu').addClass('hiddenMenu');
 
-        gridState[gridId].find('.sortSpan').remove();
+        gridState[gridId].grid.find('.sortSpan').remove();
         gridState[gridId].sortedOn = [];
         gridState[gridId].pageRequest.eventType = 'sort';
         preparePageDataGetRequest(gridId);
+        e.preventDefault();
     }
 
     function createGroupMenuItem() {
         var groupMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove All Column Grouping</a>'));
-        groupMenuItem.on('click', RemoveAllColumnGrouping);
+        groupMenuItem.on('click', removeAllColumnGrouping);
         return groupMenuItem;
     }
 
-    function RemoveAllColumnGrouping(e) {
+    function removeAllColumnGrouping(e) {
         var gridMenu = $(e.currentTarget).parents('.grid_menu'),
             gridId = gridMenu.data('grid_id');
         $('.grid_menu').addClass('hiddenMenu');
@@ -2344,13 +3026,13 @@ var grid = (function _grid($) {
         for (var i = 0; i < groupItemsCount; i++) {
             headerColGroup.children().first().remove();
         }
-        gridState[gridId].grid.find('colgroup').first().children().first().remove();
         gridState[gridId].grid.find('.grid-headerRow').children('.group_spacer').remove();
         gridState[gridId].grid.find('.summary-row-header').children('.group_spacer').remove();
         gridState[gridId].grid.find('.group_div').text(groupMenuText);
         gridState[gridId].groupedBy = [];
         gridState[gridId].pageRequest.eventType = 'group';
         preparePageDataGetRequest(gridId);
+        e.preventDefault();
     }
 
     function createColumnToggleMenuOptions(menu, gridId) {
@@ -2417,9 +3099,9 @@ var grid = (function _grid($) {
     function createGridFooter(gridData, gridElem) {
         var gridFooter = gridElem.find('.grid-footer-div');
         var id = gridFooter.data('grid_footer_id');
-        var count = gridState[id].dataSource.rowCount;
+        var count = gridState[id].dataSource.rowCount || 0;
         var displayedRows = (count - gridState[id].pageSize) > 0 ? gridState[id].pageSize : count;
-        var totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 0;
+        var totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1;
         var pageNum = gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum;
 
         var first = $('<a href="#" class="grid-page-link" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridFooter);
@@ -2453,18 +3135,19 @@ var grid = (function _grid($) {
                 sizeSelectorSpan.appendTo(gridFooter);
                 sizeSelect.appendTo(sizeSelectorSpan);
             }
-            sizeSelect.val(gridState[id].pageSize);
+            sizeSelect.val(~pageOptions.indexOf(gridState[id].pageSize) ? gridState[id].pageSize : pageOptions[0]);
             sizeSelectorSpan.append('Rows per page');
 
-            sizeSelect.on('change', function pageSizeSelectorClickHandler() {
+            sizeSelect.on('change', function pageSizeSelectorClickHandler(e) {
                 var pageSize = $(this).val();
                 gridState[id].pageRequest.pageSize = parseInt(pageSize);
                 gridState[id].pageRequest.eventType = 'pageSize';
                 preparePageDataGetRequest(id);
+                e.preventDefault();
             });
         }
 
-        var rowStart = 1 + (displayedRows * (pageNum - 1));
+        var rowStart = displayedRows ? (1 + (displayedRows * (pageNum - 1))) : 0;
         var rowEnd = gridData.dataSource.rowCount < gridData.pageSize * pageNum ? gridData.dataSource.rowCount : gridData.pageSize * pageNum;
         text = rowStart + ' - ' + rowEnd + ' of ' + count + ' rows';
         gridFooter.append('<span class="pageinfo">' + text + '</span>');
@@ -2481,13 +3164,13 @@ var grid = (function _grid($) {
             $(val).on('click', function gridFooterAnchorClickHandlerCallback(e) {
                 e.preventDefault();
                 var link = e.currentTarget.tagName === 'A' ? $(e.currentTarget) : $(e.srcElement).parents('.grid-page-link');
-                if (link.hasClass('link-disabled')) {	//If the pager link that was clicked on is disabled, return.
+                if (link.hasClass('link-disabled')) {   //If the pager link that was clicked on is disabled, return.
                     return;
                 }
                 var gridFooter = link.parents('.grid-footer-div');
                 var allPagers = gridFooter.find('a');
                 var id = parseInt(link.parents('.grid-wrapper')[0].dataset.grid_id);
-                if (gridState[id].updating) return;		//can't page if grid is updating
+                if (gridState[id].updating) return;     //can't page if grid is updating
                 var gridData = gridState[id];
                 var pageSize = gridData.pageSize;
                 var pagerInfo = gridFooter.find('.pageinfo');
@@ -2548,14 +3231,14 @@ var grid = (function _grid($) {
      */
     function attachFilterListener(filterElem) {
         filterElem.on('click', function filterClickCallback(e) {
-            e.stopPropagation();	//stop event bubbling so that the column won't also get sorted when the filter icon is clicked.
+            e.stopPropagation();    //stop event bubbling so that the column won't also get sorted when the filter icon is clicked.
             e.preventDefault();
             var filterAnchor = $(e.target);
             var filterCell = filterAnchor.parents('th');
             var type = filterAnchor.data('type');
             var grid = filterElem.parents('.grid-wrapper');
             var id = grid.data('grid_id');
-            if (gridState[id].updating) return;		//can't filter when the grid is updating
+            if (gridState[id].updating) return;     //can't filter when the grid is updating
             var filters = grid.find('.filter-div');
             var currFilter = null;
             var field = filterAnchor.data('field');
@@ -2591,45 +3274,56 @@ var grid = (function _grid($) {
      */
     function createFilterDiv(type, field, grid, title) {
         var filterDiv = $('<div class="filter-div" data-parentfield="' + field + '" data-type="' + type + '"></div>').appendTo(grid);
-        var domName = title ? title : type;
-        var filterInput, resetButton, button,
-            span = $('<span class="filterTextSpan">Filter rows where ' + domName + ' is:</span>').appendTo(filterDiv),
-            select = type !== 'boolean' ? $('<select class="filterSelect select input"></select>').appendTo(filterDiv)
-                .append('<option value="eq">Equal to:</option>').append('<option value="neq">Not equal to:</option>') : null;
+        var domName = title ? title : type,
+            filterInput, resetButton, button,
+            modalText = 'Filter rows where ' + domName;
+        modalText = type !== 'string' ? modalText + ' is:' : modalText + ':';
+        $('<span class="filterTextSpan">' + modalText + '</span>').appendTo(filterDiv);
+        var select = $('<select class="filterSelect select input"></select>').appendTo(filterDiv);
 
-        switch (type) {
-            case 'number':
-                select.append('<option value="gte">Greater than or equal to:</option>');
-                select.append('<option value="gt">Greater than:</option>');
-                select.append('<option value="lte">Less than or equal to:</option>');
-                select.append('<option value="lt">Less than:</option>');
-                filterInput = $('<input type="text" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
-                break;
-            case 'date':
-            case 'time':
-                select.append('<option value="gte">Equal to or later than:</option>');
-                select.append('<option value="gt">Later than:</option>');
-                select.append('<option value="lte">Equal to or before:</option>');
-                select.append('<option value="lt">Before:</option>');
-                var inputType = type === 'date' ? 'date' : 'text';
-                filterInput = $('<input type="' + inputType + '" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
-                break;
-            case 'boolean':
-                var optSelect = $('<select class="filterSelect select"></select>').appendTo(span);
-                optSelect.append('<option value="true">True</option>');
-                optSelect.append('<option value="false">False</option>');
-                break;
-            case 'string':
-                select.append('<option value="ct">Contains:</option>');
-                select.append('<option value="nct">Does not contain:</option>');
-                filterInput = $('<input class="filterInput input" type="text" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
-                break;
+        createFilterOptionsByDataType(select, type);
+        if (type !== 'boolean') {
+            filterInput = $('<input type="text" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
         }
         resetButton = $('<input type="button" value="Reset" class="button resetButton" data-field="' + field + '"/>').appendTo(filterDiv);
         button = $('<input type="button" value="Filter" class="filterButton button" data-field="' + field + '"/>').appendTo(filterDiv);
         resetButton.on('click', resetButtonClickHandler);
         button.on('click', filterButtonClickHandler);
+        //TODO: why I am not validating date and time types here? Is it because the regular expressions were ready at the time?
         if (filterInput && type !=='time' && type !== 'date') filterInputValidation(filterInput);
+    }
+
+    function createFilterOptionsByDataType(select, type) {
+        switch (type) {
+            case 'number':
+                select.append('<option value="gte">Greater than or equal to:</option>')
+                    .append('<option value="gt">Greater than:</option>')
+                    .append('<option value="lte">Less than or equal to:</option>')
+                    .append('<option value="lt">Less than:</option>')
+                    .append('<option value="eq">Equal to:</option>')
+                    .append('<option value="neq">Not equal to:</option>');
+                break;
+            case 'date':
+            case 'time':
+            case 'datetime':
+                select.append('<option value="gte">Equal to or later than:</option>')
+                    .append('<option value="gt">Later than:</option>')
+                    .append('<option value="lte">Equal to or before:</option>')
+                    .append('<option value="lt">Before:</option>')
+                    .append('<option value="eq">Equal to:</option>')
+                    .append('<option value="neq">Not equal to:</option>');
+                break;
+            case 'boolean':
+                select.append('<option value="true">True</option>')
+                    .append('<option value="false">False</option>');
+                break;
+            case 'string':
+                select.append('<option value="ct">Contains:</option>')
+                    .append('<option value="nct">Does not contain:</option>')
+                    .append('<option value="eq">Equal to:</option>')
+                    .append('<option value="neq">Not equal to:</option>');
+                break;
+        }
     }
 
     /**
@@ -2653,8 +3347,36 @@ var grid = (function _grid($) {
         $('.grid_menu').addClass('hiddenMenu');
         gridState[gridId].grid.find('filterInput').val('');
 
-        if (gridState[gridId].updating) return;		//can't filter if grid is updating
-        gridState[gridId].filteredOn = [];
+        var filterModal = gridState[gridId].grid.find('.filter_modal');
+        filterModal.find('.filter_group_container').each(function removeFilterGroups() {
+            var grpContainer = $(this);
+            if (grpContainer.data('filter_group_num') !== 1) grpContainer.remove();
+            else {
+                grpContainer.find('.filter_row_div').each(function removeFilterRows() {
+                    var filterRow = $(this);
+                    if (filterRow.data('filter_idx') !== 1) filterRow.remove();
+                    else {
+                        var columnSelector = filterRow.find('.filter_column_selector');
+                        columnSelector.find('option').remove();
+                        columnSelector.append('<option value="">Select a column</option>');
+                        for (var column in gridState[gridId].columns) {
+                            var curCol = gridState[gridId].columns[column];
+                            if (curCol.filterable) {
+                                columnSelector.append('<option value="' + column + '">' + (curCol.title || column) + '</option>');
+                            }
+                        }
+
+                        filterRow.find('.filterType').prop('disabled', true).find('option').remove();
+                        filterRow.find('.advanced_filter_value').prop('disabled', true).removeClass('invalid-grid-input').val('');
+                    }
+                });
+            }
+        });
+
+        filterModal.find('filter_error').remove();
+
+        if (gridState[gridId].updating) return;     //can't filter if grid is updating
+        gridState[gridId].filters = {};
         gridState[gridId].pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
     }
@@ -2665,23 +3387,23 @@ var grid = (function _grid($) {
             field = $(this).data('field'),
             remainingFilters = [],
             gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
-        if (gridState[gridId].updating) return;		//can't filter if grid is updating
+        if (gridState[gridId].updating) return;     //can't filter if grid is updating
         var gridData = gridState[gridId];
 
-        if (value === '' && !gridData.filteredOn.length) return;
+        if (value === '' && !gridData.filters.filterGroup.length) return;
         filterDiv.find('.filterInput').val('');
-
         filterDiv.addClass('hiddenFilter');
 
-        for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
-            if (gridState[gridId].filteredOn[i].field !== field) {
-                remainingFilters.push(gridState[gridId].filteredOn[i]);
+        for (var i = 0; i < gridState[gridId].filters.filterGroup.length; i++) {
+            if (gridState[gridId].filters.filterGroup[i].field !== field) {
+                remainingFilters.push(gridState[gridId].filters.filterGroup[i]);
             }
         }
 
-        gridData.filteredOn = remainingFilters;
+        gridData.filters.filterGroup = remainingFilters;
         gridData.pageRequest.eventType = 'filter-rem';
         preparePageDataGetRequest(gridId);
+        e.preventDefault();
     }
 
     function filterButtonClickHandler(e) {
@@ -2689,36 +3411,52 @@ var grid = (function _grid($) {
             selected = filterDiv.find('.filterSelect').val(),
             value = filterDiv.find('.filterInput').val(),
             gridId = filterDiv.parents('.grid-wrapper').data('grid_id');
-        if (gridState[gridId].updating) return;		//can't filter if grid is updating
+        if (gridState[gridId].updating) return;     //can't filter if grid is updating
         var gridData = gridState[gridId],
             type = filterDiv.data('type'),
             errors = filterDiv.find('.filter-div-error'),
             field = $(this).data('field'),
-            foundColumn = false,
             tmpFilters = [],
-            updatedFilter, re;
+            foundColumn = false,
+            re, updatedFilter;
 
         if (dataTypes[type]) {
             re = new RegExp(dataTypes[type]);
-            if (!re.test(value) && !errors.length) {
-                $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
-                return;
+            if (!re.test(value)) {
+                if (type === 'datetime' && new RegExp(dataTypes['date']).test(value)) {
+                    value += ' 00:00:00';
+                }
+                else {
+                    $('<span class="filter-div-error">Invalid ' + type + '</span>').appendTo(filterDiv);
+                    return;
+                }
             }
         }
 
-        if (errors.length) errors.remove();
-        if (value === '' && !gridData.filteredOn.length) return;
+        var dataType = gridState[gridId].columns[field].type || 'string',
+            extantFilters = gridState[gridId].basicFilters.filterGroup || [];
 
-        for (var i = 0; i < gridState[gridId].filteredOn.length; i++) {
-            if (gridState[gridId].filteredOn[i].field !== field) tmpFilters.push(gridState[gridId].filteredOn[i]);
+        if (errors.length) errors.remove();
+        if (value === '' && !gridData.basicFilters.length) return;
+        if (dataType === 'boolean') {
+            value = selected;
+            selected = 'eq';
+        }
+
+        for (var i = 0; i < extantFilters.length; i++) {
+            if (extantFilters[i].field !== field) tmpFilters.push(extantFilters[i]);
             else {
-                updatedFilter = gridState[gridId].filteredOn[i];
+                updatedFilter = extantFilters[i];
+                updatedFilter.operation = selected;
+                updatedFilter.value = value;
                 foundColumn = true;
             }
         }
 
-        tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, filterType: selected });
-        gridState[gridId].filteredOn = tmpFilters;
+        tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: value, operation: selected, dataType: dataType });
+        gridState[gridId].filters = { conjunct: 'and', filterGroup: tmpFilters };
+        gridState[gridId].basicFilters.filterGroup = tmpFilters;
+        gridState[gridId].advancedFilters = {};
 
         filterDiv.addClass('hiddenFilter');
         gridData.pageRequest.eventType = 'filter-add';
@@ -2755,23 +3493,25 @@ var grid = (function _grid($) {
         elem.on('drop', handleDropCallback);
         elem.on('dragover', function handleHeaderDragOverCallback(e) {
             e.preventDefault();
-            var column = $('#' + e.currentTarget.id);
-            var gridId = column.parents('.grid-header-div').data('grid_header_id');
+            var gridId = elem.parents('.grid-header-div').data('grid_header_id');
             var dropIndicator = $('#drop_indicator_id_' + gridId);
             if (!dropIndicator.length) {
-                dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator2" data-grid_id="' + gridId + '"></div>');
-                dropIndicator.append('<span class="drop-indicator2-top"></span><span class="drop-indicator2-bottom"></span>');
+                dropIndicator = $('<div id="drop_indicator_id_' + gridId + '" class="drop-indicator" data-grid_id="' + gridId + '"></div>');
+                dropIndicator.append('<span class="drop-indicator-top"></span><span class="drop-indicator-bottom"></span>');
                 gridState[gridId].grid.append(dropIndicator);
             }
+            else
+                dropIndicator.css('display', 'block');
 
             var originalColumn;
             gridState[gridId].grid.find('.grid-header-cell').each(function iterateGridHeadersCallback(idx, val) {
                 if ($(val).data('dragging')) originalColumn = $(val);
             });
 
-            if (originalColumn && originalColumn[0] !== column[0]) {
+            if (originalColumn && originalColumn[0] !== elem[0]) {
                 dropIndicator.css('display', 'block');
-                if (originalColumn.offset().left < column.offset().left) {
+                dropIndicator.css('height', elem.outerHeight());
+                if (originalColumn.offset().left < elem.offset().left) {
                     dropIndicator.css('left', elem.offset().left + elem.outerWidth());
                     dropIndicator.css('top', elem.offset().top);
                 }
@@ -2784,7 +3524,7 @@ var grid = (function _grid($) {
                 dropIndicator.css('display', 'none');
             }
         });
-        elem.on('mouseleave', mouseLeaveHandlerCallback);
+        //elem.on('mouseleave', mouseLeaveHandlerCallback);
     }
 
     function handleDropCallback(e) {
@@ -2794,7 +3534,7 @@ var grid = (function _grid($) {
         var id = targetCol.parents('.grid-header-div').length ? targetCol.parents('.grid-wrapper').data('grid_id') : null;
         var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
         if (id == null || droppedId == null || id !== droppedId) return;  //at least one of the involved dom elements is not a grid column, or they are from different grids
-        if (gridState[id].updating) return;		//can't resort columns if grid is updating
+        if (gridState[id].updating) return;     //can't resort columns if grid is updating
         if (droppedCol[0].cellIndex === targetCol[0].cellIndex) return;
         if (droppedCol[0].id === 'sliderDiv') return;
 
@@ -2826,6 +3566,16 @@ var grid = (function _grid($) {
 
         swapContentCells(parentDivId, droppedIndex, targetIndex);
 
+        if (gridState[id].groupedBy && gridState[id].groupedBy.length && gridState[id].groupedBy !== 'none') {
+            ++droppedIndex;
+            ++targetIndex;
+        }
+
+        if (gridState[id].drillDown) {
+            ++droppedIndex;
+            ++targetIndex;
+        }
+
         var targetWidth = colGroups[0].children[droppedIndex].style.width;
         var droppedWidth = colGroups[0].children[targetIndex].style.width;
 
@@ -2849,6 +3599,7 @@ var grid = (function _grid($) {
                 targetColSum.replaceWith(droppedColSumClone);
             }
         }
+        $('#drop_indicator_id_' + id).css('display', 'none');
         e.preventDefault();
         var evtObj = {
             element: gridState[id].grid,
@@ -2861,22 +3612,23 @@ var grid = (function _grid($) {
     }
 
     function mouseLeaveHandlerCallback(e) {
-        var target = $(e.currentTarget);
-        var targetOffset = target.offset();
-        var targetWidth = target.innerWidth();
-        var mousePos = { x: e.originalEvent.pageX, y: e.originalEvent.pageY };
-        var sliderDiv = $('#sliderDiv');
+        var target = $(e.currentTarget),
+            targetOffset = target.offset(),
+            targetWidth = target.innerWidth(),
+            mousePos = { x: e.originalEvent.pageX, y: e.originalEvent.pageY },
+            parentDiv = target.parents('.grid-header-wrapper'),
+            id = parentDiv.parent().data('grid_header_id'),
+            sliderDiv = $('#sliderDiv' + id);
 
         if (Math.abs(mousePos.x - (targetOffset.left + targetWidth)) < 10) {
             if (!sliderDiv.length) {
-                var parentDiv = target.parents('.grid-header-wrapper');
-                sliderDiv = $('<div id=sliderDiv style="width:10px; height:' + target.innerHeight() + 'px; cursor: col-resize; position: absolute" draggable=true><div></div></div>').appendTo(parentDiv);
+                sliderDiv = $('<div id="sliderDiv' + id + '" style="width:10px; height:' + target.innerHeight() + 'px; cursor: col-resize; position: absolute" draggable=true><div></div></div>').appendTo(parentDiv);
                 sliderDiv.on('dragstart', function handleResizeDragStartCallback(e) {
                     e.originalEvent.dataTransfer.setData('text', e.currentTarget.id);
-                    gridState[parentDiv.parent().data('grid_header_id')].resizing = true;
+                    gridState[id].resizing = true;
                 });
                 sliderDiv.on('dragend', function handleResizeDragEndCallback() {
-                    gridState[parentDiv.parent().data('grid_header_id')].resizing = false;
+                    gridState[id].resizing = false;
                 });
                 sliderDiv.on('dragover', function handleResizeDragOverCallback(e) {
                     e.preventDefault();
@@ -2885,6 +3637,72 @@ var grid = (function _grid($) {
                     e.preventDefault();
                 });
                 sliderDiv.on('drag', handleResizeDragCallback);
+                sliderDiv.on('dblclick', function doubleClickHandler() {
+                    var targetCol = gridState[id].grid.find('#' + sliderDiv.data('targetindex')),
+                        targetColIdx = targetCol.data('index');
+                    if (targetColIdx === Object.keys(gridState[id].columns).length - 1) return;
+                    if (gridState[id].drillDown) ++targetColIdx;
+                    if (gridState[id].groupedBy && gridState[id].groupedBy.length) {
+                        targetColIdx = targetColIdx + gridState[id].groupedBy.length;
+                    }
+
+                    var colGroups = gridState[id].grid.find('colgroup').filter(function removeParentOrChildCols() {
+                        var cg = $(this);
+                        if (gridState[id].parentGridId != null) {
+                            return cg.parents('tr.drill-down-parent').length;
+                        }
+                        else return !cg.parents('tr.drill-down-parent').length;
+                    });
+
+                    var headerCol = $($(colGroups[0]).children()[targetColIdx]),
+                        contentCol = $($(colGroups[1]).children()[targetColIdx]);
+
+                    var tables = gridState[id].grid.find('table').filter(function removeParentOrChildCols() {
+                        var cg = $(this);
+                        if (gridState[id].parentGridId != null) {
+                            return cg.parents('tr.drill-down-parent').length;
+                        }
+                        else return !cg.parents('tr.drill-down-parent').length;
+                    });
+
+                    var headerCell = $(tables[0]).find('th')[targetColIdx],
+                        aggregateCell = $(tables[0]).find('td')[targetColIdx] || null,
+                        headerMultiplier = 8.1,
+                        aggregateMultiplier = 7.5,
+                        contentMultiplier = 6.75,
+                        maxLength = headerCell.innerText.length * headerMultiplier,
+                        newWidth;
+
+                    if (gridState[id].columns[targetCol.data('field')].sortable)
+                        maxLength += 16;
+
+                    if (gridState[id].columns[targetCol.data('field')].filterable)
+                        maxLength += 40;
+
+                    if (aggregateCell && aggregateCell.innerText.length * aggregateMultiplier > maxLength)
+                        maxLength = aggregateCell.innerText.length * aggregateMultiplier;
+
+                    $(tables[1]).find('tr').each(function findTargetContentCells() {
+                        var row = $(this);
+                        if (gridState[id].parentGridId != null) {
+                            if (row.parents('tr.drill-down-parent').length) {
+                                if (row.find('td')[targetColIdx].innerText.length * contentMultiplier > maxLength)
+                                    maxLength = row.find('td')[targetColIdx].innerText.length * contentMultiplier;
+                            }
+                        }
+                        else {
+                            if (!row.parents('tr.drill-down-parent').length) {
+                                if (row.find('td')[targetColIdx].innerText.length * contentMultiplier > maxLength)
+                                    maxLength = row.find('td')[targetColIdx].innerText.length * contentMultiplier;
+                            }
+                        }
+                    });
+
+                    newWidth = Math.ceil(maxLength) + 24;
+                    tables.css('width', tables.width() - (headerCol.width() - newWidth));
+                    headerCol.css('width', newWidth);
+                    contentCol.css('width', newWidth);
+                });
             }
             sliderDiv.data('targetindex', target[0].id);
             sliderDiv.css('top', targetOffset.top + 'px');
@@ -2898,10 +3716,10 @@ var grid = (function _grid($) {
      * @param {object} elem - The DOM element that has the click handler attached
      */
     function setSortableClickListener(elem) {
-        elem.on('click', function handleHeaderClickCallback() {
+        elem.on('click', function handleHeaderClickCallback(e) {
             var headerDiv = elem.parents('.grid-header-div');
             var id = parseInt(headerDiv.data('grid_header_id'));
-            if (gridState[id].updating) return;		//can't sort if grid is updating
+            if (gridState[id].updating) return;     //can't sort if grid is updating
             var field = elem.data('field'),
                 foundColumn = false;
 
@@ -2926,6 +3744,7 @@ var grid = (function _grid($) {
                             return item.field !== field;
                         });
                         elem.find('.sortSpan').remove();
+                        //TODO: why am I doing this here?
                         gridState[id].alteredData = cloneGridData(gridState[id].originalData);
                     }
                 }
@@ -2937,6 +3756,7 @@ var grid = (function _grid($) {
             }
             gridState[id].pageRequest.eventType = 'sort';
             preparePageDataGetRequest(id);
+            e.preventDefault();
         });
     }
 
@@ -2988,7 +3808,7 @@ var grid = (function _grid($) {
         e.preventDefault();
         var sliderDiv = $(e.currentTarget);
         var id = sliderDiv.parents('.grid-wrapper').data('grid_id');
-        if (gridState[id].updating) return;		//can't resize columns if grid is updating
+        if (gridState[id].updating) return;     //can't resize columns if grid is updating
         var targetCell = document.getElementById(sliderDiv.data('targetindex'));
         var targetBox = targetCell.getBoundingClientRect();
         var endPos = e.originalEvent.pageX;
@@ -3001,8 +3821,10 @@ var grid = (function _grid($) {
             var gridWrapper = $(targetCell).parents('.grid-wrapper');
             var colGroups = gridWrapper.find('colgroup');
             var tables = gridWrapper.find('table');
-            if (gridState[id].groupedBy && gridState[id].groupedBy !== 'none')
-                index++;
+            if (gridState[id].groupedBy && gridState[id].groupedBy.length && gridState[id].groupedBy !== 'none')
+                index += gridState[id].groupedBy.length;
+            if (gridState[id].drillDown)
+                ++index;
 
             var contentDiv = gridWrapper.find('.grid-content-div');
             var scrollLeft = contentDiv.scrollLeft();
@@ -3034,15 +3856,23 @@ var grid = (function _grid($) {
      */
     function swapContentCells(gridId, droppedIndex, targetIndex) {
         var gridData = gridState[gridId];
-        $('#grid-content-' + gridId).find('tr').each(function iterateContentRowsCallback(idx, val) {
+        $('#grid-content-' + gridId).find('tr').filter(function filterNestedGridRows() {
+            return !$(this).hasClass('drill-down-parent') && !$(this).parents('.drill-down-parent').length;
+        }).each(function iterateContentRowsCallback(idx, val) {
             if ($(val).hasClass('grouped_row_header'))
                 return true;
             var droppedIdx = 1 + parseInt(droppedIndex);
             var targetIdx = 1 + parseInt(targetIndex);
-            if (gridData.groupedBy && gridData.groupedBy !== 'none') {
+            if (gridData.groupedBy && gridData.groupedBy.length && gridData.groupedBy !== 'none') {
                 droppedIdx++;
                 targetIdx++;
             }
+
+            if (gridData.drillDown) {
+                ++droppedIdx;
+                ++targetIdx;
+            }
+
             var droppedCell = $(val).children('td:nth-child(' + droppedIdx + ')');
             var targetCell = $(val).children('td:nth-child(' + targetIdx + ')');
 
@@ -3066,18 +3896,19 @@ var grid = (function _grid($) {
 
         var requestObj = {};
         if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        if (gridData.filterable) requestObj.filteredOn = gridData.filteredOn.length? gridData.filteredOn : [];
+        if (gridData.filterable) requestObj.filters = gridData.filters.filterGroup && gridData.filters.filterGroup.length? gridData.filters : { conjunct: null, filterGroup: [] };
         if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
         requestObj.pageSize = pageSize;
-        requestObj.pageNum = gridData.eventType === 'filter' ? 1 : pageNum;
+        requestObj.pageNum = gridData.pageRequest.eventType === 'filter' ? 1 : pageNum;
 
         gridData.grid.find('.grid-content-div').empty();
 
         callGridEventHandlers(gridState[id].events.pageRequested, gridData.grid, { element: gridData.grid });
         if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function') gridData.dataSource.get(requestObj, getPageDataRequestCallback);
         else {
-            if (!gridData.alteredData) gridData.alteredData = cloneGridData(gridData.originalData);
+            if (!gridData.alteredData || gridData.pageRequest.eventType === 'filter-rem') gridData.alteredData = cloneGridData(gridData.originalData);
+            //else if (gridData.eventType === 'filter-rem') gridData.alteredData = cloneGridData(gridData.originalData);
             getPageData(requestObj, id, getPageDataRequestCallback);
         }
 
@@ -3085,11 +3916,11 @@ var grid = (function _grid($) {
             if (response) {
                 gridData.dataSource.data = response.data;
                 gridData.pageSize = requestObj.pageSize;
-                gridData.pageNum = requestObj.pageNum;
+                gridData.pageNum = requestObj.pageNum;// (requestObj.pageSize * requestObj.pageNum) > response.rowCount ? Math.ceil(response.data.length / requestObj.pageSize) : requestObj.pageNum;
                 gridData.dataSource.rowCount = response.rowCount != null ? response.rowCount : response.data.length;
-                gridData.groupedBy = requestObj.groupedBy;
-                gridData.sortedOn = requestObj.sortedOn;
-                gridData.filteredOn = requestObj.filteredOn;
+                gridData.groupedBy = requestObj.groupedBy || [];
+                gridData.sortedOn = requestObj.sortedOn || [];
+                gridData.filters = requestObj.filters || {};
 
                 if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group')
                     setColWidth(gridData, gridState[id].grid);
@@ -3159,20 +3990,13 @@ var grid = (function _grid($) {
             limitPageData(requestObj, fullGridData, callback);
             return;
         }
-
-        if ((requestObj.filteredOn && requestObj.filteredOn.length) || eventType === 'filter-rem') {
-            fullGridData = eventType === 'filter-add' ? cloneGridData(gridState[id].alteredData) : cloneGridData(gridState[id].originalData);
-            var startIdx = eventType === 'filter-add' ? requestObj.filteredOn.length - 1 : 0;
-            for (var i = startIdx; i <  requestObj.filteredOn.length; i++) {
-                var dataType = gridState[id].columns[requestObj.filteredOn[i].field].type || 'string';
-                fullGridData = filterGridData(requestObj.filteredOn[i].filterType, requestObj.filteredOn[i].value, requestObj.filteredOn[i].field, dataType, fullGridData);
-            }
-            requestObj.pageNum = 1;		//reset the page to the first page when a filter is applied or removed.
+        if (requestObj.filters && requestObj.filters.filterGroup && requestObj.filters.filterGroup.length) {
+            fullGridData = expressionParser.createFilterTreeFromFilterObject(requestObj.filters).filterCollection(cloneGridData(gridState[id].originalData));
+            requestObj.pageNum = 1;     //reset the page to the first page when a filter is applied or removed.
             gridState[id].alteredData = fullGridData;
         }
-
-        if (requestObj.groupedBy.length || requestObj.sortedOn.length) {
-            var sortedData = sortGridData(requestObj.groupedBy.concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
+        if (requestObj.groupedBy && requestObj.groupedBy.length || requestObj.sortedOn.length) {
+            var sortedData = sortGridData((requestObj.groupedBy || []).concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
             gridState[id].alteredData = sortedData;
             limitPageData(requestObj, sortedData, callback);
             return;
@@ -3182,8 +4006,8 @@ var grid = (function _grid($) {
     }
 
     //==========================================================================================================================//
-    //																															//
-    //													HELPER FUNCTIONS														//
+    //                                                                                                                          //
+    //                                                  HELPER FUNCTIONS                                                        //
     //==========================================================================================================================//
 
     function limitPageData(requestObj, fullGridData, callback) {
@@ -3204,47 +4028,7 @@ var grid = (function _grid($) {
     }
 
     /**
-     * Filters the grid's data when being used for client-side updates. Based on the filtered column, value, and type
-     * this function will determine which data should remain in the collection
-     * @param {string} filterType - The type of filter selected by the user (=, !=, >, >=, etc)
-     * @param {string|number|boolean} value - The value against which the filter should apply to the grid data
-     * @param {string} field - The name of the column to apply the filter to
-     * @param {string} dataType - The type of data being filtered (string, number, boolean, time, date)
-     * @param {Array} gridData - The collection of grid data to filter
-     */
-    function filterGridData(filterType, value, field, dataType, gridData) {
-        var filteredData = [], curVal, baseVal;
-
-        for (var i = 0, length = gridData.length; i < length; i++) {
-            if (dataType === 'time') {
-                curVal = getNumbersFromTime(gridData[i][field]);
-                baseVal = getNumbersFromTime(value);
-
-                if (gridData[i][field].indexOf('PM') > -1) curVal[0] += 12;
-                if (value.indexOf('PM') > -1) baseVal[0] += 12;
-
-                curVal = convertTimeArrayToSeconds(curVal);
-                baseVal = convertTimeArrayToSeconds(baseVal);
-            }
-            else if (dataType === 'number') {
-                curVal = parseFloat(gridData[i][field]);
-                baseVal = parseFloat(value);
-            }
-            else if (dataType === 'date') {
-                curVal = new Date(gridData[i][field]);
-                baseVal = new Date(value);
-            }
-            else {
-                curVal = gridData[i][field];
-                baseVal = value;
-            }
-            if (comparator(curVal, baseVal, filterType)) filteredData.push(gridData[i]);
-        }
-        return filteredData;
-    }
-
-    /**
-     * Using various equality operators, checks to for truth based on the type of the operator(s)
+     * Using various equality operators, checks for truth based on the type of the operator(s)
      * @param {string|number|boolean} val - The value that is being checked against a base value
      * @param {*} base - The based value against which values are compared
      * @param {string} type - The type of equality operator(s) to be used in the comparison
@@ -3341,6 +4125,28 @@ var grid = (function _grid($) {
                 leftVal = new Date(left[0][sortObj.field]);
                 rightVal = new Date(right[0][sortObj.field]);
             }
+            else if (type === 'datetime') {
+                var re = new RegExp(dataTypes['datetime']),
+                    execVal1 = re.exec(left[0][sortObj.field]),
+                    execVal2 = re.exec(right[0][sortObj.field]);
+
+                var dateComp1 = execVal1[2],
+                    dateComp2 = execVal2[2],
+                    timeComp1 = execVal1[42],
+                    timeComp2 = execVal2[42];
+
+                timeComp1 = getNumbersFromTime(timeComp1);
+                timeComp2 = getNumbersFromTime(timeComp2);
+                if (timeComp1[3] && timeComp1[3] === 'PM')
+                    timeComp1[0] += 12;
+                if (timeComp2[3] && timeComp2[3] === 'PM')
+                    timeComp2[0] += 12;
+
+                dateComp1 = new Date(dateComp1);
+                dateComp2 = new Date(dateComp2);
+                leftVal = dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
+                rightVal = dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
+            }
             else {
                 leftVal = left[0][sortObj.field];
                 rightVal = right[0][sortObj.field];
@@ -3401,6 +4207,17 @@ var grid = (function _grid($) {
             case 'time':
                 text = formatTimeCellData(value, column, gridId);
                 break;
+            case 'datetime':
+                var re = new RegExp(dataTypes['datetime']),
+                    execVal = re.exec(value),
+                    timeText = formatTimeCellData(execVal[42], column, gridId),
+                    dateComp = new Date(execVal[2]),
+                    dateFormat = gridState[gridId].columns[column].format || 'mm/dd/yyyy';
+                dateFormat = dateFormat.substring(0, (dateFormat.indexOf(' ') || dateFormat.indexOf('T')));
+                text = dateFormat.replace('dd', dateComp.getUTCDate().toString())
+                        .replace('mm', (dateComp.getUTCMonth() + 1).toString())
+                        .replace('yyyy', dateComp.getUTCFullYear().toString()) + ' ' + timeText;
+                break;
             case 'string':
             case 'boolean':
                 text = value;
@@ -3459,8 +4276,8 @@ var grid = (function _grid($) {
      * @returns {number} - Returns a value in seconds for the time of day
      */
     function convertTimeArrayToSeconds(timeArray) {
-        var hourVal = timeArray[0] === 12 || timeArray[0] === 24 ? timeArray[0] - 12 : timeArray[0];
-        return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
+        var hourVal = parseInt(timeArray[0].toString()) === 12 || parseInt(timeArray[0].toString()) === 24 ? parseInt(timeArray[0].toString()) - 12 : parseInt(timeArray[0]);
+        return 3660 * hourVal + 60 * parseInt(timeArray[1]) + parseInt(timeArray[2]);
     }
 
     /**
@@ -3498,8 +4315,10 @@ var grid = (function _grid($) {
             case 'date':
                 var date1 = new Date(val1),
                     date2 = new Date(val2);
-                if (typeof date1 === 'object' && typeof date2 === 'object' && date1 !== date1 && date2 !== date2)
-                    return true;    //invalid date values - creating a date from both values resulted in either NaN or 'Invalid Date', neither of which are equal to themselves.
+                //invalid date values - creating a date from both values resulted in either NaN or 'Invalid Date', neither of which are equal to themselves.
+                if ((typeof date1 === 'object' ||typeof date1 === 'number') && (typeof date2 === 'object' || typeof date2 === 'number')) {
+                    if (date1 !== date1 && date2 !== date2) return true;
+                }
                 return date1 === date2;
             case 'time':
                 var value1 = getNumbersFromTime(val1);
@@ -3509,6 +4328,30 @@ var grid = (function _grid($) {
                 if (value2[3] && value2[3] === 'PM')
                     value2[0] += 12;
                 return convertTimeArrayToSeconds(value1) === convertTimeArrayToSeconds(value2);
+            case 'datetime':
+                var re = new RegExp(dataTypes['datetime']),
+                    execVal1, execVal2;
+                if (re.test(val1) && re.test(val2)) {
+                    execVal1 = re.exec(val1);
+                    execVal2 = re.exec(val2);
+
+                    var dateComp1 = execVal1[2],
+                        dateComp2 = execVal2[2],
+                        timeComp1 = execVal1[42],
+                        timeComp2 = execVal2[42];
+
+                    timeComp1 = getNumbersFromTime(timeComp1);
+                    timeComp2 = getNumbersFromTime(timeComp2);
+                    if (timeComp1[3] && timeComp1[3] === 'PM')
+                        timeComp1[0] += 12;
+                    if (timeComp2[3] && timeComp2[3] === 'PM')
+                        timeComp2[0] += 12;
+
+                    dateComp1 = new Date(dateComp1);
+                    dateComp2 = new Date(dateComp2);
+                    return dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1) === dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
+                }
+                return true;
             default:
                 return val1.toString() === val2.toString();
         }
@@ -3556,9 +4399,8 @@ var grid = (function _grid($) {
                 callback({ data: data, columns: columns});
                 break;
             case 'all':
-                if (typeof gridState[gridId].dataSource.get === 'function') {
-                    var reqObj = createExcelRequestObject(gridId);
-                    gridState[gridId].dataSource.get(reqObj, function excelDataCallback(response) {
+                if (typeof gridState[gridId].dataSource.get === 'function' && gridState[gridId].dataSource.rowCount > gridState[gridId].pageSize) {
+                    gridState[gridId].dataSource.get(createExcelRequestObject(gridId), function excelDataCallback(response) {
                         callback({ data: response.data, columns: columns});
                     });
                 }
@@ -3571,35 +4413,17 @@ var grid = (function _grid($) {
     }
 
     function getGridColumns(gridId) {
-        var cols = [];
-        for (var col in gridState[gridId].columns) {
-            cols.push(col);
-        }
-        return cols;
+        return Object.keys(gridState[gridId].columns).filter(function collectNonHiddenColumns(col) {
+            return !this[col].isHidden;
+        }, gridState[gridId].columns);
     }
 
     function createExcelRequestObject(gridId) {
-        var gridData = gridState[gridId];
-        var sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-        var filteredOn = gridData.pageRequest.filteredOn || gridData.filteredOn || null;
-        var filterVal = gridData.pageRequest.filterVal || gridData.filterVal || null;
-        var filterType = gridData.pageRequest.filterType || gridData.filterType || null;
-        var groupedBy = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupedBy : gridData.groupedBy || null;
-        var groupSortDirection = gridData.pageRequest.eventType === 'group' ? gridData.pageRequest.groupSortDirection : gridData.groupSortDirection || null;
-
-        var requestObj = {};
-        if (gridData.sortable) requestObj.sortedOn = sortedOn;
-
-        if (gridData.filterable) {
-            requestObj.filteredOn = filteredOn;
-            requestObj.filterVal = filterVal;
-            requestObj.filterType = filterType;
-        }
-
-        if (gridData.groupable) {   //TODO: not sure if the data can be grouped in excel; maybe a pivot table, but that will come much later, if at all.
-            requestObj.groupedBy = groupedBy;
-            requestObj.groupSortDirection = groupSortDirection;
-        }
+        var gridData = gridState[gridId],
+            requestObj = {};
+        if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
+        if (gridData.filterable) requestObj.filters = gridData.filters.filterGroup && gridData.filters.filterGroup.length? gridData.filters : { conjunct: null, filterGroup: [] };
+        if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
 
         requestObj.pageSize = gridData.dataSource.rowCount;
         requestObj.pageNum = 1;
@@ -3617,7 +4441,13 @@ var grid = (function _grid($) {
         '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\22|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\25)((?:1[6-9]|[2-9]\\d)?\\d{2}))))' +
         '|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\29)(29))))|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)' +
         '(?:(?:(?:(0?[13578]|1[02])\\33(31))|(?:(0?[1,3-9]|1[0-2])\\33(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\33(0?[1-9]|1\\d|2[0-8]))))$',
-        dateChar: '\\d|\\-|\\\|\\.'
+        datetime: '^(((?:(?:(?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\4|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\7))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\10)|(?:(29|30)(\\/|-|\\.)' +
+        '(0?[1,3-9]|1[0-2])\\13)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\17)|(?:(29)(\\/|-|\\.)(0?2))\\20)((?:(?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])' +
+        '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)' +
+        '((?:1[6-9]|[2-9]\\d)?\\d{2}))))|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\31)(29))))' +
+        '|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)(?:(?:(?:(0?[13578]|1[02])\\35(31))|(?:(0?[1,3-9]|1[0-2])\\35(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\35(0?[1-9]|1\\d|2[0-8])))))' +
+        '(?: |T)((0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\44([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\49([0-5]\\d))?)$))',
+        dateChar: '\\d|\\-|\\/|\\.'
     };
 
     events = ['cellEditChange', 'beforeCellEdit', 'afterCellEdit', 'pageRequested', 'beforeDataBind', 'afterDataBind', 'columnReorder'];
@@ -3634,10 +4464,15 @@ var grid = (function _grid($) {
     function formatTimeCellData(time, column, gridId) {
         var timeArray = getNumbersFromTime(time),
             formattedTime,
-            format = gridState[gridId].columns[column].format || '24',
-            timeFormat = gridState[gridId].columns[column].timeFormat;
+            format = gridState[gridId].columns[column].format,
+            timeFormat = gridState[gridId].columns[column].timeFormat || '24';
 
         if (timeArray.length < 2) return '';
+
+        if (~format.indexOf(' ') || ~format.indexOf('T')) {
+            var dateIdxEnd = ~format.indexOf(' ') ? format.indexOf(' ') : format.indexOf('T');
+            format = format.substring(dateIdxEnd + 1, format.length);
+        }
 
         if (timeFormat == '24' && timeArray.length === 4 && timeArray[3] === 'PM')
             timeArray[0] = timeArray[0] === '12' ? '00' : (parseInt(timeArray[0]) + 12).toString();
