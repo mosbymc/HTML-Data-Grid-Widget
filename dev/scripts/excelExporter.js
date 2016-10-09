@@ -183,11 +183,11 @@ var excelExporter = (function _excelExporter() {
                 location.href = string;
                 //saveAs(content, 'excelFile.xlsx');
                 /*var fileSaver = document.createElement('a');
-                fileSaver.download = 'sample.xlsx';
-                fileSaver.href = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-                var e = new MouseEvent('click', 0);
-                //e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-                fileSaver.dispatchEvent(e);*/
+                 fileSaver.download = 'sample.xlsx';
+                 fileSaver.href = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+                 var e = new MouseEvent('click', 0);
+                 //e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+                 fileSaver.dispatchEvent(e);*/
                 //URL.revokeObjectURL(dataURI);
                 //var a = document.createElement("a");
                 //a.href = URL.createObjectURL(content);
@@ -196,17 +196,17 @@ var excelExporter = (function _excelExporter() {
 
                 //var dataURI = URL.createObjectURL(string);
                 /*var blob = content;
-                if (typeof content == 'string') {
-                    var parts = content.split(';base64,');
-                    var contentType = parts[0];
-                    var base64 = atob(parts[1]);
-                    var array = new Uint8Array(base64.length);
-                    for (var idx = 0; idx < base64.length; idx++) {
-                        array[idx] = base64.charCodeAt(idx);
-                    }
-                    blob = new Blob([array.buffer], { type: contentType });
-                }
-                saveAsBlob(blob, fileName);*/
+                 if (typeof content == 'string') {
+                 var parts = content.split(';base64,');
+                 var contentType = parts[0];
+                 var base64 = atob(parts[1]);
+                 var array = new Uint8Array(base64.length);
+                 for (var idx = 0; idx < base64.length; idx++) {
+                 array[idx] = base64.charCodeAt(idx);
+                 }
+                 blob = new Blob([array.buffer], { type: contentType });
+                 }
+                 saveAsBlob(blob, fileName);*/
             });
     }
 
@@ -590,9 +590,10 @@ var excelExporter = (function _excelExporter() {
                 var cellLoc = positionToLetterRef((j + 1), (i + 2));
                 if (typeof data[i][columns[j]] !== 'number') {
                     total += 1;
-                    if (!sharedStringsMap[data[i][columns[j]].toString()]) {
-                        sharedStrings.push(data[i][columns[j]].toString());
-                        sharedStringsMap[data[i][columns[j]].toString()] = count.toString();
+                    var sharedString = (data[i][columns[j]] || '').toString();
+                    if (!sharedStringsMap[sharedString]) {
+                        sharedStrings.push(sharedString);
+                        sharedStringsMap[sharedString] = count.toString();
 
                         row.createChildReturnChild({
                             nodeType: 'c',
@@ -615,7 +616,7 @@ var excelExporter = (function _excelExporter() {
                             }
                         }).createChild({
                             nodeType: 'v',
-                            textValue: sharedStringsMap[data[i][columns[j]].toString()]
+                            textValue: sharedStringsMap[sharedString]
                         });
                     }
                 }
@@ -695,11 +696,11 @@ var excelExporter = (function _excelExporter() {
         });
 
         var tableCols = this.createChildReturnChild({
-                nodeType: 'tableColumns',
-                attributes: {
-                    'count': columns.length
-                }
-            });
+            nodeType: 'tableColumns',
+            attributes: {
+                'count': columns.length
+            }
+        });
 
         for (var i = 0; i < columns.length; i++) {
             var columnName = '';
@@ -820,9 +821,9 @@ var excelExporter = (function _excelExporter() {
         for (var i = 0; i < values.length; i++) {
             this.createChildReturnChild({ nodeType: 'si' })
                 .createChild({
-                nodeType: 't',
-                textValue: values[i]
-            });
+                    nodeType: 't',
+                    textValue: values[i]
+                });
         }
         this.addAttributes({
             uniqueCount: values.length,
@@ -891,11 +892,11 @@ var excelExporter = (function _excelExporter() {
     };
 
     /**
-    * Adds a new content type as an xml node to the [Content-Types] file
-    * @param {string} partName - The name of the part
-    * @param {string} type - The type of content
-    * @returns {contentType}
-    */
+     * Adds a new content type as an xml node to the [Content-Types] file
+     * @param {string} partName - The name of the part
+     * @param {string} type - The type of content
+     * @returns {contentType}
+     */
     contentType.addContentType = function _addContentType(partName, type) {
         this.createChildReturnRoot({
             nodeType: 'Override',
@@ -925,12 +926,12 @@ var excelExporter = (function _excelExporter() {
         }).createChild({ nodeType: 'dc:creator', textValue: 'XcelXporter' })
             .createChild({ nodeType: 'cp:lastModifiedBy', textValue: 'XcelXporter' })
             .createChild({
-            nodeType: 'dcterms:created',
-            textValue: curDate,
-            attributes: {
-                'xsi:type': 'dcterms:W3CDTF'
-            }
-        }).createChildReturnRoot({
+                nodeType: 'dcterms:created',
+                textValue: curDate,
+                attributes: {
+                    'xsi:type': 'dcterms:W3CDTF'
+                }
+            }).createChildReturnRoot({
             nodeType: 'dcterms:modified',
             textValue: curDate,
             attributes: {
@@ -970,12 +971,12 @@ var excelExporter = (function _excelExporter() {
             .createChildReturnRoot({ nodeType: 'vt:i4', textValue: '1' })
             .createChildReturnChild({ nodeType: 'TitlesOfParts' })
             .createChildReturnChild({
-            nodeType: 'vt:vector',
-            attributes: {
-                size: '1',
-                baseType: 'lpstr'
-            }
-        }).createChildReturnRoot({ nodeType: 'vt:lpstr', textValue: 'sheet1' })
+                nodeType: 'vt:vector',
+                attributes: {
+                    size: '1',
+                    baseType: 'lpstr'
+                }
+            }).createChildReturnRoot({ nodeType: 'vt:lpstr', textValue: 'sheet1' })
             .createChild({ nodeType: 'Company', textValue: '' })
             .createChild({ nodeType: 'LinksUpToDate', textValue: 'false' })
             .createChild({ nodeType: 'SharedDoc', textValue: 'false' })
@@ -990,8 +991,8 @@ var excelExporter = (function _excelExporter() {
 
     function escape(string) {
         string = baseToString(string);
-        var reHasUnescapedHtml = new RegExp('[&<>"\'`]');
-        return (string && reHasUnescapedHtml.test(string)) ? string.replace(/[&<>"'`]/g, escapeHtmlChar) : string;
+        var reHasUnescapedHtml = new RegExp('[&<>"\']');
+        return (string && reHasUnescapedHtml.test(string)) ? string.replace(/[&<>"']/g, escapeHtmlChar) : string;
     }
 
     function baseToString(value) {
@@ -1003,12 +1004,11 @@ var excelExporter = (function _excelExporter() {
     }
 
     var htmlEscapes = {
-        '&': '&amp;',
+        '"': '&quot;',
+        '\'': '&apos;',
         '<': '&lt;',
         '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
-        '`': '&#96;'
+        '&': '&amp;',
     };
 
     var LETTER_REFS = {};

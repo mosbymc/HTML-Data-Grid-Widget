@@ -52,529 +52,536 @@
 
  - Parse expression string on boolean operators to get each token
  - If this is a pre-eval
-    - If the token is an operand
-        - Parse and evaluate the result(s)
-        - Evaluate each statement of truth
-            - If the statement just has inlined values, can evaluate immediately
-            - If the statement has variables or object properties, ensure access and gather values to inline
-            - If the statement has a function, start at global level and work down until function is found and executed; inline result
-        - Push result of evaluation onto queue
-    - If the token is an operator
-        - Use shunting-yard algorithm to determine where it belongs
-    - If the token is a paren
-        - Use shunting-yard algorithm
-    - If this is a post-eval
-        - If the token is an operand
-            - Parse the token and create a new boolean expression object; set appropriate values
-            - Then push the boolean expression object into the queue
-        - If the token is an operator
-            - Use shunting-yard algorithm to determine where it belongs
-        - If the token is a paren
-            - Use shunting-yard algorithm
+ - If the token is an operand
+ - Parse and evaluate the result(s)
+ - Evaluate each statement of truth
+ - If the statement just has inlined values, can evaluate immediately
+ - If the statement has variables or object properties, ensure access and gather values to inline
+ - If the statement has a function, start at global level and work down until function is found and executed; inline result
+ - Push result of evaluation onto queue
+ - If the token is an operator
+ - Use shunting-yard algorithm to determine where it belongs
+ - If the token is a paren
+ - Use shunting-yard algorithm
+ - If this is a post-eval
+ - If the token is an operand
+ - Parse the token and create a new boolean expression object; set appropriate values
+ - Then push the boolean expression object into the queue
+ - If the token is an operator
+ - Use shunting-yard algorithm to determine where it belongs
+ - If the token is a paren
+ - Use shunting-yard algorithm
 
 
-JavaScript Operators:
-TODO: Don't know that I want to support increment operators
-- Post-increment: x++
-- Pre-increment: ++x
-- Post-decrement: x--
-- Pre-decrement: --x
+ JavaScript Operators:
+ TODO: Don't know that I want to support increment operators
+ - Post-increment: x++
+ - Pre-increment: ++x
+ - Post-decrement: x--
+ - Pre-decrement: --x
 
-- Addition: +                       'add'
-- Subtraction/Negation: -           'subtract'
-- Multiplication: *                 'multiply'
-- Division: /                       'divide'
-- Bitwise not: ~                    'bitwise negate'
-- Logical not: !                    'not'
-- Modulus: %                        'mod'
-- Exponentiation: **                'exponent'
-- In: in                            'in'
-- Instance of: instanceOf           'instanceOf'
-- Less than: <                      'lt'
-- Less than or equal to: <=         'lte'
-- Greater than: >                   'gt'
-- Greater than or equal to: >=      'gte'
-- Loose equality: ==                'looseEqual'
-- Strict equality: ===              'strictEqual'
-- Loose inequality: !=              'loose-inequal'
-- Strict inequality: !==            'strict-inequal'
-- Bitwise XOR: ^                    'xor'
-- Logical AND: &&                   'and'
-- Logical OR: ||                    'or'
-- Ternary: ?
-- In-place multiplication: *=       'in-place-multiply'
-- In-place division: /=             'in-place-divide'
-- In-place addition: +=             'in-place-add'
-- In-place subtraction: -=          'in-place-subtract'
-- In-place modulus: %=              'in-place-mod'
+ - Addition: +                       'add'
+ - Subtraction/Negation: -           'subtract'
+ - Multiplication: *                 'multiply'
+ - Division: /                       'divide'
+ - Bitwise not: ~                    'bitwise negate'
+ - Logical not: !                    'not'
+ - Modulus: %                        'mod'
+ - Exponentiation: **                'exponent'
+ - In: in                            'in'
+ - Instance of: instanceOf           'instanceOf'
+ - Less than: <                      'lt'
+ - Less than or equal to: <=         'lte'
+ - Greater than: >                   'gt'
+ - Greater than or equal to: >=      'gte'
+ - Loose equality: ==                'looseEqual'
+ - Strict equality: ===              'strictEqual'
+ - Loose inequality: !=              'loose-inequal'
+ - Strict inequality: !==            'strict-inequal'
+ - Bitwise XOR: ^                    'xor'
+ - Logical AND: &&                   'and'
+ - Logical OR: ||                    'or'
+ - Ternary: ?
+ - In-place multiplication: *=       'in-place-multiply'
+ - In-place division: /=             'in-place-divide'
+ - In-place addition: +=             'in-place-add'
+ - In-place subtraction: -=          'in-place-subtract'
+ - In-place modulus: %=              'in-place-mod'
 
  */
 
 /*
-var operator = {
-    createNewOperator: function _createNewOperator(token) {
-        switch (token) {
-            case '!':
-            case 'NOT':
-                this.precedence = 1;
-                this.associativity = 'LTR';
-                this.value = '!';
-                this.type = 'operator';
-                this.operands = 1;
-                break;
-            case 'AND':
-            case '&&':
-                this.precedence = 2;
-                this.associativity = 'RTL';
-                this.value = '&&';
-                this.type = 'operator';
-                this.operands = 2;
-                break;
-            case 'XOR':
-            case '^':
-                this.precedence = 3;
-                this.associativity = 'RTL';
-                this.value = '^';
-                this.type = 'operator';
-                this.operands = 2;
-                break;
-            case 'OR':
-            case '||':
-                this.precedence = 4;
-                this.associativity = 'RTL';
-                this.value = '||';
-                this.type = 'operator';
-                this.operands = 2;
-                break;
-            case ')':
-                this.precedence = null;
-                this.associativity = null;
-                this.value = ')';
-                this.type = 'grouper';
-                this.operands = null;
-                break;
-            case '(':
-                this.precedence = null;
-                this.associativity = null;
-                this.value = '(';
-                this.type = 'grouper';
-                this.operands = null;
-                break;
-        }
-    }
-};
+ var operator = {
+ createNewOperator: function _createNewOperator(token) {
+ switch (token) {
+ case '!':
+ case 'NOT':
+ this.precedence = 1;
+ this.associativity = 'LTR';
+ this.value = '!';
+ this.type = 'operator';
+ this.operands = 1;
+ break;
+ case 'AND':
+ case '&&':
+ this.precedence = 2;
+ this.associativity = 'RTL';
+ this.value = '&&';
+ this.type = 'operator';
+ this.operands = 2;
+ break;
+ case 'XOR':
+ case '^':
+ this.precedence = 3;
+ this.associativity = 'RTL';
+ this.value = '^';
+ this.type = 'operator';
+ this.operands = 2;
+ break;
+ case 'OR':
+ case '||':
+ this.precedence = 4;
+ this.associativity = 'RTL';
+ this.value = '||';
+ this.type = 'operator';
+ this.operands = 2;
+ break;
+ case ')':
+ this.precedence = null;
+ this.associativity = null;
+ this.value = ')';
+ this.type = 'grouper';
+ this.operands = null;
+ break;
+ case '(':
+ this.precedence = null;
+ this.associativity = null;
+ this.value = '(';
+ this.type = 'grouper';
+ this.operands = null;
+ break;
+ }
+ }
+ };
 
-var parser = {
-    init: function _init(expression) {
-        this.expression = expression;
-        this.stack = Object.create(stack).init();
-        this.queue = [];
-    },
-    parse: function _parse() {
-        var head = 0,
-            tail = 0,
-            token = '';
+ var parser = {
+ init: function _init(expression) {
+ this.expression = expression;
+ this.stack = Object.create(stack).init();
+ this.queue = [];
+ },
+ parse: function _parse() {
+ var head = 0,
+ tail = 0,
+ token = '';
 
-        while (tail < this.expression.length) {
-            head = this.expression.indexOf(' ', tail);
-            token = this.expression.substring(tail, head);
+ while (tail < this.expression.length) {
+ head = this.expression.indexOf(' ', tail);
+ token = this.expression.substring(tail, head);
 
-            if (token.indexOf('(') === 0 ) {
-                this.stack.push(Object.create(operator).createNewOperator('('));
-                if (token.length > 1) {
-                    token = token.substring(1, token.length - 1);
-                }
-                else {
+ if (token.indexOf('(') === 0 ) {
+ this.stack.push(Object.create(operator).createNewOperator('('));
+ if (token.length > 1) {
+ token = token.substring(1, token.length - 1);
+ }
+ else {
 
-                }
-            }
-            else if (token.indexOf(')') === token.length - 1) {
-                if (token.length > 1) {
-                    token = token.substring(0, token.length - 2);
-                }
-            }
+ }
+ }
+ else if (token.indexOf(')') === token.length - 1) {
+ if (token.length > 1) {
+ token = token.substring(0, token.length - 2);
+ }
+ }
 
-            switch (this.expression[head]) {
-                case 'NOT':
-                case 'AND':
-                case 'XOR':
-                case 'OR':
-                    this.stack.push(Object.create(operator).createNewOperator(token));
-                    break;
-            }
-        }
-    }
-};
+ switch (this.expression[head]) {
+ case 'NOT':
+ case 'AND':
+ case 'XOR':
+ case 'OR':
+ this.stack.push(Object.create(operator).createNewOperator(token));
+ break;
+ }
+ }
+ }
+ };
 
-var rootNode = {
-    createRootNode: function _createRootNode(config) {
-        this.operator = config.operator || null;
+ var rootNode = {
+ createRootNode: function _createRootNode(config) {
+ this.operator = config.operator || null;
 
-        //Here the root node will always be an operator, but due to the child nodes
-        //delegating to this object, we want to check if the current node is an operator
-        //or an operand before specifying the number of children it may have and
-        //initializing its children array.
-        if (this.operator) {
-            this.numberOfChildren = getNumberOfOperands(this.operator);
-            this.children = [];
-        }
-    },
-    addChild: function _addChild(child) {
-        if (this.children && this.children.length < this.numberOfChildren)
-            this.children.push(child);
-    },
-    evaluate: function _evaluate() {
-        if (this.children && this.children.length) {
-            var childEval = [],
-                idx = 0;
+ //Here the root node will always be an operator, but due to the child nodes
+ //delegating to this object, we want to check if the current node is an operator
+ //or an operand before specifying the number of children it may have and
+ //initializing its children array.
+ if (this.operator) {
+ this.numberOfChildren = getNumberOfOperands(this.operator);
+ this.children = [];
+ }
+ },
+ addChild: function _addChild(child) {
+ if (this.children && this.children.length < this.numberOfChildren)
+ this.children.push(child);
+ },
+ evaluate: function _evaluate() {
+ if (this.children && this.children.length) {
+ var childEval = [],
+ idx = 0;
 
-            while (idx < this.children.length) {
-                childEval.push(this.children[idx].evaluate);
-                return comparator(childEval[0], childEval[1], this.operator);
-            }
-        }
-        else {
-            //TODO: need to update this; cannot count on node being a leaf; also need to pass
-            //TODO: any context or 'hard' values rather than just blindly passing field1, field2
-            return comparator(this.field1, this.field2);
-        }
-    },
-    get context1() {
-        return this._context1;
-    },
-    set context1(val) {
-        this._context1 = val;
-    },
-    get context2() {
-        return this._context2;
-    },
-    set context2(val) {
-        this._context2 = val;
-    }
-};
+ while (idx < this.children.length) {
+ childEval.push(this.children[idx].evaluate);
+ return comparator(childEval[0], childEval[1], this.operator);
+ }
+ }
+ else {
+ //TODO: need to update this; cannot count on node being a leaf; also need to pass
+ //TODO: any context or 'hard' values rather than just blindly passing field1, field2
+ return comparator(this.field1, this.field2);
+ }
+ },
+ get context1() {
+ return this._context1;
+ },
+ set context1(val) {
+ this._context1 = val;
+ },
+ get context2() {
+ return this._context2;
+ },
+ set context2(val) {
+ this._context2 = val;
+ }
+ };
 
-var childNode = Object.create(rootNode, {
-    createChildNode: function _createChildNode(config) {
-        this.createRootNode(config);
+ var childNode = Object.create(rootNode, {
+ createChildNode: function _createChildNode(config) {
+ this.createRootNode(config);
 
-        if (!config.operator) {
-            this.field1 = config.field1 || null;
-            this.field2 = config.field2 || null;
-            this.value1 = config.value1 || null;
-            this.value2 = config.value2 || null;
-            this.requiresContext = this.field1 || this.field2 ? true : false;
-        }
-    }
-});
+ if (!config.operator) {
+ this.field1 = config.field1 || null;
+ this.field2 = config.field2 || null;
+ this.value1 = config.value1 || null;
+ this.value2 = config.value2 || null;
+ this.requiresContext = this.field1 || this.field2 ? true : false;
+ }
+ }
+ });
 
-Object.defineProperties(rootNode, {
-    'evaluate': {
-        value: function _evaluate() {
+ Object.defineProperties(rootNode, {
+ 'evaluate': {
+ value: function _evaluate() {
 
-        },
-        writable: false,
-        configurable: false
-    },
-    'val': {
+ },
+ writable: false,
+ configurable: false
+ },
+ 'val': {
 
-    },
-    'base': {
+ },
+ 'base': {
 
-    },
-    'operator': {
+ },
+ 'operator': {
 
-    }
-});
+ }
+ });
 
-var expression = {
-    init: function _init(config) {
-        this.field1 = config.field1 || null;
-        this.field2 = config.field2 || null;
-        this.value1 = config.value1 || null;
-        this.value2 = config.value2 || null;
-        this.operation = config.operation;
-    }
-};
+ var expression = {
+ init: function _init(config) {
+ this.field1 = config.field1 || null;
+ this.field2 = config.field2 || null;
+ this.value1 = config.value1 || null;
+ this.value2 = config.value2 || null;
+ this.operation = config.operation;
+ }
+ };
 
-Object.defineProperties(expression, {
-    'evaluate': {
-        value: function _evaluate() {
+ Object.defineProperties(expression, {
+ 'evaluate': {
+ value: function _evaluate() {
 
-        },
-        writable: false,
-        configurable: false
-    },
-    'val': {
+ },
+ writable: false,
+ configurable: false
+ },
+ 'val': {
 
-    },
-    'base': {
+ },
+ 'base': {
 
-    },
-    'operator': {
+ },
+ 'operator': {
 
-    }
-});
+ }
+ });
 
-var preEvalNode = {
-    init: function _init(nodeType, value) {
-        this.type = nodeType;
-        this.value = value;
+ var preEvalNode = {
+ init: function _init(nodeType, value) {
+ this.type = nodeType;
+ this.value = value;
 
-        if (this.type === 'operator') {
-            this.children = [];
-            this.numOperands = getNumberOfOperands(value);
-        }
+ if (this.type === 'operator') {
+ this.children = [];
+ this.numOperands = getNumberOfOperands(value);
+ }
 
-        return this;
-    },
-    addChild: function _addChild(childNode) {
-        if (preEvalNode.isPrototypeOf(childNode) && this.numOperands < this.children.length)
-            this.children.push(childNode);
-        return this;
-    },
-    evaluate: function _evaluate() {
-        if (this.type === 'operand')
-            return this.value;
-        else {
-            return comparator(this.children[0], this.children[1], this.value);
-        }
-    }
-};
+ return this;
+ },
+ addChild: function _addChild(childNode) {
+ if (preEvalNode.isPrototypeOf(childNode) && this.numOperands < this.children.length)
+ this.children.push(childNode);
+ return this;
+ },
+ evaluate: function _evaluate() {
+ if (this.type === 'operand')
+ return this.value;
+ else {
+ return comparator(this.children[0], this.children[1], this.value);
+ }
+ }
+ };
 
-var expressionParser = {
-    init: function _init(expression, evalType) {
-        this.expression = expression;
-        this.stack = Object.create(stack).init();
-        this.evalType = evalType;
-        this.queue = [];
-    },
-    parse: function _parse() {
-        var re = /(AND|OR|NOT|XOR|\)|\()/,  ///(&&|\|\||!|^|\)|\(|<|>|<=|>=|==|===|!=|!==)/;
-            nodes = this.expression.split(re),
-            operators = ['AND', 'OR', 'NOT', 'XOR'],
-            groupings = ['(', ')'],
-            opIdx = 0, grpIdx = 0,
-            curOp, teIdx;
+ var expressionParser = {
+ init: function _init(expression, evalType) {
+ this.expression = expression;
+ this.stack = Object.create(stack).init();
+ this.evalType = evalType;
+ this.queue = [];
+ },
+ parse: function _parse() {
+ var re = /(AND|OR|NOT|XOR|\)|\()/,  ///(&&|\|\||!|^|\)|\(|<|>|<=|>=|==|===|!=|!==)/;
+ nodes = this.expression.split(re),
+ operators = ['AND', 'OR', 'NOT', 'XOR'],
+ groupings = ['(', ')'],
+ opIdx = 0, grpIdx = 0,
+ curOp, teIdx;
 
-        for (var i = 0; i < nodes.length; i++) {
-            if (nodes[i] === '' || nodes[i] === ' ')
-                continue;
-            var token = nodes[i].trim();
-            if (opIdx = operators.indexOf(token) > -1) {
-                //TODO: compare operators precedence and associativity to top of stack
-                curOp = Object.create(operator).createNewOperator(operators[opIdx]);
-                while (this.stack.length()) {
-                    var stacktop = this.stack.peek();
-                    if ((stacktop.type === 'operator' && curOp.associtivity === 'R-T-L' && curOp.precedence <= stacktop.precedence)
-                        || (curOp.associtivity === 'L-T-R' && curOp.precedence < stacktop.precedence))
-                        this.queue.push(this.stack.pop());
-                    else
-                        break;
-                }
-                this.stack.push(curOp);
-            }
-            else if (grpIdx = groupings.indexOf(token) > -1) {
-                if (grpIdx === 0)
-                    this.stack.push(Object.create(operator).createNewOperator('('));
-                else {
-                    while (this.stack.peek().value !== '(') {
-                        this.queue.push(this.stack.pop());
-                    }
-                    this.stack.pop();   //pop off the actual '(' item but don't push it into the queue
-                }
-            }
-            else {  //if the token is not an operator and it's not a grouper, then it is an expression
-                if (this.evalType === 'post-evaluation') {
+ for (var i = 0; i < nodes.length; i++) {
+ if (nodes[i] === '' || nodes[i] === ' ')
+ continue;
+ var token = nodes[i].trim();
+ if (opIdx = operators.indexOf(token) > -1) {
+ //TODO: compare operators precedence and associativity to top of stack
+ curOp = Object.create(operator).createNewOperator(operators[opIdx]);
+ while (this.stack.length()) {
+ var stacktop = this.stack.peek();
+ if ((stacktop.type === 'operator' && curOp.associtivity === 'R-T-L' && curOp.precedence <= stacktop.precedence)
+ || (curOp.associtivity === 'L-T-R' && curOp.precedence < stacktop.precedence))
+ this.queue.push(this.stack.pop());
+ else
+ break;
+ }
+ this.stack.push(curOp);
+ }
+ else if (grpIdx = groupings.indexOf(token) > -1) {
+ if (grpIdx === 0)
+ this.stack.push(Object.create(operator).createNewOperator('('));
+ else {
+ while (this.stack.peek().value !== '(') {
+ this.queue.push(this.stack.pop());
+ }
+ this.stack.pop();   //pop off the actual '(' item but don't push it into the queue
+ }
+ }
+ else {  //if the token is not an operator and it's not a grouper, then it is an expression
+ if (this.evalType === 'post-evaluation') {
 
-                }
-                else {
-                    this.queue.push(evaluateExpression(token));
-                }
-            }
+ }
+ else {
+ this.queue.push(evaluateExpression(token));
+ }
+ }
 
-        }
+ }
 
-        while (this.stack.length()) {
-            this.queue.push(this.stack.pop());
-        }
-    }
-};
+ while (this.stack.length()) {
+ this.queue.push(this.stack.pop());
+ }
+ }
+ };
 
-var expressionParser2 = {
-    init: function _init(expression, evalType) {
-        this.expression = expression;
-        this.stack = Object.create(stack).init();
-        this.evalType = evalType;
-        this.queue = [];
-    },
-    parse: function _parse() {
-        var re = /(&&|\|\||^|\)|\()/,
-            re2 = /(<|>|<=|>=|==|===|!=|!==)/,
-            nodes = this.expression.split(re),
-            operators = ['&&', '||', '!', '^'],
-            groupings = ['(', ')'],
-            opIdx = 0, grpIdx = 0,
-            curOp, teIdx;
+ var expressionParser2 = {
+ init: function _init(expression, evalType) {
+ this.expression = expression;
+ this.stack = Object.create(stack).init();
+ this.evalType = evalType;
+ this.queue = [];
+ },
+ parse: function _parse() {
+ var re = /(&&|\|\||^|\)|\()/,
+ re2 = /(<|>|<=|>=|==|===|!=|!==)/,
+ nodes = this.expression.split(re),
+ operators = ['&&', '||', '!', '^'],
+ groupings = ['(', ')'],
+ opIdx = 0, grpIdx = 0,
+ curOp, teIdx;
 
-        for (var i = 0; i < nodes.length; i++) {
-            if (nodes[i] === '' || nodes[i] === ' ')
-                continue;
-            var token = nodes[i].trim();
-            if (opIdx = operators.indexOf(token) > -1) {
-                //TODO: compare operators precedence and associativity to top of stack
-                curOp = Object.create(operator).createNewOperator(operators[opIdx]);
-                while (this.stack.length()) {
-                    var stacktop = this.stack.peek();
-                    if ((stacktop.type === 'operator' && curOp.associtivity === 'R-T-L' && curOp.precedence <= stacktop.precedence)
-                        || (curOp.associtivity === 'L-T-R' && curOp.precedence < stacktop.precedence))
-                        this.queue.push(this.stack.pop());
-                    else
-                        break;
-                }
-                this.stack.push(curOp);
-            }
-            else if (grpIdx = groupings.indexOf(token) > -1) {
-                if (grpIdx === 0)
-                    this.stack.push(Object.create(operator).createNewOperator('('));
-                else {
-                    while (this.stack.peek().value !== '(') {
-                        this.queue.push(this.stack.pop());
-                    }
-                    this.stack.pop();   //pop off the actual '(' item but don't push it into the queue
-                }
-            }
-            else {  //if the token is not an operator and it's not a grouper, then it is an expression
-                if (this.evalType === 'post-evaluation') {
+ for (var i = 0; i < nodes.length; i++) {
+ if (nodes[i] === '' || nodes[i] === ' ')
+ continue;
+ var token = nodes[i].trim();
+ if (opIdx = operators.indexOf(token) > -1) {
+ //TODO: compare operators precedence and associativity to top of stack
+ curOp = Object.create(operator).createNewOperator(operators[opIdx]);
+ while (this.stack.length()) {
+ var stacktop = this.stack.peek();
+ if ((stacktop.type === 'operator' && curOp.associtivity === 'R-T-L' && curOp.precedence <= stacktop.precedence)
+ || (curOp.associtivity === 'L-T-R' && curOp.precedence < stacktop.precedence))
+ this.queue.push(this.stack.pop());
+ else
+ break;
+ }
+ this.stack.push(curOp);
+ }
+ else if (grpIdx = groupings.indexOf(token) > -1) {
+ if (grpIdx === 0)
+ this.stack.push(Object.create(operator).createNewOperator('('));
+ else {
+ while (this.stack.peek().value !== '(') {
+ this.queue.push(this.stack.pop());
+ }
+ this.stack.pop();   //pop off the actual '(' item but don't push it into the queue
+ }
+ }
+ else {  //if the token is not an operator and it's not a grouper, then it is an expression
+ if (this.evalType === 'post-evaluation') {
 
-                }
-                else {
-                    this.queue.push(evaluateExpression(token));
-                }
-            }
+ }
+ else {
+ this.queue.push(evaluateExpression(token));
+ }
+ }
 
-        }
+ }
 
-        while (this.stack.length()) {
-            this.queue.push(this.stack.pop());
-        }
-    }
-};
+ while (this.stack.length()) {
+ this.queue.push(this.stack.pop());
+ }
+ }
+ };
 
-function buildTreeNode(expression) {
-    var re = /(<(?!=)|>(?!=)|<=|>=|==(?!=)|===|!=(?!=)|!==|!(?!==))/,
-        tokens = expression.split(re),
-        binaryOperators = ['<', '>', '<=', '>=', '==', '===', '!=', '!=='],
-        unaryOperators = ['!'],
-        token, val,
-        operator, isFirstOperandSet = false,
-        expressionObj = {
-            operator: null,
-            leftOperand: null,
-            rightOperand: null,
-            isLeftNegated: false,
-            isRightNegated: false
-        };
+ function buildTreeNode(expression) {
+ var re = /(<(?!=)|>(?!=)|<=|>=|==(?!=)|===|!=(?!=)|!==|!(?!==))/,
+ tokens = expression.split(re),
+ binaryOperators = ['<', '>', '<=', '>=', '==', '===', '!=', '!=='],
+ unaryOperators = ['!'],
+ token, val,
+ operator, isFirstOperandSet = false,
+ expressionObj = {
+ operator: null,
+ leftOperand: null,
+ rightOperand: null,
+ isLeftNegated: false,
+ isRightNegated: false
+ };
 
-    for (var i = 0; i < tokens.length; i++) {
-        token = tokens[i].trim();
-        if (token === '')
-            continue;
+ for (var i = 0; i < tokens.length; i++) {
+ token = tokens[i].trim();
+ if (token === '')
+ continue;
 
-        if (~binaryOperators.indexOf(token)) {
-            expressionObj.operator = token;
-        }
-        else if (~unaryOperators.indexOf(token)) {
-            if (!isFirstOperandSet)
-                expressionObj.isLeftNegated = true;
-            else
-                expressionObj.isRightNegated = true;
-        }
-        else {
-            val = [window].concat(token.split('.')).reduce(function findValueFromGlobal(prev, curr) {
-                return typeof prev === 'function' ? prev()[curr] : prev[curr];
-            });
+ if (~binaryOperators.indexOf(token)) {
+ expressionObj.operator = token;
+ }
+ else if (~unaryOperators.indexOf(token)) {
+ if (!isFirstOperandSet)
+ expressionObj.isLeftNegated = true;
+ else
+ expressionObj.isRightNegated = true;
+ }
+ else {
+ val = [window].concat(token.split('.')).reduce(function findValueFromGlobal(prev, curr) {
+ return typeof prev === 'function' ? prev()[curr] : prev[curr];
+ });
 
-            if (typeof val !== 'function')
-                val = val();
-            else
-                val = val;
+ if (typeof val !== 'function')
+ val = val();
+ else
+ val = val;
 
-            if (!isFirstOperandSet) {
-                expressionObj.leftOperand = val;
-                isFirstOperandSet = true;
-            }
-            else
-                expressionObj.rightOperand = val;
-        }
-    }
-}
+ if (!isFirstOperandSet) {
+ expressionObj.leftOperand = val;
+ isFirstOperandSet = true;
+ }
+ else
+ expressionObj.rightOperand = val;
+ }
+ }
+ }
 
-function evaluateExpression(expression) {
-    var re = /(<(?!=)|>(?!=)|<=|>=|==(?!=)|===|!=(?!=)|!==|!(?!==))/,
-        tokens = expression.split(re),
-        binaryOperators = ['<', '>', '<=', '>=', '==', '===', '!=', '!=='],
-        unaryOperators = ['!'],
-        token, val,
-        operator, isFirstOperandSet = false,
-        expressionObj = {
-            operator: null,
-            leftOperand: null,
-            rightOperand: null,
-            isLeftNegated: false,
-            isRightNegated: false
-        };
+ function evaluateExpression(expression) {
+ var re = /(<(?!=)|>(?!=)|<=|>=|==(?!=)|===|!=(?!=)|!==|!(?!==))/,
+ tokens = expression.split(re),
+ binaryOperators = ['<', '>', '<=', '>=', '==', '===', '!=', '!=='],
+ unaryOperators = ['!'],
+ token, val,
+ operator, isFirstOperandSet = false,
+ expressionObj = {
+ operator: null,
+ leftOperand: null,
+ rightOperand: null,
+ isLeftNegated: false,
+ isRightNegated: false
+ };
 
-    for (var i = 0; i < tokens.length; i++) {
-        token = tokens[i].trim();
-        if (token === '')
-            continue;
+ for (var i = 0; i < tokens.length; i++) {
+ token = tokens[i].trim();
+ if (token === '')
+ continue;
 
-        if (~binaryOperators.indexOf(token)) {
-            expressionObj.operator = token;
-        }
-        else if (~unaryOperators.indexOf(token)) {
-            if (!isFirstOperandSet)
-                expressionObj.isLeftNegated = true;
-            else
-                expressionObj.isRightNegated = true;
-        }
-        else {
-            val = [window].concat(token.split('.')).reduce(function findValueFromGlobal(prev, curr) {
-                return typeof prev === 'function' ? prev()[curr] : prev[curr];
-            });
+ if (~binaryOperators.indexOf(token)) {
+ expressionObj.operator = token;
+ }
+ else if (~unaryOperators.indexOf(token)) {
+ if (!isFirstOperandSet)
+ expressionObj.isLeftNegated = true;
+ else
+ expressionObj.isRightNegated = true;
+ }
+ else {
+ val = [window].concat(token.split('.')).reduce(function findValueFromGlobal(prev, curr) {
+ return typeof prev === 'function' ? prev()[curr] : prev[curr];
+ });
 
-            if (typeof val !== 'function')
-                val = val();
-            else
-                val = val;
+ if (typeof val !== 'function')
+ val = val();
+ else
+ val = val;
 
-            if (!isFirstOperandSet) {
-                expressionObj.leftOperand = val;
-                isFirstOperandSet = true;
-            }
-            else
-                expressionObj.rightOperand = val;
-        }
-    }
+ if (!isFirstOperandSet) {
+ expressionObj.leftOperand = val;
+ isFirstOperandSet = true;
+ }
+ else
+ expressionObj.rightOperand = val;
+ }
+ }
 
-    return comparator(tokens[0], tokens[1], (tokens[2] || ''));
-}
+ return comparator(tokens[0], tokens[1], (tokens[2] || ''));
+ }
 
-var expressionEvaluator = {
-    parseExpression: function _parseExpression(expression, evalType) {
-        this.expression = expression;
-        this.evalType = evalType || 'post-evaluation';
-        this.expressionParser = Object.create(expressionParser).init(expression, evalType);
-    }
-};
+ var expressionEvaluator = {
+ parseExpression: function _parseExpression(expression, evalType) {
+ this.expression = expression;
+ this.evalType = evalType || 'post-evaluation';
+ this.expressionParser = Object.create(expressionParser).init(expression, evalType);
+ }
+ };
 
-var operatorStack = Object.create(stack).init();
+ var operatorStack = Object.create(stack).init();
 
-var queue = [];
-*/
+ var queue = [];
+ */
 
 
 var expressionParser = (function _expressionParser() {
+    var dateTimeRegex = '^(((?:(?:(?:(?:(?:(?:(?:(0?[13578]|1[02])(\\/|-|\\.)(31))\\4|(?:(0?[1,3-9]|1[0-2])(\\/|-|\\.)(29|30)\\7))|(?:(?:(?:(?:(31)(\\/|-|\\.)(0?[13578]|1[02])\\10)|(?:(29|30)(\\/|-|\\.)' +
+        '(0?[1,3-9]|1[0-2])\\13)))))((?:1[6-9]|[2-9]\\d)?\\d{2})|(?:(?:(?:(0?2)(\\/|-|\\.)(29)\\17)|(?:(29)(\\/|-|\\.)(0?2))\\20)((?:(?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])' +
+        '|(?:(?:16|[2468][048]|[3579][26])00))))|(?:(?:((?:0?[1-9])|(?:1[0-2]))(\\/|-|\\.)(0?[1-9]|1\\d|2[0-8]))\\24|(0?[1-9]|1\\d|2[0-8])(\\/|-|\\.)((?:0?[1-9])|(?:1[0-2]))\\27)' +
+        '((?:1[6-9]|[2-9]\\d)?\\d{2}))))|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\31)(29))))' +
+        '|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)(?:(?:(?:(0?[13578]|1[02])\\35(31))|(?:(0?[1,3-9]|1[0-2])\\35(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\35(0?[1-9]|1\\d|2[0-8])))))' +
+        '(?: |T)((0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\44([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\49([0-5]\\d))?)$))';
+
     var booleanExpressionTree = {
         init: function _init() {
             this.tree = null;
@@ -612,16 +619,16 @@ var expressionParser = (function _expressionParser() {
     };
 
     /*var conjunct = {
-        createConjunct: function _createConjunct(conjunction) {
-            this.operator = conjunction;
-            this.numberOfOperands = getNumberOfOperands(this.operator);
+     createConjunct: function _createConjunct(conjunction) {
+     this.operator = conjunction;
+     this.numberOfOperands = getNumberOfOperands(this.operator);
 
-            var operatorCharacteristics = getOperatorPrecedence(this.operator);
+     var operatorCharacteristics = getOperatorPrecedence(this.operator);
 
-            this.precedence = operatorCharacteristics.precedence;
-            this.associativity = operatorCharacteristics.associativity;
-        }
-    };*/
+     this.precedence = operatorCharacteristics.precedence;
+     this.associativity = operatorCharacteristics.associativity;
+     }
+     };*/
 
     var astNode = {
         createNode: function _createNode(node) {
@@ -703,6 +710,45 @@ var expressionParser = (function _expressionParser() {
                     curVal = convertTimeArrayToSeconds(curVal);
                     baseVal = convertTimeArrayToSeconds(baseVal);
                     break;
+                case 'datetime':
+                    var re = new RegExp(dateTimeRegex),
+                        execVal1, execVal2;
+                    if (re.test(initialVal) && re.test(this.standard)) {
+                        execVal1 = re.exec(initialVal);
+                        execVal2 = re.exec(this.standard);
+
+                        var dateComp1 = execVal1[2],
+                            dateComp2 = execVal2[2],
+                            timeComp1 = execVal1[42],
+                            timeComp2 = execVal2[42];
+
+                        timeComp1 = getNumbersFromTime(timeComp1);
+                        timeComp2 = getNumbersFromTime(timeComp2);
+                        if (timeComp1[3] && timeComp1[3] === 'PM')
+                            timeComp1[0] += 12;
+                        if (timeComp2[3] && timeComp2[3] === 'PM')
+                            timeComp2[0] += 12;
+
+                        var year1 = execVal1[15] || execVal1[22] || execVal1[29] || execVal1[30] || execVal1[34],
+                            month1 = execVal1[3] || execVal1[6] || execVal1[11] || execVal1[14] || execVal1[16] || execVal1[21] || execVal1[23]
+                                || execVal1[28] || execVal1[32] || execVal1[36] || execVal1[38] || execVal1[40],
+                            day1 = execVal1[5] || execVal1[8] || execVal1[9] || execVal1[12] || execVal1[18] || execVal1[19] || execVal1[25]
+                                || execVal1[26] || execVal1[33] || execVal1[37] || execVal1[39] || execVal1[41];
+
+                        var year2 = execVal2[15] || execVal2[22] || execVal2[29] || execVal2[30] || execVal2[34],
+                            month2 = execVal2[3] || execVal2[6] || execVal2[11] || execVal2[14] || execVal2[16] || execVal2[21] || execVal2[23]
+                                || execVal2[28] || execVal2[32] || execVal2[36] || execVal2[38] || execVal2[40],
+                            day2 = execVal2[5] || execVal2[8] || execVal2[9] || execVal2[12] || execVal2[18] || execVal2[19] || execVal2[25]
+                                || execVal2[26] || execVal2[33] || execVal2[37] || execVal2[39] || execVal2[41];
+
+                        dateComp1 = new Date(year1, month1, day1);
+                        dateComp2 = new Date(year2, month2, day2);
+                    }
+                    else {
+                        curVal = 0;
+                        baseVal = 0;
+                    }
+                    break;
                 case 'number':
                     curVal = parseFloat(initialVal);
                     baseVal = parseFloat(this.standard);
@@ -716,8 +762,8 @@ var expressionParser = (function _expressionParser() {
                     baseVal = this.standard.toString();
                     break;
                 default:
-                    curVal = initialVal;
-                    baseVal = this.standard;
+                    curVal = initialVal.toString();
+                    baseVal = this.standard.toString();
                     break;
             }
 
@@ -948,8 +994,8 @@ var expressionParser = (function _expressionParser() {
     }
 
     function convertTimeArrayToSeconds(timeArray) {
-        var hourVal = timeArray[0] === 12 || timeArray[0] === 24 ? timeArray[0] - 12 : timeArray[0];
-        return 3660 * hourVal + 60*timeArray[1] + timeArray[2];
+        var hourVal = parseInt(timeArray[0].toString()) === 12 || parseInt(timeArray[0].toString()) === 24 ? parseInt(timeArray[0].toString()) - 12 : parseInt(timeArray[0]);
+        return 3660 * hourVal + 60 * parseInt(timeArray[1]) + parseInt(timeArray[2]);
     }
 
     return {
