@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">55.70</p>
+      <p class="stat">55.67</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4047</p>
+      <p class="stat">4057</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">222.73</p>
+      <p class="stat">223.18</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">92.20</p>
+      <p class="stat">92.46</p>
     </div>
   </div>
 </div>
@@ -649,6 +649,10 @@
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
+        if (storageData.advancedFiltering) {
+            storageData.advancedFiltering.groupsCount = isNumber(storageData.advancedFiltering.groupsCount) ? storageData.advancedFiltering.groupsCount : 5;
+            storageData.advancedFiltering.filtersCount = isNumber(storageData.advancedFiltering.filtersCount) ? storageData.advancedFiltering.filtersCount : 10;
+        }
         storageData.parentGridId = gridData.parentGridId != null ? gridData.parentGridId : null;
         if (storageData.dataSource.rowCount == null) storageData.dataSource.rowCount = gridData.dataSource.data.length;
 
@@ -2525,11 +2529,16 @@
     }
 
     function deleteFilterButtonHandler(e) {
-        var filterRowDiv = $(e.currentTarget).parents(&#039;.filter_row_div&#039;),
+        var target = $(e.currentTarget);
+        var filterRowDiv = target.parents(&#039;.filter_row_div&#039;),
             addNewFilterButton = filterRowDiv.find(&#039;.new_filter&#039;),
-            filterModal = $(e.currentTarget).parents(&#039;.filter_modal&#039;);
+            filterModal = target.parents(&#039;.filter_modal&#039;),
+            newFilterGroupButton = filterRowDiv.find(&#039;.add_filter_group&#039;);
         if (addNewFilterButton.length) {
             filterRowDiv.prev().append(addNewFilterButton.detach());
+        }
+        if (newFilterGroupButton.length) {
+            filterRowDiv.prev().append(newFilterGroupButton.detach());
         }
         filterRowDiv.remove();
 
@@ -2540,6 +2549,7 @@
             allowedFilters = gridState[gridId].advancedFiltering.filtersCount;
         if (allowedFilters &gt; numFilters)
             filterModal.find(&#039;.add_filter_group&#039;).prop(&#039;disabled&#039;, false);
+        e.stopPropagation();
     }
 
     function clearFirstFilterButtonHandler(e) {
