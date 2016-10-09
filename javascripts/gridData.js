@@ -15,6 +15,7 @@ var gridData = {
         sortable: true,
         resizable: true,
         excelExport: true,
+        pageSize: 5,
         columns: {
             MechanicName: {
                 title: 'Mechanic',
@@ -51,7 +52,9 @@ var gridData = {
             EngineSize: {
                 title: 'Engine Size',
                 width: 150,
-                type: 'string',
+                type: 'number',
+                template: '{{data}} Liter',
+                format: '##.##',
                 filterable: true
             }
         }
@@ -61,6 +64,15 @@ var gridData = {
     rows: {
         alternateRows: ["testAlt"],
         all: ["testAll"]
+    },
+    aggregates: {
+        FirstName: {
+            type: "count"
+        },
+        Zip: {
+            type: "average"
+        },
+        positionAt: "top"
     },
     columns: {
         FirstName: {
@@ -96,25 +108,41 @@ var gridData = {
             width: 200,
             type: "string",
             filterable: true,
-            editable: true,
+            editable: true
         },
         City: {
             type: "string",
             editable: true,
-            width: 155,
+            width: 155
         },
         State: {
             filterable: false,
             type: "string",
             width: 140,
-            editable: true,
+            editable: 'drop-down',
+            options: ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA', 'HI', 'ID',
+                'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT',
+                'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+                'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY']
         },
         Zip: {
             title: 'Zip Code',
             filterable: true,
             type: "number",
+            format: '00000',
             width: 180,
             editable: true,
+            validation: {
+                required: true,
+                customRules: {
+                    length: function _length(callback) {
+                        if ($(this).val().length !== 5)
+                            callback(false, 'A zip code must have exactly five numbers', 150);
+                        else
+                            callback(true);
+                    }
+                }
+            }
         }
     },
     dataSource: {
@@ -127,7 +155,7 @@ var gridData = {
                 Email: 'mmm@mmm.net',
                 Address: '999 Peachtree St.',
                 City: 'New New York',
-                State: 'New York',
+                State: 'NY',
                 Zip: '80808',
                 drillDownData: [
                     {
@@ -136,8 +164,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -145,8 +173,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -154,8 +182,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -164,7 +192,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -184,8 +212,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -193,8 +221,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -202,8 +230,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -212,7 +240,34 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
+                    },
+                    {
+                        MechanicName: 'Joey Mousepad',
+                        Make: 'Nissan',
+                        Model: 'Pathfinder',
+                        Year: '2008',
+                        Doors: '5',
+                        EngineType: 'V6',
+                        EngineSize: 3.5
+                    },
+                    {
+                        MechanicName: 'Clamps',
+                        Make: 'BMW',
+                        Model: '323',
+                        Year: '2008',
+                        Doors: '4',
+                        EngineType: 'V6',
+                        EngineSize: 3.5
+                    },
+                    {
+                        MechanicName: 'Sal',
+                        Make: 'Nissan',
+                        Model: 'Pathfinder',
+                        Year: '2002',
+                        Doors: '5',
+                        EngineType: 'V6',
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -232,8 +287,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -241,8 +296,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -250,8 +305,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -260,7 +315,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -280,8 +335,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -289,8 +344,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -298,8 +353,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -308,7 +363,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -328,8 +383,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -337,8 +392,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -346,8 +401,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -356,7 +411,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -376,8 +431,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -385,8 +440,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -394,8 +449,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -404,19 +459,19 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
             {
                 FirstName: 'Lrrr',
                 LastName: '',
-                Phone: '999-999-9999',
-                Email: 'mmm@mmm.net',
-                Address: '999 Peachtree St.',
-                City: 'Atlanta',
-                State: 'GA',
-                Zip: '30154',
+                Phone: '2204834-0-123425',
+                Email: 'mywifeis@apainintheass.edu',
+                Address: '1 Omicron Persei 8 Ave.',
+                City: 'Omicronia',
+                State: '',
+                Zip: '3',
                 drillDownData: [
                     {
                         MechanicName: 'Clamps',
@@ -424,8 +479,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -433,8 +488,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -442,8 +497,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -452,7 +507,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -472,8 +527,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Sal',
@@ -481,8 +536,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -490,8 +545,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -500,7 +555,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -520,8 +575,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -529,8 +584,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -538,8 +593,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -548,7 +603,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -568,8 +623,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -577,8 +632,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -586,8 +641,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -596,19 +651,19 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
             {
-                FirstName: 'Mark',
-                LastName: 'Mosby',
-                Phone: '999-999-9999',
-                Email: 'mmm@mmm.net',
-                Address: '999 Peachtree St.',
-                City: 'Atlanta',
-                State: 'GA',
-                Zip: '30154',
+                FirstName: 'Mr. Panucci',
+                LastName: '',
+                Phone: '123-456-7890',
+                Email: 'mrPanuccis@pizza.net',
+                Address: '999 Somewhere St.',
+                City: 'New New York',
+                State: 'NY',
+                Zip: '60328',
                 drillDownData: [
                     {
                         MechanicName: 'Sal',
@@ -616,8 +671,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -625,8 +680,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -634,8 +689,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -644,19 +699,19 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
             {
-                FirstName: 'Mark',
-                LastName: 'Mosby',
-                Phone: '999-999-9999',
-                Email: 'mmm@mmm.net',
-                Address: '999 Peachtree St.',
-                City: 'Atlanta',
-                State: 'GA',
-                Zip: '30154',
+                FirstName: 'Barbados',
+                LastName: 'Slim',
+                Phone: '098-765-4321',
+                Email: 'some@email.com',
+                Address: '123 Carribean Way',
+                City: 'New New York',
+                State: 'NY',
+                Zip: '13679',
                 drillDownData: [
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -664,8 +719,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -673,8 +728,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -682,8 +737,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -692,19 +747,19 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
             {
-                FirstName: 'Mark',
-                LastName: 'Mosby',
-                Phone: '999-999-9999',
-                Email: 'mmm@mmm.net',
-                Address: '999 Peachtree St.',
-                City: 'Atlanta',
-                State: 'GA',
-                Zip: '30154',
+                FirstName: 'Turanga',
+                LastName: 'Morris',
+                Phone: '',
+                Email: 'mTurange@sewerlife.net',
+                Address: '123 DungBeetle Ln.',
+                City: 'Old New York',
+                State: 'NY',
+                Zip: '46927',
                 drillDownData: [
                     {
                         MechanicName: 'Sal',
@@ -712,8 +767,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -721,8 +776,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -730,8 +785,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -740,19 +795,19 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
             {
-                FirstName: 'Mark',
-                LastName: 'Mosby',
-                Phone: '999-999-9999',
-                Email: 'mmm@mmm.net',
-                Address: '999 Peachtree St.',
-                City: 'Atlanta',
-                State: 'GA',
-                Zip: '30154',
+                FirstName: 'Leo',
+                LastName: 'Wong',
+                Phone: '569-231-7506',
+                Email: 'lWong4Life@iownmars.com',
+                Address: '1 Mars St.',
+                City: 'Wong City',
+                State: '',
+                Zip: '1',
                 drillDownData: [
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -760,8 +815,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -769,8 +824,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -778,8 +833,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -788,19 +843,19 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
             {
-                FirstName: 'Mark',
-                LastName: 'Mosby',
-                Phone: '999-999-9999',
-                Email: 'mmm@mmm.net',
-                Address: '999 Peachtree St.',
-                City: 'Atlanta',
-                State: 'GA',
-                Zip: '30154',
+                FirstName: 'Roberto',
+                LastName: '',
+                Phone: '',
+                Email: 'iwillstab@yourass.net',
+                Address: '5 Our Motherboard of Mercy Hospital',
+                City: 'New New York',
+                State: 'NY',
+                Zip: '98713008787',
                 drillDownData: [
                     {
                         MechanicName: 'Clamps',
@@ -808,8 +863,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -817,8 +872,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -826,8 +881,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -836,19 +891,19 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
             {
-                FirstName: 'Mark',
-                LastName: 'Mosby',
-                Phone: '999-999-9999',
-                Email: 'mmm@mmm.net',
-                Address: '999 Peachtree St.',
-                City: 'Atlanta',
-                State: 'GA',
-                Zip: '30154',
+                FirstName: 'Bubblegum',
+                LastName: 'Tate',
+                Phone: '565-992-9999',
+                Email: 'tate@bubbleyum.com',
+                Address: '8720 HallofFame Blvd.',
+                City: 'New New York',
+                State: 'NY',
+                Zip: '19830',
                 drillDownData: [
                     {
                         MechanicName: 'Clamps',
@@ -856,8 +911,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -865,8 +920,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -874,8 +929,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -884,19 +939,19 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
             {
-                FirstName: 'Mark',
-                LastName: 'Mosby',
-                Phone: '999-999-9999',
-                Email: 'mmm@mmm.net',
-                Address: '999 Peachtree St.',
-                City: 'Atlanta',
-                State: 'GA',
-                Zip: '30154',
+                FirstName: 'Ndnd',
+                LastName: '',
+                Phone: '09292283932-2-232423534',
+                Email: 'myhusbandis@lazy.edu',
+                Address: '1 Omicron Persei 8 Ave.',
+                City: 'Omicronia',
+                State: '',
+                Zip: '3',
                 drillDownData: [
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -904,8 +959,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Sal',
@@ -913,8 +968,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -922,8 +977,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -932,19 +987,19 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
             {
-                FirstName: 'Mark',
-                LastName: 'Mosby',
-                Phone: '999-999-9999',
-                Email: 'mmm@mmm.net',
-                Address: '999 Peachtree St.',
-                City: 'Atlanta',
-                State: 'GA',
-                Zip: '30154',
+                FirstName: 'Horrible',
+                LastName: 'Gelatinous Blob',
+                Phone: '623-623-6236',
+                Email: 'dask2@asd.com',
+                Address: '992 Gelatinous St.',
+                City: 'Asteroid Belt',
+                State: '',
+                Zip: '30154-232442',
                 drillDownData: [
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -952,8 +1007,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -961,8 +1016,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -970,8 +1025,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -980,19 +1035,19 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
             {
-                FirstName: 'Mark',
-                LastName: 'Mosby',
-                Phone: '999-999-9999',
-                Email: 'mmm@mmm.net',
-                Address: '999 Peachtree St.',
-                City: 'Atlanta',
-                State: 'GA',
-                Zip: '30154',
+                FirstName: 'Flexo',
+                LastName: '',
+                Phone: '109-555-4023',
+                Email: 'nay@yourealright.com',
+                Address: '62092 SomeWhere St.',
+                City: 'New New York',
+                State: 'NY',
+                Zip: '82374',
                 drillDownData: [
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1000,8 +1055,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Sal',
@@ -1009,8 +1064,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -1018,8 +1073,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1028,19 +1083,19 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
             {
-                FirstName: 'Mark',
-                LastName: 'Mosby',
-                Phone: '999-999-9999',
-                Email: 'mmm@mmm.net',
-                Address: '999 Peachtree St.',
-                City: 'Atlanta',
-                State: 'GA',
-                Zip: '30154',
+                FirstName: 'Chanukah',
+                LastName: 'Zombie',
+                Phone: '455-555-6029',
+                Email: 'imjewish@imundead.com',
+                Address: '1 Nowhere Ave.',
+                City: '?',
+                State: '?',
+                Zip: '',
                 drillDownData: [
                     {
                         MechanicName: 'Clamps',
@@ -1048,8 +1103,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Sal',
@@ -1057,8 +1112,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -1066,8 +1121,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -1076,19 +1131,19 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
             {
-                FirstName: 'Mark',
-                LastName: 'Mosby',
-                Phone: '999-999-9999',
-                Email: 'mmm@mmm.net',
-                Address: '999 Peachtree St.',
-                City: 'Atlanta',
-                State: 'GA',
-                Zip: '30154',
+                FirstName: 'Kif',
+                LastName: 'Kroker',
+                Phone: '333-555-1234',
+                Email: 'kif@lovesamy.com',
+                Address: '345 Lovers Ln.',
+                City: 'New New York',
+                State: 'NY',
+                Zip: '90236',
                 drillDownData: [
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1096,8 +1151,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1105,8 +1160,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -1114,8 +1169,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1124,7 +1179,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1144,8 +1199,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1153,8 +1208,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -1162,8 +1217,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1172,7 +1227,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1192,8 +1247,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1201,8 +1256,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -1210,8 +1265,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -1220,7 +1275,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1240,8 +1295,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1249,8 +1304,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -1258,8 +1313,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1268,7 +1323,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1288,8 +1343,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Sal',
@@ -1297,8 +1352,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -1306,8 +1361,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -1316,7 +1371,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1336,8 +1391,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1345,8 +1400,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -1354,8 +1409,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1364,7 +1419,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1384,8 +1439,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1393,8 +1448,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -1402,8 +1457,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1412,7 +1467,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1432,8 +1487,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1441,8 +1496,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -1450,8 +1505,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1460,7 +1515,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1480,8 +1535,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1489,8 +1544,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -1498,8 +1553,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -1508,7 +1563,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1528,8 +1583,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1537,8 +1592,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -1546,8 +1601,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1556,7 +1611,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1576,8 +1631,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1585,8 +1640,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -1594,8 +1649,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -1604,7 +1659,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1624,8 +1679,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1633,8 +1688,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -1642,8 +1697,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1652,7 +1707,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1672,8 +1727,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1681,8 +1736,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -1690,8 +1745,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -1700,7 +1755,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1720,8 +1775,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1729,8 +1784,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -1738,8 +1793,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1748,7 +1803,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1768,8 +1823,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1777,8 +1832,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -1786,8 +1841,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1796,7 +1851,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1816,8 +1871,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1825,8 +1880,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -1834,8 +1889,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1844,7 +1899,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1864,8 +1919,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1873,8 +1928,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -1882,8 +1937,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1892,7 +1947,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1912,8 +1967,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1921,8 +1976,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -1930,8 +1985,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -1940,7 +1995,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -1960,8 +2015,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1969,8 +2024,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -1978,8 +2033,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -1988,7 +2043,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2008,8 +2063,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -2017,8 +2072,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -2026,8 +2081,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -2036,7 +2091,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2056,8 +2111,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -2065,8 +2120,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -2074,8 +2129,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -2084,7 +2139,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2104,8 +2159,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -2113,8 +2168,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -2122,8 +2177,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -2132,7 +2187,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2152,8 +2207,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -2161,8 +2216,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -2170,8 +2225,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -2180,7 +2235,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2200,8 +2255,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -2209,8 +2264,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -2218,8 +2273,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -2228,7 +2283,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2248,8 +2303,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -2257,8 +2312,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -2266,8 +2321,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -2276,7 +2331,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2296,8 +2351,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Sal',
@@ -2305,8 +2360,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -2314,8 +2369,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -2324,7 +2379,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2344,8 +2399,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -2353,8 +2408,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -2362,8 +2417,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -2372,7 +2427,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2392,8 +2447,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -2401,8 +2456,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Clamps',
@@ -2410,8 +2465,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -2420,7 +2475,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2440,8 +2495,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Clamps',
@@ -2449,8 +2504,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Clamps',
@@ -2458,8 +2513,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -2468,7 +2523,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2488,8 +2543,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -2497,8 +2552,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -2506,8 +2561,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Clamps',
@@ -2516,7 +2571,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2536,8 +2591,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Sal',
@@ -2545,8 +2600,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -2554,8 +2609,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -2564,7 +2619,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2584,8 +2639,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -2593,8 +2648,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Joey Mousepad',
@@ -2602,8 +2657,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -2612,7 +2667,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2632,8 +2687,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -2641,8 +2696,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Sal',
@@ -2650,8 +2705,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -2660,7 +2715,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             },
@@ -2680,8 +2735,8 @@ var gridData = {
                         Model: 'Civic ES',
                         Year: '2003',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.6 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.6
                     },
                     {
                         MechanicName: 'Sal',
@@ -2689,8 +2744,8 @@ var gridData = {
                         Model: 'Integra',
                         Year: '1996',
                         Doors: '3',
-                        EngineType: '4 Cyclinder',
-                        EngineSize: '1.8 Liter'
+                        EngineType: '4 Cylinder',
+                        EngineSize: 1.8
                     },
                     {
                         MechanicName: 'Clamps',
@@ -2698,8 +2753,8 @@ var gridData = {
                         Model: 'Z4',
                         Year: '2003',
                         Doors: '1',
-                        EngineType: '6 Cyclinder',
-                        EngineSize: '2.2 Liter'
+                        EngineType: '6 Cylinder',
+                        EngineSize: 2.2
                     },
                     {
                         MechanicName: 'Sal',
@@ -2708,7 +2763,7 @@ var gridData = {
                         Year: '2002',
                         Doors: '5',
                         EngineType: 'V6',
-                        EngineSize: '3.5 Liter'
+                        EngineSize: 3.5
                     }
                 ]
             }
