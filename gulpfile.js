@@ -152,7 +152,7 @@ gulp.task('optimize-js', ['lint', 'clean-code'], function() {
                 language_out: 'ECMASCRIPT5_STRICT',
                 warning_level: 'DEFAULT',
                 externs: ['./closureExterns.js'],
-                create_source_map: 'D:\\Repo\\personal_projects\\grid\\src\\scripts\\grid.min.js'
+                create_source_map: 'D:\\Repo\\personal_projects\\grid\\build\\scripts\\grid.min.js'
             }
         }))
         .pipe(gulp.dest(config.build + 'scripts'))
