@@ -771,8 +771,14 @@ var grid = (function _grid($) {
                         td = gridData.columns[columns[j]].html ? $(gridData.columns[columns[j]].html).appendTo(td) : td;
                         if (gridData.columns[columns[j]].class)
                             td.addClass(gridData.columns[columns[j]].class);
-                        if (gridData.columns[columns[j]].text)
-                            td.text(gridData.columns[columns[j]].text);
+                        if (gridData.columns[columns[j]].text) {
+                            var customText;
+                            if (typeof gridData.columns[columns[j]].text === 'function') {
+                                gridData.columns[columns[j]].text(gridData.originalData[gridData.dataSource.data[i]._initialRowIndex]);
+                            }
+                            else customText = gridData.columns[columns[j]].text;
+                            td.text(customText);
+                        }
                     }
 
                     if (typeof gridData.columns[columns[j]].events === 'object') {
@@ -1854,7 +1860,7 @@ var grid = (function _grid($) {
             });
         }
 
-        if (canEdit || gridData.excelExport) {
+        if (canEdit || gridData.excelExport || gridData.columnToggle || gridData.advancedFiltering) {
             var saveBar = $('<div id="grid_' + id + '_toolbar" class="toolbar clearfix" data-grid_id="' + id + '"></div>').prependTo(gridElem);
             if (gridData.excelExport) {
                 var menuLink = $('<a href="#"></a>');
