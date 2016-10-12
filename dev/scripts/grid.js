@@ -121,7 +121,7 @@
  - Test, test, test!
  - Refactor
  - UPDATE TO ES6
- - Determine a shared way to check for and reset the columnAdded property of the grid state cache
+ - Determine a shared way to check for and reset the hasAddedColumn property of the grid state cache
    > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
    > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
    > and if that specific functionality has handled the added column or not without repeating the same data for each functionality
@@ -506,7 +506,7 @@ var grid = (function _grid($) {
                             gridState[gridId].grid.find('.grid-header-wrapper').empty();
                             createGridHeaders(gridState[gridId], gridElem);
                             gridState[gridId].grid.find('.grid-content-div').empty();
-                            setColWidth(gridState[gridId], gridState[gridId].grid);
+                            //setColWidth(gridState[gridId], gridState[gridId].grid);
                             createGridContent(gridState[gridId], gridState[gridId].grid);
                             gridState[gridId].grid.find('.grid-footer-div').empty();
                             createGridFooter(gridState[gridId], gridState[gridId].grid);
