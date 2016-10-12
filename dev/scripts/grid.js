@@ -111,9 +111,9 @@
  - Create a 'reset' for css values at the grid level
  - Figure out why sorting a grouped columns makes the last column in the grid a bit longer each time - DONE
  - Bring the expression parser module into the grid - DONE
+ - Allow function properties on 'custom' data type columns to dynamically determine each cells data - DONE
+ - Implement a dbl-click handler to auto-resize columns - DONE
  - Make sure all grid functionalities are properly set only when the requisite property exists on the grid config object (like advanced filters)
- - Allow function properties on 'custom' data type columns to dynamically determine each cells data
- - Implement a dbl-click handler to auto-resize columns
  - Remove anchors as links for grid functionality - clicking them just requires the event to halt propagation
  - Code clean up
  - Remove excessive event handlers
