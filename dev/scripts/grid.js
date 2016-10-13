@@ -113,7 +113,7 @@
  - Bring the expression parser module into the grid - DONE
  - Allow function properties on 'custom' data type columns to dynamically determine each cells data - DONE
  - Implement a dbl-click handler to auto-resize columns - DONE
- - Make sure all grid functionalities are properly set only when the requisite property exists on the grid config object (like advanced filters)
+ - Make sure all grid functionalities are properly set - DONE
  - Remove anchors as links for grid functionality - clicking them just requires the event to halt propagation
  - Code clean up
  - Remove excessive event handlers
@@ -197,6 +197,13 @@ var grid = (function _grid($) {
         return gridElem[0].grid;
     }
 
+    /**
+     * For internal use only; called whenever a drill down grid needs to be created.
+     * Forwards to createGrid function after setting the drill down's parentGridId attribute.
+     * @param {Object} gridData - The grid config object for the drill down grid instance
+     * @param {Object} gridElem - The DOM element used to create the drill down grid within
+     * @param {number} parentId - The internal id of the parent grid
+     */
     function drillDownCreate(gridData, gridElem, parentId) {
         gridData.parentGridId = parentId;
         grid.createGrid(gridData, gridElem);
@@ -216,6 +223,10 @@ var grid = (function _grid($) {
             gridElem[0].grid,
             'exportToExcel',
             {
+                /**
+                 * Exposed hook to programatically export the grid's data to excel
+                 * @param {string} exportType - The type of export: current page, all data, selected data
+                 */
                 value: function _exportToExcel(exportType) {
                     exportDataAsExcelFile(gridId, exportType || 'page');
                 }
@@ -975,8 +986,8 @@ var grid = (function _grid($) {
                     gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
                 }
 
-                if ((gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
-                    createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
+                if ((gridData.columns[col].editable || gridData.selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
+                    createGridToolbar(gridData, gridElem, gridData.columns[col].editable);
 
                 $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
             }
@@ -1224,6 +1235,12 @@ var grid = (function _grid($) {
         gridState[id].updating = false;
     }
 
+    /**
+     * Function used to attach any custom event handlers to each cell of a given column.
+     * @param {string} column - The name of the column in the grid config object
+     * @param {Object} cellItem - The td DOM element to apply the handler(s)
+     * @param {number} gridId - The id of the grid
+     */
     function attachCustomCellHandler(column, cellItem, gridId) {
         for (var event in gridState[gridId].columns[column].events) {
             if (typeof gridState[gridId].columns[column].events[event] === 'function') {
@@ -1330,6 +1347,12 @@ var grid = (function _grid($) {
         }
     }
 
+    /**
+     * Applies a click handler to each cell of a drill down column to expand/collapse the parent row.
+     * When clicked the first time, the new drill down grid will be created. Following time will
+     * simple show/hide the elements.
+     * @param {number} gridId - The id of the parent grid.
+     */
     function attachDrillDownAccordionHandler(gridId) {
         var gridData = gridState[gridId];
         gridData.grid.find('.drillDown_span').on('click', function drillDownAccordionHandler() {
@@ -2365,9 +2388,11 @@ var grid = (function _grid($) {
             });
         }
 
-        if (canEdit || gridData.excelExport || gridData.columnToggle || gridData.advancedFiltering) {
+        var shouldBuildGridMenu = gridData.excelExport || gridData.columnToggle || gridData.advancedFiltering || gridData.selectable;
+
+        if (canEdit || shouldBuildGridMenu) {
             var saveBar = $('<div id="grid_' + id + '_toolbar" class="toolbar clearfix" data-grid_id="' + id + '"></div>').prependTo(gridElem);
-            if (gridData.excelExport) {
+            if (shouldBuildGridMenu) {
                 var menuLink = $('<a href="#"></a>');
                 menuLink.append('<span class="menuSpan"></span>');
                 saveBar.append(menuLink);
