@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">56.22</p>
+      <p class="stat">56.21</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4361</p>
+      <p class="stat">4364</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,7 +62,7 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">230.42</p>
+      <p class="stat">230.09</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
@@ -352,7 +352,6 @@
                             gridState[gridId].grid.find(&#039;.grid-header-wrapper&#039;).empty();
                             createGridHeaders(gridState[gridId], gridElem);
                             gridState[gridId].grid.find(&#039;.grid-content-div&#039;).empty();
-                            setColWidth(gridState[gridId], gridState[gridId].grid);
                             createGridContent(gridState[gridId], gridState[gridId].grid);
                             gridState[gridId].grid.find(&#039;.grid-footer-div&#039;).empty();
                             createGridFooter(gridState[gridId], gridState[gridId].grid);
@@ -718,8 +717,8 @@
                     gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
                 }
 
-                if ((gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
-                    createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
+                if ((gridData.columns[col].editable || gridData.selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
+                    createGridToolbar(gridData, gridElem, gridData.columns[col].editable);
 
                 $(&#039;&lt;a class=&quot;header-anchor&quot; href=&quot;#&quot;&gt;&lt;/a&gt;&#039;).appendTo(th).text(text);
             }
@@ -983,10 +982,12 @@
                     }
                     if (gridData.drillDown)
                         groupAggregateRow.append(&#039;&lt;td colspan=&quot;1&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
-                    for (item in gridData.groupAggregations[j]) {
-                        if (item !== &#039;_items_&#039;) {
+                    for (item in gridData.columns) {
+                        if (item in gridData.groupAggregations[j] &amp;&amp; item !== &#039;_items_&#039;) {
                             groupAggregateRow.append(&#039;&lt;td class=&quot;group_aggregate_cell&quot;&gt;&#039; + (gridData.groupAggregations[j][item].text || &#039;&#039;) + &#039;&lt;/td&gt;&#039;);
                         }
+                        else
+                            groupAggregateRow.append(&#039;&lt;td class=&quot;group_aggregate_cell&quot;&gt; &lt;/td&gt;&#039;);
                     }
                     gridData.groupAggregations[j] = {       
                         _items_: 0
@@ -1951,9 +1952,11 @@
             });
         }
 
-        if (canEdit || gridData.excelExport || gridData.columnToggle || gridData.advancedFiltering) {
+        var shouldBuildGridMenu = gridData.excelExport || gridData.columnToggle || gridData.advancedFiltering || gridData.selectable;
+
+        if (canEdit || shouldBuildGridMenu) {
             var saveBar = $(&#039;&lt;div id=&quot;grid_&#039; + id + &#039;_toolbar&quot; class=&quot;toolbar clearfix&quot; data-grid_id=&quot;&#039; + id + &#039;&quot;&gt;&lt;/div&gt;&#039;).prependTo(gridElem);
-            if (gridData.excelExport) {
+            if (shouldBuildGridMenu) {
                 var menuLink = $(&#039;&lt;a href=&quot;#&quot;&gt;&lt;/a&gt;&#039;);
                 menuLink.append(&#039;&lt;span class=&quot;menuSpan&quot;&gt;&lt;/span&gt;&#039;);
                 saveBar.append(menuLink);

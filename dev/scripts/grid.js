@@ -1296,10 +1296,12 @@ var grid = (function _grid($) {
                     }
                     if (gridData.drillDown)
                         groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
-                    for (item in gridData.groupAggregations[j]) {
-                        if (item !== '_items_') {
+                    for (item in gridData.columns) {
+                        if (item in gridData.groupAggregations[j] && item !== '_items_') {
                             groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[j][item].text || '') + '</td>');
                         }
+                        else
+                            groupAggregateRow.append('<td class="group_aggregate_cell"> </td>');
                     }
                     gridData.groupAggregations[j] = {       //Then reset the current row's aggregate object...
                         _items_: 0
