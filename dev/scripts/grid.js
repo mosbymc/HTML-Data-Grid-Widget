@@ -2669,6 +2669,12 @@ var grid = (function _grid($) {
         return menuList;
     }
 
+    /**
+     * Creates the menu option for de-selecting the grid; The .selectable property must be
+     * active for this menu option.
+     * @param {number} gridId - The id of the grid widget instance
+     * @returns {Object} - Returns the DOM element for the menu item
+     */
     function createDeselectMenuOption(gridId) {
         var deSelectMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove Grid Selection</a>'));
         deSelectMenuItem.on('click', function deselectGridClickHandler(e) {
@@ -2678,6 +2684,12 @@ var grid = (function _grid($) {
         return deSelectMenuItem;
     }
 
+    /**
+     * Creates the save/delete menu items. In-cell editing must be turned on
+     * for at least one column for this menu option.
+     * @param {number} gridId - The id of the grid widget instance
+     * @returns {Array} - Returns an array of the two DOM menu items
+     */
     function createSaveDeleteMenuItems(gridId) {
         var saveMenuItem = $('<li class="menu_item"></li>');
         var saveMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Save Grid Changes</a>');
@@ -3534,6 +3546,10 @@ var grid = (function _grid($) {
         createGridHeaders(newGridData, gridElem);
     }
 
+    /**
+     * Creates the drag events for column resizing
+     * @param {Object} elem - Returns the DOM element that has the drag events attached
+     */
     function setDragAndDropListeners(elem) {
         elem.on('dragstart', function handleDragStartCallback(e) {
             e.originalEvent.dataTransfer.setData('text/plain', e.currentTarget.id);
@@ -3960,6 +3976,13 @@ var grid = (function _grid($) {
             getPageData(requestObj, id, getPageDataRequestCallback);
         }
 
+        /**
+         * Callback function used for both client-side and server-side
+         * page updates.
+         * @param {Object} response - The response object containing the new page data as
+         * well as the total number of rows in the grid and the size of the current page (i.e. the
+         * number of rows)
+         */
         function getPageDataRequestCallback(response) {
             if (response) {
                 gridData.dataSource.data = response.data;
