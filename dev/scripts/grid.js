@@ -111,9 +111,9 @@
  - Create a 'reset' for css values at the grid level
  - Figure out why sorting a grouped columns makes the last column in the grid a bit longer each time - DONE
  - Bring the expression parser module into the grid - DONE
- - Make sure all grid functionalities are properly set only when the requisite property exists on the grid config object (like advanced filters)
- - Allow function properties on 'custom' data type columns to dynamically determine each cells data
- - Implement a dbl-click handler to auto-resize columns
+ - Allow function properties on 'custom' data type columns to dynamically determine each cells data - DONE
+ - Implement a dbl-click handler to auto-resize columns - DONE
+ - Make sure all grid functionalities are properly set - DONE
  - Remove anchors as links for grid functionality - clicking them just requires the event to halt propagation
  - Code clean up
  - Remove excessive event handlers
@@ -121,7 +121,7 @@
  - Test, test, test!
  - Refactor
  - UPDATE TO ES6
- - Determine a shared way to check for and reset the columnAdded property of the grid state cache
+ - Determine a shared way to check for and reset the hasAddedColumn property of the grid state cache
    > right now, if a column is added and then the column toggle menu is viewed, it will reset the property, but then other
    > grid functionalities won't know a column has been added. Need a way for a single functionality to know if a column has been added,
    > and if that specific functionality has handled the added column or not without repeating the same data for each functionality
@@ -197,6 +197,13 @@ var grid = (function _grid($) {
         return gridElem[0].grid;
     }
 
+    /**
+     * For internal use only; called whenever a drill down grid needs to be created.
+     * Forwards to createGrid function after setting the drill down's parentGridId attribute.
+     * @param {Object} gridData - The grid config object for the drill down grid instance
+     * @param {Object} gridElem - The DOM element used to create the drill down grid within
+     * @param {number} parentId - The internal id of the parent grid
+     */
     function drillDownCreate(gridData, gridElem, parentId) {
         gridData.parentGridId = parentId;
         grid.createGrid(gridData, gridElem);
@@ -216,6 +223,10 @@ var grid = (function _grid($) {
             gridElem[0].grid,
             'exportToExcel',
             {
+                /**
+                 * Exposed hook to programatically export the grid's data to excel
+                 * @param {string} exportType - The type of export: current page, all data, selected data
+                 */
                 value: function _exportToExcel(exportType) {
                     exportDataAsExcelFile(gridId, exportType || 'page');
                 }
@@ -506,7 +517,7 @@ var grid = (function _grid($) {
                             gridState[gridId].grid.find('.grid-header-wrapper').empty();
                             createGridHeaders(gridState[gridId], gridElem);
                             gridState[gridId].grid.find('.grid-content-div').empty();
-                            setColWidth(gridState[gridId], gridState[gridId].grid);
+                            //setColWidth(gridState[gridId], gridState[gridId].grid);
                             createGridContent(gridState[gridId], gridState[gridId].grid);
                             gridState[gridId].grid.find('.grid-footer-div').empty();
                             createGridFooter(gridState[gridId], gridState[gridId].grid);
@@ -975,8 +986,8 @@ var grid = (function _grid($) {
                     gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
                 }
 
-                if ((gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
-                    createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
+                if ((gridData.columns[col].editable || gridData.selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
+                    createGridToolbar(gridData, gridElem, gridData.columns[col].editable);
 
                 $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
             }
@@ -1136,8 +1147,14 @@ var grid = (function _grid($) {
                         td = gridData.columns[columns[j]].html ? $(gridData.columns[columns[j]].html).appendTo(td) : td;
                         if (gridData.columns[columns[j]].class)
                             td.addClass(gridData.columns[columns[j]].class);
-                        if (gridData.columns[columns[j]].text)
-                            td.text(gridData.columns[columns[j]].text);
+                        if (gridData.columns[columns[j]].text) {
+                            var customText;
+                            if (typeof gridData.columns[columns[j]].text === 'function') {
+                                gridData.columns[columns[j]].text(gridData.originalData[gridData.dataSource.data[i]._initialRowIndex]);
+                            }
+                            else customText = gridData.columns[columns[j]].text;
+                            td.text(customText);
+                        }
                     }
 
                     if (typeof gridData.columns[columns[j]].events === 'object') {
@@ -1218,6 +1235,12 @@ var grid = (function _grid($) {
         gridState[id].updating = false;
     }
 
+    /**
+     * Function used to attach any custom event handlers to each cell of a given column.
+     * @param {string} column - The name of the column in the grid config object
+     * @param {Object} cellItem - The td DOM element to apply the handler(s)
+     * @param {number} gridId - The id of the grid
+     */
     function attachCustomCellHandler(column, cellItem, gridId) {
         for (var event in gridState[gridId].columns[column].events) {
             if (typeof gridState[gridId].columns[column].events[event] === 'function') {
@@ -1273,10 +1296,12 @@ var grid = (function _grid($) {
                     }
                     if (gridData.drillDown)
                         groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
-                    for (item in gridData.groupAggregations[j]) {
-                        if (item !== '_items_') {
+                    for (item in gridData.columns) {
+                        if (item in gridData.groupAggregations[j] && item !== '_items_') {
                             groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[j][item].text || '') + '</td>');
                         }
+                        else
+                            groupAggregateRow.append('<td class="group_aggregate_cell"> </td>');
                     }
                     gridData.groupAggregations[j] = {       //Then reset the current row's aggregate object...
                         _items_: 0
@@ -1324,6 +1349,12 @@ var grid = (function _grid($) {
         }
     }
 
+    /**
+     * Applies a click handler to each cell of a drill down column to expand/collapse the parent row.
+     * When clicked the first time, the new drill down grid will be created. Following time will
+     * simple show/hide the elements.
+     * @param {number} gridId - The id of the parent grid.
+     */
     function attachDrillDownAccordionHandler(gridId) {
         var gridData = gridState[gridId];
         gridData.grid.find('.drillDown_span').on('click', function drillDownAccordionHandler() {
@@ -2359,9 +2390,11 @@ var grid = (function _grid($) {
             });
         }
 
-        if (canEdit || gridData.excelExport) {
+        var shouldBuildGridMenu = gridData.excelExport || gridData.columnToggle || gridData.advancedFiltering || gridData.selectable;
+
+        if (canEdit || shouldBuildGridMenu) {
             var saveBar = $('<div id="grid_' + id + '_toolbar" class="toolbar clearfix" data-grid_id="' + id + '"></div>').prependTo(gridElem);
-            if (gridData.excelExport) {
+            if (shouldBuildGridMenu) {
                 var menuLink = $('<a href="#"></a>');
                 menuLink.append('<span class="menuSpan"></span>');
                 saveBar.append(menuLink);
@@ -2638,6 +2671,12 @@ var grid = (function _grid($) {
         return menuList;
     }
 
+    /**
+     * Creates the menu option for de-selecting the grid; The .selectable property must be
+     * active for this menu option.
+     * @param {number} gridId - The id of the grid widget instance
+     * @returns {Object} - Returns the DOM element for the menu item
+     */
     function createDeselectMenuOption(gridId) {
         var deSelectMenuItem = $('<li class="menu_item"></li>').append($('<a href="#" class="menu_option"><span class="excel_span">Remove Grid Selection</a>'));
         deSelectMenuItem.on('click', function deselectGridClickHandler(e) {
@@ -2647,6 +2686,12 @@ var grid = (function _grid($) {
         return deSelectMenuItem;
     }
 
+    /**
+     * Creates the save/delete menu items. In-cell editing must be turned on
+     * for at least one column for this menu option.
+     * @param {number} gridId - The id of the grid widget instance
+     * @returns {Array} - Returns an array of the two DOM menu items
+     */
     function createSaveDeleteMenuItems(gridId) {
         var saveMenuItem = $('<li class="menu_item"></li>');
         var saveMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Save Grid Changes</a>');
@@ -3503,6 +3548,10 @@ var grid = (function _grid($) {
         createGridHeaders(newGridData, gridElem);
     }
 
+    /**
+     * Creates the drag events for column resizing
+     * @param {Object} elem - Returns the DOM element that has the drag events attached
+     */
     function setDragAndDropListeners(elem) {
         elem.on('dragstart', function handleDragStartCallback(e) {
             e.originalEvent.dataTransfer.setData('text/plain', e.currentTarget.id);
@@ -3929,6 +3978,13 @@ var grid = (function _grid($) {
             getPageData(requestObj, id, getPageDataRequestCallback);
         }
 
+        /**
+         * Callback function used for both client-side and server-side
+         * page updates.
+         * @param {Object} response - The response object containing the new page data as
+         * well as the total number of rows in the grid and the size of the current page (i.e. the
+         * number of rows)
+         */
         function getPageDataRequestCallback(response) {
             if (response) {
                 gridData.dataSource.data = response.data;

@@ -261,7 +261,6 @@ var grid = (function _grid($) {
                             gridState[gridId].grid.find('.grid-header-wrapper').empty();
                             createGridHeaders(gridState[gridId], gridElem);
                             gridState[gridId].grid.find('.grid-content-div').empty();
-                            setColWidth(gridState[gridId], gridState[gridId].grid);
                             createGridContent(gridState[gridId], gridState[gridId].grid);
                             gridState[gridId].grid.find('.grid-footer-div').empty();
                             createGridFooter(gridState[gridId], gridState[gridId].grid);
@@ -627,8 +626,8 @@ var grid = (function _grid($) {
                     gridData.advancedFiltering = gridData.advancedFiltering != null ? gridData.advancedFiltering : false;
                 }
 
-                if ((gridData.columns[col].editable || gridData.columns[col].selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
-                    createGridToolbar(gridData, gridElem, (gridData.columns[col].editable || gridData.columns[col].selectable));
+                if ((gridData.columns[col].editable || gridData.selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
+                    createGridToolbar(gridData, gridElem, gridData.columns[col].editable);
 
                 $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
             }
@@ -771,8 +770,14 @@ var grid = (function _grid($) {
                         td = gridData.columns[columns[j]].html ? $(gridData.columns[columns[j]].html).appendTo(td) : td;
                         if (gridData.columns[columns[j]].class)
                             td.addClass(gridData.columns[columns[j]].class);
-                        if (gridData.columns[columns[j]].text)
-                            td.text(gridData.columns[columns[j]].text);
+                        if (gridData.columns[columns[j]].text) {
+                            var customText;
+                            if (typeof gridData.columns[columns[j]].text === 'function') {
+                                gridData.columns[columns[j]].text(gridData.originalData[gridData.dataSource.data[i]._initialRowIndex]);
+                            }
+                            else customText = gridData.columns[columns[j]].text;
+                            td.text(customText);
+                        }
                     }
 
                     if (typeof gridData.columns[columns[j]].events === 'object') {
@@ -886,10 +891,12 @@ var grid = (function _grid($) {
                     }
                     if (gridData.drillDown)
                         groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
-                    for (item in gridData.groupAggregations[j]) {
-                        if (item !== '_items_') {
+                    for (item in gridData.columns) {
+                        if (item in gridData.groupAggregations[j] && item !== '_items_') {
                             groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[j][item].text || '') + '</td>');
                         }
+                        else
+                            groupAggregateRow.append('<td class="group_aggregate_cell"> </td>');
                     }
                     gridData.groupAggregations[j] = {       
                         _items_: 0
@@ -1854,9 +1861,11 @@ var grid = (function _grid($) {
             });
         }
 
-        if (canEdit || gridData.excelExport) {
+        var shouldBuildGridMenu = gridData.excelExport || gridData.columnToggle || gridData.advancedFiltering || gridData.selectable;
+
+        if (canEdit || shouldBuildGridMenu) {
             var saveBar = $('<div id="grid_' + id + '_toolbar" class="toolbar clearfix" data-grid_id="' + id + '"></div>').prependTo(gridElem);
-            if (gridData.excelExport) {
+            if (shouldBuildGridMenu) {
                 var menuLink = $('<a href="#"></a>');
                 menuLink.append('<span class="menuSpan"></span>');
                 saveBar.append(menuLink);
