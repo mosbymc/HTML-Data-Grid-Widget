@@ -27,28 +27,6 @@ gulp.task('clean-yuidoc', function(done) {
     clean('./yuidoc/**/*.*', done);
 });
 
-gulp.task('jsdoc', ['clean-jsdoc'], function() {
-    return gulp.src(config.gridJs)
-        .pipe(_.jsdoc('./jsdoc'));
-});
-
-gulp.task('clean-jsdoc', function(done) {
-    clean([config.jsdoc], done);
-});
-
-gulp.task('esdoc', ['clean-esdoc'], function() {
-    return gulp
-        .src('./src/')
-        .pipe(_.esdoc({
-            destination: './esdoc',
-            coverage: true
-        }));
-});
-
-gulp.task('clean-esdoc', function(done) {
-    clean(['./esdoc/**/*.*'], done);
-});
-
 gulp.task('lint', /*['plato'],*/ function() {
     log('Linting source with JSCS and JSHint.');
     return gulp
@@ -78,9 +56,7 @@ gulp.task('styles', ['clean-styles'], function() {
         .pipe(_.plumber())
         .pipe(_.autoprefixer({ browsers: ['last 3 version', '> 5%']}))
         .pipe(gulp.dest(config.dev + '/styles'))
-        .pipe(gulp.dest(config.temp))
-        .pipe(gulp.dest(config.build + 'styles'))
-        .pipe(gulp.dest(config.source + 'styles'));
+        .pipe(gulp.dest(config.dist + 'styles'));
 });
 
 gulp.task('images', ['clean-images'], function() {
@@ -88,26 +64,33 @@ gulp.task('images', ['clean-images'], function() {
 
     return gulp.src(config.images)
         .pipe(_.imagemin({optimizationLevel: 4}))
-        .pipe(gulp.dest(config.build + 'images'))
-        .pipe(gulp.dest(config.source + 'images'));
+        .pipe(gulp.dest(config.dist + 'images'));
 });
 
 gulp.task('clean', function(done) {
-    var deleteConfig = [].concat(config.build, config.temp, config.source);
+    var deleteConfig = [].concat(config.build, config.dist);
     log('Cleaning: ' + _.util.colors.blue(deleteConfig));
     del(deleteConfig, done);
 });
 
 gulp.task('clean-styles', function(done) {
-    clean([config.devCss, config.temp + '**/*.css', config.build + 'styles/**/*.css', config.source + 'styles/**/*.css'], done);
+    clean([
+        config.devCss,
+        config.temp + '**/*.css',
+        config.dist + 'styles/**/*.css'
+    ], done);
 });
 
 gulp.task('clean-images', function(done) {
-    clean([config.build + 'images/**/*.*', config.source + 'images/**/*.*'], done);
+    clean([
+        config.dist + 'images/**/*.*'
+    ], done);
 });
 
 gulp.task('clean-code', function(done) {
-    clean([config.build + 'scripts/**/*.js', config.source + 'scripts/**/*.js'], done);
+    clean([
+        config.dist + 'scripts/**/*.js'
+    ], done);
 });
 
 gulp.task('style-watcher', function() {
@@ -120,7 +103,7 @@ gulp.task('optimize', ['minify-css', 'optimize-js', 'images'], function() {
 
 gulp.task('build', ['optimize'], function() {
     var plato = require('plato');
-    plato.inspect(config.build + 'scripts/grid.js', config.plato.report, config.plato.options, function noop(){
+    plato.inspect(config.dist + 'scripts/grid.js', config.plato.report, config.plato.options, function noop(){
         //done();
     });
 });
@@ -131,8 +114,7 @@ gulp.task('minify-css', ['styles'], function() {
     return gulp.src(config.buildCss)
         .pipe(_.plumber())
         .pipe(_.csso())
-        .pipe(gulp.dest(config.build + 'styles'))
-        .pipe(gulp.dest(config.build + 'styles'));
+        .pipe(gulp.dest(config.dist + 'styles'));
 });
 
 gulp.task('optimize-js', ['lint', 'clean-code'], function() {
@@ -141,8 +123,7 @@ gulp.task('optimize-js', ['lint', 'clean-code'], function() {
     return gulp.src(config.gridJs)
         .pipe(_.plumber())
         .pipe(_.stripComments())
-        .pipe(gulp.dest(config.build + 'scripts'))
-        .pipe(gulp.dest(config.source + 'scripts'))
+        .pipe(gulp.dest(config.dist + 'scripts'))
         .pipe(_.closureCompiler({
             compilerPath: 'C:\\ClosureCompiler\\compiler.jar',
             fileName: 'grid.min.js',
@@ -152,11 +133,10 @@ gulp.task('optimize-js', ['lint', 'clean-code'], function() {
                 language_out: 'ECMASCRIPT5_STRICT',
                 warning_level: 'DEFAULT',
                 externs: ['./closureExterns.js'],
-                create_source_map: 'D:\\Repo\\personal_projects\\grid\\src\\scripts\\grid.min.js'
+                create_source_map: 'D:\\Repo\\personal_projects\\grid\\dist\\scripts\\grid.min.js'
             }
         }))
-        .pipe(gulp.dest(config.build + 'scripts'))
-        .pipe(gulp.dest(config.source + 'scripts'));
+        .pipe(gulp.dest(config.dist + 'scripts'));
 });
 
 gulp.task('dev-server', ['styles'], function() {
@@ -245,10 +225,10 @@ function startBrowserSync(isDev) {
 }
 
 function changeEvent(evt) {
-    var sourcePattern = new RegExp('/.*(?=/' + config.dev + ')/');
-    var tempPattern = new RegExp('/.*(?=/' + config.temp + ')/');
-    var routePattern = new RegExp('/.*(?=/' + config.routes + ')/');
-    var publicPattern = new RegExp('/.*(?=/' + config.dev + ')/');
+    var sourcePattern = new RegExp('/.*(?=/' + config.dev + ')/'),
+        tempPattern = new RegExp('/.*(?=/' + config.temp + ')/'),
+        routePattern = new RegExp('/.*(?=/' + config.routes + ')/'),
+        publicPattern = new RegExp('/.*(?=/' + config.dev + ')/');
     log('File ' + evt.path.replace(sourcePattern, '') + evt.path.replace(tempPattern, '') + evt.path.replace(routePattern, '') + evt.path.replace(publicPattern, '') + ' ' + evt.type);
 }
 
