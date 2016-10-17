@@ -78,6 +78,7 @@ var gridDataTmp = {
         FirstName: {
             title: 'First Name',
             type: 'string',
+            nullable: true,
             filterable: true,
             editable: true,
             width: 160,
@@ -127,6 +128,7 @@ var gridDataTmp = {
         },
         Zip: {
             title: 'Zip Code',
+            nullable: true,
             filterable: true,
             type: "number",
             format: '00000',
@@ -149,14 +151,14 @@ var gridDataTmp = {
         rowCount: 54,
         data: [
             {
-                FirstName: 'Phillip J.',
+                FirstName: null,
                 LastName: 'Fry',
                 Phone: '999-999-9999',
                 Email: 'mmm@mmm.net',
                 Address: '999 Peachtree St.',
                 City: 'New New York',
                 State: 'NY',
-                Zip: '80808',
+                Zip: null,
                 drillDownData: [
                     {
                         MechanicName: 'Headless Body of Agnew',

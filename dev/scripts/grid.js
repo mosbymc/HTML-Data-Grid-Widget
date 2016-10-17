@@ -108,13 +108,14 @@
  - Make sure that when adding advanced filters, and vise versa - DONE
  - Fix boolean filtering - DONE
  - Fix group aggregates indentation - DONE
- - Create a 'reset' for css values at the grid level
  - Figure out why sorting a grouped columns makes the last column in the grid a bit longer each time - DONE
  - Bring the expression parser module into the grid - DONE
  - Allow function properties on 'custom' data type columns to dynamically determine each cells data - DONE
  - Implement a dbl-click handler to auto-resize columns - DONE
  - Make sure all grid functionalities are properly set - DONE
+ - Update cell editing to include missing data types support; especially date-time
  - Remove anchors as links for grid functionality - clicking them just requires the event to halt propagation
+ - Create a 'reset' for css values at the grid level
  - Code clean up
  - Remove excessive event handlers
  - Documentation
@@ -1140,7 +1141,7 @@ var grid = (function _grid($) {
                     }
                     if (gridData.columns[columns[j]].type !== 'custom') {
                         text = getFormattedCellText(id, columns[j], gridData.dataSource.data[i][columns[j]]) || gridData.dataSource.data[i][columns[j]];
-                        text = text == null ? '' : text;
+                        text = text == null ? 'Null' : text;
                         td.text(text);
                     }
                     else {
@@ -1183,6 +1184,10 @@ var grid = (function _grid($) {
                 for (j = 0; j < gridData.groupedBy.length; j++) {
                     colGroup.prepend('<col class="group_col"/>');
                 }
+            }
+
+            if (gridData.drillDown) {
+                colGroup.prepend('<col class="groupCol"/>');
             }
 
             if (gridData.aggregates && gridData.aggregates.positionAt === 'top' && typeof gridData.dataSource.get !== 'function' &&
@@ -1811,6 +1816,7 @@ var grid = (function _grid($) {
         td.on('click', function editableCellClickHandler(e) {
             var gridContent = gridState[id].grid.find('.grid-content-div');
             var gridData = gridState[id];
+            if (gridState[id].updating) return;
             if (e.target !== e.currentTarget) return;
             if (gridContent.find('.invalid').length) return;
             var cell = $(e.currentTarget);
@@ -1819,7 +1825,6 @@ var grid = (function _grid($) {
             else cell.data('dirty', false);
             cell.text('');
 
-            if (gridState[id].updating) return;
             var row = cell.parents('tr').first(),
                 index = gridData.grid.find('tr').filter(function removeGroupAndChildRows() {
                     var r =  $(this);
@@ -1827,7 +1832,7 @@ var grid = (function _grid($) {
                 }).index(row),
                 field = cell.data('field'),
                 type = gridState[id].columns[field].type || '',
-                val = gridState[id].dataSource.data[index][field] || '',
+                val = gridState[id].columns[field].nullable || gridState[id].dataSource.data[index][field] ? gridState[id].dataSource.data[index][field] : '',
                 dataAttributes = '',
                 gridValidation = gridState[id].useValidator ? gridState[id].columns[field].validation : null,
                 dataType, input, inputVal;
@@ -1868,7 +1873,7 @@ var grid = (function _grid($) {
                     dataType = 'date';
                     break;
                 default:
-                    input = $('<input type="text" value="' + val + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
+                    input = $('<input type="text" value="' + (val || '') + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
                     dataType = 'string';
                     break;
             }
@@ -1932,11 +1937,10 @@ var grid = (function _grid($) {
                 var gridBodyId = 'grid-content-' + id.toString();
                 dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
             }
-
             var select = $('<select class="input select active-cell"' + dataAttributes + '></select>').appendTo(cell),
                 options = [],
-                setVal = gridData.dataSource.data[index][field];
-            if (null != setVal && '' !== setVal) options.push(setVal);
+                setVal = gridState[id].columns[field].nullable || gridState[id].dataSource.data[index][field] ? gridState[id].dataSource.data[index][field] : '';
+            if ('' !== setVal && (gridState[id].columns[field].nullable || null !== setVal)) options.push(setVal);
             for (var z = 0; z < gridData.columns[field].options.length; z++) {
                 if (!compareValuesByType(setVal, gridData.columns[field].options[z], (gridData.columns[field].type || 'string'))) {
                     options.push(gridData.columns[field].options[z]);
@@ -1973,7 +1977,7 @@ var grid = (function _grid($) {
                 var opt = $('<option value="' + options[k] + '">' + options[k] + '</option>');
                 select.append(opt);
             }
-            if (null != setVal && '' !== setVal) select.val(setVal);
+            if ('' !== setVal && (gridState[id].columns[field].nullable || null !== setVal)) select.val(setVal);
             select[0].focus();
 
             if (gridValidation) select.addClass('inputValidate');
@@ -2147,38 +2151,42 @@ var grid = (function _grid($) {
             type = gridState[id].columns[field].type || '',
             saveVal, re, setDirtyFlag = false,
             formattedVal = getFormattedCellText(id, field, val),
-            displayVal = formattedVal == null ? '' : formattedVal;
+            displayVal = formattedVal == null ? 'Null' : formattedVal;
 
         input.remove();
-        switch (type) {
-            case 'number':
-                re = new RegExp(dataTypes.number);
-                if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                if (typeof gridState[id].dataSource.data[index][field] === 'string') saveVal = val;
-                else {
-                    var tmpVal = parseFloat(val.replace(',', ''));
-                    tmpVal === tmpVal ? saveVal = tmpVal : saveVal = 0;
-                }
-                //saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
-                break;
-            case 'date':
-                re = new RegExp(dataTypes.date);
-                if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = displayVal;
-                break;
-            case 'time':
-                re = new RegExp(dataTypes.time);
-                if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = displayVal;
-                break;
-            case 'boolean':
-                displayVal = val.toString();
-                saveVal = val;
-                break;
-            default:
-                saveVal = val;
-                break;
+        if (formattedVal !== null) {
+            switch (type) {
+                case 'number':
+                    re = new RegExp(dataTypes.number);
+                    if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
+                    if (typeof gridState[id].dataSource.data[index][field] === 'string') saveVal = val;
+                    else {
+                        var tmpVal = parseFloat(val.replace(',', ''));
+                        tmpVal === tmpVal ? saveVal = tmpVal : saveVal = 0;
+                    }
+                    //saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
+                    break;
+                case 'date':
+                    re = new RegExp(dataTypes.date);
+                    if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
+                    saveVal = displayVal;
+                    break;
+                case 'time':
+                    re = new RegExp(dataTypes.time);
+                    if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
+                    saveVal = displayVal;
+                    break;
+                case 'boolean':
+                    displayVal = val.toString();
+                    saveVal = val;
+                    break;
+                default:
+                    saveVal = formattedVal == null ? null : val;
+                    break;
+            }
         }
+        else
+            saveVal = val;
 
         cell.text(displayVal || '');
         gridState[id].currentEdit[field] = null;
@@ -2220,27 +2228,32 @@ var grid = (function _grid($) {
             }).index(row),
             field = parentCell.data('field'),
             type = gridState[id].columns[field].type || '',
-            displayVal = getFormattedCellText(id, field, val) || gridState[id].dataSource.data[index][field],
+            formattedVal = getFormattedCellText(id, field, val),
+            displayVal = formattedVal == null ? 'Null' : formattedVal,
             re, saveVal, setDirtyFlag = false;
 
-        switch (type) {
-            case 'number':
-                re = new RegExp(dataTypes.number);
-                if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
-                break;
-            case 'date':
-                saveVal = displayVal;   //this and time are the only types that have the same displayVal and saveVel
-                break;
-            case 'time':
-                re = new RegExp(dataTypes.time);
-                if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                saveVal = displayVal;   //this and date are the only types that have the same displayVal and saveVal
-                break;
-            default:        //string, boolean
-                saveVal = val;
-                break;
+        if (null !== formattedVal) {
+            switch (type) {
+                case 'number':
+                    re = new RegExp(dataTypes.number);
+                    if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
+                    saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
+                    break;
+                case 'date':
+                    saveVal = displayVal;   //this and time are the only types that have the same displayVal and saveVel
+                    break;
+                case 'time':
+                    re = new RegExp(dataTypes.time);
+                    if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
+                    saveVal = displayVal;   //this and date are the only types that have the same displayVal and saveVal
+                    break;
+                default:        //string, boolean
+                    saveVal = val;
+                    break;
+            }
         }
+        else
+            saveVal = val;
 
         parentCell.text(displayVal);
         var previousVal = gridState[id].dataSource.data[index][field];
@@ -4317,7 +4330,7 @@ var grid = (function _grid($) {
     function getFormattedCellText(gridId, column, value) {
         var text,
             type = gridState[gridId].columns[column].type || 'string';
-        if (value == null) return ' ';
+        if (value == null || ('' === value && gridState[gridId].columns[column].nullable)) return gridState[gridId].columns[column].nullable ? null : ' ';
         switch(type) {
             case 'number':
                 text = formatNumericCellData(value, gridState[gridId].columns[column].format);
