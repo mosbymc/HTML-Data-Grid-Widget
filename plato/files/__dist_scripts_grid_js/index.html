@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">56.17</p>
+      <p class="stat">56.20</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4376</p>
+      <p class="stat">4352</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">230.80</p>
+      <p class="stat">230.44</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">98.07</p>
+      <p class="stat">97.42</p>
     </div>
   </div>
 </div>
@@ -1572,36 +1572,12 @@
             if (&#039;&#039; !== setVal &amp;&amp; (gridState[id].columns[field].nullable || null !== setVal)) options.push(setVal);
             for (var z = 0; z &lt; gridData.columns[field].options.length; z++) {
                 if (!compareValuesByType(setVal, gridData.columns[field].options[z], (gridData.columns[field].type || &#039;string&#039;))) {
+                    options = options.reverse();
                     options.push(gridData.columns[field].options[z]);
+                    options = options.reverse();
                 }
             }
-            options.sort(function comparator(first, second) {
-                switch (gridData.columns[field].type || &#039;string&#039;) {
-                    case &#039;number&#039;:
-                        var firstNum = parseFloat(first.toString());
-                        var secondNum = parseFloat(second.toString());
-                        return firstNum &gt; secondNum ?  1 : firstNum &lt; secondNum ? -1 : 0;
-                    case &#039;string&#039;:
-                    case &#039;boolean&#039;:
-                        return first &gt; second ? 1 : first &lt; second ? -1 : 0;
-                    case &#039;time&#039;:
-                        var firstTime = getNumbersFromTime(first);
-                        var secondTime = getNumbersFromTime(second);
 
-                        if (~first.indexOf(&#039;PM&#039;))
-                            firstTime[0] += 12;
-                        if (~second.indexOf(&#039;PM&#039;))
-                            secondTime[0] += 12;
-
-                        firstTime = convertTimeArrayToSeconds(firstTime);
-                        secondTime = convertTimeArrayToSeconds(secondTime);
-                        return firstTime &gt; secondTime ? 1 : firstTime &lt; secondTime ? -1 : 0;
-                    case &#039;date&#039;:
-                        var firstDate = new Date(first);
-                        var secondDate = new Date(second);
-                        return firstDate &gt; secondDate ? 1 : firstDate &lt; secondDate ? -1 : 0;
-                }
-            });
             for (var k = 0; k &lt; options.length; k++) {
                 var opt = $(&#039;&lt;option value=&quot;&#039; + options[k] + &#039;&quot;&gt;&#039; + options[k] + &#039;&lt;/option&gt;&#039;);
                 select.append(opt);
@@ -1747,12 +1723,9 @@
                     }
                     break;
                 case &#039;date&#039;:
-                    re = new RegExp(dataTypes.date);
-                    if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                    saveVal = displayVal;
-                    break;
                 case &#039;time&#039;:
-                    re = new RegExp(dataTypes.time);
+                case &#039;datetime&#039;:
+                    re = new RegExp(dataTypes[type]);
                     if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
                     saveVal = displayVal;
                     break;
@@ -1811,15 +1784,18 @@
                     saveVal = typeof gridState[id].dataSource.data[index][field] === &#039;string&#039; ? val : parseFloat(val.replace(&#039;,&#039;, &#039;&#039;));
                     break;
                 case &#039;date&#039;:
-                    saveVal = displayVal;   
-                    break;
                 case &#039;time&#039;:
-                    re = new RegExp(dataTypes.time);
+                case &#039;datetime&#039;:
+                    re = new RegExp(dataTypes[type]);
                     if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                    saveVal = displayVal;   
+                    saveVal = displayVal;
+                    break;
+                case &#039;boolean&#039;:
+                    displayVal = val.toString();
+                    saveVal = val;
                     break;
                 default:        
-                    saveVal = val;
+                    saveVal = formattedVal == null ? null : val;
                     break;
             }
         }

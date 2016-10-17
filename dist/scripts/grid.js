@@ -1481,36 +1481,12 @@ var grid = (function _grid($) {
             if ('' !== setVal && (gridState[id].columns[field].nullable || null !== setVal)) options.push(setVal);
             for (var z = 0; z < gridData.columns[field].options.length; z++) {
                 if (!compareValuesByType(setVal, gridData.columns[field].options[z], (gridData.columns[field].type || 'string'))) {
+                    options = options.reverse();
                     options.push(gridData.columns[field].options[z]);
+                    options = options.reverse();
                 }
             }
-            options.sort(function comparator(first, second) {
-                switch (gridData.columns[field].type || 'string') {
-                    case 'number':
-                        var firstNum = parseFloat(first.toString());
-                        var secondNum = parseFloat(second.toString());
-                        return firstNum > secondNum ?  1 : firstNum < secondNum ? -1 : 0;
-                    case 'string':
-                    case 'boolean':
-                        return first > second ? 1 : first < second ? -1 : 0;
-                    case 'time':
-                        var firstTime = getNumbersFromTime(first);
-                        var secondTime = getNumbersFromTime(second);
 
-                        if (~first.indexOf('PM'))
-                            firstTime[0] += 12;
-                        if (~second.indexOf('PM'))
-                            secondTime[0] += 12;
-
-                        firstTime = convertTimeArrayToSeconds(firstTime);
-                        secondTime = convertTimeArrayToSeconds(secondTime);
-                        return firstTime > secondTime ? 1 : firstTime < secondTime ? -1 : 0;
-                    case 'date':
-                        var firstDate = new Date(first);
-                        var secondDate = new Date(second);
-                        return firstDate > secondDate ? 1 : firstDate < secondDate ? -1 : 0;
-                }
-            });
             for (var k = 0; k < options.length; k++) {
                 var opt = $('<option value="' + options[k] + '">' + options[k] + '</option>');
                 select.append(opt);
@@ -1656,12 +1632,9 @@ var grid = (function _grid($) {
                     }
                     break;
                 case 'date':
-                    re = new RegExp(dataTypes.date);
-                    if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                    saveVal = displayVal;
-                    break;
                 case 'time':
-                    re = new RegExp(dataTypes.time);
+                case 'datetime':
+                    re = new RegExp(dataTypes[type]);
                     if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
                     saveVal = displayVal;
                     break;
@@ -1720,15 +1693,18 @@ var grid = (function _grid($) {
                     saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
                     break;
                 case 'date':
-                    saveVal = displayVal;   
-                    break;
                 case 'time':
-                    re = new RegExp(dataTypes.time);
+                case 'datetime':
+                    re = new RegExp(dataTypes[type]);
                     if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                    saveVal = displayVal;   
+                    saveVal = displayVal;
+                    break;
+                case 'boolean':
+                    displayVal = val.toString();
+                    saveVal = val;
                     break;
                 default:        
-                    saveVal = val;
+                    saveVal = formattedVal == null ? null : val;
                     break;
             }
         }

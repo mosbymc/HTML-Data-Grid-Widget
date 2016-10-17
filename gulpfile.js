@@ -18,12 +18,14 @@ gulp.task('plato', function(done) {
 });
 
 gulp.task('yuidoc', ['clean-yuidoc'], function() {
+    log('Running yuidoc documentation generator.');
     return gulp.src([config.gridJs])
         .pipe(_.yuidoc())
         .pipe(gulp.dest('./yuidoc/classes'));
 });
 
 gulp.task('clean-yuidoc', function(done) {
+    log('Cleaning yuidoc dir.');
     clean('./yuidoc/**/*.*', done);
 });
 
@@ -55,8 +57,8 @@ gulp.task('styles', ['clean-styles'], function() {
         .pipe(_.less())
         .pipe(_.plumber())
         .pipe(_.autoprefixer({ browsers: ['last 3 version', '> 5%']}))
-        .pipe(gulp.dest(config.dev + '/styles'))
-        .pipe(gulp.dest(config.dist + 'styles'));
+        .pipe(gulp.dest(config.dev + '/styles'));
+        //.pipe(gulp.dest(config.dist + 'styles'));
 });
 
 gulp.task('images', ['clean-images'], function() {
@@ -89,7 +91,7 @@ gulp.task('clean-images', function(done) {
 
 gulp.task('clean-code', function(done) {
     clean([
-        config.dist + 'scripts/**/*.js'
+        config.dist + 'scripts/**/*.*'
     ], done);
 });
 
@@ -111,9 +113,13 @@ gulp.task('build', ['optimize'], function() {
 gulp.task('minify-css', ['styles'], function() {
     log('Minifing CSS');
 
-    return gulp.src(config.buildCss)
+    return gulp.src(config.devCss)
         .pipe(_.plumber())
         .pipe(_.csso())
+        .pipe(_.rename({
+            basename: 'grid.min',
+            extname: '.css'
+        }))
         .pipe(gulp.dest(config.dist + 'styles'));
 });
 
@@ -133,7 +139,7 @@ gulp.task('optimize-js', ['lint', 'clean-code'], function() {
                 language_out: 'ECMASCRIPT5_STRICT',
                 warning_level: 'DEFAULT',
                 externs: ['./closureExterns.js'],
-                create_source_map: 'D:\\Repo\\personal_projects\\grid\\dist\\scripts\\grid.min.js'
+                create_source_map: 'D:\\Repo\\personal_projects\\grid\\dist\\scripts\\grid.min.map.js'
             }
         }))
         .pipe(gulp.dest(config.dist + 'scripts'));

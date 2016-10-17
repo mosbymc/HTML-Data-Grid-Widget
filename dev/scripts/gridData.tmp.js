@@ -151,14 +151,14 @@ var gridDataTmp = {
         rowCount: 54,
         data: [
             {
-                FirstName: null,
+                FirstName: 'Phillip J.',
                 LastName: 'Fry',
                 Phone: '999-999-9999',
                 Email: 'mmm@mmm.net',
                 Address: '999 Peachtree St.',
                 City: 'New New York',
                 State: 'NY',
-                Zip: null,
+                Zip: '80808',
                 drillDownData: [
                     {
                         MechanicName: 'Headless Body of Agnew',
