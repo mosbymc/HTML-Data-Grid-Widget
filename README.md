@@ -1,20 +1,21 @@
 # HTML-Data-Grid-Widget
 A JQuery-dependent, HTML data-grid widget
 
-Now with 100% more validation!
+To use the grid on your site, include the entire contents of the 'dist' directory in your project as well as jQuery 1.7 of higher. You can rename the dist directory anything you wish, or even do without it. However, the three sub-directories of 'dist', 'scripts', 'styles', and 'images' must all be in the same directory in your project, otherwise the relative urls will not point to the correct locations.
 
-I am still working on getting this to both a stable and functional version. The develop branch is used primarily to merge working branches into,
-and then, every so often, the develop branch is merged with Master.
+View the grid demo [here](http://mosbymc.github.io/HTML-Data-Grid-Widget/).
 
-Currently Implemented Functionality:
+###Currently Implemented Functionality:###
 - Resizable Columns
 - Reorderable Columns
 - Filterable Columns
 - Sortable Columns
 - Groupable Columns
-- Hidable Columns
+- Toggleable Columns
 - In-cell Editing
 - Paging
+- Nested drill-down grids
+    - The [grid config file](https://github.com/mosbymc/HTML-Data-Grid-Widget/wiki/Grid-Configuration) takes a 'drillDown' property that can be either another grid config for the drill down, or a function that returns a grid config file after retrieve the specific drill down data for the parent row in question. Drill down grids, like their parent's can be paged on the client or the server.
 - Exporting data as an excel file via integration with [XcelXporter](https://github.com/mosbymc/XcelXporter)
 - Standard Numeric Formatting (c, p, or n)
 - Custom Numeric Formatting via # and 0
@@ -24,30 +25,22 @@ Currently Implemented Functionality:
 - Custom Classes and Data Attributes applied to Column Headers and Table Cells/Rows
 - Grid Aggregates
 - Group Aggregates
+- Advanced filtering via integration with [ExpressionParser.js](https://github.com/mosbymc/ExpressionParser)
+    - This functionality allows for both AND and OR type filter conjunctions as well as an arbitrary number of nested filter groups.
 
-All data manipulation functionality (sorting, filtering, grouping, editing, and paging) can occur on the client-side or server-side depending on your configuration options.
+All data manipulation functionality (sorting, filtering, grouping, saving edits, and paging) can occur on the client-side or server-side depending on your configuration options.
 
-Planned functionality & upgrades:
+###Planned functionality & upgrades:###
 - Dynamically add new columns (in progress)
 - Dynamically add new rows (in progress)
 - Locked Columns
-- Advanced filtering (AND/OR/NOT)
-- Nested drill-down grids
+- Drag columns between grids
 - Remove jQuery dependency (this will happen no time soon)
 
 
-The grid.html file is my test page for the functionality in the grid widget. It requires grid.js, and grid.css to run properly. You can view the test page
-by starting up the node server and navigating a browser to: http://localhost:3000/build/grid.html
+I just got my github project page for this repo up and running [here.](http://mosbymc.github.io/HTML-Data-Grid-Widget/) I had been including a demo page within the main repo, but now, as part of the clean up I intend to do, I will be removing the unecessary .html files from the repo. For now, you can check out the grid at the project page linked above. I'll make sure to keep it updated with the latest code.
 
-This test page shows a grid that is configured to use client-side paging via the gridData.js file. You will probably notice that there are no phone numbers
-in the 'Phone Number' column of the grid. This is because I created the phone numbers in my local data store, but have not yet updated the gridData.js file
-with the new data. The grid still creates the column because it is listed in the columns object of gridData.js; as it is intended to do.
+Note that while the grid does indeed support the above list of implemented functionalities, there are some bugs with the in-cell editing. If you're interested in this repo, then I would suggest refraining from using the in-cell editing functionality in a production site. Most of the validation, formatting, and type checking is working, but there are still are few edges cases I am working on tracking down.
 
-Note that while the grid does indeed support the above list of implemented functionalities, there are some bugs with it. If you're interested in this repo,
-then I would suggest cloning the grid to just play around with it and get familiar with how it works, but do not use this in any production site for the time being.
-The primary concern is with the in-cell editing. Most of the validation, formatting, and type checking is working, but there are still are few edges cases I am working
-on tracking down.
+My plan is to get the remaining bugs/issues sorted out and finish fleshing out the existing functionality and styles. Afterwards, I'll start adding new features. Check back here later because I will continue to make commits to this project. In the meantime, you can check out my currently-meager wiki for some sparse [documentation on using the grid](https://github.com/mosbymc/HTML-Data-Grid-Widget/wiki).
 
-My plan is to get the remaining bugs/issues sorted out and finish fleshing out the existing functionality. Afterwards, I'll start adding new features. Check back here later because
-I will continue to make commits to this project. In the meantime, you can check out my currently-meager wiki for some sparse [documentation on using the grid](https://github.com/mosbymc/HTML-Data-Grid-Widget/wiki).
-Included is the same grid config file I am using in my test project but with comments next to the properties to explain what they do.

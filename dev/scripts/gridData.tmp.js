@@ -10,6 +10,7 @@ var gridDataTmp = {
     selectable: 'multi-row',
     excelExport: true,
     columnToggle: true,
+    resizable: true,
     drillDown: {
         reorderable: true,
         sortable: true,

@@ -2736,15 +2736,52 @@ var grid = (function _grid($) {
     }
 
     function createFilterDiv(type, field, grid, title) {
-        var filterDiv = $('<div class="filter-div" data-parentfield="' + field + '" data-type="' + type + '"></div>').appendTo(grid);
-        var domName = title ? title : type,
+        var filterDiv = $('<div class="filter-div" data-parentfield="' + field + '" data-type="' + type + '"></div>').appendTo(grid),
+            domName = title ? title : type,
             filterInput, resetButton, button,
-            modalText = 'Filter rows where ' + domName;
+            modalText = 'Filter rows where ' + domName,
+            id = grid.data('grid_id');
         modalText = type !== 'string' ? modalText + ' is:' : modalText + ':';
         $('<span class="filterTextSpan">' + modalText + '</span>').appendTo(filterDiv);
         var select = $('<select class="filterSelect select input"></select>').appendTo(filterDiv);
 
-        createFilterOptionsByDataType(select, type);
+        createFilterOptionsByDataType(select, type, gridState[id].columns[field].nullable);
+
+        if (gridState[id].columns[field].nullable) {
+            select.on('change', function handleNullValueSelect() {
+                if (gridState[id].updating) return;     
+                var val = $(this).val(),
+                    operation = val === 'null' ? 'eq' : 'neq';
+                if (val === 'null' || val === 'not_null') {
+                    if (filterInput) filterInput.val('');
+                    var dataType = gridState[id].columns[field].type || 'string',
+                        extantFilters = gridState[id].basicFilters.filterGroup || [],
+                        tmpFilters = [], updatedFilter = [], foundColumn,
+                        errors = filterDiv.find('.filter-div-error');
+
+                    if (errors.length) errors.remove();
+                    for (var i = 0; i < extantFilters.length; i++) {
+                        if (extantFilters[i].field !== field) tmpFilters.push(extantFilters[i]);
+                        else {
+                            updatedFilter = extantFilters[i];
+                            updatedFilter.operation = operation;
+                            updatedFilter.value = null;
+                            foundColumn = true;
+                        }
+                    }
+
+                    tmpFilters.push(foundColumn ? updatedFilter : { field: field, value: null, operation: operation, dataType: dataType });
+                    gridState[id].filters = { conjunct: 'and', filterGroup: tmpFilters };
+                    gridState[id].basicFilters.filterGroup = tmpFilters;
+                    gridState[id].advancedFilters = {};
+
+                    filterDiv.addClass('hiddenFilter');
+                    gridState[id].pageRequest.eventType = 'filter';
+                    preparePageDataGetRequest(id);
+                }
+            });
+        }
+
         if (type !== 'boolean') {
             filterInput = $('<input type="text" class="filterInput input" id="filterInput' + type + field + '"/>').appendTo(filterDiv);
         }
@@ -2755,7 +2792,7 @@ var grid = (function _grid($) {
         if (filterInput && type !=='time' && type !== 'date') filterInputValidation(filterInput);
     }
 
-    function createFilterOptionsByDataType(select, type) {
+    function createFilterOptionsByDataType(select, type, isNullable) {
         switch (type) {
             case 'number':
                 select.append('<option value="gte">Greater than or equal to:</option>')
@@ -2785,6 +2822,11 @@ var grid = (function _grid($) {
                     .append('<option value="eq">Equal to:</option>')
                     .append('<option value="neq">Not equal to:</option>');
                 break;
+        }
+
+        if (isNullable) {
+            select.append('<option value="null">Is null:</option>');
+            select.append('<option value="not_null">Is not null:</option>');
         }
     }
 
@@ -3257,7 +3299,7 @@ var grid = (function _grid($) {
 
         if (width > 11) {
             var index = targetCell.dataset.index;
-            var gridWrapper = $(targetCell).parents('.grid-wrapper');
+            var gridWrapper = $(targetCell).parents('.grid-wrapper').first();
             var colGroups = gridWrapper.find('colgroup');
             var tables = gridWrapper.find('table');
             if (gridState[id].groupedBy && gridState[id].groupedBy.length && gridState[id].groupedBy !== 'none')
@@ -3523,7 +3565,10 @@ var grid = (function _grid($) {
         var result = [], leftVal, rightVal,
             normalizedValues;
         while (left.length && right.length) {
-            normalizedValues = normalizeValues(type, left[0][sortObj.field], right[0][sortObj.field]);
+            normalizedValues = {
+                first: normalizeValues(type, left[0][sortObj.field]),
+                second: normalizeValues(type, right[0][sortObj.field])
+            };
             leftVal = normalizedValues.value1;
             rightVal = normalizedValues.value2;
             var operator = sortObj.sortDirection === 'asc' ? 'lte' : 'gte';
@@ -3539,69 +3584,46 @@ var grid = (function _grid($) {
         return result;
     }
 
-    function normalizeValues(dataType, val1, val2) {
-        var first, second;
+    function normalizeValues(dataType, val) {
+        var value;
         switch(dataType) {
             case 'time':
-                first = getNumbersFromTime(val1);
-                second = getNumbersFromTime(val2);
-
-                if (val1.indexOf('PM') > -1) first[0] += 12;
-                if (val2.indexOf('PM') > -1) second[0] += 12;
-
-                first = convertTimeArrayToSeconds(first);
-                second = convertTimeArrayToSeconds(second);
+                value = getNumbersFromTime(val);
+                if (val.indexOf('PM') > -1) value[0] += 12;
+                value = convertTimeArrayToSeconds(value);
                 break;
             case 'datetime':
                 var re = new RegExp(dataTypes['datetime']),
-                    execVal1, execVal2;
-                if (re.test(val1) && re.test(val2)) {
-                    execVal1 = re.exec(val1);
-                    execVal2 = re.exec(val2);
+                    execVal1;
+                if (re.test(val)) {
+                    execVal1 = re.exec(val);
 
                     var dateComp1 = execVal1[2],
-                        dateComp2 = execVal2[2],
-                        timeComp1 = execVal1[42],
-                        timeComp2 = execVal2[42];
-
+                        timeComp1 = execVal1[42];
                     timeComp1 = getNumbersFromTime(timeComp1);
-                    timeComp2 = getNumbersFromTime(timeComp2);
                     if (timeComp1[3] && timeComp1[3] === 'PM')
                         timeComp1[0] += 12;
-                    if (timeComp2[3] && timeComp2[3] === 'PM')
-                        timeComp2[0] += 12;
-
                     dateComp1 = new Date(dateComp1);
-                    dateComp2 = new Date(dateComp2);
-                    first = dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
-                    second = dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
+                    value = dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
                 }
                 else {
-                    first = 0;
-                    second = 0;
+                    value = 0;
                 }
                 break;
             case 'number':
-                first = parseFloat(val1);
-                second = parseFloat(val2);
+                value = parseFloat(val);
                 break;
             case 'date':
-                first = new Date(val1);
-                second = new Date(val2);
+                value = new Date(val);
                 break;
             case 'boolean':
-                first = val1.toString();
-                second = val2.toString();
+                value = val.toString();
                 break;
             default:
-                first = val1.toString();
-                second = val2.toString();
+                value = val.toString();
                 break;
         }
-        return {
-            value1: first,
-            value2: second
-        };
+        return value;
     }
 
     function callGridEventHandlers(events, context, param) {
@@ -4195,8 +4217,8 @@ var grid = (function _grid($) {
             }
             else {
                 var initialVal = this.getContext()[this.field],
-                    normalizedValues = normalizeValues(this.dataType, initialVal, this.standard);
-                this._value = comparator(normalizedValues.value1, normalizedValues.value2, this.operation);
+                    normalizedBase = this.standard != null ? normalizeValues(this.dataType, this.standard) : null;
+                this._value = comparator(normalizeValues(this.dataType, initialVal), normalizedBase, this.operation);
                 return this._value;
             }
         };
