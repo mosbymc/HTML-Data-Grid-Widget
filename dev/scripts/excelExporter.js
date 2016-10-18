@@ -9,7 +9,7 @@
  * excel file.
  * @type {{createWorkBook, exportWorkBook}}
  */
-var excelExporter = (function _excelExporter() {
+var excelExporter = (function _excelExporter(global) {
     var relationTypes = {
         worksheet: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet',
         sharedStrings: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings',
@@ -126,6 +126,18 @@ var excelExporter = (function _excelExporter() {
             return this;
         },
         /**
+         * Turns the workbook into an xml string. If running in a browser that has the XMLSerializer,
+         * it will prefer that method; otherwise it will just .toString() every node.
+         * @returns {string} - returns the workbook as an xml string
+         */
+        toXml: function _toXml() {
+            if (global.document && global.document.implementation) {
+                var xmlDomDocument = this.toXmlDocument();
+                return (new XMLSerializer()).serializeToString(xmlDomDocument);
+            }
+            else return this.toXmlString();
+        },
+        /**
          * Creates an xml string representation of the current node and all its children
          * @returns {string} - The product of the toString operation
          */
@@ -151,6 +163,36 @@ var excelExporter = (function _excelExporter() {
                 content = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + content;
 
             return content;
+        },
+        /**
+         * Creates an XML DOM Document of the current node and all its children.
+         * @returns {Object} - The product of the toXmlDocument operation
+         */
+        toXmlDocument: function _toXmlDocument() {
+            var xmlDomDocument = document.implementation.createDocument(null, null);
+            xmlDomDocument.appendChild(xmlDomDocument.createProcessingInstruction('xml', 'version="1.0" encoding="UTF-8" standalone="yes"'));
+            xmlDomDocument.appendChild(this.getXmlNode(xmlDomDocument));
+            return xmlDomDocument;
+
+        },
+        /**
+         * Creates an XML DOM Element of the current node and all its children.
+         * @returns {Element} - The product of the getXmlNode operation
+         */
+        getXmlNode: function _getXmlNode(xmlDomDocument) {
+            xmlDomDocument = xmlDomDocument || document.implementation.createDocument();
+            var domNode = xmlDomDocument.createElement(this.nodeType);
+            for (var attr in this.attributes) {
+                domNode.setAttribute(attr, this.attributes[attr]);
+            }
+            if (this.textValue != null) {
+                domNode.appendChild(xmlDomDocument.createTextNode(this.textValue));
+            }
+            for (var i = 0; i < this.children.length; i++) {
+                var childNode = this.children[i].getXmlNode(xmlDomDocument);
+                domNode.appendChild(childNode);
+            }
+            return domNode;
         }
     };
 
@@ -220,10 +262,10 @@ var excelExporter = (function _excelExporter() {
         path = path + '/';
         for (var file in directory) {
             if (xmlNode.isPrototypeOf(directory[file]))
-                files[path + directory[file].fileName] = directory[file].toXmlString();
+                files[path + directory[file].fileName] = directory[file].toXml();
             else if (directory[file].constructor === Array) {
                 for (var i = 0; i < directory[file].length; i++) {
-                    files[path + directory[file][i][directory[file].fileName]] = directory[file][i].toXmlString();
+                    files[path + directory[file][i][directory[file].fileName]] = directory[file][i].toXml();
                 }
             }
             else if (typeof directory[file] === 'object') buildFiles(path + file, directory[file], files);
@@ -1041,4 +1083,6 @@ var excelExporter = (function _excelExporter() {
         createWorkBook: createWorkBook,
         exportWorkBook: exportWorkBook
     }
-})();
+})((function _getGlobal(global) {
+    return global;
+})(this));
