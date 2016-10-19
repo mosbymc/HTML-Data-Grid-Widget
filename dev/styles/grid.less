@@ -75,11 +75,13 @@
   z-index : auto;
 
   .spinner {
+    position: absolute;
     width: 30px;height: 30px;
     -webkit-animation: sweep 1s infinite linear;
     border-radius:50px;
     border-bottom:2px solid blue;
   }
+
   @-webkit-keyframes sweep { to { -webkit-transform: rotate(360deg); } }
 
   .loading {
@@ -1005,10 +1007,6 @@
 
   .sliderDiv {
     z-index: 100;
-  }
-
-  #loader-span {
-    position: absolute;
   }
 
   .size-selector {

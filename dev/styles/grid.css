@@ -105,6 +105,7 @@
   }*/
 }
 .grid_elem .spinner {
+  position: absolute;
   width: 30px;
   height: 30px;
   -webkit-animation: sweep 1s infinite linear;
@@ -1074,9 +1075,6 @@
 }
 .grid_elem .sliderDiv {
   z-index: 100;
-}
-.grid_elem #loader-span {
-  position: absolute;
 }
 .grid_elem .size-selector {
   margin-right: 5px;

@@ -1,5 +1,5 @@
 var gridDataTmp = {
-    height: 400,
+    height: 250,
     useValidator: true,
     useFormatter: true,
     sortable: true,

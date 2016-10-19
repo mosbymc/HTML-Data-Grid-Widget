@@ -26,47 +26,54 @@ var gridData2 = {
             reorderable: true,
             sortable: true,
             resizable: true,
-            columns: {
-                MechanicName: {
+            columns: [
+                {
+                    field: 'MechanicName',
                     title: 'Mechanic',
                     filterable: true,
                     width: 180,
                     type: 'string'
                 },
-                Make: {
+                {
+                    field: 'Make',
                     filterable: true,
                     width: 125,
                     type: 'string'
                 },
-                Model: {
+                {
+                    field: 'Model',
                     filterable: true,
                     width: 125,
                     type: 'string'
                 },
-                Year: {
+                {
+                    field: 'Year',
                     filterable: true,
                     width: 100,
                     type: 'date'
                 },
-                Doors: {
+                {
+                    field: 'Doors',
                     filterable: true,
                     width: 175,
                     type: 'number',
                     title: 'Number of doors'
                 },
-                EngineType: {
+                {
+                    field: 'EngineType',
                     title: 'Engine Type',
                     width: 150,
                     type: 'string',
                     filterable: true
                 },
-                EngineSize: {
+                {
+                    field: 'EngineSize',
                     title: 'Engine Size',
                     width: 150,
                     type: 'string',
                     filterable: true
                 }
-            },
+            ],
             dataSource: {
                 get: function _getGridData(req, cb) {
                     $.ajax({
@@ -122,8 +129,9 @@ var gridData2 = {
         },
         positionAt: "top"
     },
-    columns: {
-        Service: {
+    columns: [
+        {
+            field: 'Service',
             filterable: true,
             editable: true,
             width: 160,
@@ -133,18 +141,21 @@ var gridData2 = {
                 headerClasses: ["custom-class"]
             }
         },
-        Customer: {
+        {
+            field: 'Customer',
             type: "string",
             width: 180
         },
-        Phone: {
+        {
+            field: 'Phone',
             type: "string",
             editable: true,
             width: 130,
             inputFormat: "{{###}}-{{###}}-{{####}}",
             title: "Phone Number"
         },
-        Labor: {
+        {
+            field: 'Labor',
             type: "number",
             template: "{{data}} hour(s)",
             format: 'n2',
@@ -163,7 +174,8 @@ var gridData2 = {
                 }
             }
         },
-        Cost: {
+        {
+            field: 'Cost',
             type: "number",
             format: '0C2',
             //symbol: "$",
@@ -191,7 +203,8 @@ var gridData2 = {
                 }
             }
         },
-        Billed: {
+        {
+            field: 'Billed',
             type: "number",
             format: '0C2',
             editable: true,
@@ -210,7 +223,8 @@ var gridData2 = {
                 }
             }
         },
-        Markup: {
+        {
+            field: 'Markup',
             filterable: false,
             type: "number",
             width: 140,
@@ -220,7 +234,8 @@ var gridData2 = {
             format: '0P2',
             decimals: 0
         },
-        Date: {
+        {
+            field: 'Date',
             filterable: true,
             type: "date",
             width: 180,
@@ -241,7 +256,8 @@ var gridData2 = {
                 }
             }
         },
-        Time: {
+        {
+            field: 'Time',
             title: "Check-in Time",
             filterable: true,
             type: "time",
@@ -251,13 +267,15 @@ var gridData2 = {
             format: 'hh:mm:ss',
             delimiter: ":"
         },
-        Paid: {
+        {
+            field: 'Paid',
             type: "boolean",
             editable: true,
             filterable: true,
             width: 100
         },
-        Icon: {
+        {
+            field: 'Icon',
             title: 'GridIcon',
             type: 'custom',
             image: '../images/close.png',
@@ -271,7 +289,7 @@ var gridData2 = {
                 }
             }
         }
-    },
+    ],
     dataSource: {
         get: function _getGridData(req, cb) {
             $.ajax({
