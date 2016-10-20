@@ -48,7 +48,7 @@
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4333</p>
+      <p class="stat">4319</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">226.59</p>
+      <p class="stat">226.49</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">97.13</p>
+      <p class="stat">96.96</p>
     </div>
   </div>
 </div>
@@ -113,32 +113,29 @@
             (gridData.useValidator === true &amp;&amp; window.validator &amp;&amp; typeof validator.setAdditionalEvents === &#039;function&#039;) ? validator.setAdditionalEvents([&#039;blur&#039;, &#039;change&#039;]) : gridData.useValidator = false;
             gridData.useFormatter = gridData.useFormatter === true &amp;&amp; window.formatter &amp;&amp; typeof formatter.getFormattedInput === &#039;function&#039;;
 
-            if (gridData.constructor === Array) createGridColumnsFromArray(gridData, gridElem);
-            else {
-                gridData.columnIndices = {};
-                gridData.columns.forEach(function _createColumnIndices(col, idx) {
-                    gridData.columnIndices[col.field] = idx;
-                });
-                createGridHeaders(gridData, gridElem);
-                getInitialGridData(gridData.dataSource, function initialGridDataCallback(err, res) {
-                    if (!err) {
-                        gridData.dataSource.data = res.data;
-                        var isNotInt = res.rowCount % 1;
-                        gridData.dataSource.rowCount = isNumber(res.rowCount) &amp;&amp; !isNotInt ? res.rowCount : res.data.length;
-                        if (res.aggregations) {
-                            for (var col in gridData.aggregates) {
-                                if (res.aggregations[col])
-                                    gridData.aggregates[col].value = res.aggregations[col];
-                            }
+            gridData.columnIndices = {};
+            gridData.columns.forEach(function _createColumnIndices(col, idx) {
+                gridData.columnIndices[col.field] = idx;
+            });
+            createGridHeaders(gridData, gridElem);
+            getInitialGridData(gridData.dataSource, function initialGridDataCallback(err, res) {
+                if (!err) {
+                    gridData.dataSource.data = res.data;
+                    var isNotInt = res.rowCount % 1;
+                    gridData.dataSource.rowCount = isNumber(res.rowCount) &amp;&amp; !isNotInt ? res.rowCount : res.data.length;
+                    if (res.aggregations) {
+                        for (var col in gridData.aggregates) {
+                            if (res.aggregations[col])
+                                gridData.aggregates[col].value = res.aggregations[col];
                         }
                     }
-                    else {
-                        gridData.dataSource.data = {};
-                        gridData.dataSource.rowCount = 0;
-                    }
-                    initializeGrid(id, gridData, gridElem);
-                });
-            }
+                }
+                else {
+                    gridData.dataSource.data = {};
+                    gridData.dataSource.rowCount = 0;
+                }
+                initializeGrid(id, gridData, gridElem);
+            });
         }
         return gridElem[0].grid;
     }
@@ -710,7 +707,7 @@
                 $(&#039;&lt;a class=&quot;header-anchor&quot; href=&quot;#&quot;&gt;&lt;/a&gt;&#039;).appendTo(th).text(text);
             }
             else
-                $(&#039;&lt;span class=&quot;header-anchor&quot; href=&quot;#&quot;&gt;&lt;/span&gt;&#039;).appendTo(th).text(text);
+                $(&#039;&lt;span class=&quot;header-anchor&quot;&gt;&lt;/span&gt;&#039;).appendTo(th).text(text);
 
             if (gridData.resizable) {
                 th.on(&#039;mouseleave&#039;, mouseLeaveHandlerCallback);
@@ -2538,9 +2535,11 @@
         $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
 
         gridState[gridId].grid.find(&#039;.sortSpan&#039;).remove();
-        gridState[gridId].sortedOn = [];
-        gridState[gridId].pageRequest.eventType = &#039;sort&#039;;
-        preparePageDataGetRequest(gridId);
+        if (gridState[gridId].sortedOn.length) {
+            gridState[gridId].sortedOn = [];
+            gridState[gridId].pageRequest.eventType = &#039;sort&#039;;
+            preparePageDataGetRequest(gridId);
+        }
         e.preventDefault();
     }
 
@@ -2565,9 +2564,12 @@
         gridState[gridId].grid.find(&#039;.grid-headerRow&#039;).children(&#039;.group_spacer&#039;).remove();
         gridState[gridId].grid.find(&#039;.summary-row-header&#039;).children(&#039;.group_spacer&#039;).remove();
         gridState[gridId].grid.find(&#039;.group_div&#039;).text(groupMenuText);
-        gridState[gridId].groupedBy = [];
-        gridState[gridId].pageRequest.eventType = &#039;group&#039;;
-        preparePageDataGetRequest(gridId);
+
+        if (gridState[gridId].groupedBy.length) {
+            gridState[gridId].groupedBy = [];
+            gridState[gridId].pageRequest.eventType = &#039;group&#039;;
+            preparePageDataGetRequest(gridId);
+        }
         e.preventDefault();
     }
 
@@ -2900,6 +2902,7 @@
     function resetAllFilters(e) {
         var gridMenu = $(e.currentTarget).parents(&#039;.grid_menu&#039;),
             gridId = gridMenu.data(&#039;grid_id&#039;);
+        if (gridState[gridId].updating) return;     
         $(&#039;.grid_menu&#039;).addClass(&#039;hiddenMenu&#039;);
         gridState[gridId].grid.find(&#039;filterInput&#039;).val(&#039;&#039;);
 
@@ -2928,10 +2931,11 @@
 
         filterModal.find(&#039;filter_error&#039;).remove();
 
-        if (gridState[gridId].updating) return;     
-        gridState[gridId].filters = {};
-        gridState[gridId].pageRequest.eventType = &#039;filter&#039;;
-        preparePageDataGetRequest(gridId);
+        if (gridState[gridId].filters &amp;&amp; Object.keys(gridState[gridId].filters.filterGroup).length) {
+            gridState[gridId].filters = {};
+            gridState[gridId].pageRequest.eventType = &#039;filter&#039;;
+            preparePageDataGetRequest(gridId);
+        }
     }
 
     function resetButtonClickHandler(e) {
@@ -3017,28 +3021,6 @@
         preparePageDataGetRequest(gridId);
     }
 
-    function createGridColumnsFromArray(gridData, gridElem) {
-        var headerCol = {};
-        var index = 0;
-        for (var i = 0; i &lt; gridData.length; i++) {
-            for (var col in gridData[i]) {
-                if (!headerCol[col]) {
-                    headerCol[col] = {};
-                    headerCol[col].field = col;
-                    headerCol[col].title = col;
-                    headerCol[col].reorderable = true;
-                    headerCol[col].sortable = true;
-                    index++;
-                }
-            }
-        }
-        var newGridData = {
-            columns: headerCol,
-            data: gridData
-        };
-        createGridHeaders(newGridData, gridElem);
-    }
-
     function setDragAndDropListeners(elem) {
         elem.on(&#039;dragstart&#039;, function handleDragStartCallback(e) {
             e.originalEvent.dataTransfer.setData(&#039;text/plain&#039;, e.currentTarget.id);
@@ -3105,6 +3087,10 @@
         var droppedEvents = $._data(droppedCol[0], &#039;events&#039;);
         var targetEvents = $._data(targetCol[0], &#039;events&#039;);
         if (droppedEvents.click) setSortableClickListener(droppedClone);
+        if (gridState[id].resizable) {
+            droppedClone.on(&#039;mouseleave&#039;, mouseLeaveHandlerCallback);
+            targetClone.on(&#039;mouseleave&#039;, mouseLeaveHandlerCallback);
+        }
         setDragAndDropListeners(droppedClone);
         if (targetEvents.click) setSortableClickListener(targetClone);
         setDragAndDropListeners(targetClone);

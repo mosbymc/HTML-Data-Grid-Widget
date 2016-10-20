@@ -22,32 +22,29 @@ var grid = (function _grid($) {
             (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
             gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function';
 
-            if (gridData.constructor === Array) createGridColumnsFromArray(gridData, gridElem);
-            else {
-                gridData.columnIndices = {};
-                gridData.columns.forEach(function _createColumnIndices(col, idx) {
-                    gridData.columnIndices[col.field] = idx;
-                });
-                createGridHeaders(gridData, gridElem);
-                getInitialGridData(gridData.dataSource, function initialGridDataCallback(err, res) {
-                    if (!err) {
-                        gridData.dataSource.data = res.data;
-                        var isNotInt = res.rowCount % 1;
-                        gridData.dataSource.rowCount = isNumber(res.rowCount) && !isNotInt ? res.rowCount : res.data.length;
-                        if (res.aggregations) {
-                            for (var col in gridData.aggregates) {
-                                if (res.aggregations[col])
-                                    gridData.aggregates[col].value = res.aggregations[col];
-                            }
+            gridData.columnIndices = {};
+            gridData.columns.forEach(function _createColumnIndices(col, idx) {
+                gridData.columnIndices[col.field] = idx;
+            });
+            createGridHeaders(gridData, gridElem);
+            getInitialGridData(gridData.dataSource, function initialGridDataCallback(err, res) {
+                if (!err) {
+                    gridData.dataSource.data = res.data;
+                    var isNotInt = res.rowCount % 1;
+                    gridData.dataSource.rowCount = isNumber(res.rowCount) && !isNotInt ? res.rowCount : res.data.length;
+                    if (res.aggregations) {
+                        for (var col in gridData.aggregates) {
+                            if (res.aggregations[col])
+                                gridData.aggregates[col].value = res.aggregations[col];
                         }
                     }
-                    else {
-                        gridData.dataSource.data = {};
-                        gridData.dataSource.rowCount = 0;
-                    }
-                    initializeGrid(id, gridData, gridElem);
-                });
-            }
+                }
+                else {
+                    gridData.dataSource.data = {};
+                    gridData.dataSource.rowCount = 0;
+                }
+                initializeGrid(id, gridData, gridElem);
+            });
         }
         return gridElem[0].grid;
     }
@@ -619,7 +616,7 @@ var grid = (function _grid($) {
                 $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
             }
             else
-                $('<span class="header-anchor" href="#"></span>').appendTo(th).text(text);
+                $('<span class="header-anchor"></span>').appendTo(th).text(text);
 
             if (gridData.resizable) {
                 th.on('mouseleave', mouseLeaveHandlerCallback);
@@ -2447,9 +2444,11 @@ var grid = (function _grid($) {
         $('.grid_menu').addClass('hiddenMenu');
 
         gridState[gridId].grid.find('.sortSpan').remove();
-        gridState[gridId].sortedOn = [];
-        gridState[gridId].pageRequest.eventType = 'sort';
-        preparePageDataGetRequest(gridId);
+        if (gridState[gridId].sortedOn.length) {
+            gridState[gridId].sortedOn = [];
+            gridState[gridId].pageRequest.eventType = 'sort';
+            preparePageDataGetRequest(gridId);
+        }
         e.preventDefault();
     }
 
@@ -2474,9 +2473,12 @@ var grid = (function _grid($) {
         gridState[gridId].grid.find('.grid-headerRow').children('.group_spacer').remove();
         gridState[gridId].grid.find('.summary-row-header').children('.group_spacer').remove();
         gridState[gridId].grid.find('.group_div').text(groupMenuText);
-        gridState[gridId].groupedBy = [];
-        gridState[gridId].pageRequest.eventType = 'group';
-        preparePageDataGetRequest(gridId);
+
+        if (gridState[gridId].groupedBy.length) {
+            gridState[gridId].groupedBy = [];
+            gridState[gridId].pageRequest.eventType = 'group';
+            preparePageDataGetRequest(gridId);
+        }
         e.preventDefault();
     }
 
@@ -2809,6 +2811,7 @@ var grid = (function _grid($) {
     function resetAllFilters(e) {
         var gridMenu = $(e.currentTarget).parents('.grid_menu'),
             gridId = gridMenu.data('grid_id');
+        if (gridState[gridId].updating) return;     
         $('.grid_menu').addClass('hiddenMenu');
         gridState[gridId].grid.find('filterInput').val('');
 
@@ -2837,10 +2840,11 @@ var grid = (function _grid($) {
 
         filterModal.find('filter_error').remove();
 
-        if (gridState[gridId].updating) return;     
-        gridState[gridId].filters = {};
-        gridState[gridId].pageRequest.eventType = 'filter';
-        preparePageDataGetRequest(gridId);
+        if (gridState[gridId].filters && Object.keys(gridState[gridId].filters.filterGroup).length) {
+            gridState[gridId].filters = {};
+            gridState[gridId].pageRequest.eventType = 'filter';
+            preparePageDataGetRequest(gridId);
+        }
     }
 
     function resetButtonClickHandler(e) {
@@ -2926,28 +2930,6 @@ var grid = (function _grid($) {
         preparePageDataGetRequest(gridId);
     }
 
-    function createGridColumnsFromArray(gridData, gridElem) {
-        var headerCol = {};
-        var index = 0;
-        for (var i = 0; i < gridData.length; i++) {
-            for (var col in gridData[i]) {
-                if (!headerCol[col]) {
-                    headerCol[col] = {};
-                    headerCol[col].field = col;
-                    headerCol[col].title = col;
-                    headerCol[col].reorderable = true;
-                    headerCol[col].sortable = true;
-                    index++;
-                }
-            }
-        }
-        var newGridData = {
-            columns: headerCol,
-            data: gridData
-        };
-        createGridHeaders(newGridData, gridElem);
-    }
-
     function setDragAndDropListeners(elem) {
         elem.on('dragstart', function handleDragStartCallback(e) {
             e.originalEvent.dataTransfer.setData('text/plain', e.currentTarget.id);
@@ -3014,6 +2996,10 @@ var grid = (function _grid($) {
         var droppedEvents = $._data(droppedCol[0], 'events');
         var targetEvents = $._data(targetCol[0], 'events');
         if (droppedEvents.click) setSortableClickListener(droppedClone);
+        if (gridState[id].resizable) {
+            droppedClone.on('mouseleave', mouseLeaveHandlerCallback);
+            targetClone.on('mouseleave', mouseLeaveHandlerCallback);
+        }
         setDragAndDropListeners(droppedClone);
         if (targetEvents.click) setSortableClickListener(targetClone);
         setDragAndDropListeners(targetClone);
