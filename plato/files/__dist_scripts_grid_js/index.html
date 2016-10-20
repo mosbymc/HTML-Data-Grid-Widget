@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">57.16</p>
+      <p class="stat">57.81</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4319</p>
+      <p class="stat">4274</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">226.49</p>
+      <p class="stat">221.79</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">96.96</p>
+      <p class="stat">96.06</p>
     </div>
   </div>
 </div>
@@ -93,7 +93,20 @@
     &#039;use strict&#039;;
     var dataTypes, events, aggregates, generateId, expressionParser,
         gridState = [],
-        groupMenuText = &#039;Drag and drop a column header here to group by that column&#039;;
+        groupMenuText = &#039;Drag and drop a column header here to group by that column&#039;,
+        predicates = {
+            strictEqual: &#039;eq&#039;,
+            looseEqual: &#039;==&#039;,
+            strictNotEqual: &#039;neq&#039;,
+            looseNotEqual: &#039;!=&#039;,
+            greaterThanOrEqual: &#039;gte&#039;,
+            greaterThan: &#039;gt&#039;,
+            lessThanOrEqual: &#039;lte&#039;,
+            lessThan: &#039;lt&#039;,
+            not: &#039;!&#039;,
+            contains: &#039;ct&#039;,
+            notContains: &#039;nct&#039;
+        };
 
     function create(gridData, gridElem) {
         if (gridData &amp;&amp; isDomElement(gridElem)) {
@@ -118,11 +131,10 @@
                 gridData.columnIndices[col.field] = idx;
             });
             createGridHeaders(gridData, gridElem);
-            getInitialGridData(gridData.dataSource, function initialGridDataCallback(err, res) {
+            getInitialGridData(gridData.dataSource, gridData.pageSize || 25, function initialGridDataCallback(err, res) {
                 if (!err) {
                     gridData.dataSource.data = res.data;
-                    var isNotInt = res.rowCount % 1;
-                    gridData.dataSource.rowCount = isNumber(res.rowCount) &amp;&amp; !isNotInt ? res.rowCount : res.data.length;
+                    gridData.dataSource.rowCount = isInteger(res.rowCount) ? res.rowCount : res.data.length;
                     if (res.aggregations) {
                         for (var col in gridData.aggregates) {
                             if (res.aggregations[col])
@@ -578,11 +590,11 @@
         }
     }
 
-    function getInitialGridData(dataSource, callback) {
+    function getInitialGridData(dataSource, pageSize, callback) {
         if (dataSource &amp;&amp; typeof dataSource.data === &#039;object&#039;)
             callback(null, { data: dataSource.data, rowCount: dataSource.rowCount });
         else if (typeof dataSource.get == &#039;function&#039;) {
-            dataSource.get({ pageSize: 25, pageNum: 1 },
+            dataSource.get({ pageSize: pageSize, pageNum: 1 },
                 function gridDataCallback(data) {
                     if (data) callback(null, data);
                     else callback(true, {});
@@ -603,13 +615,11 @@
             columnReorder: typeof storageData.columnReorder === &#039;object&#039; &amp;&amp; storageData.columnReorder.constructor === Array ? storageData.columnReorder : []
         };
 
-        for (var event in storageData.events) {
-            if (storageData.events[event].length) {
-                storageData.events[event] = storageData.events[event].map(function mapEventsCallback(fn) {
-                    if (typeof fn == &#039;function&#039;) return fn;
-                });
-            }
-        }
+        Object.keys(storageData.events).forEach(function setEvtHandlers(evt) {
+            storageData.events[evt] = storageData.events[evt].map(function mapEventsCallback(fn) {
+                if (typeof fn == &#039;function&#039;) return fn;
+            });
+        });
 
         delete storageData.beforeCellEdit;
         delete storageData.cellEditChange;
@@ -635,8 +645,8 @@
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
         if (storageData.advancedFiltering) {
-            storageData.advancedFiltering.groupsCount = isNumber(storageData.advancedFiltering.groupsCount) ? storageData.advancedFiltering.groupsCount : 5;
-            storageData.advancedFiltering.filtersCount = isNumber(storageData.advancedFiltering.filtersCount) ? storageData.advancedFiltering.filtersCount : 10;
+            storageData.advancedFiltering.groupsCount = isInteger(storageData.advancedFiltering.groupsCount) ? storageData.advancedFiltering.groupsCount : 5;
+            storageData.advancedFiltering.filtersCount = isInteger(storageData.advancedFiltering.filtersCount) ? storageData.advancedFiltering.filtersCount : 10;
         }
         storageData.parentGridId = gridData.parentGridId != null ? gridData.parentGridId : null;
         if (storageData.dataSource.rowCount == null) storageData.dataSource.rowCount = gridData.dataSource.data.length;
@@ -663,13 +673,13 @@
         var colgroup = $(&#039;&lt;colgroup&gt;&lt;/colgroup&gt;&#039;).appendTo(headerTable),
             headerTHead = $(&#039;&lt;thead&gt;&lt;/thead&gt;&#039;).appendTo(headerTable),
             headerRow = $(&#039;&lt;tr class=grid-headerRow&gt;&lt;/tr&gt;&#039;).appendTo(headerTHead),
-            id = gridHeader.data(&#039;grid_header_id&#039;), i;
+            id = gridHeader.data(&#039;grid_header_id&#039;);
 
         if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) {
-            for (i = 0; i &lt; gridData.groupedBy.length; i++) {
+            gridData.groupedBy.forEach(function _createGroupingCols() {
                 colgroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
                 headerRow.prepend(&#039;&lt;th class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/th&gt;&#039;);
-            }
+            });
         }
 
         if (gridData.drillDown) {
@@ -684,9 +694,9 @@
                 th = $(&#039;&lt;th id=&quot;&#039; + col.field + &#039;_grid_id_&#039; + id + &#039;&quot; data-field=&quot;&#039; + col.field + &#039;&quot; data-index=&quot;&#039; + idx + &#039;&quot; class=grid-header-cell&gt;&lt;/th&gt;&#039;).appendTo(headerRow);
 
             if (typeof col.attributes === &#039;object&#039; &amp;&amp; col.attributes.headerClasses &amp;&amp; col.attributes.headerClasses.constructor ===  Array) {
-                for (i = 0; i &lt; col.attributes.headerClasses.length; i++) {
-                    th.addClass(col.attributes.headerClasses[i]);
-                }
+                col.attributes.headerClasses.forEach(function _applyHeaderClasses(className) {
+                    th.addClass(className);
+                });
             }
 
             if (col.type !== &#039;custom&#039;) {
@@ -773,7 +783,7 @@
             contentTable = $(&#039;&lt;table id=&quot;&#039; + gridElem[0].id + &#039;_content&quot; style=&quot;height:auto;&quot;&gt;&lt;/table&gt;&#039;).appendTo(gridContent),
             colGroup = $(&#039;&lt;colgroup&gt;&lt;/colgroup&gt;&#039;).appendTo(contentTable),
             contentTBody = $(&#039;&lt;tbody&gt;&lt;/tbody&gt;&#039;).appendTo(contentTable),
-            text, i, j, k, item;
+            text, i, item;
         contentTBody.css(&#039;width&#039;, &#039;auto&#039;);
         if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; gridData.selectable) attachTableSelectHandler(contentTBody);
 
@@ -793,21 +803,21 @@
                 if (i % 2) {
                     tr.addClass(&#039;alt-row&#039;);
                     if (rows &amp;&amp; rows.alternateRows &amp;&amp; rows.alternateRows.constructor === Array)
-                        for (j = 0; j &lt; rows.alternateRows.length; j++) {
-                            tr.addClass(rows.alternateRows[j].toString());
-                        }
+                        rows.alternateRows.forEach(function _addAlternateRowClasses(className) {
+                            tr.addClass(className);
+                        });
                 }
 
                 if (rows &amp;&amp; rows.all &amp;&amp; rows.all.constructor === Array) {
-                    for (j = 0; j &lt; rows.all.length; j++) {
-                        tr.addClass(rows.all[j].toString());
-                    }
+                    rows.all.forEach(function _addRowClasses(className) {
+                        tr.addClass(className);
+                    });
                 }
 
                 if (gridData.groupedBy.length) {
-                    for (j = 0; j &lt; gridData.groupedBy.length; j++) {
+                    gridData.groupedBy.forEach(function _appendGroupingCells() {
                         tr.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
-                    }
+                    });
                 }
 
                 if (gridData.drillDown)
@@ -816,9 +826,9 @@
                 gridData.columns.forEach(function _createGridCells(col) {
                     var td = $(&#039;&lt;td data-field=&quot;&#039; + col.field + &#039;&quot; class=&quot;grid-content-cell&quot;&gt;&lt;/td&gt;&#039;).appendTo(tr);
                     if (col.attributes &amp;&amp; col.attributes.cellClasses &amp;&amp; col.attributes.cellClasses.constructor === Array) {
-                        for (k = 0; k &lt; col.attributes.cellClasses.length; k++) {
-                            td.addClass(col.attributes.cellClasses[k]);
-                        }
+                        col.attributes.cellClasses.forEach(function _addColumnClasses(className) {
+                            td.addClass(className);
+                        });
                     }
                     if (col.type !== &#039;custom&#039;) {
                         text = getFormattedCellText(col, gridData.dataSource.data[i][col.field]) || gridData.dataSource.data[i][col.field];
@@ -857,19 +867,9 @@
                 });
             }
 
-            gridData.columns.forEach(function _addCols() {
-                colGroup.append(&#039;&lt;col/&gt;&#039;);
-            });
-
-            if (gridData.groupedBy.length) {
-                for (j = 0; j &lt; gridData.groupedBy.length; j++) {
-                    colGroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
-                }
-            }
-
-            if (gridData.drillDown) {
-                colGroup.prepend(&#039;&lt;col class=&quot;groupCol&quot;/&gt;&#039;);
-            }
+            gridData.columns.forEach(function appendCols() { colGroup.append(&#039;&lt;col/&gt;&#039;); });
+            gridData.groupedBy.forEach(function _prependCols() { colGroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;); });
+            if (gridData.drillDown) colGroup.prepend(&#039;&lt;col class=&quot;groupCol&quot;/&gt;&#039;);
 
             if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039; &amp;&amp; typeof gridData.dataSource.get !== &#039;function&#039; &amp;&amp;
                 (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === undefined))
@@ -880,9 +880,9 @@
                 if (aggrs) {
                     var aggRow = $(&#039;&lt;tr class=&quot;summary-row-footer&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
                     if (gridState[id].groupedBy.length) {
-                        for (i = 0; i &lt; gridState[id].groupedBy.length; i++) {
+                        gridState[id].groupedBy.forEach(function _appendGroupSpacers() {
                             aggRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
-                        }
+                        });
                     }
                     for (item in aggrs) {
                         text = aggrs[item].value || &#039;&#039;;
@@ -928,7 +928,7 @@
     }
 
     function createGroupedRows(gridId, rowIndex, currentGroupingValues, gridContent) {
-        var j, k, item,
+        var j, k,
             foundDiff = false,
             groupedDiff = [],
             gridData = gridState[gridId];
@@ -955,7 +955,7 @@
                         groupAggregateRow.append(&#039;&lt;td colspan=&quot;1&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
                     gridData.columns.forEach(function _createAggregateCells(col) {
                         if (col.field in gridData.groupAggregations[j] &amp;&amp; col.field !== &#039;_items_&#039;){
-                            groupAggregateRow.append(&#039;&lt;td class=&quot;group_aggregate_cell&quot;&gt;&#039; + (gridData.groupAggregations[j][item].text || &#039;&#039;) + &#039;&lt;/td&gt;&#039;);
+                            groupAggregateRow.append(&#039;&lt;td class=&quot;group_aggregate_cell&quot;&gt;&#039; + (gridData.groupAggregations[j][col.field].text || &#039;&#039;) + &#039;&lt;/td&gt;&#039;);
                         }
                         else
                             groupAggregateRow.append(&#039;&lt;td class=&quot;group_aggregate_cell&quot;&gt; &lt;/td&gt;&#039;);
@@ -1538,10 +1538,13 @@
             }
             var select = $(&#039;&lt;select class=&quot;input select active-cell&quot;&#039; + dataAttributes + &#039;&gt;&lt;/select&gt;&#039;).appendTo(cell),
                 options = [],
-                setVal = column.nullable || gridState[id].dataSource.data[index][field] ? gridState[id].dataSource.data[index][field] : &#039;&#039;;
+                setVal = column.nullable || gridState[id].dataSource.data[index][field] ? gridState[id].dataSource.data[index][field] : &#039;&#039;,
+                dataType = column.type || &#039;string&#039;;
             if (&#039;&#039; !== setVal &amp;&amp; (column.nullable || null !== setVal)) options.push(setVal);
             for (var z = 0; z &lt; column.options.length; z++) {
-                if (!compareValuesByType(setVal, column.options[z], (column.type || &#039;string&#039;))) {
+                var startVal = normalizeValues(dataType, setVal),
+                    optionVal = normalizeValues(dataType, column.options[z]);
+                if (!comparator(startVal, optionVal, dataType)) {
                     options = options.reverse();
                     options.push(column.options[z]);
                     options = options.reverse();
@@ -3516,16 +3519,11 @@
 
     function limitPageData(requestObj, fullGridData, callback) {
         var returnData;
-        if (requestObj.pageSize &gt;= fullGridData.length)
-            returnData = fullGridData;
+        if (requestObj.pageSize &gt;= fullGridData.length) returnData = fullGridData;
         else {
-            returnData = [];
             var startRow = (requestObj.pageNum-1) * (requestObj.pageSize);
             var endRow = fullGridData.length &gt;= (startRow + parseInt(requestObj.pageSize)) ? (startRow + parseInt(requestObj.pageSize)) : fullGridData.length;
-
-            for (var i = startRow; i &lt; endRow; i++){
-                returnData.push(fullGridData[i]);
-            }
+            returnData = fullGridData.slice(startRow, endRow);
         }
 
         callback({ rowCount: fullGridData.length, data: returnData });
@@ -3569,29 +3567,33 @@
     }
 
     function sortGridData (sortedItems, gridData, gridId) {
-        for (var i = 0; i &lt; sortedItems.length; i++) {
-            var column = gridState[gridId].columns[gridState[gridId].columnIndices[sortedItems[i].field]],
-                prevColumn = gridState[gridId].columns[gridState[gridId].columnIndices[sortedItems[i - 1].field]];
-            if (i === 0)
-                gridData = mergeSort(gridData, sortedItems[i], column.type || &#039;string&#039;);
+        sortedItems.forEach(function _sortItems(cur, idx) {
+            var columnIdx = gridState[gridId].columnIndices[cur.field];
+            var column = gridState[gridId].columns[columnIdx];
+            if (idx === 0)
+                gridData = mergeSort(gridData, cur, column.type || &#039;string&#039;);
             else {
                 var sortedGridData = [];
                 var itemsToSort = [];
-                for (var j = 0; j &lt; gridData.length; j++) {
-                    if (!itemsToSort.length || compareValuesByType(itemsToSort[0][sortedItems[i - 1].field], gridData[j][sortedItems[i - 1].field], prevColumn.type))
-                        itemsToSort.push(gridData[j]);
+                gridData.forEach(function _sortGridData(data, i) {
+                    var prevField = sortedItems[idx - 1].field,
+                        prevVal = itemsToSort.length ? itemsToSort[0][prevField] : null,
+                        prevColIdx = itemsToSort.length ? gridState[gridId].columnIndices[prevField] : null,
+                        dataType = itemsToSort.length ? gridState[gridId].columns[prevColIdx].type : null;
+                    if (!itemsToSort.length || comparator(normalizeValues(dataType, prevVal), normalizeValues(dataType, gridData[i][prevField]), predicates.strictEqual))
+                        itemsToSort.push(gridData[i]);
                     else {
                         if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
-                        else sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], column.type || &#039;string&#039;));
+                        else sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[idx], column.type || &#039;string&#039;));
                         itemsToSort.length = 0;
-                        itemsToSort.push(gridData[j]);
+                        itemsToSort.push(gridData[i]);
                     }
-                    if (j === gridData.length - 1)
-                        sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[i], column.type || &#039;string&#039;));
-                }
+                    if (i === gridData.length - 1)
+                        sortedGridData = sortedGridData.concat(mergeSort(itemsToSort, sortedItems[idx], column.type || &#039;string&#039;));
+                });
                 gridData = sortedGridData;
             }
-        }
+        });
         return gridData;
     }
 
@@ -3622,6 +3624,7 @@
     }
 
     function normalizeValues(dataType, val) {
+        if (val == null) return null;
         var value;
         switch(dataType) {
             case &#039;time&#039;:
@@ -3672,10 +3675,10 @@
     }
 
     function existsInPutRequest(putRequest, model) {
-        for (var i = 0; i &lt; putRequest.length; i++) {
-            if (model._initialRowIndex == putRequest[i].dirtyData._initialRowIndex)
-                return i;
-        }
+        putRequest.forEach(function _findModelIdx(cur, idx) {
+            if (model._initialRowIndex == putRequest[idx].dirtyData._initialRowIndex)
+                return idx;
+        });
         return -1;
     }
 
@@ -3761,58 +3764,6 @@
             return re.test(key);
         }
         return true;
-    }
-
-    function compareValuesByType (val1, val2, dataType) {
-        switch (dataType) {
-            case &#039;string&#039;:
-                return val1.toString() === val2.toString();
-            case &#039;number&#039;:
-                return parseFloat(val1.toString()) === parseFloat(val2.toString());
-            case &#039;boolean&#039;:
-                return !!val1 === !!val2;
-            case &#039;date&#039;:
-                var date1 = new Date(val1),
-                    date2 = new Date(val2);
-                if ((typeof date1 === &#039;object&#039; ||typeof date1 === &#039;number&#039;) &amp;&amp; (typeof date2 === &#039;object&#039; || typeof date2 === &#039;number&#039;)) {
-                    if (date1 !== date1 &amp;&amp; date2 !== date2) return true;
-                }
-                return date1 === date2;
-            case &#039;time&#039;:
-                var value1 = getNumbersFromTime(val1);
-                var value2 = getNumbersFromTime(val2);
-                if (value1[3] &amp;&amp; value1[3] === &#039;PM&#039;)
-                    value1[0] += 12;
-                if (value2[3] &amp;&amp; value2[3] === &#039;PM&#039;)
-                    value2[0] += 12;
-                return convertTimeArrayToSeconds(value1) === convertTimeArrayToSeconds(value2);
-            case &#039;datetime&#039;:
-                var re = new RegExp(dataTypes[&#039;datetime&#039;]),
-                    execVal1, execVal2;
-                if (re.test(val1) &amp;&amp; re.test(val2)) {
-                    execVal1 = re.exec(val1);
-                    execVal2 = re.exec(val2);
-
-                    var dateComp1 = execVal1[2],
-                        dateComp2 = execVal2[2],
-                        timeComp1 = execVal1[42],
-                        timeComp2 = execVal2[42];
-
-                    timeComp1 = getNumbersFromTime(timeComp1);
-                    timeComp2 = getNumbersFromTime(timeComp2);
-                    if (timeComp1[3] &amp;&amp; timeComp1[3] === &#039;PM&#039;)
-                        timeComp1[0] += 12;
-                    if (timeComp2[3] &amp;&amp; timeComp2[3] === &#039;PM&#039;)
-                        timeComp2[0] += 12;
-
-                    dateComp1 = new Date(dateComp1);
-                    dateComp2 = new Date(dateComp2);
-                    return dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1) === dateComp2.getTime() + convertTimeArrayToSeconds(timeComp2);
-                }
-                return true;
-            default:
-                return val1.toString() === val2.toString();
-        }
     }
 
     function exportDataAsExcelFile(gridId, option) {
@@ -4126,6 +4077,10 @@
 
     function isNumber(value) {
         return typeof value === &#039;number&#039; &amp;&amp; value === value;
+    }
+
+    function isInteger(value) {
+        return isNumber(value) &amp;&amp; value % 1 === 0;
     }
 
     expressionParser = (function _expressionParser() {
