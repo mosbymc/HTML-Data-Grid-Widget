@@ -1436,8 +1436,9 @@ var grid = (function _grid($) {
                 field = cell.data('field');
             if (gridState[id].updating) return;     
 
-            var column = gridState[id].columns[gridState[id].columnIndices[field]];
-            var gridValidation = gridState[id].useValidator ? column.validation : null,
+            var column = gridState[id].columns[gridState[id].columnIndices[field]],
+                value = gridState[id].dataSource.data[index][field],
+                gridValidation = gridState[id].useValidator ? column.validation : null,
                 dataAttributes = '';
 
             if (gridValidation) {
@@ -1446,25 +1447,23 @@ var grid = (function _grid($) {
                 dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
             }
             var select = $('<select class="input select active-cell"' + dataAttributes + '></select>').appendTo(cell),
-                options = [],
-                setVal = column.nullable || gridState[id].dataSource.data[index][field] ? gridState[id].dataSource.data[index][field] : '',
-                dataType = column.type || 'string';
-            if ('' !== setVal && (column.nullable || null !== setVal)) options.push(setVal);
-            for (var z = 0; z < column.options.length; z++) {
-                var startVal = normalizeValues(dataType, setVal),
-                    optionVal = normalizeValues(dataType, column.options[z]);
-                if (!comparator(startVal, optionVal, dataType)) {
-                    options = options.reverse();
-                    options.push(column.options[z]);
-                    options = options.reverse();
-                }
+                options = column.options.map(function _copyColumnOptions(val) { return val; });
+                value = column.nullable || value != null ? value : '';
+                var dataType = column.type || 'string',
+                normalizedValue = normalizeValues(dataType, value);
+            if (!options.some(function _compareCellValueForUniqueness(opt) {
+                if (comparator(normalizedValue, normalizeValues(dataType, opt), predicates.strictEqual))
+                    return true;
+            })) {
+                options = options.reverse();
+                options.push(value);
+                options = options.reverse();
             }
 
-            for (var k = 0; k < options.length; k++) {
-                var opt = $('<option value="' + options[k] + '">' + options[k] + '</option>');
-                select.append(opt);
-            }
-            if ('' !== setVal && (column.nullable || null !== setVal)) select.val(setVal);
+            options.forEach(function _setSelectableColumnOptions(option) {
+                select.append('<option value="' + option + '">' + option + '</option>');
+            });
+            if ('' !== value && (column.nullable || null !== value)) select.val(value);
             select[0].focus();
 
             if (gridValidation) select.addClass('inputValidate');
@@ -3519,7 +3518,7 @@ var grid = (function _grid($) {
         while (left.length && right.length) {
             leftVal = normalizeValues(type, left[0][sortObj.field]);
             rightVal = normalizeValues(type, right[0][sortObj.field]);
-            var operator = sortObj.sortDirection === 'asc' ? 'lte' : 'gte';
+            var operator = sortObj.sortDirection === 'asc' ? predicates.lessThanOrEqual : predicates.greaterThanOrEqual;
             comparator(leftVal, rightVal, operator) ? result.push(left.shift()) : result.push(right.shift());
         }
 

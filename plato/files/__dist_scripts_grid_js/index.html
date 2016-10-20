@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">57.81</p>
+      <p class="stat">57.94</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4274</p>
+      <p class="stat">4273</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">221.79</p>
+      <p class="stat">221.38</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">96.06</p>
+      <p class="stat">95.93</p>
     </div>
   </div>
 </div>
@@ -1527,8 +1527,9 @@
                 field = cell.data(&#039;field&#039;);
             if (gridState[id].updating) return;     
 
-            var column = gridState[id].columns[gridState[id].columnIndices[field]];
-            var gridValidation = gridState[id].useValidator ? column.validation : null,
+            var column = gridState[id].columns[gridState[id].columnIndices[field]],
+                value = gridState[id].dataSource.data[index][field],
+                gridValidation = gridState[id].useValidator ? column.validation : null,
                 dataAttributes = &#039;&#039;;
 
             if (gridValidation) {
@@ -1537,25 +1538,23 @@
                 dataAttributes += &#039; data-validateon=&quot;blur&quot; data-offsetHeight=&quot;-6&quot; data-offsetWidth=&quot;8&quot; data-modalid=&quot;&#039; + gridBodyId + &#039;&quot;&#039;;
             }
             var select = $(&#039;&lt;select class=&quot;input select active-cell&quot;&#039; + dataAttributes + &#039;&gt;&lt;/select&gt;&#039;).appendTo(cell),
-                options = [],
-                setVal = column.nullable || gridState[id].dataSource.data[index][field] ? gridState[id].dataSource.data[index][field] : &#039;&#039;,
-                dataType = column.type || &#039;string&#039;;
-            if (&#039;&#039; !== setVal &amp;&amp; (column.nullable || null !== setVal)) options.push(setVal);
-            for (var z = 0; z &lt; column.options.length; z++) {
-                var startVal = normalizeValues(dataType, setVal),
-                    optionVal = normalizeValues(dataType, column.options[z]);
-                if (!comparator(startVal, optionVal, dataType)) {
-                    options = options.reverse();
-                    options.push(column.options[z]);
-                    options = options.reverse();
-                }
+                options = column.options.map(function _copyColumnOptions(val) { return val; });
+                value = column.nullable || value != null ? value : &#039;&#039;;
+                var dataType = column.type || &#039;string&#039;,
+                normalizedValue = normalizeValues(dataType, value);
+            if (!options.some(function _compareCellValueForUniqueness(opt) {
+                if (comparator(normalizedValue, normalizeValues(dataType, opt), predicates.strictEqual))
+                    return true;
+            })) {
+                options = options.reverse();
+                options.push(value);
+                options = options.reverse();
             }
 
-            for (var k = 0; k &lt; options.length; k++) {
-                var opt = $(&#039;&lt;option value=&quot;&#039; + options[k] + &#039;&quot;&gt;&#039; + options[k] + &#039;&lt;/option&gt;&#039;);
-                select.append(opt);
-            }
-            if (&#039;&#039; !== setVal &amp;&amp; (column.nullable || null !== setVal)) select.val(setVal);
+            options.forEach(function _setSelectableColumnOptions(option) {
+                select.append(&#039;&lt;option value=&quot;&#039; + option + &#039;&quot;&gt;&#039; + option + &#039;&lt;/option&gt;&#039;);
+            });
+            if (&#039;&#039; !== value &amp;&amp; (column.nullable || null !== value)) select.val(value);
             select[0].focus();
 
             if (gridValidation) select.addClass(&#039;inputValidate&#039;);
@@ -3610,7 +3609,7 @@
         while (left.length &amp;&amp; right.length) {
             leftVal = normalizeValues(type, left[0][sortObj.field]);
             rightVal = normalizeValues(type, right[0][sortObj.field]);
-            var operator = sortObj.sortDirection === &#039;asc&#039; ? &#039;lte&#039; : &#039;gte&#039;;
+            var operator = sortObj.sortDirection === &#039;asc&#039; ? predicates.lessThanOrEqual : predicates.greaterThanOrEqual;
             comparator(leftVal, rightVal, operator) ? result.push(left.shift()) : result.push(right.shift());
         }
 
