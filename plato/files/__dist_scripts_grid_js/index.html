@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">57.13</p>
+      <p class="stat">57.16</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4353</p>
+      <p class="stat">4333</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">227.03</p>
+      <p class="stat">226.59</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">97.06</p>
+      <p class="stat">97.13</p>
     </div>
   </div>
 </div>
@@ -150,85 +150,6 @@
 
     function createGridInstanceMethods(gridElem, gridId) {
 
-        Object.defineProperty(
-            gridElem[0].grid,
-            &#039;exportToExcel&#039;,
-            {
-                value: function _exportToExcel(exportType) {
-                    exportDataAsExcelFile(gridId, exportType || &#039;page&#039;);
-                }
-            }
-        );
-
-        Object.defineProperty(
-            gridElem[0].grid,
-            &#039;activeCellData&#039;,
-            {
-                get: function _getActiveCellData() {
-                    var cell = gridElem.find(&#039;.active-cell&#039;);
-                    if (!cell.length)
-                        return null;
-                    var field = cell.parents(&#039;td&#039;).data(&#039;field&#039;);
-                    var colIndex = cell.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-header-wrapper&#039;).find(&#039;.grid-headerRow&#039;).children(&#039;[data-field=&quot;&#039; + field + &#039;&quot;]&#039;).data(&#039;index&#039;);
-                    if (cell[0].type === &#039;checkbox&#039;)
-                        return { data: cell[0].checked, row: cell.parents(&#039;tr&#039;).index(), column: colIndex, field: field };
-                    return { data: cell.val(), row: cell.parents(&#039;tr&#039;).index(), column: colIndex, field: field, cell: cell.parents(&#039;td&#039;)[0] };
-                },
-                configurable: false
-            });
-
-        Object.defineProperty(
-            gridElem[0].grid,
-            &#039;selected&#039;,
-            {
-                get: function _getSelectedItems() {
-                    var selectedItems = [];
-                    gridElem.find(&#039;.selected&#039;).each(function iteratedSelectedGridItems(idx, val) {
-                        selectedItems.push(val);
-                    });
-                    return selectedItems;
-                },
-                set: function _setSelectedItems(itemArray) {
-                    if (!itemArray || itemArray.constructor !== Array) return;
-                    for (var i = 0; i &lt; itemArray.length; i++) {
-                        if (typeof itemArray[i].rowIndex !== &#039;number&#039;) continue;
-                        var row = gridElem.find(&#039;.grid-content-div&#039;).find(&#039;tbody&#039;).children(&#039;tr:nth-child(&#039; + (itemArray[i].rowIndex + 1) + &#039;)&#039;);
-                        if (typeof itemArray[i].columnIndex === &#039;number&#039;) {
-                            row.children(&#039;td:nth-child(&#039; + (itemArray[i].columnIndex + 1) + &#039;)&#039;).addClass(&#039;selected&#039;);
-                        }
-                        else
-                            row.addClass(&#039;selected&#039;);
-                    }
-                },
-                configurable: false
-            }
-        );
-
-        Object.defineProperty(
-            gridElem[0].grid,
-            &#039;selectedData&#039;,
-            {
-                get: function _getSelectedGridItemData() {
-                    var data = [];
-                    gridElem.find(&#039;.selected&#039;).each(function getSelectedElementData(index, value) {
-                        var item = $(value);
-                        if (value.tagName.toLowerCase() === &#039;tr&#039;) {
-                            var rowIndex = item.index();
-                            $(value).children().each(function iterateTableCells(idx, val) {
-                                var cell = $(val);
-                                data.push({ rowIndex: rowIndex, columnIndex: cell.index(), data: cell.text(), field: cell.data(&#039;field&#039;) });
-                            });
-                        }
-                        else {
-                            data.push({ rowIndex: item.parents(&#039;tr&#039;).index(), columnIndex: item.index(), data: item.text(), field: item.data(&#039;field&#039;) });
-                        }
-                    });
-                    return data;
-                },
-                configurable: false
-            }
-        );
-
         Object.defineProperties(
             gridElem[0].grid, {
                 &#039;bindEvents&#039;: {
@@ -293,8 +214,9 @@
                 },
                 &#039;hideColumn&#039;: {
                     value: function _hideColumn(col) {
-                        if (gridState[gridId].columns[col]) {
-                            gridState[gridId].columns[col].isHidden = true;
+                        var colIdx = gridState[gridId].columnIndices[col];
+                        if (colIdx != null) {
+                            gridState[gridId].columns[colIdx].isHidden = true;
                             var column = gridState[gridId].grid.find(&#039;.grid-header-wrapper&#039;).find(&#039;[data-field=&quot;&#039; + col + &#039;&quot;]&#039;),
                                 columnIdx = column.data(&#039;index&#039;);
                             column.css(&#039;display&#039;, &#039;none&#039;);
@@ -316,6 +238,7 @@
                 },
                 &#039;showColumn&#039;: {
                     value: function _showColumn(col) {
+                        col = gridState[gridId].columnIndices[col];
                         if (gridState[gridId].columns[col] &amp;&amp; gridState[gridId].columns[col].isHidden) {
                             gridState[gridId].columns[col].isHidden = false;
                             gridState[gridId].grid.find(&#039;.grid-header-wrapper&#039;).find(&#039;[data-field=&quot;&#039; + col + &#039;&quot;]&#039;).css(&#039;display&#039;, &#039;&#039;);
@@ -334,7 +257,7 @@
                             return;
                         var field = typeof column === &#039;object&#039; ? column.field || &#039;field&#039; : column,
                             newCol;
-                        if (!gridState[gridId].columns[field]) {
+                        if (!gridState[gridId].columnIndices[field]) {
                             for (var i = 0; i &lt; gridState[gridId].dataSource.data.length; i++) {
                                 gridState[gridId].dataSource.data[i][field] = data[i] ? data[i] : null;
                             }
@@ -348,7 +271,7 @@
                             newCol.title = newCol.title || field;
                             newCol.type = newCol.type || &#039;string&#039;;
 
-                            gridState[gridId].columns[field] = newCol;
+                            gridState[gridId].columns.push(newCol);
                             if (gridState[gridId].aggregates) gridState[gridId].aggregates[field] = {
                                 type: newCol.type
                             };
@@ -554,7 +477,7 @@
                                 }
                                 else
                                     tableCell = gridState[gridId].grid.find(&#039;.grid-content-div&#039;).find(&#039;table&#039;).find(&#039;tr:nth-child(&#039; + (cell.index + 1) + &#039;)&#039;).find(&#039;[data-field=&quot;&#039; + cell.field + &#039;&quot;]&#039;);
-                                var text = getFormattedCellText(gridId, column, cell.value) || cell.value;
+                                var text = getFormattedCellText(column, cell.value) || cell.value;
                                 tableCell.text(text);
                                 if (setAsDirty) tableCell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
                             }
@@ -588,6 +511,66 @@
                         });
                     },
                     writable: false,
+                    configurable: false
+                },
+                &#039;exportToExcel&#039;: {
+                    value: function _exportToExcel(exportType) {
+                        exportDataAsExcelFile(gridId, exportType || &#039;page&#039;);
+                    }
+                },
+                &#039;activeCellData&#039;: {
+                    get: function _getActiveCellData() {
+                        var cell = gridElem.find(&#039;.active-cell&#039;);
+                        if (!cell.length)
+                            return null;
+                        var field = cell.parents(&#039;td&#039;).data(&#039;field&#039;);
+                        var colIndex = cell.parents(&#039;.grid-wrapper&#039;).find(&#039;.grid-header-wrapper&#039;).find(&#039;.grid-headerRow&#039;).children(&#039;[data-field=&quot;&#039; + field + &#039;&quot;]&#039;).data(&#039;index&#039;);
+                        if (cell[0].type === &#039;checkbox&#039;)
+                            return { data: cell[0].checked, row: cell.parents(&#039;tr&#039;).index(), column: colIndex, field: field };
+                        return { data: cell.val(), row: cell.parents(&#039;tr&#039;).index(), column: colIndex, field: field, cell: cell.parents(&#039;td&#039;)[0] };
+                    },
+                    configurable: false
+                },
+                &#039;selected&#039;: {
+                    get: function _getSelectedItems() {
+                        var selectedItems = [];
+                        gridElem.find(&#039;.selected&#039;).each(function iteratedSelectedGridItems(idx, val) {
+                            selectedItems.push(val);
+                        });
+                        return selectedItems;
+                    },
+                    set: function _setSelectedItems(itemArray) {
+                        if (!itemArray || itemArray.constructor !== Array) return;
+                        for (var i = 0; i &lt; itemArray.length; i++) {
+                            if (typeof itemArray[i].rowIndex !== &#039;number&#039;) continue;
+                            var row = gridElem.find(&#039;.grid-content-div&#039;).find(&#039;tbody&#039;).children(&#039;tr:nth-child(&#039; + (itemArray[i].rowIndex + 1) + &#039;)&#039;);
+                            if (typeof itemArray[i].columnIndex === &#039;number&#039;) {
+                                row.children(&#039;td:nth-child(&#039; + (itemArray[i].columnIndex + 1) + &#039;)&#039;).addClass(&#039;selected&#039;);
+                            }
+                            else
+                                row.addClass(&#039;selected&#039;);
+                        }
+                    },
+                    configurable: false
+                },
+                &#039;selectedData&#039;: {
+                    get: function _getSelectedGridItemData() {
+                        var data = [];
+                        gridElem.find(&#039;.selected&#039;).each(function getSelectedElementData(index, value) {
+                            var item = $(value);
+                            if (value.tagName.toLowerCase() === &#039;tr&#039;) {
+                                var rowIndex = item.index();
+                                $(value).children().each(function iterateTableCells(idx, val) {
+                                    var cell = $(val);
+                                    data.push({ rowIndex: rowIndex, columnIndex: cell.index(), data: cell.text(), field: cell.data(&#039;field&#039;) });
+                                });
+                            }
+                            else {
+                                data.push({ rowIndex: item.parents(&#039;tr&#039;).index(), columnIndex: item.index(), data: item.text(), field: item.data(&#039;field&#039;) });
+                            }
+                        });
+                        return data;
+                    },
                     configurable: false
                 }
             });
@@ -683,7 +666,7 @@
         var colgroup = $(&#039;&lt;colgroup&gt;&lt;/colgroup&gt;&#039;).appendTo(headerTable),
             headerTHead = $(&#039;&lt;thead&gt;&lt;/thead&gt;&#039;).appendTo(headerTable),
             headerRow = $(&#039;&lt;tr class=grid-headerRow&gt;&lt;/tr&gt;&#039;).appendTo(headerTHead),
-            id = gridHeader.data(&#039;grid_header_id&#039;), i, columnCount = 0;
+            id = gridHeader.data(&#039;grid_header_id&#039;), i;
 
         if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) {
             for (i = 0; i &lt; gridData.groupedBy.length; i++) {
@@ -738,7 +721,6 @@
             }
         });
         headerTable.css(&#039;width&#039;,&#039;&#039;);
-        gridData.numColumns = columnCount;
         setColWidth(gridData, gridElem);
 
         var gridContent = gridElem.find(&#039;.grid-content-div&#039;).css(&#039;height&#039;, gridData.height || 400),
@@ -763,7 +745,6 @@
                         addValueToAggregations(gridId, col.field, row[col.field], gridData.gridAggregations);
                 });
             });
-
         }
 
         var aggrs = gridData.gridAggregations;
@@ -843,7 +824,7 @@
                         }
                     }
                     if (col.type !== &#039;custom&#039;) {
-                        text = getFormattedCellText(id, col, gridData.dataSource.data[i][col.field]) || gridData.dataSource.data[i][col.field];
+                        text = getFormattedCellText(col, gridData.dataSource.data[i][col.field]) || gridData.dataSource.data[i][col.field];
                         text = text == null ? &#039;Null&#039; : text;
                         td.text(text);
                     }
@@ -879,10 +860,10 @@
                 });
             }
 
-
             gridData.columns.forEach(function _addCols() {
                 colGroup.append(&#039;&lt;col/&gt;&#039;);
             });
+
             if (gridData.groupedBy.length) {
                 for (j = 0; j &lt; gridData.groupedBy.length; j++) {
                     colGroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
@@ -936,17 +917,15 @@
     }
 
     function attachCustomCellHandler(column, cellItem, gridId) {
-        for (var event in column.events) {
-            if (typeof column.events[event] === &#039;function&#039;) {
-                createEventHandler(cellItem, event);
-            }
-        }
+        Object.keys(column.events).forEach(function _attachColumnEventHandlers(evt) {
+            if (typeof column.events[evt] === &#039;function&#039;) createEventHandler(cellItem, evt, column.events[evt]);
+        });
 
-        function createEventHandler(cellItem, event) {
-            cellItem.on(event, function genericEventHandler() {
+        function createEventHandler(cellItem, eventName, eventHandler) {
+            cellItem.on(eventName, function genericEventHandler() {
                 var row = $(this).parents(&#039;tr&#039;),
                     rowIdx = row.index();
-                gridState[gridId].columns[gridState[gridId].columnIndices[column.field]].events[event].call(this, gridState[gridId].dataSource.data[rowIdx]);
+                eventHandler.call(this, gridState[gridId].dataSource.data[rowIdx]);
             });
         }
     }
@@ -1012,7 +991,7 @@
                 gridData.groupAggregations[j]._items_++;
             }
             if (groupedDiff[j]) {
-                var groupedText = getFormattedCellText(gridId, gridData.columns[gridData.columnIndices[gridData.groupedBy[j].field]], gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field]) ||
+                var groupedText = getFormattedCellText(gridData.columns[gridData.columnIndices[gridData.groupedBy[j].field]], gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field]) ||
                     gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field];
                 var groupTr = $(&#039;&lt;tr class=&quot;grouped_row_header&quot;&gt;&lt;/tr&gt;&#039;).appendTo(gridContent);
                 var groupTitle = gridData.columns[gridData.columnIndices[gridData.groupedBy[j].field]].title || gridData.groupedBy[j].field;
@@ -1086,7 +1065,7 @@
             }
             if (typeof gridState[gridId].dataSource.get === &#039;function&#039;) {
                 if (gridState[gridId].aggregates[col.field].type &amp;&amp; gridState[gridId].aggregates[col.field].value) {
-                    var text = getFormattedCellText(gridId, col, gridState[gridId].aggregates[col.field].value) || gridState[gridId].aggregates[col.field].value;
+                    var text = getFormattedCellText(col, gridState[gridId].aggregates[col.field].value) || gridState[gridId].aggregates[col.field].value;
                     aggregationObj[col.field].text = aggregates[gridState[gridId].aggregates[col.field].type] + text;
                 }
                 else aggregationObj[col.field].text = null;
@@ -1109,7 +1088,7 @@
                 value = parseFloat(value.toString());
                 total = aggregationObj[field].total ? aggregationObj[field].total + value : value;
                 var avg = total/count;
-                text = getFormattedCellText(gridId, column, avg.toFixed(2)) || avg.toFixed(2);
+                text = getFormattedCellText(column, avg.toFixed(2)) || avg.toFixed(2);
                 aggregationObj[field].total = total;
                 aggregationObj[field].count = count;
                 aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
@@ -1117,21 +1096,21 @@
                 return;
             case &#039;max&#039;:
                 if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) &lt; parseFloat(value.toString())) {
-                    text = getFormattedCellText(gridId, column, value) || value;
+                    text = getFormattedCellText(column, value) || value;
                     aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
                     aggregationObj[field].value = value;
                 }
                 return;
             case &#039;min&#039;:
                 if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) &gt; parseFloat(value.toString())) {
-                    text = getFormattedCellText(gridId, column, value) || value;
+                    text = getFormattedCellText(column, value) || value;
                     aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
                     aggregationObj[field].value = text;
                 }
                 return;
             case &#039;total&#039;:
                 total = (parseFloat(aggregationObj[field].total) || 0) + parseFloat(value);
-                text = getFormattedCellText(gridId, column, total) || total;
+                text = getFormattedCellText(column, total) || total;
                 aggregationObj[field].total = total;
                 aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
                 aggregationObj[field].value = text;
@@ -1618,14 +1597,12 @@
 
     function setColWidth(gridData, gridElem) {
         var tableDiv = gridElem.find(&#039;.grid-header-wrapper&#039;),
-            totalColWidth = 0;
+            totalColWidth;
 
-        gridData.columns.forEach(function _calcTotalWidth(col) {
-            if (!col.isHidden) {
-                totalColWidth += isNumber(col.width) ? col.width : 0;
-            }
-        });
-
+        totalColWidth = gridData.columns.reduce(function _calcTotalWidth(prev, col) {
+            if (!col.isHidden &amp;&amp; isNumber(col.width)) return prev + col.width;
+            return prev;
+        }, 0);
 
         var headerCols = tableDiv.find(&#039;col&#039;);
 
@@ -1698,7 +1675,7 @@
             column = gridState[id].columns[gridState[id].columnIndices[field]],
             type = column.type || &#039;&#039;,
             saveVal, re, setDirtyFlag = false,
-            formattedVal = getFormattedCellText(id, column, val),
+            formattedVal = getFormattedCellText(column, val),
             displayVal = formattedVal == null ? &#039;Null&#039; : formattedVal;
 
         input.remove();
@@ -1764,7 +1741,7 @@
             field = parentCell.data(&#039;field&#039;),
             column = gridState[id].columns[gridState[id].columnIndices[field]],
             type = column.type || &#039;&#039;,
-            formattedVal = getFormattedCellText(id, column, val),
+            formattedVal = getFormattedCellText(column, val),
             displayVal = formattedVal == null ? &#039;Null&#039; : formattedVal,
             re, saveVal, setDirtyFlag = false;
 
@@ -2067,7 +2044,7 @@
                         addend = (pageNum-1)*rowNum,
                         column = gridState[id].columns[gridState[id].columnIndices[field]],
                         cellVal = gridState[id].originalData[index][field] !== undefined ? gridState[id].originalData[index][field] : &#039;&#039;,
-                        text = getFormattedCellText(id, column, cellVal) || cellVal;
+                        text = getFormattedCellText(column, cellVal) || cellVal;
                     dirtyCells[i].text(text);
                     dirtyCells[i].find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).remove();
                     gridState[id].dataSource.data[index][field] = gridState[id].originalData[index + addend][field];
@@ -2385,7 +2362,7 @@
         }
 
         if (value) {
-            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || &#039;string&#039;) });
+            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[gridState[gridId].columnIndices[field]].type || &#039;string&#039;) });
         }
     }
 
@@ -2426,12 +2403,12 @@
                 return false;
             }
         })
-            .on(&#039;mouseover&#039;, function displayErrorMessageHandler() {
-                filterRowDiv.find(&#039;span[data-filter_idx=&quot;&#039; + filterRowDiv.data(&#039;filter_idx&#039;) + &#039;&quot;]&#039;).removeClass(&#039;hidden_error&#039;);
-            })
-            .on(&#039;mouseout&#039;, function hideErrorMessageHandler() {
-                filterRowDiv.find(&#039;span[data-filter_idx=&quot;&#039; + filterRowDiv.data(&#039;filter_idx&#039;) + &#039;&quot;]&#039;).addClass(&#039;hidden_error&#039;);
-            });
+        .on(&#039;mouseover&#039;, function displayErrorMessageHandler() {
+            filterRowDiv.find(&#039;span[data-filter_idx=&quot;&#039; + filterRowDiv.data(&#039;filter_idx&#039;) + &#039;&quot;]&#039;).removeClass(&#039;hidden_error&#039;);
+        })
+        .on(&#039;mouseout&#039;, function hideErrorMessageHandler() {
+            filterRowDiv.find(&#039;span[data-filter_idx=&quot;&#039; + filterRowDiv.data(&#039;filter_idx&#039;) + &#039;&quot;]&#039;).addClass(&#039;hidden_error&#039;);
+        });
 
         var deleteHandler = isFirstFilter ? clearFirstFilterButtonHandler : deleteFilterButtonHandler;
 
@@ -2530,7 +2507,7 @@
 
         var gridId = filterModal.data(&#039;grid_id&#039;),
             numFilters = filterModal.find(&#039;.filter_row_div&#039;).length,
-            allowedFilters = gridState[gridId].numColumns;
+            allowedFilters = gridState[gridId].columns.length;
         if (typeof gridState[gridId].advancedFiltering === &#039;object&#039;&amp;&amp; typeof gridState[gridId].advancedFiltering.filtersCount === &#039;number&#039;)
             allowedFilters = gridState[gridId].advancedFiltering.filtersCount;
         if (allowedFilters &gt; numFilters)
@@ -2655,7 +2632,7 @@
             count = gridState[id].dataSource.rowCount || gridState[id].dataSource.data.length,
             displayedRows = (count - gridState[id].pageSize) &gt; 0 ? gridState[id].pageSize : count,
             totalPages = (count - displayedRows) &gt; 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1,
-            pageNum = gridState[parseInt(gridFooter.data(&#039;grid_footer_id&#039;))].pageNum;
+            pageNum = gridState[id].pageNum;
 
         var first = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;first&quot; data-pagenum=&quot;1&quot; title=&quot;First Page&quot;&gt;&lt;span class=&quot;grid-page-span span-first&quot;&gt;First Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
         var prev = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;prev&quot; data-pagenum=&quot;1&quot; title=&quot;Previous Page&quot;&gt;&lt;span class=&quot;grid-page-span span-prev&quot;&gt;Prev Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridFooter);
@@ -2692,9 +2669,12 @@
             sizeSelectorSpan.append(&#039;Rows per page&#039;);
 
             sizeSelect.on(&#039;change&#039;, function pageSizeSelectorClickHandler(e) {
-                var pageSize = $(this).val();
+                var pageSize = $(this).val(),
+                displayedRows = (count - pageSize) &gt; 0 ? pageSize : count,
+                totalPages = (count - displayedRows) &gt; 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1;
                 gridState[id].pageRequest.pageSize = parseInt(pageSize);
                 gridState[id].pageRequest.eventType = &#039;pageSize&#039;;
+                gridState[id].pageRequest.pageNum = totalPages &lt; gridState[id].pageNum ? totalPages : gridState[id].pageNum;
                 preparePageDataGetRequest(id);
                 e.preventDefault();
             });
@@ -3516,7 +3496,7 @@
                         index = cell.parents(&#039;tr&#039;).index(),
                         field = cell.data(&#039;field&#039;),
                         column = gridState[id].columns[gridState[id].columnIndices[field]],
-                        text = getFormattedCellText(id, column, gridState[id].originalData[index][field]) || gridState[id].originalData[index][field];
+                        text = getFormattedCellText(column, gridState[id].originalData[index][field]) || gridState[id].originalData[index][field];
                     cell.text(text);
                     $(val).remove();
                 });
@@ -3713,7 +3693,7 @@
         return -1;
     }
 
-    function getFormattedCellText(gridId, column, value) {
+    function getFormattedCellText(column, value) {
         var text,
             type = column.type || &#039;string&#039;;
         if (value == null || (&#039;&#039; === value &amp;&amp; column.nullable)) return column.nullable ? null : &#039; &#039;;
@@ -3725,12 +3705,12 @@
                 text = formatDateCellData(value, column.format);
                 break;
             case &#039;time&#039;:
-                text = formatTimeCellData(value, column, gridId);
+                text = formatTimeCellData(value, column);
                 break;
             case &#039;datetime&#039;:
                 var re = new RegExp(dataTypes[&#039;datetime&#039;]),
                     execVal = re.exec(value),
-                    timeText = formatTimeCellData(execVal[42], column, gridId),
+                    timeText = formatTimeCellData(execVal[42], column),
                     dateComp = new Date(execVal[2]),
                     dateFormat = column.format || &#039;mm/dd/yyyy hh:mm:ss&#039;;
                 dateFormat = dateFormat.substring(0, (dateFormat.indexOf(&#039; &#039;) || dateFormat.indexOf(&#039;T&#039;)));

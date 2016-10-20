@@ -59,85 +59,6 @@ var grid = (function _grid($) {
 
     function createGridInstanceMethods(gridElem, gridId) {
 
-        Object.defineProperty(
-            gridElem[0].grid,
-            'exportToExcel',
-            {
-                value: function _exportToExcel(exportType) {
-                    exportDataAsExcelFile(gridId, exportType || 'page');
-                }
-            }
-        );
-
-        Object.defineProperty(
-            gridElem[0].grid,
-            'activeCellData',
-            {
-                get: function _getActiveCellData() {
-                    var cell = gridElem.find('.active-cell');
-                    if (!cell.length)
-                        return null;
-                    var field = cell.parents('td').data('field');
-                    var colIndex = cell.parents('.grid-wrapper').find('.grid-header-wrapper').find('.grid-headerRow').children('[data-field="' + field + '"]').data('index');
-                    if (cell[0].type === 'checkbox')
-                        return { data: cell[0].checked, row: cell.parents('tr').index(), column: colIndex, field: field };
-                    return { data: cell.val(), row: cell.parents('tr').index(), column: colIndex, field: field, cell: cell.parents('td')[0] };
-                },
-                configurable: false
-            });
-
-        Object.defineProperty(
-            gridElem[0].grid,
-            'selected',
-            {
-                get: function _getSelectedItems() {
-                    var selectedItems = [];
-                    gridElem.find('.selected').each(function iteratedSelectedGridItems(idx, val) {
-                        selectedItems.push(val);
-                    });
-                    return selectedItems;
-                },
-                set: function _setSelectedItems(itemArray) {
-                    if (!itemArray || itemArray.constructor !== Array) return;
-                    for (var i = 0; i < itemArray.length; i++) {
-                        if (typeof itemArray[i].rowIndex !== 'number') continue;
-                        var row = gridElem.find('.grid-content-div').find('tbody').children('tr:nth-child(' + (itemArray[i].rowIndex + 1) + ')');
-                        if (typeof itemArray[i].columnIndex === 'number') {
-                            row.children('td:nth-child(' + (itemArray[i].columnIndex + 1) + ')').addClass('selected');
-                        }
-                        else
-                            row.addClass('selected');
-                    }
-                },
-                configurable: false
-            }
-        );
-
-        Object.defineProperty(
-            gridElem[0].grid,
-            'selectedData',
-            {
-                get: function _getSelectedGridItemData() {
-                    var data = [];
-                    gridElem.find('.selected').each(function getSelectedElementData(index, value) {
-                        var item = $(value);
-                        if (value.tagName.toLowerCase() === 'tr') {
-                            var rowIndex = item.index();
-                            $(value).children().each(function iterateTableCells(idx, val) {
-                                var cell = $(val);
-                                data.push({ rowIndex: rowIndex, columnIndex: cell.index(), data: cell.text(), field: cell.data('field') });
-                            });
-                        }
-                        else {
-                            data.push({ rowIndex: item.parents('tr').index(), columnIndex: item.index(), data: item.text(), field: item.data('field') });
-                        }
-                    });
-                    return data;
-                },
-                configurable: false
-            }
-        );
-
         Object.defineProperties(
             gridElem[0].grid, {
                 'bindEvents': {
@@ -202,8 +123,9 @@ var grid = (function _grid($) {
                 },
                 'hideColumn': {
                     value: function _hideColumn(col) {
-                        if (gridState[gridId].columns[col]) {
-                            gridState[gridId].columns[col].isHidden = true;
+                        var colIdx = gridState[gridId].columnIndices[col];
+                        if (colIdx != null) {
+                            gridState[gridId].columns[colIdx].isHidden = true;
                             var column = gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]'),
                                 columnIdx = column.data('index');
                             column.css('display', 'none');
@@ -225,6 +147,7 @@ var grid = (function _grid($) {
                 },
                 'showColumn': {
                     value: function _showColumn(col) {
+                        col = gridState[gridId].columnIndices[col];
                         if (gridState[gridId].columns[col] && gridState[gridId].columns[col].isHidden) {
                             gridState[gridId].columns[col].isHidden = false;
                             gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
@@ -243,7 +166,7 @@ var grid = (function _grid($) {
                             return;
                         var field = typeof column === 'object' ? column.field || 'field' : column,
                             newCol;
-                        if (!gridState[gridId].columns[field]) {
+                        if (!gridState[gridId].columnIndices[field]) {
                             for (var i = 0; i < gridState[gridId].dataSource.data.length; i++) {
                                 gridState[gridId].dataSource.data[i][field] = data[i] ? data[i] : null;
                             }
@@ -257,7 +180,7 @@ var grid = (function _grid($) {
                             newCol.title = newCol.title || field;
                             newCol.type = newCol.type || 'string';
 
-                            gridState[gridId].columns[field] = newCol;
+                            gridState[gridId].columns.push(newCol);
                             if (gridState[gridId].aggregates) gridState[gridId].aggregates[field] = {
                                 type: newCol.type
                             };
@@ -463,7 +386,7 @@ var grid = (function _grid($) {
                                 }
                                 else
                                     tableCell = gridState[gridId].grid.find('.grid-content-div').find('table').find('tr:nth-child(' + (cell.index + 1) + ')').find('[data-field="' + cell.field + '"]');
-                                var text = getFormattedCellText(gridId, column, cell.value) || cell.value;
+                                var text = getFormattedCellText(column, cell.value) || cell.value;
                                 tableCell.text(text);
                                 if (setAsDirty) tableCell.prepend('<span class="dirty"></span>');
                             }
@@ -497,6 +420,66 @@ var grid = (function _grid($) {
                         });
                     },
                     writable: false,
+                    configurable: false
+                },
+                'exportToExcel': {
+                    value: function _exportToExcel(exportType) {
+                        exportDataAsExcelFile(gridId, exportType || 'page');
+                    }
+                },
+                'activeCellData': {
+                    get: function _getActiveCellData() {
+                        var cell = gridElem.find('.active-cell');
+                        if (!cell.length)
+                            return null;
+                        var field = cell.parents('td').data('field');
+                        var colIndex = cell.parents('.grid-wrapper').find('.grid-header-wrapper').find('.grid-headerRow').children('[data-field="' + field + '"]').data('index');
+                        if (cell[0].type === 'checkbox')
+                            return { data: cell[0].checked, row: cell.parents('tr').index(), column: colIndex, field: field };
+                        return { data: cell.val(), row: cell.parents('tr').index(), column: colIndex, field: field, cell: cell.parents('td')[0] };
+                    },
+                    configurable: false
+                },
+                'selected': {
+                    get: function _getSelectedItems() {
+                        var selectedItems = [];
+                        gridElem.find('.selected').each(function iteratedSelectedGridItems(idx, val) {
+                            selectedItems.push(val);
+                        });
+                        return selectedItems;
+                    },
+                    set: function _setSelectedItems(itemArray) {
+                        if (!itemArray || itemArray.constructor !== Array) return;
+                        for (var i = 0; i < itemArray.length; i++) {
+                            if (typeof itemArray[i].rowIndex !== 'number') continue;
+                            var row = gridElem.find('.grid-content-div').find('tbody').children('tr:nth-child(' + (itemArray[i].rowIndex + 1) + ')');
+                            if (typeof itemArray[i].columnIndex === 'number') {
+                                row.children('td:nth-child(' + (itemArray[i].columnIndex + 1) + ')').addClass('selected');
+                            }
+                            else
+                                row.addClass('selected');
+                        }
+                    },
+                    configurable: false
+                },
+                'selectedData': {
+                    get: function _getSelectedGridItemData() {
+                        var data = [];
+                        gridElem.find('.selected').each(function getSelectedElementData(index, value) {
+                            var item = $(value);
+                            if (value.tagName.toLowerCase() === 'tr') {
+                                var rowIndex = item.index();
+                                $(value).children().each(function iterateTableCells(idx, val) {
+                                    var cell = $(val);
+                                    data.push({ rowIndex: rowIndex, columnIndex: cell.index(), data: cell.text(), field: cell.data('field') });
+                                });
+                            }
+                            else {
+                                data.push({ rowIndex: item.parents('tr').index(), columnIndex: item.index(), data: item.text(), field: item.data('field') });
+                            }
+                        });
+                        return data;
+                    },
                     configurable: false
                 }
             });
@@ -592,7 +575,7 @@ var grid = (function _grid($) {
         var colgroup = $('<colgroup></colgroup>').appendTo(headerTable),
             headerTHead = $('<thead></thead>').appendTo(headerTable),
             headerRow = $('<tr class=grid-headerRow></tr>').appendTo(headerTHead),
-            id = gridHeader.data('grid_header_id'), i, columnCount = 0;
+            id = gridHeader.data('grid_header_id'), i;
 
         if (gridData.groupedBy && gridData.groupedBy.length) {
             for (i = 0; i < gridData.groupedBy.length; i++) {
@@ -647,7 +630,6 @@ var grid = (function _grid($) {
             }
         });
         headerTable.css('width','');
-        gridData.numColumns = columnCount;
         setColWidth(gridData, gridElem);
 
         var gridContent = gridElem.find('.grid-content-div').css('height', gridData.height || 400),
@@ -672,7 +654,6 @@ var grid = (function _grid($) {
                         addValueToAggregations(gridId, col.field, row[col.field], gridData.gridAggregations);
                 });
             });
-
         }
 
         var aggrs = gridData.gridAggregations;
@@ -752,7 +733,7 @@ var grid = (function _grid($) {
                         }
                     }
                     if (col.type !== 'custom') {
-                        text = getFormattedCellText(id, col, gridData.dataSource.data[i][col.field]) || gridData.dataSource.data[i][col.field];
+                        text = getFormattedCellText(col, gridData.dataSource.data[i][col.field]) || gridData.dataSource.data[i][col.field];
                         text = text == null ? 'Null' : text;
                         td.text(text);
                     }
@@ -788,10 +769,10 @@ var grid = (function _grid($) {
                 });
             }
 
-
             gridData.columns.forEach(function _addCols() {
                 colGroup.append('<col/>');
             });
+
             if (gridData.groupedBy.length) {
                 for (j = 0; j < gridData.groupedBy.length; j++) {
                     colGroup.prepend('<col class="group_col"/>');
@@ -845,17 +826,15 @@ var grid = (function _grid($) {
     }
 
     function attachCustomCellHandler(column, cellItem, gridId) {
-        for (var event in column.events) {
-            if (typeof column.events[event] === 'function') {
-                createEventHandler(cellItem, event);
-            }
-        }
+        Object.keys(column.events).forEach(function _attachColumnEventHandlers(evt) {
+            if (typeof column.events[evt] === 'function') createEventHandler(cellItem, evt, column.events[evt]);
+        });
 
-        function createEventHandler(cellItem, event) {
-            cellItem.on(event, function genericEventHandler() {
+        function createEventHandler(cellItem, eventName, eventHandler) {
+            cellItem.on(eventName, function genericEventHandler() {
                 var row = $(this).parents('tr'),
                     rowIdx = row.index();
-                gridState[gridId].columns[gridState[gridId].columnIndices[column.field]].events[event].call(this, gridState[gridId].dataSource.data[rowIdx]);
+                eventHandler.call(this, gridState[gridId].dataSource.data[rowIdx]);
             });
         }
     }
@@ -921,7 +900,7 @@ var grid = (function _grid($) {
                 gridData.groupAggregations[j]._items_++;
             }
             if (groupedDiff[j]) {
-                var groupedText = getFormattedCellText(gridId, gridData.columns[gridData.columnIndices[gridData.groupedBy[j].field]], gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field]) ||
+                var groupedText = getFormattedCellText(gridData.columns[gridData.columnIndices[gridData.groupedBy[j].field]], gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field]) ||
                     gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field];
                 var groupTr = $('<tr class="grouped_row_header"></tr>').appendTo(gridContent);
                 var groupTitle = gridData.columns[gridData.columnIndices[gridData.groupedBy[j].field]].title || gridData.groupedBy[j].field;
@@ -995,7 +974,7 @@ var grid = (function _grid($) {
             }
             if (typeof gridState[gridId].dataSource.get === 'function') {
                 if (gridState[gridId].aggregates[col.field].type && gridState[gridId].aggregates[col.field].value) {
-                    var text = getFormattedCellText(gridId, col, gridState[gridId].aggregates[col.field].value) || gridState[gridId].aggregates[col.field].value;
+                    var text = getFormattedCellText(col, gridState[gridId].aggregates[col.field].value) || gridState[gridId].aggregates[col.field].value;
                     aggregationObj[col.field].text = aggregates[gridState[gridId].aggregates[col.field].type] + text;
                 }
                 else aggregationObj[col.field].text = null;
@@ -1018,7 +997,7 @@ var grid = (function _grid($) {
                 value = parseFloat(value.toString());
                 total = aggregationObj[field].total ? aggregationObj[field].total + value : value;
                 var avg = total/count;
-                text = getFormattedCellText(gridId, column, avg.toFixed(2)) || avg.toFixed(2);
+                text = getFormattedCellText(column, avg.toFixed(2)) || avg.toFixed(2);
                 aggregationObj[field].total = total;
                 aggregationObj[field].count = count;
                 aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
@@ -1026,21 +1005,21 @@ var grid = (function _grid($) {
                 return;
             case 'max':
                 if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) < parseFloat(value.toString())) {
-                    text = getFormattedCellText(gridId, column, value) || value;
+                    text = getFormattedCellText(column, value) || value;
                     aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
                     aggregationObj[field].value = value;
                 }
                 return;
             case 'min':
                 if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) > parseFloat(value.toString())) {
-                    text = getFormattedCellText(gridId, column, value) || value;
+                    text = getFormattedCellText(column, value) || value;
                     aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
                     aggregationObj[field].value = text;
                 }
                 return;
             case 'total':
                 total = (parseFloat(aggregationObj[field].total) || 0) + parseFloat(value);
-                text = getFormattedCellText(gridId, column, total) || total;
+                text = getFormattedCellText(column, total) || total;
                 aggregationObj[field].total = total;
                 aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
                 aggregationObj[field].value = text;
@@ -1527,14 +1506,12 @@ var grid = (function _grid($) {
 
     function setColWidth(gridData, gridElem) {
         var tableDiv = gridElem.find('.grid-header-wrapper'),
-            totalColWidth = 0;
+            totalColWidth;
 
-        gridData.columns.forEach(function _calcTotalWidth(col) {
-            if (!col.isHidden) {
-                totalColWidth += isNumber(col.width) ? col.width : 0;
-            }
-        });
-
+        totalColWidth = gridData.columns.reduce(function _calcTotalWidth(prev, col) {
+            if (!col.isHidden && isNumber(col.width)) return prev + col.width;
+            return prev;
+        }, 0);
 
         var headerCols = tableDiv.find('col');
 
@@ -1607,7 +1584,7 @@ var grid = (function _grid($) {
             column = gridState[id].columns[gridState[id].columnIndices[field]],
             type = column.type || '',
             saveVal, re, setDirtyFlag = false,
-            formattedVal = getFormattedCellText(id, column, val),
+            formattedVal = getFormattedCellText(column, val),
             displayVal = formattedVal == null ? 'Null' : formattedVal;
 
         input.remove();
@@ -1673,7 +1650,7 @@ var grid = (function _grid($) {
             field = parentCell.data('field'),
             column = gridState[id].columns[gridState[id].columnIndices[field]],
             type = column.type || '',
-            formattedVal = getFormattedCellText(id, column, val),
+            formattedVal = getFormattedCellText(column, val),
             displayVal = formattedVal == null ? 'Null' : formattedVal,
             re, saveVal, setDirtyFlag = false;
 
@@ -1976,7 +1953,7 @@ var grid = (function _grid($) {
                         addend = (pageNum-1)*rowNum,
                         column = gridState[id].columns[gridState[id].columnIndices[field]],
                         cellVal = gridState[id].originalData[index][field] !== undefined ? gridState[id].originalData[index][field] : '',
-                        text = getFormattedCellText(id, column, cellVal) || cellVal;
+                        text = getFormattedCellText(column, cellVal) || cellVal;
                     dirtyCells[i].text(text);
                     dirtyCells[i].find('.dirty').add('.dirty-blank').remove();
                     gridState[id].dataSource.data[index][field] = gridState[id].originalData[index + addend][field];
@@ -2294,7 +2271,7 @@ var grid = (function _grid($) {
         }
 
         if (value) {
-            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[field].type || 'string') });
+            filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[gridState[gridId].columnIndices[field]].type || 'string') });
         }
     }
 
@@ -2335,12 +2312,12 @@ var grid = (function _grid($) {
                 return false;
             }
         })
-            .on('mouseover', function displayErrorMessageHandler() {
-                filterRowDiv.find('span[data-filter_idx="' + filterRowDiv.data('filter_idx') + '"]').removeClass('hidden_error');
-            })
-            .on('mouseout', function hideErrorMessageHandler() {
-                filterRowDiv.find('span[data-filter_idx="' + filterRowDiv.data('filter_idx') + '"]').addClass('hidden_error');
-            });
+        .on('mouseover', function displayErrorMessageHandler() {
+            filterRowDiv.find('span[data-filter_idx="' + filterRowDiv.data('filter_idx') + '"]').removeClass('hidden_error');
+        })
+        .on('mouseout', function hideErrorMessageHandler() {
+            filterRowDiv.find('span[data-filter_idx="' + filterRowDiv.data('filter_idx') + '"]').addClass('hidden_error');
+        });
 
         var deleteHandler = isFirstFilter ? clearFirstFilterButtonHandler : deleteFilterButtonHandler;
 
@@ -2439,7 +2416,7 @@ var grid = (function _grid($) {
 
         var gridId = filterModal.data('grid_id'),
             numFilters = filterModal.find('.filter_row_div').length,
-            allowedFilters = gridState[gridId].numColumns;
+            allowedFilters = gridState[gridId].columns.length;
         if (typeof gridState[gridId].advancedFiltering === 'object'&& typeof gridState[gridId].advancedFiltering.filtersCount === 'number')
             allowedFilters = gridState[gridId].advancedFiltering.filtersCount;
         if (allowedFilters > numFilters)
@@ -2564,7 +2541,7 @@ var grid = (function _grid($) {
             count = gridState[id].dataSource.rowCount || gridState[id].dataSource.data.length,
             displayedRows = (count - gridState[id].pageSize) > 0 ? gridState[id].pageSize : count,
             totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1,
-            pageNum = gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum;
+            pageNum = gridState[id].pageNum;
 
         var first = $('<a href="#" class="grid-page-link" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridFooter);
         var prev = $('<a href="#" class="grid-page-link" data-link="prev" data-pagenum="1" title="Previous Page"><span class="grid-page-span span-prev">Prev Page</span></a>').appendTo(gridFooter);
@@ -2601,9 +2578,12 @@ var grid = (function _grid($) {
             sizeSelectorSpan.append('Rows per page');
 
             sizeSelect.on('change', function pageSizeSelectorClickHandler(e) {
-                var pageSize = $(this).val();
+                var pageSize = $(this).val(),
+                displayedRows = (count - pageSize) > 0 ? pageSize : count,
+                totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1;
                 gridState[id].pageRequest.pageSize = parseInt(pageSize);
                 gridState[id].pageRequest.eventType = 'pageSize';
+                gridState[id].pageRequest.pageNum = totalPages < gridState[id].pageNum ? totalPages : gridState[id].pageNum;
                 preparePageDataGetRequest(id);
                 e.preventDefault();
             });
@@ -3425,7 +3405,7 @@ var grid = (function _grid($) {
                         index = cell.parents('tr').index(),
                         field = cell.data('field'),
                         column = gridState[id].columns[gridState[id].columnIndices[field]],
-                        text = getFormattedCellText(id, column, gridState[id].originalData[index][field]) || gridState[id].originalData[index][field];
+                        text = getFormattedCellText(column, gridState[id].originalData[index][field]) || gridState[id].originalData[index][field];
                     cell.text(text);
                     $(val).remove();
                 });
@@ -3622,7 +3602,7 @@ var grid = (function _grid($) {
         return -1;
     }
 
-    function getFormattedCellText(gridId, column, value) {
+    function getFormattedCellText(column, value) {
         var text,
             type = column.type || 'string';
         if (value == null || ('' === value && column.nullable)) return column.nullable ? null : ' ';
@@ -3634,12 +3614,12 @@ var grid = (function _grid($) {
                 text = formatDateCellData(value, column.format);
                 break;
             case 'time':
-                text = formatTimeCellData(value, column, gridId);
+                text = formatTimeCellData(value, column);
                 break;
             case 'datetime':
                 var re = new RegExp(dataTypes['datetime']),
                     execVal = re.exec(value),
-                    timeText = formatTimeCellData(execVal[42], column, gridId),
+                    timeText = formatTimeCellData(execVal[42], column),
                     dateComp = new Date(execVal[2]),
                     dateFormat = column.format || 'mm/dd/yyyy hh:mm:ss';
                 dateFormat = dateFormat.substring(0, (dateFormat.indexOf(' ') || dateFormat.indexOf('T')));

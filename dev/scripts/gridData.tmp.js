@@ -17,40 +17,47 @@ var gridDataTmp = {
         resizable: true,
         excelExport: true,
         pageSize: 5,
-        columns: {
-            MechanicName: {
+        columns: [
+            {
+                field: 'MechanicName',
                 title: 'Mechanic',
                 filterable: true,
                 width: 250,
                 type: 'string'
             },
-            Make: {
+            {
+                field: 'Make',
                 filterable: true,
                 width: 150,
                 type: 'string'
             },
-            Model: {
+            {
+                field: 'Model',
                 filterable: true,
                 width: 150,
                 type: 'string'
             },
-            Year: {
+            {
+                field: 'Year',
                 filterable: true,
                 width: 100,
                 type: 'date'
             },
-            Doors: {
+            {
+                field: 'Doors',
                 filterable: true,
                 width: 100,
                 type: 'number',
             },
-            EngineType: {
+            {
+                field: 'EngineType',
                 title: 'Engine Type',
                 width: 150,
                 type: 'string',
                 filterable: true
             },
-            EngineSize: {
+            {
+                field: 'EngineSize',
                 title: 'Engine Size',
                 width: 150,
                 type: 'number',
@@ -58,7 +65,7 @@ var gridDataTmp = {
                 format: '##.##',
                 filterable: true
             }
-        }
+        ],
     },
     pagingOptions: [25, 50, 100],
     menu: ['filter', 'excel', 'save', 'sort', 'selection'],
@@ -75,8 +82,9 @@ var gridDataTmp = {
         },
         positionAt: "top"
     },
-    columns: {
-        FirstName: {
+    columns: [
+        {
+            field: 'FirstName',
             title: 'First Name',
             type: 'string',
             nullable: true,
@@ -89,35 +97,41 @@ var gridDataTmp = {
                 headerClasses: ["custom-class"]
             }
         },
-        LastName: {
+        {
+            field: 'LastName',
             title: 'Last Name',
             type: "string",
             width: 180
         },
-        Phone: {
+        {
+            field: 'Phone',
             type: "string",
             editable: true,
             width: 130,
             inputFormat: "{{###}}-{{###}}-{{####}}",
             title: "Phone Number"
         },
-        Email: {
+        {
+            field: 'Email',
             type: "string",
             editable: true,
             width: 200
         },
-        Address: {
+        {
+            field: 'Address',
             width: 200,
             type: "string",
             filterable: true,
             editable: true
         },
-        City: {
+        {
+            field: 'City',
             type: "string",
             editable: true,
             width: 155
         },
-        State: {
+        {
+            field:' State',
             filterable: false,
             type: "string",
             width: 140,
@@ -127,7 +141,8 @@ var gridDataTmp = {
                 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
                 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY']
         },
-        Zip: {
+        {
+            field: 'Zip',
             title: 'Zip Code',
             nullable: true,
             filterable: true,
@@ -147,7 +162,7 @@ var gridDataTmp = {
                 }
             }
         }
-    },
+    ],
     dataSource: {
         rowCount: 54,
         data: [
