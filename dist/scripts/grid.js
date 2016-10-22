@@ -1488,7 +1488,7 @@ var grid = (function _grid($) {
         if (columnValidation.required) dataAttributes += 'data-required';
         if (columnValidation.customRules) {
             dataAttributes += ' data-customrules="';
-            for (var rule in columnValidation.customRules) {
+            Object.keys(columnValidation.customRules).forEach(function _applyCustomValidation(rule) {
                 dataAttributes += 'grid.validation.' + rule + ',';
                 if (!grid.validation[rule]) {
                     Object.defineProperty(
@@ -1497,7 +1497,7 @@ var grid = (function _grid($) {
                         { value: columnValidation.customRules[rule], writable: false, configurable: false }
                     );
                 }
-            }
+            });
             dataAttributes += '"';
         }
         return dataAttributes;
@@ -1526,12 +1526,9 @@ var grid = (function _grid($) {
             if (isGroupAndOrDrill && idx < numColPadders) {
                 $(val).css('width', 27);
             }
-            else if (gridData.columns[i].width != null) {
-                if (idx === headerCols.length - 1 && totalColWidth < (tableDiv.find('table').width() + (numColPadders * 27) - 17) - gridData.columns[i].width) {
-                    return;
-                }
-                else
-                    $(val).css('width', gridData.columns[i].width);
+            else if (gridData.columns[i].width != null && (idx !== headerCols.length - 1 ||
+                totalColWidth >= (tableDiv.find('table').width() + (numColPadders * 27) - 17) - gridData.columns[i].width)) {
+                $(val).css('width', gridData.columns[i].width);
             }
         });
     }
