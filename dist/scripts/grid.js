@@ -3,7 +3,7 @@ var grid = (function _grid($) {
     var dataTypes, events, aggregates, generateId, expressionParser,
         gridState = [],
         groupMenuText = 'Drag and drop a column header here to group by that column',
-        predicates = {
+        booleanOps = {
             strictEqual: 'eq',
             looseEqual: '==',
             strictNotEqual: 'neq',
@@ -500,8 +500,12 @@ var grid = (function _grid($) {
     }
 
     function getInitialGridData(dataSource, pageSize, callback) {
-        if (dataSource && typeof dataSource.data === 'object')
-            callback(null, { data: dataSource.data, rowCount: dataSource.rowCount });
+        if (dataSource && typeof dataSource.data === 'object') {
+            dataSource.originalData = dataSource.data;
+            limitPageData({ pageSize: pageSize, pageNum: 1 }, dataSource.data, function _cb(data) {
+                callback(null, data);
+            });
+        }
         else if (typeof dataSource.get == 'function') {
             dataSource.get({ pageSize: pageSize, pageNum: 1 },
                 function gridDataCallback(data) {
@@ -538,7 +542,7 @@ var grid = (function _grid($) {
         delete storageData.afterDataBind;
         delete storageData.columnReorder;
 
-        storageData.originalData = cloneGridData(gridData.dataSource.data);
+        storageData.originalData = cloneGridData(gridData.dataSource.originalData);
         storageData.pageNum = 1;
         storageData.pageSize = gridData.pageSize || 25;
         storageData.grid = gridElem;
@@ -1452,7 +1456,7 @@ var grid = (function _grid($) {
                 var dataType = column.type || 'string',
                 normalizedValue = normalizeValues(dataType, value);
             if (!options.some(function _compareCellValueForUniqueness(opt) {
-                if (comparator(normalizedValue, normalizeValues(dataType, opt), predicates.strictEqual))
+                if (comparator(normalizedValue, normalizeValues(dataType, opt), booleanOps.strictEqual))
                     return true;
             })) {
                 options = options.reverse();
@@ -3485,7 +3489,7 @@ var grid = (function _grid($) {
                         prevVal = itemsToSort.length ? itemsToSort[0][prevField] : null,
                         prevColIdx = itemsToSort.length ? gridState[gridId].columnIndices[prevField] : null,
                         dataType = itemsToSort.length ? gridState[gridId].columns[prevColIdx].type : null;
-                    if (!itemsToSort.length || comparator(normalizeValues(dataType, prevVal), normalizeValues(dataType, gridData[i][prevField]), predicates.strictEqual))
+                    if (!itemsToSort.length || comparator(normalizeValues(dataType, prevVal), normalizeValues(dataType, gridData[i][prevField]), booleanOps.strictEqual))
                         itemsToSort.push(gridData[i]);
                     else {
                         if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
@@ -3515,7 +3519,7 @@ var grid = (function _grid($) {
         while (left.length && right.length) {
             leftVal = normalizeValues(type, left[0][sortObj.field]);
             rightVal = normalizeValues(type, right[0][sortObj.field]);
-            var operator = sortObj.sortDirection === 'asc' ? predicates.lessThanOrEqual : predicates.greaterThanOrEqual;
+            var operator = sortObj.sortDirection === 'asc' ? booleanOps.lessThanOrEqual : booleanOps.greaterThanOrEqual;
             comparator(leftVal, rightVal, operator) ? result.push(left.shift()) : result.push(right.shift());
         }
 
