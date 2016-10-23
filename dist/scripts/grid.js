@@ -588,7 +588,7 @@ var grid = (function _grid($) {
             headerRow = $('<tr class=grid-headerRow></tr>').appendTo(headerTHead),
             id = gridHeader.data('grid_header_id');
 
-        if (gridData.groupedBy && gridData.groupedBy.length) {
+        if (gridData.groupedBy) {
             gridData.groupedBy.forEach(function _createGroupingCols() {
                 colgroup.prepend('<col class="group_col"/>');
                 headerRow.prepend('<th class="group_spacer">&nbsp</th>');
@@ -603,8 +603,7 @@ var grid = (function _grid($) {
         gridData.columns.forEach(function _createColumnHeaders(col, idx) {
             if (typeof col !== 'object') return;
             $('<col/>').appendTo(colgroup);
-            var text = col.title || col.field,
-                th = $('<th id="' + col.field + '_grid_id_' + id + '" data-field="' + col.field + '" data-index="' + idx + '" class=grid-header-cell></th>').appendTo(headerRow);
+            var th = $('<th id="' + col.field + '_grid_id_' + id + '" data-field="' + col.field + '" data-index="' + idx + '" class=grid-header-cell></th>').appendTo(headerRow);
 
             if (typeof col.attributes === 'object' && col.attributes.headerClasses && col.attributes.headerClasses.constructor ===  Array) {
                 col.attributes.headerClasses.forEach(function _applyHeaderClasses(className) {
@@ -627,10 +626,10 @@ var grid = (function _grid($) {
                 if ((col.editable || gridData.selectable || gridData.groupable || gridData.columnToggle || gridData.excelExport || gridData.advancedFiltering))
                     createGridToolbar(gridData, gridElem, col.editable);
 
-                $('<a class="header-anchor" href="#"></a>').appendTo(th).text(text);
+                $('<a class="header-anchor" href="#"></a>').appendTo(th).text(col.title || col.field);
             }
             else
-                $('<span class="header-anchor"></span>').appendTo(th).text(text);
+                $('<span class="header-anchor"></span>').appendTo(th).text(col.title || col.field);
 
             if (gridData.resizable) {
                 th.on('mouseleave', mouseLeaveHandlerCallback);
@@ -651,15 +650,12 @@ var grid = (function _grid($) {
     }
 
     function buildHeaderAggregations(gridId) {
-        var gridData = gridState[gridId],
-            i;
+        var gridData = gridState[gridId];
         if (typeof gridState[gridId].dataSource.get !== 'function') {
-            var dataToFilter = gridData.alteredData && gridData.alteredData.length ? gridData.alteredData : gridData.originalData,
-                remRows = dataToFilter.filter(function getRemainingRows(val, idx) {
+            var dataToFilter = gridData.alteredData && gridData.alteredData.length ? gridData.alteredData : gridData.originalData;
+                dataToFilter.filter(function getRemainingRows(val, idx) {
                     return idx > gridData.pageNum * gridData.pageSize - 1 || idx < gridData.pageNum * gridData.pageSize - gridData.pageSize;
-                });
-
-            remRows.forEach(function _iterateRemainingRows(row) {
+                }).forEach(function _iterateRemainingRows(row) {
                 gridData.columns.forEach(function _addColumnValsToAggregates(col) {
                     if (gridData.aggregates[col.field])
                         addValueToAggregations(gridId, col.field, row[col.field], gridData.gridAggregations);
@@ -674,14 +670,11 @@ var grid = (function _grid($) {
             if (aggRow.length)
                 aggRow.remove();
             aggRow = $('<tr class=summary-row-header></tr>').appendTo(headerTHead);
-            if (gridData.groupedBy.length) {
-                for (i = 0; i < gridData.groupedBy.length; i++) {
-                    aggRow.append('<td class="group_spacer">&nbsp</td>');
-                }
-            }
-            if (gridData.drillDown) {
+            gridData.groupedBy.forEach(function _appendSpacerCells() {
                 aggRow.append('<td class="group_spacer">&nbsp</td>');
-            }
+            });
+            if (gridData.drillDown) aggRow.append('<td class="group_spacer">&nbsp</td>');
+
             gridData.columns.forEach(function _createAggregates(col) {
                 var text = '';
                 if (col.field in aggrs) text = aggrs[col.field].text || '';
@@ -861,9 +854,9 @@ var grid = (function _grid($) {
                 var numItems = gridData.groupAggregations[j]._items_; 
                 if (groupedDiff[j]) {                               
                     var groupAggregateRow = $('<tr class="grouped_row_header"></tr>').appendTo(gridContent);
-                    for (k = 0; k < groupedDiff.length; k++) {
+                    groupedDiff.forEach(function _appendGroupingCells() {
                         groupAggregateRow.append('<td colspan="' + 1 + '" class="grouped_cell"></td>');
-                    }
+                    });
                     if (gridData.drillDown)
                         groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
                     gridData.columns.forEach(function _createAggregateCells(col) {
@@ -887,36 +880,34 @@ var grid = (function _grid($) {
                 }
             }
         }
-        for (j = 0; j < groupedDiff.length; j++) {
+        groupedDiff.forEach(function _createGroupedAggregates(item, idx) {
             if (gridData.groupAggregates) {
-                if (gridData.groupAggregations && !gridData.groupAggregations[j]) {
-                    gridData.groupAggregations[j] = {
-                        _items_: 0
-                    };
+                if (gridData.groupAggregations && !gridData.groupAggregations[idx]) {
+                    gridData.groupAggregations[idx] = { _items_: 0 };
                 }
                 gridData.columns.forEach(function _aggregateValues(col) {
                     if (gridData.aggregates && gridData.aggregates[col.field])
-                        addValueToAggregations(gridId, col.field, gridData.dataSource.data[rowIndex][col.field], gridData.groupAggregations[j]);
+                        addValueToAggregations(gridId, col.field, gridData.dataSource.data[rowIndex][col.field], gridData.groupAggregations[idx]);
                 });
-                gridData.groupAggregations[j]._items_++;
+                gridData.groupAggregations[idx]._items_++;
             }
-            if (groupedDiff[j]) {
-                var groupedText = getFormattedCellText(gridData.columns[gridData.columnIndices[gridData.groupedBy[j].field]], gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field]) ||
-                    gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field];
+            if (groupedDiff[idx]) {
+                var groupedText = getFormattedCellText(gridData.columns[gridData.columnIndices[gridData.groupedBy[idx].field]], gridData.dataSource.data[rowIndex][gridData.groupedBy[idx].field]) ||
+                    gridData.dataSource.data[rowIndex][gridData.groupedBy[idx].field];
                 var groupTr = $('<tr class="grouped_row_header"></tr>').appendTo(gridContent);
-                var groupTitle = gridData.columns[gridData.columnIndices[gridData.groupedBy[j].field]].title || gridData.groupedBy[j].field;
-                for (k = 0; k <= j; k++) {
-                    var indent = k === j ? (gridData.columns.length + gridData.groupedBy.length - k) : 1;
+                var groupTitle = gridData.columns[gridData.columnIndices[gridData.groupedBy[idx].field]].title || gridData.groupedBy[idx].field;
+                for (k = 0; k <= idx; k++) {
+                    var indent = k === idx ? (gridData.columns.length + gridData.groupedBy.length - k) : 1;
                     if (gridData.drillDown) ++indent;
                     groupTr.data('group-indent', indent);
                     var groupingCell = $('<td colspan="' + indent + '" class="grouped_cell"></td>').appendTo(groupTr);
-                    if (k === j) {
+                    if (k === idx) {
                         groupingCell.append('<p class="grouped"><a class="group-desc sortSpan group_acc_link" data-state="open"></a>' + groupTitle + ': ' + groupedText + '</p>');
                         break;
                     }
                 }
             }
-        }
+        });
     }
 
     function attachDrillDownAccordionHandler(gridId) {
