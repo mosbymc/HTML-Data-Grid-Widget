@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">58.21</p>
+      <p class="stat">58.38</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4265</p>
+      <p class="stat">4264</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">220.93</p>
+      <p class="stat">219.90</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">95.92</p>
+      <p class="stat">95.68</p>
     </div>
   </div>
 </div>
@@ -608,7 +608,10 @@
     }
 
     function initializeGrid(id, gridData, gridElem) {
+        var originalData = cloneGridData(gridData.dataSource.originalData);
+        delete gridData.dataSource.originalData;
         var storageData = cloneGridData(gridData);
+        storageData.originalData = originalData;
         storageData.events = {
             beforeCellEdit: typeof storageData.beforeCellEdit === &#039;object&#039; &amp;&amp; storageData.beforeCellEdit.constructor === Array ? storageData.beforeCellEdit : [],
             cellEditChange: typeof storageData.cellEditChange === &#039;object&#039; &amp;&amp; storageData.cellEditChange.constructor === Array ? storageData.cellEditChange : [],
@@ -633,7 +636,6 @@
         delete storageData.afterDataBind;
         delete storageData.columnReorder;
 
-        storageData.originalData = cloneGridData(gridData.dataSource.originalData);
         storageData.pageNum = 1;
         storageData.pageSize = gridData.pageSize || 25;
         storageData.grid = gridElem;
@@ -747,11 +749,11 @@
                 dataToFilter.filter(function getRemainingRows(val, idx) {
                     return idx &gt; gridData.pageNum * gridData.pageSize - 1 || idx &lt; gridData.pageNum * gridData.pageSize - gridData.pageSize;
                 }).forEach(function _iterateRemainingRows(row) {
-                gridData.columns.forEach(function _addColumnValsToAggregates(col) {
-                    if (gridData.aggregates[col.field])
-                        addValueToAggregations(gridId, col.field, row[col.field], gridData.gridAggregations);
+                    gridData.columns.forEach(function _addColumnValsToAggregates(col) {
+                        if (gridData.aggregates[col.field])
+                            addValueToAggregations(gridId, col.field, row[col.field], gridData.gridAggregations);
+                    });
                 });
-            });
         }
 
         var aggrs = gridData.gridAggregations;
@@ -780,24 +782,23 @@
             contentTable = $(&#039;&lt;table id=&quot;&#039; + gridElem[0].id + &#039;_content&quot; style=&quot;height:auto;&quot;&gt;&lt;/table&gt;&#039;).appendTo(gridContent),
             colGroup = $(&#039;&lt;colgroup&gt;&lt;/colgroup&gt;&#039;).appendTo(contentTable),
             contentTBody = $(&#039;&lt;tbody&gt;&lt;/tbody&gt;&#039;).appendTo(contentTable),
-            text, i, item;
+            text, item;
         contentTBody.css(&#039;width&#039;, &#039;auto&#039;);
         if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; gridData.selectable) attachTableSelectHandler(contentTBody);
 
-        var rowEnd = gridData.pageSize &gt; gridData.dataSource.data.length ? gridData.dataSource.data.length : gridData.pageSize,
-            rows = gridData.rows,
+        var rows = gridData.rows,
             currentGroupingValues = {};
 
         if (gridData.groupAggregates) gridData.groupAggregations = {};
 
         if (gridData.dataSource.data.length) {
-            for (i = 0; i &lt; rowEnd; i++) {
-                gridData.dataSource.data[i]._initialRowIndex = i;
-                if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) createGroupedRows(id, i, currentGroupingValues, contentTBody);
+            gridData.dataSource.data.forEach(function _createGridContentRows(item, idx) {
+                item._initialRowIndex = idx;
+                if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) createGroupedRows(id, idx, currentGroupingValues, contentTBody);
 
                 var tr = $(&#039;&lt;tr class=&quot;data-row&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
                 if (typeof gridData.parentGridId === &#039;number&#039;) tr.addClass(&#039;drill-down-row&#039;);
-                if (i % 2) {
+                if (idx % 2) {
                     tr.addClass(&#039;alt-row&#039;);
                     if (rows &amp;&amp; rows.alternateRows &amp;&amp; rows.alternateRows.constructor === Array)
                         rows.alternateRows.forEach(function _addAlternateRowClasses(className) {
@@ -828,7 +829,7 @@
                         });
                     }
                     if (col.type !== &#039;custom&#039;) {
-                        text = getFormattedCellText(col, gridData.dataSource.data[i][col.field]) || gridData.dataSource.data[i][col.field];
+                        text = getFormattedCellText(col, item[col.field]) || item[col.field];
                         text = text == null ? &#039;Null&#039; : text;
                         td.text(text);
                     }
@@ -839,7 +840,7 @@
                         if (col.text) {
                             var customText;
                             if (typeof col.text === &#039;function&#039;) {
-                                col.text(gridData.originalData[gridData.dataSource.data[i]._initialRowIndex]);
+                                col.text(gridData.originalData[item._initialRowIndex]);
                             }
                             else customText = col.text;
                             td.text(customText);
@@ -851,7 +852,7 @@
                     }
                     if (gridData.aggregates &amp;&amp; gridData.aggregates[col.field] &amp;&amp; typeof gridData.dataSource.get !== &#039;function&#039;) {
                         if (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === undefined)
-                            addValueToAggregations(id, col.field, gridData.dataSource.data[i][col.field], gridData.gridAggregations);
+                            addValueToAggregations(id, col.field, item[col.field], gridData.gridAggregations);
                     }
                     if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (col.editable &amp;&amp; col.editable !== &#039;drop-down&#039;)) {
                         makeCellEditable(id, td);
@@ -862,7 +863,7 @@
                         gridState[id].editable = true;
                     }
                 });
-            }
+            });
 
             gridData.columns.forEach(function appendCols() { colGroup.append(&#039;&lt;col/&gt;&#039;); });
             gridData.groupedBy.forEach(function _prependCols() { colGroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;); });
@@ -925,25 +926,25 @@
     }
 
     function createGroupedRows(gridId, rowIndex, currentGroupingValues, gridContent) {
-        var j, k,
+        var k,
             foundDiff = false,
             groupedDiff = [],
             gridData = gridState[gridId];
-        for (j = 0; j &lt; gridData.groupedBy.length; j++) {
-            if (!currentGroupingValues[gridData.groupedBy[j].field] || currentGroupingValues[gridData.groupedBy[j].field] !== gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field]) {
-                currentGroupingValues[gridData.groupedBy[j].field] = gridData.dataSource.data[rowIndex][gridData.groupedBy[j].field];
-                groupedDiff[j] = 1;
+        gridData.groupedBy.forEach(function _createGroupedRows(item, idx) {
+            if (!currentGroupingValues[item.field] || currentGroupingValues[item.field] !== gridData.dataSource.data[rowIndex][item.field]) {
+                currentGroupingValues[item.field] = gridData.dataSource.data[rowIndex][item.field];
+                groupedDiff[idx] = 1;
                 foundDiff = true;
             }
             else {
-                if (!j || !groupedDiff[j - 1]) groupedDiff[j] = 0;
-                else groupedDiff[j] = 1;
+                if (!idx || !groupedDiff[idx - 1]) groupedDiff[idx] = 0;
+                else groupedDiff[idx] = 1;
             }
-        }
+        });
         if (foundDiff &amp;&amp; rowIndex &amp;&amp; gridData.groupAggregates) {   
-            for (j = groupedDiff.length - 1; j &gt;= 0; j--) {     
-                var numItems = gridData.groupAggregations[j]._items_; 
-                if (groupedDiff[j]) {                               
+            groupedDiff.reverse().forEach(function _findRowDiffs(item, idx) {
+                var numItems = gridData.groupAggregations[idx]._items_; 
+                if (item) {                               
                     var groupAggregateRow = $(&#039;&lt;tr class=&quot;grouped_row_header&quot;&gt;&lt;/tr&gt;&#039;).appendTo(gridContent);
                     groupedDiff.forEach(function _appendGroupingCells() {
                         groupAggregateRow.append(&#039;&lt;td colspan=&quot;&#039; + 1 + &#039;&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
@@ -951,16 +952,16 @@
                     if (gridData.drillDown)
                         groupAggregateRow.append(&#039;&lt;td colspan=&quot;1&quot; class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
                     gridData.columns.forEach(function _createAggregateCells(col) {
-                        if (col.field in gridData.groupAggregations[j] &amp;&amp; col.field !== &#039;_items_&#039;){
-                            groupAggregateRow.append(&#039;&lt;td class=&quot;group_aggregate_cell&quot;&gt;&#039; + (gridData.groupAggregations[j][col.field].text || &#039;&#039;) + &#039;&lt;/td&gt;&#039;);
+                        if (col.field in gridData.groupAggregations[idx] &amp;&amp; col.field !== &#039;_items_&#039;){
+                            groupAggregateRow.append(&#039;&lt;td class=&quot;group_aggregate_cell&quot;&gt;&#039; + (gridData.groupAggregations[idx][col.field].text || &#039;&#039;) + &#039;&lt;/td&gt;&#039;);
                         }
                         else
                             groupAggregateRow.append(&#039;&lt;td class=&quot;group_aggregate_cell&quot;&gt; &lt;/td&gt;&#039;);
                     });
-                    gridData.groupAggregations[j] = {       
+                    gridData.groupAggregations[idx] = {       
                         _items_: 0
                     };
-                    for (k = j - 1; k &gt;= 0; k--) {  
+                    for (k = idx - 1; k &gt;= 0; k--) {  
                         if (groupedDiff[k] &amp;&amp; gridData.groupAggregations[k]._items_ == numItems) {    
                             groupedDiff[k] = 0;
                             gridData.groupAggregations[k] = {
@@ -969,7 +970,7 @@
                         }
                     }
                 }
-            }
+            });
         }
         groupedDiff.forEach(function _createGroupedAggregates(item, idx) {
             if (gridData.groupAggregates) {
@@ -1541,9 +1542,7 @@
                 if (comparator(normalizedValue, normalizeValues(dataType, opt), booleanOps.strictEqual))
                     return true;
             })) {
-                options = options.reverse();
-                options.push(value);
-                options = options.reverse();
+                options.reverse().push(value).reverse();
             }
 
             options.forEach(function _setSelectableColumnOptions(option) {
