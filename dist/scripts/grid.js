@@ -3587,18 +3587,18 @@ var grid = (function _grid($) {
         if (value == null || ('' === value && column.nullable)) return column.nullable ? null : ' ';
         switch(type) {
             case 'number':
-                text = formatNumericCellData(value, column.format);
+                text = formatNumber(value, column.format);
                 break;
             case 'date':
-                text = formatDateCellData(value, column.format);
+                text = formatDate(value, column.format);
                 break;
             case 'time':
-                text = formatTimeCellData(value, column);
+                text = formatTime(value, column);
                 break;
             case 'datetime':
                 var re = new RegExp(dataTypes['datetime']),
                     execVal = re.exec(value),
-                    timeText = formatTimeCellData(execVal[42], column),
+                    timeText = formatTime(execVal[42], column),
                     dateComp = new Date(execVal[2]),
                     dateFormat = column.format || 'mm/dd/yyyy hh:mm:ss';
                 dateFormat = dateFormat.substring(0, (dateFormat.indexOf(' ') || dateFormat.indexOf('T')));
@@ -3747,7 +3747,7 @@ var grid = (function _grid($) {
 
     aggregates = { count: 'Count: ', average: 'Avg: ', max: 'Max: ', min: 'Min: ', total: 'Total: ' };
 
-    function formatTimeCellData(time, column) {
+    function formatTime(time, column) {
         var timeArray = getNumbersFromTime(time),
             formattedTime,
             format = column.format || 'hh:mm:ss',
@@ -3785,7 +3785,7 @@ var grid = (function _grid($) {
         return '';
     }
 
-    function formatDateCellData(date, format) {
+    function formatDate(date, format) {
         if (!format) return date;
         var parseDate = Date.parse(date);
         var jsDate = new Date(parseDate);
@@ -3796,7 +3796,7 @@ var grid = (function _grid($) {
         return '';
     }
 
-    function formatNumericCellData(num, format) {
+    function formatNumber(num, format) {
         if (!format) return num;
         var formatSections = [];
         var dataSections = [];
@@ -3871,28 +3871,27 @@ var grid = (function _grid($) {
         var formatSections = [];
         format = format.replace(/[^0#,.]/g , '');
 
-        var decimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length;
-        var leadingChars = format.substring(0, decimalIndex);
-        var shouldInsertSeparators = leadingChars.indexOf(',') > -1;
+        var decimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length,
+            leadingChars = format.substring(0, decimalIndex);
         leadingChars = leadingChars.replace(new RegExp(',', 'g'), '');
 
         formatSections[0] = leadingChars;
         if (decimalIndex < format.length)
             formatSections[1] = format.substring(decimalIndex + 1, format.length).split('').reverse().join('');
 
-        for (var i = 0; i < formatSections.length; i++) {
+        formatSections.forEach(function _checkForZeros(section, index) {
             var zeroFound = false;
-            for (var j = 0; j < formatSections[i].length; j++) {
-                if (zeroFound && formatSections[i].charAt(j) !== '0')
-                    formatSections[i] = formatSections[i].substring(0, j) + '0' + formatSections[i].substring(j + 1, formatSections[i].length);
-                else if (!zeroFound && formatSections[i].charAt(j) === '0')
+            formatSections[index].split('').forEach(function _replaceZeros(char, idx) {
+                if (zeroFound && char !== '0')
+                    formatSections[index] = formatSections[index].substring(0, idx) + '0' + formatSections[index].substring(idx + 1, formatSections[index].length);
+                else if (!zeroFound && char === '0')
                     zeroFound = true;
-            }
-        }
+            });
+        });
 
         return {
             value: formatSections.length < 2 ? formatSections[0] : formatSections[0] + '.' + formatSections[1].split('').reverse().join(''),
-            shouldInsertSeparators: shouldInsertSeparators,
+            shouldInsertSeparators: leadingChars.indexOf(',') > -1,
             alterer: null,
             prependedSymbol: '',
             appendedSymbol: ''
@@ -3903,28 +3902,20 @@ var grid = (function _grid($) {
         var charStripper = '\\d{0,2}]',
             cPOrN = ~format.indexOf('P') ? 'P' : ~format.indexOf('N') ? 'N' : 'C';
         format = format.split(cPOrN);
-        var wholeNums = verifyFormat(format[0]),
-            re = new RegExp('[^' + cPOrN + charStripper, 'g');
+        var re = new RegExp('[^' + cPOrN + charStripper, 'g');
         format = format[1].replace(re, '');
         var numDecimals = 2, newFormat;
         if (format.length)
             numDecimals = parseInt(format.substring(0,2));
 
-        if (wholeNums.value)
-            newFormat = numDecimals ? wholeNums.value + '.' : wholeNums.value;
-        else if (numDecimals && cPOrN === 'C')
-            newFormat = '0.';
-        else if (numDecimals && cPOrN === 'P')
-            newFormat = '00.';
-        else if (numDecimals && cPOrN === 'N')
-            newFormat = '0.';
-        else newFormat = cPOrN === 'C' || cPOrN === 'N' ? '0' : '00';
+        newFormat = cPOrN === 'C' || cPOrN === 'N' ? '0' : '00';
+        if (numDecimals) newFormat = newFormat + '.';
 
         for (var i = 0; i < numDecimals; i++) {
             newFormat += '0';
         }
         return { value: newFormat,
-            shouldInsertSeparators: wholeNums.shouldInsertSeparators,
+            shouldInsertSeparators: verifyFormat(format[0]).shouldInsertSeparators,
             alterer: cPOrN === 'C' || cPOrN === 'N' ? null : x100,
             prependedSymbol: cPOrN === 'C' ? '$' : '',
             appendedSymbol: cPOrN === 'P' ? '%' : ''

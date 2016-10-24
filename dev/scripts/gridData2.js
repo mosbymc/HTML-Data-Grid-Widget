@@ -206,7 +206,7 @@ var gridData2 = {
         {
             field: 'Billed',
             type: "number",
-            format: '0C2',
+            format: '00.#00',
             editable: true,
             //symbol: "$",
             //template: "${{data}}",
