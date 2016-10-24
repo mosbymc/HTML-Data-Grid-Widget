@@ -3867,13 +3867,13 @@ var grid = (function _grid($) {
         return num;
     }
 
+
     function verifyFormat(format) {
         var formatSections = [];
         format = format.replace(/[^0#,.]/g , '');
 
         var decimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length,
-            leadingChars = format.substring(0, decimalIndex);
-        leadingChars = leadingChars.replace(new RegExp(',', 'g'), '');
+            leadingChars = format.substring(0, decimalIndex).replace(new RegExp(',', 'g'), '');
 
         formatSections[0] = leadingChars;
         if (decimalIndex < format.length)

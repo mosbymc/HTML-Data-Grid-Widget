@@ -4708,6 +4708,70 @@ var grid = (function _grid($) {
     }
 
     /**
+     * Takes a number and a format string and will format the number according to the formatting rules
+     * @param {string|number} num - The number to be formatted before it is displayed in the grid
+     * @param {string} format - The format string that specifies how to format the number
+     * @returns {string|number} - Returns either the number it received if unable to properly format, or a string value of the formatted number
+     */
+    /*function formatNumber2(num, format) {
+        if (!format) return num;
+        var formatSections = [];
+        var dataSections = [];
+        format = format.toUpperCase();
+        var formatObject = (~format.indexOf('P') || ~format.indexOf('C') || ~format.indexOf('N')) ? createCurrencyNumberOrPercentFormat(format) : verifyFormat(format);
+        format = formatObject.value;
+
+        var formatDecimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length;
+        formatSections[0] = format.substring(0, formatDecimalIndex).split('').reverse().join('');
+        formatSections[1] = formatDecimalIndex < format.length ? format.substring(formatDecimalIndex + 1, format.length) : '';
+
+        var decimals = formatSections[1] ? formatSections[1].length : 0;
+
+        if (formatObject.alterer)
+            num = formatObject.alterer(+num);
+        num = roundNumber(+num, decimals);
+        var sign = 0 > +num ? -1 : 1;
+        num = num.toString();
+        num = num.replace(new RegExp(',', 'g'), '').replace('-', '');   //remove all commas: either the format didn't specify commas, or we will replace them later
+        var dataDecimalIndex = ~num.indexOf('.') ? num.indexOf('.') : num.length;
+        dataSections[0] = num.substring(0, dataDecimalIndex).split('').reverse().join('');
+        if (dataDecimalIndex < format.length)
+            dataSections[1] = num.substring(dataDecimalIndex + 1, num.length);
+        else dataSections[1] = '';
+
+        var charsSinceComma = 0;
+        if (formatSections[0].length) {
+            var wholeNums = formatSections[0].split('').map(function _createWholeNumberString(char, idx) {
+                var tmpChar = '';
+                if (formatObject.shouldInsertSeparators && charsSinceComma === 3 && (dataSections[0].charAt(idx) || char === '0')) {
+                    tmpChar = ',';
+                    charsSinceComma = 0;
+                }
+                if (dataSections[0].charAt(idx)) {
+                    tmpChar += dataSections[0].charAt(idx);
+                    charsSinceComma++;
+                }
+                else if (char === '0') {
+                    tmpChar += '0';
+                    charsSinceComma++;
+                }
+                return tmpChar;
+            }).reverse().join('');
+
+            var fractionNums = formatSections[1].split('').map(function _createDecimalString(char, idx) {
+                if (char && dataSections[1].charAt(idx))
+                    return dataSections[1].charAt(idx);
+                else if (char === '0')
+                    return '0';
+            }).join('');
+
+            var value = fractionNums.length ? wholeNums + '.' + fractionNums : wholeNums;
+            return sign === -1 ? formatObject.prependedSymbol + '-' + value + formatObject.appendedSymbol : formatObject.prependedSymbol + value + formatObject.appendedSymbol;
+        }
+        return num;
+    }*/
+
+    /**
      * Given a format, this function will ensure it is valid and strip it of all invalid characters
      * @param {string} format - A string denoting the format a value displayed in the grid should have.
      * @returns {object} - Returns an object with the validated format string and metadata about how the value to be formatted should be treated
@@ -4717,8 +4781,7 @@ var grid = (function _grid($) {
         format = format.replace(/[^0#,.]/g , '');
 
         var decimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length,
-            leadingChars = format.substring(0, decimalIndex);
-        leadingChars = leadingChars.replace(new RegExp(',', 'g'), '');
+            leadingChars = format.substring(0, decimalIndex).replace(new RegExp(',', 'g'), '');
 
         formatSections[0] = leadingChars;
         if (decimalIndex < format.length)
