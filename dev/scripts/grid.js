@@ -4378,7 +4378,8 @@ var grid = (function _grid($) {
         if (value == null || ('' === value && column.nullable)) return column.nullable ? null : ' ';
         switch(type) {
             case 'number':
-                text = formatNumber(value, column.format);
+                //text = formatNumber(value, column.format);
+                text = numberFormatter(value.toString(), column.format);
                 break;
             case 'date':
                 text = formatDate(value, column.format);
@@ -4630,209 +4631,59 @@ var grid = (function _grid($) {
         return '';
     }
 
-    /**
-     * Takes a number and a format string and will format the number according to the formatting rules
-     * @param {string|number} num - The number to be formatted before it is displayed in the grid
-     * @param {string} format - The format string that specifies how to format the number
-     * @returns {string|number} - Returns either the number it received if unable to properly format, or a string value of the formatted number
-     */
-    function formatNumber(num, format) {
+    function numberFormatter(num, format) {
         if (!format) return num;
-        var formatSections = [];
-        var dataSections = [];
-        format = format.toUpperCase();
-        var formatObject = (~format.indexOf('P') || ~format.indexOf('C') || ~format.indexOf('N')) ? createCurrencyNumberOrPercentFormat(format) : verifyFormat(format);
-        format = formatObject.value;
-
-        var formatDecimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length;
-        formatSections[0] = format.substring(0, formatDecimalIndex).split('').reverse().join('');
-        if (formatDecimalIndex < format.length)
-            formatSections[1] = format.substring(formatDecimalIndex + 1, format.length);
-
-        var decimals = formatSections[1] ? formatSections[1].length : 0;
-
-        if (formatObject.alterer)
-            num = formatObject.alterer(+num);
-        num = roundNumber(+num, decimals);
-        var sign = 0 > +num ? -1 : 1;
-        num = num.toString();
-        num = num.replace(new RegExp(',', 'g'), '').replace('-', '');   //remove all commas: either the format didn't specify commas, or we will replace them later
-        var dataDecimalIndex = ~num.indexOf('.') ? num.indexOf('.') : num.length;
-        dataSections[0] = num.substring(0, dataDecimalIndex).split('').reverse().join('');
-        if (dataDecimalIndex < format.length)
-            dataSections[1] = num.substring(dataDecimalIndex + 1, num.length);
-        else if (formatDecimalIndex < format.length)
-            dataSections[1] = '';
-
-        var wholeNums = [];
-        var charsSinceComma = 0;
-        if (formatSections[0].length) {
-            var finalCharIndex, i;
-            if (formatSections[0].length) {
-                finalCharIndex = formatSections[0].length > dataSections[0].length ? formatSections[0].length : dataSections[0].length;
-                for (i = 0; i < finalCharIndex; i++) {
-                    if (formatObject.shouldInsertSeparators && charsSinceComma === 3 && (dataSections[0].charAt(i) || formatSections[0].charAt(i) === '0')) {
-                        wholeNums.push(',');
-                        charsSinceComma = 0;
-                    }
-                    if (dataSections[0].charAt(i)) {
-                        wholeNums.push(dataSections[0].charAt(i));
-                        charsSinceComma++;
-                    }
-                    else if (formatSections[0].charAt(i) === '0') {
-                        wholeNums.push('0');
-                        charsSinceComma++;
-                    }
-                    else break;
-                }
-            }
-            wholeNums = wholeNums.reverse().join('');
-
-            var fractionNums = [];
-            if (formatSections.length > 1) {
-                finalCharIndex = formatSections[1].length > dataSections[1].length ? formatSections[1].length : dataSections[1].length;
-                for (i = 0; i < finalCharIndex; i++) {
-                    if (formatSections[1].charAt(i) && dataSections[1].charAt(i))
-                        fractionNums.push(dataSections[1].charAt(i));
-                    else if (formatSections[1].charAt(i) === '0')
-                        fractionNums.push('0');
-                    else break;
-                }
-            }
-            fractionNums = fractionNums.join('');
-
-            var value = fractionNums.length ? wholeNums + '.' + fractionNums : wholeNums;
-            return sign === -1 ? formatObject.prependedSymbol + '-' + value + formatObject.appendedSymbol : formatObject.prependedSymbol + value + formatObject.appendedSymbol;
-        }
-        return num;
-    }
-
-    /**
-     * Takes a number and a format string and will format the number according to the formatting rules
-     * @param {string|number} num - The number to be formatted before it is displayed in the grid
-     * @param {string} format - The format string that specifies how to format the number
-     * @returns {string|number} - Returns either the number it received if unable to properly format, or a string value of the formatted number
-     */
-    /*function formatNumber2(num, format) {
-        if (!format) return num;
-        var formatSections = [];
-        var dataSections = [];
-        format = format.toUpperCase();
-        var formatObject = (~format.indexOf('P') || ~format.indexOf('C') || ~format.indexOf('N')) ? createCurrencyNumberOrPercentFormat(format) : verifyFormat(format);
-        format = formatObject.value;
-
-        var formatDecimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length;
-        formatSections[0] = format.substring(0, formatDecimalIndex).split('').reverse().join('');
-        formatSections[1] = formatDecimalIndex < format.length ? format.substring(formatDecimalIndex + 1, format.length) : '';
-
-        var decimals = formatSections[1] ? formatSections[1].length : 0;
-
-        if (formatObject.alterer)
-            num = formatObject.alterer(+num);
-        num = roundNumber(+num, decimals);
-        var sign = 0 > +num ? -1 : 1;
-        num = num.toString();
-        num = num.replace(new RegExp(',', 'g'), '').replace('-', '');   //remove all commas: either the format didn't specify commas, or we will replace them later
-        var dataDecimalIndex = ~num.indexOf('.') ? num.indexOf('.') : num.length;
-        dataSections[0] = num.substring(0, dataDecimalIndex).split('').reverse().join('');
-        if (dataDecimalIndex < format.length)
-            dataSections[1] = num.substring(dataDecimalIndex + 1, num.length);
-        else dataSections[1] = '';
-
-        var charsSinceComma = 0;
-        if (formatSections[0].length) {
-            var wholeNums = formatSections[0].split('').map(function _createWholeNumberString(char, idx) {
-                var tmpChar = '';
-                if (formatObject.shouldInsertSeparators && charsSinceComma === 3 && (dataSections[0].charAt(idx) || char === '0')) {
-                    tmpChar = ',';
-                    charsSinceComma = 0;
-                }
-                if (dataSections[0].charAt(idx)) {
-                    tmpChar += dataSections[0].charAt(idx);
-                    charsSinceComma++;
-                }
-                else if (char === '0') {
-                    tmpChar += '0';
-                    charsSinceComma++;
-                }
-                return tmpChar;
-            }).reverse().join('');
-
-            var fractionNums = formatSections[1].split('').map(function _createDecimalString(char, idx) {
-                if (char && dataSections[1].charAt(idx))
-                    return dataSections[1].charAt(idx);
-                else if (char === '0')
-                    return '0';
-            }).join('');
-
-            var value = fractionNums.length ? wholeNums + '.' + fractionNums : wholeNums;
-            return sign === -1 ? formatObject.prependedSymbol + '-' + value + formatObject.appendedSymbol : formatObject.prependedSymbol + value + formatObject.appendedSymbol;
-        }
-        return num;
-    }*/
-
-    /**
-     * Given a format, this function will ensure it is valid and strip it of all invalid characters
-     * @param {string} format - A string denoting the format a value displayed in the grid should have.
-     * @returns {object} - Returns an object with the validated format string and metadata about how the value to be formatted should be treated
-     */
-    function verifyFormat(format) {
-        var formatSections = [];
+        if (/[CPN]/.test(format.toUpperCase())) return createStandardNumberFormat(num, format);
         format = format.replace(/[^0#,.]/g , '');
+        var formatDecimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length,
+            formatWholeNums = format.substring(0, formatDecimalIndex).replace(',', ''),
+            formatDecimals = formatDecimalIndex < format.length ?  format.substring(formatDecimalIndex + 1, format.length) : '';
+        num = (roundNumber(+num, formatDecimals.length)).toString();
+        var dataDecimalIndex = ~num.indexOf('.') ? num.indexOf('.') : num.length,
+            dataWholeNums = num.substring(0, dataDecimalIndex).split('').reverse(),
+            dataDecimalNums = num.substring(dataDecimalIndex + 1, num.length).split('').reverse();
 
-        var decimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length,
-            leadingChars = format.substring(0, decimalIndex).replace(new RegExp(',', 'g'), '');
+        var wholeNums = formatWholeNums.split('').reverse().map(function _createWholeNumbersString(char, idx) {
+            if (char === '0') return dataWholeNums[idx] || char;
+            return dataWholeNums[idx] || '';
+        }).reverse().join('');
 
-        formatSections[0] = leadingChars;
-        if (decimalIndex < format.length)
-            formatSections[1] = format.substring(decimalIndex + 1, format.length).split('').reverse().join('');
+        if (~format.indexOf(',')) wholeNums = numberWithCommas(wholeNums);
 
-        formatSections.forEach(function _checkForZeros(section, index) {
-            var zeroFound = false;
-            formatSections[index].split('').forEach(function _replaceZeros(char, idx) {
-                if (zeroFound && char !== '0')
-                    formatSections[index] = formatSections[index].substring(0, idx) + '0' + formatSections[index].substring(idx + 1, formatSections[index].length);
-                else if (!zeroFound && char === '0')
-                    zeroFound = true;
+        if (formatDecimalIndex < format.length) {
+            var decimalNums = formatDecimals.split('').reverse().map(function _createDecimalNumbersString(char, idx) {
+                if (char === '0') return dataDecimalNums[idx] || '0';
+                return dataDecimalNums[idx] || '';
             });
-        });
-
-        return {
-            value: formatSections.length < 2 ? formatSections[0] : formatSections[0] + '.' + formatSections[1].split('').reverse().join(''),
-            shouldInsertSeparators: leadingChars.indexOf(',') > -1,
-            alterer: null,
-            prependedSymbol: '',
-            appendedSymbol: ''
-        };
+            wholeNums = wholeNums + decimalNums;
+        }
+        return wholeNums;
     }
 
-    /**
-     * Given a format string for either currency or percent, will normalize it as a decimal format
-     * @param {string} format - A string denoting the currency or percent a value in a field should take.
-     * @returns {object} - Returns an object containing the normalized format string, as well as metadata on how to treat the value to be formatted.
-     */
-    function createCurrencyNumberOrPercentFormat(format) {
-        var charStripper = '\\d{0,2}]',
-            cPOrN = ~format.indexOf('P') ? 'P' : ~format.indexOf('N') ? 'N' : 'C';
-        format = format.split(cPOrN);
-        var re = new RegExp('[^' + cPOrN + charStripper, 'g');
-        format = format[1].replace(re, '');
-        var numDecimals = 2, newFormat;
-        if (format.length)
-            numDecimals = parseInt(format.substring(0,2));
+    function createStandardNumberFormat(num, format) {
+        var numDecimals = format.length > 1 ? format.toUpperCase().replace(/[CPN]/, '') : 0;
+        if (~format.toUpperCase().indexOf('P'))
+            num = x100(+num).toString();
+        num = (roundNumber(num, numDecimals)).toString();
+        var dataDecimalIndex = ~num.indexOf('.') ? num.indexOf('.') : num.length,
+            wholeNums = num.substring(0, dataDecimalIndex);
+        numDecimals = isInteger(+numDecimals) ? +numDecimals : 0;
 
-        newFormat = cPOrN === 'C' || cPOrN === 'N' ? '0' : '00';
-        if (numDecimals) newFormat = newFormat + '.';
-
-        for (var i = 0; i < numDecimals; i++) {
-            newFormat += '0';
+        if (numDecimals) {
+            var decimals = num.substring(dataDecimalIndex + 1, num.length);
+            decimals = isInteger(+decimals) ? +decimals : 0;
+            if (numDecimals > decimals) {
+                return numberWithCommas(wholeNums) + '.' + decimals.toString().concat('0'.repeat(numDecimals - decimals));
+            }
+            else {
+                return numberWithCommas(wholeNums) + '.' + decimals.toString().substring(0, numDecimals);
+            }
         }
-        return { value: newFormat,
-            shouldInsertSeparators: verifyFormat(format[0]).shouldInsertSeparators,
-            alterer: cPOrN === 'C' || cPOrN === 'N' ? null : x100,
-            prependedSymbol: cPOrN === 'C' ? '$' : '',
-            appendedSymbol: cPOrN === 'P' ? '%' : ''
-        };
+        else return numberWithCommas(wholeNums);
+    }
+
+    function numberWithCommas(num) {
+        return num.toString().replace(/\B(?=(?:\d{3})+(?!\d))/g, ',');
     }
 
     /**

@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">58.52</p>
+      <p class="stat">58.82</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4255</p>
+      <p class="stat">4184</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">219.14</p>
+      <p class="stat">217.54</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">95.45</p>
+      <p class="stat">93.62</p>
     </div>
   </div>
 </div>
@@ -3678,7 +3678,7 @@
         if (value == null || (&#039;&#039; === value &amp;&amp; column.nullable)) return column.nullable ? null : &#039; &#039;;
         switch(type) {
             case &#039;number&#039;:
-                text = formatNumber(value, column.format);
+                text = numberFormatter(value.toString(), column.format);
                 break;
             case &#039;date&#039;:
                 text = formatDate(value, column.format);
@@ -3887,130 +3887,59 @@
         return &#039;&#039;;
     }
 
-    function formatNumber(num, format) {
+    function numberFormatter(num, format) {
         if (!format) return num;
-        var formatSections = [];
-        var dataSections = [];
-        format = format.toUpperCase();
-        var formatObject = (~format.indexOf(&#039;P&#039;) || ~format.indexOf(&#039;C&#039;) || ~format.indexOf(&#039;N&#039;)) ? createCurrencyNumberOrPercentFormat(format) : verifyFormat(format);
-        format = formatObject.value;
-
-        var formatDecimalIndex = ~format.indexOf(&#039;.&#039;) ? format.indexOf(&#039;.&#039;) : format.length;
-        formatSections[0] = format.substring(0, formatDecimalIndex).split(&#039;&#039;).reverse().join(&#039;&#039;);
-        if (formatDecimalIndex &lt; format.length)
-            formatSections[1] = format.substring(formatDecimalIndex + 1, format.length);
-
-        var decimals = formatSections[1] ? formatSections[1].length : 0;
-
-        if (formatObject.alterer)
-            num = formatObject.alterer(+num);
-        num = roundNumber(+num, decimals);
-        var sign = 0 &gt; +num ? -1 : 1;
-        num = num.toString();
-        num = num.replace(new RegExp(&#039;,&#039;, &#039;g&#039;), &#039;&#039;).replace(&#039;-&#039;, &#039;&#039;);   
-        var dataDecimalIndex = ~num.indexOf(&#039;.&#039;) ? num.indexOf(&#039;.&#039;) : num.length;
-        dataSections[0] = num.substring(0, dataDecimalIndex).split(&#039;&#039;).reverse().join(&#039;&#039;);
-        if (dataDecimalIndex &lt; format.length)
-            dataSections[1] = num.substring(dataDecimalIndex + 1, num.length);
-        else if (formatDecimalIndex &lt; format.length)
-            dataSections[1] = &#039;&#039;;
-
-        var wholeNums = [];
-        var charsSinceComma = 0;
-        if (formatSections[0].length) {
-            var finalCharIndex, i;
-            if (formatSections[0].length) {
-                finalCharIndex = formatSections[0].length &gt; dataSections[0].length ? formatSections[0].length : dataSections[0].length;
-                for (i = 0; i &lt; finalCharIndex; i++) {
-                    if (formatObject.shouldInsertSeparators &amp;&amp; charsSinceComma === 3 &amp;&amp; (dataSections[0].charAt(i) || formatSections[0].charAt(i) === &#039;0&#039;)) {
-                        wholeNums.push(&#039;,&#039;);
-                        charsSinceComma = 0;
-                    }
-                    if (dataSections[0].charAt(i)) {
-                        wholeNums.push(dataSections[0].charAt(i));
-                        charsSinceComma++;
-                    }
-                    else if (formatSections[0].charAt(i) === &#039;0&#039;) {
-                        wholeNums.push(&#039;0&#039;);
-                        charsSinceComma++;
-                    }
-                    else break;
-                }
-            }
-            wholeNums = wholeNums.reverse().join(&#039;&#039;);
-
-            var fractionNums = [];
-            if (formatSections.length &gt; 1) {
-                finalCharIndex = formatSections[1].length &gt; dataSections[1].length ? formatSections[1].length : dataSections[1].length;
-                for (i = 0; i &lt; finalCharIndex; i++) {
-                    if (formatSections[1].charAt(i) &amp;&amp; dataSections[1].charAt(i))
-                        fractionNums.push(dataSections[1].charAt(i));
-                    else if (formatSections[1].charAt(i) === &#039;0&#039;)
-                        fractionNums.push(&#039;0&#039;);
-                    else break;
-                }
-            }
-            fractionNums = fractionNums.join(&#039;&#039;);
-
-            var value = fractionNums.length ? wholeNums + &#039;.&#039; + fractionNums : wholeNums;
-            return sign === -1 ? formatObject.prependedSymbol + &#039;-&#039; + value + formatObject.appendedSymbol : formatObject.prependedSymbol + value + formatObject.appendedSymbol;
-        }
-        return num;
-    }
-
-
-    function verifyFormat(format) {
-        var formatSections = [];
+        if (/[CPN]/.test(format.toUpperCase())) return createStandardNumberFormat(num, format);
         format = format.replace(/[^0#,.]/g , &#039;&#039;);
+        var formatDecimalIndex = ~format.indexOf(&#039;.&#039;) ? format.indexOf(&#039;.&#039;) : format.length,
+            formatWholeNums = format.substring(0, formatDecimalIndex).replace(&#039;,&#039;, &#039;&#039;),
+            formatDecimals = formatDecimalIndex &lt; format.length ?  format.substring(formatDecimalIndex + 1, format.length) : &#039;&#039;;
+        num = (roundNumber(+num, formatDecimals.length)).toString();
+        var dataDecimalIndex = ~num.indexOf(&#039;.&#039;) ? num.indexOf(&#039;.&#039;) : num.length,
+            dataWholeNums = num.substring(0, dataDecimalIndex).split(&#039;&#039;).reverse(),
+            dataDecimalNums = num.substring(dataDecimalIndex + 1, num.length).split(&#039;&#039;).reverse();
 
-        var decimalIndex = ~format.indexOf(&#039;.&#039;) ? format.indexOf(&#039;.&#039;) : format.length,
-            leadingChars = format.substring(0, decimalIndex).replace(new RegExp(&#039;,&#039;, &#039;g&#039;), &#039;&#039;);
+        var wholeNums = formatWholeNums.split(&#039;&#039;).reverse().map(function _createWholeNumbersString(char, idx) {
+            if (char === &#039;0&#039;) return dataWholeNums[idx] || char;
+            return dataWholeNums[idx] || &#039;&#039;;
+        }).reverse().join(&#039;&#039;);
 
-        formatSections[0] = leadingChars;
-        if (decimalIndex &lt; format.length)
-            formatSections[1] = format.substring(decimalIndex + 1, format.length).split(&#039;&#039;).reverse().join(&#039;&#039;);
+        if (~format.indexOf(&#039;,&#039;)) wholeNums = numberWithCommas(wholeNums);
 
-        formatSections.forEach(function _checkForZeros(section, index) {
-            var zeroFound = false;
-            formatSections[index].split(&#039;&#039;).forEach(function _replaceZeros(char, idx) {
-                if (zeroFound &amp;&amp; char !== &#039;0&#039;)
-                    formatSections[index] = formatSections[index].substring(0, idx) + &#039;0&#039; + formatSections[index].substring(idx + 1, formatSections[index].length);
-                else if (!zeroFound &amp;&amp; char === &#039;0&#039;)
-                    zeroFound = true;
+        if (formatDecimalIndex &lt; format.length) {
+            var decimalNums = formatDecimals.split(&#039;&#039;).reverse().map(function _createDecimalNumbersString(char, idx) {
+                if (char === &#039;0&#039;) return dataDecimalNums[idx] || &#039;0&#039;;
+                return dataDecimalNums[idx] || &#039;&#039;;
             });
-        });
-
-        return {
-            value: formatSections.length &lt; 2 ? formatSections[0] : formatSections[0] + &#039;.&#039; + formatSections[1].split(&#039;&#039;).reverse().join(&#039;&#039;),
-            shouldInsertSeparators: leadingChars.indexOf(&#039;,&#039;) &gt; -1,
-            alterer: null,
-            prependedSymbol: &#039;&#039;,
-            appendedSymbol: &#039;&#039;
-        };
+            wholeNums = wholeNums + decimalNums;
+        }
+        return wholeNums;
     }
 
-    function createCurrencyNumberOrPercentFormat(format) {
-        var charStripper = &#039;\\d{0,2}]&#039;,
-            cPOrN = ~format.indexOf(&#039;P&#039;) ? &#039;P&#039; : ~format.indexOf(&#039;N&#039;) ? &#039;N&#039; : &#039;C&#039;;
-        format = format.split(cPOrN);
-        var re = new RegExp(&#039;[^&#039; + cPOrN + charStripper, &#039;g&#039;);
-        format = format[1].replace(re, &#039;&#039;);
-        var numDecimals = 2, newFormat;
-        if (format.length)
-            numDecimals = parseInt(format.substring(0,2));
+    function createStandardNumberFormat(num, format) {
+        var numDecimals = format.length &gt; 1 ? format.toUpperCase().replace(/[CPN]/, &#039;&#039;) : 0;
+        if (~format.toUpperCase().indexOf(&#039;P&#039;))
+            num = x100(+num).toString();
+        num = (roundNumber(num, numDecimals)).toString();
+        var dataDecimalIndex = ~num.indexOf(&#039;.&#039;) ? num.indexOf(&#039;.&#039;) : num.length,
+            wholeNums = num.substring(0, dataDecimalIndex);
+        numDecimals = isInteger(+numDecimals) ? +numDecimals : 0;
 
-        newFormat = cPOrN === &#039;C&#039; || cPOrN === &#039;N&#039; ? &#039;0&#039; : &#039;00&#039;;
-        if (numDecimals) newFormat = newFormat + &#039;.&#039;;
-
-        for (var i = 0; i &lt; numDecimals; i++) {
-            newFormat += &#039;0&#039;;
+        if (numDecimals) {
+            var decimals = num.substring(dataDecimalIndex + 1, num.length);
+            decimals = isInteger(+decimals) ? +decimals : 0;
+            if (numDecimals &gt; decimals) {
+                return numberWithCommas(wholeNums) + &#039;.&#039; + decimals.toString().concat(&#039;0&#039;.repeat(numDecimals - decimals));
+            }
+            else {
+                return numberWithCommas(wholeNums) + &#039;.&#039; + decimals.toString().substring(0, numDecimals);
+            }
         }
-        return { value: newFormat,
-            shouldInsertSeparators: verifyFormat(format[0]).shouldInsertSeparators,
-            alterer: cPOrN === &#039;C&#039; || cPOrN === &#039;N&#039; ? null : x100,
-            prependedSymbol: cPOrN === &#039;C&#039; ? &#039;$&#039; : &#039;&#039;,
-            appendedSymbol: cPOrN === &#039;P&#039; ? &#039;%&#039; : &#039;&#039;
-        };
+        else return numberWithCommas(wholeNums);
+    }
+
+    function numberWithCommas(num) {
+        return num.toString().replace(/\B(?=(?:\d{3})+(?!\d))/g, &#039;,&#039;);
     }
 
     function x100(val) {

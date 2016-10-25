@@ -177,7 +177,7 @@ var gridData2 = {
         {
             field: 'Cost',
             type: "number",
-            format: '0C2',
+            format: 'C2',
             //symbol: "$",
             //template: "${{data}}",
             filterable: true,
@@ -206,7 +206,7 @@ var gridData2 = {
         {
             field: 'Billed',
             type: "number",
-            format: '0C2',
+            format: 'C2',
             editable: true,
             //symbol: "$",
             //template: "${{data}}",
