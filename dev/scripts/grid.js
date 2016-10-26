@@ -4520,28 +4520,55 @@ var grid = (function _grid($) {
         format = format.replace(/[^0#,.]/g , '');
         var formatDecimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length,
             formatWholeNums = format.substring(0, formatDecimalIndex).replace(',', ''),
-            formatDecimals = formatDecimalIndex < format.length ?  format.substring(formatDecimalIndex + 1, format.length) : '';
+            formatDecimals = format.substring(formatDecimalIndex + 1, format.length);
         num = (roundNumber(+num, formatDecimals.length)).toString();
         var dataDecimalIndex = ~num.indexOf('.') ? num.indexOf('.') : num.length,
             dataWholeNums = num.substring(0, dataDecimalIndex).split('').reverse(),
             dataDecimalNums = num.substring(dataDecimalIndex + 1, num.length).split('').reverse();
 
-        var wholeNums = formatWholeNums.split('').reverse().map(function _createWholeNumbersString(char, idx) {
-            if (char === '0') return dataWholeNums[idx] || char;
-            return dataWholeNums[idx] || '';
-        }).reverse().join('');
-
+        var wholeNums = createFormattedNumber(formatWholeNums, dataWholeNums);
         if (~format.indexOf(',')) wholeNums = numberWithCommas(wholeNums);
-
-        if (formatDecimalIndex < format.length) {
-            var decimalNums = formatDecimals.split('').reverse().map(function _createDecimalNumbersString(char, idx) {
-                if (char === '0') return dataDecimalNums[idx] || '0';
-                return dataDecimalNums[idx] || '';
-            });
-            wholeNums = wholeNums + decimalNums;
-        }
+        if (formatDecimalIndex < format.length) return wholeNums + '.' + createFormattedNumber(formatDecimals, dataDecimalNums);
         return wholeNums;
     }
+
+    function createFormattedNumber(format, num) {
+        return format.split('').reverse().map(function _createFormattedNumber(char, idx) {
+            if (char === '0') return num[idx] || char;
+            return num[idx] || '';
+        }).reverse().join('');
+    }
+
+    /*function numberFormatter2(num, format) {
+        if (!format) return num;
+        if (/[CPN]/.test(format.toUpperCase())) return createStandardNumberFormat(num, format);
+        format = format.replace(/[^0#,.]/g , '');
+        var formatDecimalIndex = decimalIdx(format),
+            formatNums = wholeAndFractionalNumbers(format, formatDecimalIndex);
+        num = (roundNumber(+num, formatNums[1].length)).toString();
+        var dataDecimalIndex = decimalIdx(num),
+            dataNums = wholeAndFractionalNumbers(num, dataDecimalIndex);
+
+        return addDecimalsIfNeeded(addCommasIfNeeded(createFormattedNumber(formatNums[0], dataNums[0]), dataNums[0]), formatNums[1], dataNums[1]);
+    }
+
+    function addDecimalsIfNeeded(wholeNumber, format, data) {
+        if (format.length) return wholeNumber + '.' + createFormattedNumber(format, data);
+        return wholeNumber;
+    }
+
+    function decimalIdx(number) {
+        return ~number.indexOf('.') ? number.indexOf('.') : number.length;
+    }
+
+    function wholeAndFractionalNumbers(number, decimalIdx) {
+        return [ number.substring(0, decimalIdx).replace(',', ''), number.substring(decimalIdx + 1, number.length) ];
+    }
+
+    function addCommasIfNeeded(format, number) {
+        if (~format.indexOf(',')) return numberWithCommas(number);
+        return number;
+    }*/
 
     function createStandardNumberFormat(num, format) {
         var numDecimals = format.length > 1 ? format.toUpperCase().replace(/[CPN]/, '') : 0;
@@ -4554,13 +4581,8 @@ var grid = (function _grid($) {
 
         if (numDecimals) {
             var decimals = num.substring(dataDecimalIndex + 1, num.length);
-            decimals = isInteger(+decimals) ? +decimals : 0;
-            if (numDecimals > decimals) {
-                return numberWithCommas(wholeNums) + '.' + decimals.toString().concat('0'.repeat(numDecimals - decimals));
-            }
-            else {
-                return numberWithCommas(wholeNums) + '.' + decimals.toString().substring(0, numDecimals);
-            }
+            decimals = isInteger(+decimals) ? decimals : '0';
+            return numberWithCommas(wholeNums) + '.' + decimals.toString().substring(0, numDecimals).concat('0'.repeat((numDecimals - decimals.length) > 0 ? numDecimals - decimals.length : 0));
         }
         else return numberWithCommas(wholeNums);
     }
@@ -4902,7 +4924,7 @@ var grid = (function _grid($) {
         };
     })();
 
-    generateId = (function guid(seed) {
+    generateId = (function uid(seed) {
         return function _generateId() {
             seed++;
             return seed.toString();

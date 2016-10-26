@@ -231,7 +231,7 @@ var gridData2 = {
             editable: true,
             title: "Parts Markup",
             //template: "{{data}}%",
-            format: '0P2',
+            format: 'P2',
             decimals: 0
         },
         {
