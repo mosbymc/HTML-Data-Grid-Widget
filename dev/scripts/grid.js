@@ -4166,12 +4166,10 @@ var grid = (function _grid($) {
     }
 
     function merge(left, right, sortObj, type) {
-        var result = [], leftVal, rightVal;
+        var result = [];
         while (left.length && right.length) {
-            leftVal = normalizeValues(type, left[0][sortObj.field]);
-            rightVal = normalizeValues(type, right[0][sortObj.field]);
             var operator = sortObj.sortDirection === 'asc' ? booleanOps.lessThanOrEqual : booleanOps.greaterThanOrEqual;
-            comparator(leftVal, rightVal, operator) ? result.push(left.shift()) : result.push(right.shift());
+            comparator(normalizeValues(type, left[0][sortObj.field]), normalizeValues(type, right[0][sortObj.field]), operator) ? result.push(left.shift()) : result.push(right.shift());
         }
 
         while (left.length)
@@ -4534,8 +4532,8 @@ var grid = (function _grid($) {
 
     function createFormattedNumber(format, num) {
         return format.split('').reverse().map(function _createFormattedNumber(char, idx) {
-            if (char === '0') return num[idx] || char;
-            return num[idx] || '';
+            if (char === '0') return num[format.length - idx] || char;
+            return num[format.length - idx] || '';
         }).reverse().join('');
     }
 

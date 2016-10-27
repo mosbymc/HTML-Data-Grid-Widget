@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">58.84</p>
+      <p class="stat">58.85</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4176</p>
+      <p class="stat">4174</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">217.45</p>
+      <p class="stat">217.69</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">93.50</p>
+      <p class="stat">93.48</p>
     </div>
   </div>
 </div>
@@ -3596,12 +3596,10 @@
     }
 
     function merge(left, right, sortObj, type) {
-        var result = [], leftVal, rightVal;
+        var result = [];
         while (left.length &amp;&amp; right.length) {
-            leftVal = normalizeValues(type, left[0][sortObj.field]);
-            rightVal = normalizeValues(type, right[0][sortObj.field]);
             var operator = sortObj.sortDirection === &#039;asc&#039; ? booleanOps.lessThanOrEqual : booleanOps.greaterThanOrEqual;
-            comparator(leftVal, rightVal, operator) ? result.push(left.shift()) : result.push(right.shift());
+            comparator(normalizeValues(type, left[0][sortObj.field]), normalizeValues(type, right[0][sortObj.field]), operator) ? result.push(left.shift()) : result.push(right.shift());
         }
 
         while (left.length)
@@ -3907,8 +3905,8 @@
 
     function createFormattedNumber(format, num) {
         return format.split(&#039;&#039;).reverse().map(function _createFormattedNumber(char, idx) {
-            if (char === &#039;0&#039;) return num[idx] || char;
-            return num[idx] || &#039;&#039;;
+            if (char === &#039;0&#039;) return num[format.length - idx] || char;
+            return num[format.length - idx] || &#039;&#039;;
         }).reverse().join(&#039;&#039;);
     }
 
