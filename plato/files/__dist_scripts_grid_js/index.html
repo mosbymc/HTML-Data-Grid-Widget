@@ -44,7 +44,7 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">58.85</p>
+      <p class="stat">58.93</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">217.69</p>
+      <p class="stat">217.35</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">93.48</p>
+      <p class="stat">93.45</p>
     </div>
   </div>
 </div>
@@ -195,9 +195,9 @@
                 },
                 &#039;removeAllEventHandlers&#039;: {
                     value: function _removeAllEventHandlers() {
-                        for (var i = 0; i &lt; events.length; i++) {
-                            gridState[gridId].events[events[i]] = [];
-                        }
+                        events.forEach(function _removeEventHandlers(evt) {
+                            gridState[gridId].events[evt] = [];
+                        });
                     },
                     writable: false,
                     configurable: false
@@ -205,10 +205,10 @@
                 &#039;getHandledEvents&#039;: {
                     value: function _getHandledEvents() {
                         var evts = [];
-                        for (var i = 0; i &lt; events.length; i++) {
-                            if (gridState[gridId].events[events[i]].length)
-                                evts.push(events[i]);
-                        }
+                        events.forEach(function _returnHandledEvents(evt, idx) {
+                            if (gridState[gridId].events[evt].length)
+                                evts.push(events[idx]);
+                        });
                         return evts;
                     },
                     writable: false,
@@ -1537,9 +1537,9 @@
                 options = column.options.map(function _copyColumnOptions(val) { return val; });
                 value = column.nullable || value != null ? value : &#039;&#039;;
                 var dataType = column.type || &#039;string&#039;,
-                normalizedValue = normalizeValues(dataType, value);
+                normalizedValue = dataTypeValueNormalizer(dataType, value);
             if (!options.some(function _compareCellValueForUniqueness(opt) {
-                if (comparator(normalizedValue, normalizeValues(dataType, opt), booleanOps.strictEqual))
+                if (comparator(normalizedValue, dataTypeValueNormalizer(dataType, opt), booleanOps.strictEqual))
                     return true;
             })) {
                 options.reverse().push(value).reverse();
@@ -3570,7 +3570,7 @@
                         prevVal = itemsToSort.length ? itemsToSort[0][prevField] : null,
                         prevColIdx = itemsToSort.length ? gridState[gridId].columnIndices[prevField] : null,
                         dataType = itemsToSort.length ? gridState[gridId].columns[prevColIdx].type : null;
-                    if (!itemsToSort.length || comparator(normalizeValues(dataType, prevVal), normalizeValues(dataType, gridData[i][prevField]), booleanOps.strictEqual))
+                    if (!itemsToSort.length || comparator(dataTypeValueNormalizer(dataType, prevVal), dataTypeValueNormalizer(dataType, gridData[i][prevField]), booleanOps.strictEqual))
                         itemsToSort.push(gridData[i]);
                     else {
                         if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
@@ -3599,7 +3599,7 @@
         var result = [];
         while (left.length &amp;&amp; right.length) {
             var operator = sortObj.sortDirection === &#039;asc&#039; ? booleanOps.lessThanOrEqual : booleanOps.greaterThanOrEqual;
-            comparator(normalizeValues(type, left[0][sortObj.field]), normalizeValues(type, right[0][sortObj.field]), operator) ? result.push(left.shift()) : result.push(right.shift());
+            comparator(dataTypeValueNormalizer(type, left[0][sortObj.field]), dataTypeValueNormalizer(type, right[0][sortObj.field]), operator) ? result.push(left.shift()) : result.push(right.shift());
         }
 
         while (left.length)
@@ -3611,7 +3611,7 @@
         return result;
     }
 
-    function normalizeValues(dataType, val) {
+    function dataTypeValueNormalizer(dataType, val) {
         if (val == null) return null;
         var value;
         switch(dataType) {
@@ -4108,8 +4108,8 @@
             }
             else {
                 var initialVal = this.getContext()[this.field],
-                    normalizedBase = this.standard != null ? normalizeValues(this.dataType, this.standard) : null;
-                this._value = comparator(normalizeValues(this.dataType, initialVal), normalizedBase, this.operation);
+                    normalizedBase = this.standard != null ? dataTypeValueNormalizer(this.dataType, this.standard) : null;
+                this._value = comparator(dataTypeValueNormalizer(this.dataType, initialVal), normalizedBase, this.operation);
                 return this._value;
             }
         };

@@ -300,9 +300,9 @@ var grid = (function _grid($) {
                      * @protected
                      */
                     value: function _removeAllEventHandlers() {
-                        for (var i = 0; i < events.length; i++) {
-                            gridState[gridId].events[events[i]] = [];
-                        }
+                        events.forEach(function _removeEventHandlers(evt) {
+                            gridState[gridId].events[evt] = [];
+                        });
                     },
                     writable: false,
                     configurable: false
@@ -320,10 +320,10 @@ var grid = (function _grid($) {
                      */
                     value: function _getHandledEvents() {
                         var evts = [];
-                        for (var i = 0; i < events.length; i++) {
-                            if (gridState[gridId].events[events[i]].length)
-                                evts.push(events[i]);
-                        }
+                        events.forEach(function _returnHandledEvents(evt, idx) {
+                            if (gridState[gridId].events[evt].length)
+                                evts.push(events[idx]);
+                        });
                         return evts;
                     },
                     writable: false,
@@ -1908,9 +1908,9 @@ var grid = (function _grid($) {
                 options = column.options.map(function _copyColumnOptions(val) { return val; });
                 value = column.nullable || value != null ? value : '';
                 var dataType = column.type || 'string',
-                normalizedValue = normalizeValues(dataType, value);
+                normalizedValue = dataTypeValueNormalizer(dataType, value);
             if (!options.some(function _compareCellValueForUniqueness(opt) {
-                if (comparator(normalizedValue, normalizeValues(dataType, opt), booleanOps.strictEqual))
+                if (comparator(normalizedValue, dataTypeValueNormalizer(dataType, opt), booleanOps.strictEqual))
                     return true;
             })) {
                 options.reverse().push(value).reverse();
@@ -4133,7 +4133,7 @@ var grid = (function _grid($) {
                         prevVal = itemsToSort.length ? itemsToSort[0][prevField] : null,
                         prevColIdx = itemsToSort.length ? gridState[gridId].columnIndices[prevField] : null,
                         dataType = itemsToSort.length ? gridState[gridId].columns[prevColIdx].type : null;
-                    if (!itemsToSort.length || comparator(normalizeValues(dataType, prevVal), normalizeValues(dataType, gridData[i][prevField]), booleanOps.strictEqual))
+                    if (!itemsToSort.length || comparator(dataTypeValueNormalizer(dataType, prevVal), dataTypeValueNormalizer(dataType, gridData[i][prevField]), booleanOps.strictEqual))
                         itemsToSort.push(gridData[i]);
                     else {
                         if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
@@ -4169,7 +4169,7 @@ var grid = (function _grid($) {
         var result = [];
         while (left.length && right.length) {
             var operator = sortObj.sortDirection === 'asc' ? booleanOps.lessThanOrEqual : booleanOps.greaterThanOrEqual;
-            comparator(normalizeValues(type, left[0][sortObj.field]), normalizeValues(type, right[0][sortObj.field]), operator) ? result.push(left.shift()) : result.push(right.shift());
+            comparator(dataTypeValueNormalizer(type, left[0][sortObj.field]), dataTypeValueNormalizer(type, right[0][sortObj.field]), operator) ? result.push(left.shift()) : result.push(right.shift());
         }
 
         while (left.length)
@@ -4181,7 +4181,7 @@ var grid = (function _grid($) {
         return result;
     }
 
-    function normalizeValues(dataType, val) {
+    function dataTypeValueNormalizer(dataType, val) {
         if (val == null) return null;
         var value;
         switch(dataType) {
@@ -4259,7 +4259,6 @@ var grid = (function _grid($) {
         if (value == null || ('' === value && column.nullable)) return column.nullable ? null : ' ';
         switch(type) {
             case 'number':
-                //text = formatNumber(value, column.format);
                 text = numberFormatter(value.toString(), column.format);
                 break;
             case 'date':
@@ -4797,8 +4796,8 @@ var grid = (function _grid($) {
             }
             else {
                 var initialVal = this.getContext()[this.field],
-                    normalizedBase = this.standard != null ? normalizeValues(this.dataType, this.standard) : null;
-                this._value = comparator(normalizeValues(this.dataType, initialVal), normalizedBase, this.operation);
+                    normalizedBase = this.standard != null ? dataTypeValueNormalizer(this.dataType, this.standard) : null;
+                this._value = comparator(dataTypeValueNormalizer(this.dataType, initialVal), normalizedBase, this.operation);
                 return this._value;
             }
         };
