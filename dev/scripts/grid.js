@@ -703,7 +703,9 @@ var grid = (function _grid($) {
                      */
                     value: function _destroy() {
                         findChildren(gridState[gridId].grid.children());
+                        var gridElem = gridState[gridId].grid;
                         delete gridState[gridId];
+                        return gridElem;
 
                         function findChildren(nodes) {
                             for (var i = 0; i < nodes.length; i++) {
