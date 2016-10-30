@@ -495,10 +495,9 @@ var grid = (function _grid($) {
                 }
             });
 
-        var keys = Object.getOwnPropertyNames(gridElem[0].grid);
-        for (var i = 0; i < keys.length; i++) {
-            Object.preventExtensions(gridElem[0].grid[keys[i]]);
-        }
+        Object.getOwnPropertyNames(gridElem[0].grid).forEach(function _preventExensionsToInstanceMethods(method) {
+            Object.preventExtensions(gridElem[0].grid[method]);
+        });
     }
 
     function getInitialGridData(dataSource, pageSize, callback) {
