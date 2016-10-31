@@ -195,11 +195,11 @@ var grid = (function _grid($) {
                 if (!err) {
                     gridData.dataSource.data = res.data;
                     gridData.dataSource.rowCount = isInteger(res.rowCount) ? res.rowCount : res.data.length;
-                    if (res.aggregations) {
-                        for (var col in gridData.aggregates) {
+                    if (res.aggregations && gridData.aggregates) {
+                        Object.keys(gridData.aggregates).forEach(function _setAggregations(col) {
                             if (res.aggregations[col])
                                 gridData.aggregates[col].value = res.aggregations[col];
-                        }
+                        });
                     }
                 }
                 else {
@@ -1194,9 +1194,8 @@ var grid = (function _grid($) {
          It helps keep the header columns aligned with the content columns, and makes
          the scroll handler for the content grid work correctly.
          */
-        var headerId = 'grid-header-' + gridContent.data('grid_content_id');
-        var headDiv = $('#' + headerId);
-        var sizeDiff = headDiv[0].clientWidth - gridContent[0].clientWidth;
+        var headDiv = $('#' + 'grid-header-' + gridContent.data('grid_content_id')),
+            sizeDiff = headDiv[0].clientWidth - gridContent[0].clientWidth;
         headDiv.css('paddingRight', sizeDiff);
 
         //Once the column widths have been set (i.e. the first time creating the grid), they shouldn't change size again....
@@ -4536,37 +4535,6 @@ var grid = (function _grid($) {
             return num[format.length - idx] || '';
         }).reverse().join('');
     }
-
-    /*function numberFormatter2(num, format) {
-        if (!format) return num;
-        if (/[CPN]/.test(format.toUpperCase())) return createStandardNumberFormat(num, format);
-        format = format.replace(/[^0#,.]/g , '');
-        var formatDecimalIndex = decimalIdx(format),
-            formatNums = wholeAndFractionalNumbers(format, formatDecimalIndex);
-        num = (roundNumber(+num, formatNums[1].length)).toString();
-        var dataDecimalIndex = decimalIdx(num),
-            dataNums = wholeAndFractionalNumbers(num, dataDecimalIndex);
-
-        return addDecimalsIfNeeded(addCommasIfNeeded(createFormattedNumber(formatNums[0], dataNums[0]), dataNums[0]), formatNums[1], dataNums[1]);
-    }
-
-    function addDecimalsIfNeeded(wholeNumber, format, data) {
-        if (format.length) return wholeNumber + '.' + createFormattedNumber(format, data);
-        return wholeNumber;
-    }
-
-    function decimalIdx(number) {
-        return ~number.indexOf('.') ? number.indexOf('.') : number.length;
-    }
-
-    function wholeAndFractionalNumbers(number, decimalIdx) {
-        return [ number.substring(0, decimalIdx).replace(',', ''), number.substring(decimalIdx + 1, number.length) ];
-    }
-
-    function addCommasIfNeeded(format, number) {
-        if (~format.indexOf(',')) return numberWithCommas(number);
-        return number;
-    }*/
 
     function createStandardNumberFormat(num, format) {
         var numDecimals = format.length > 1 ? format.toUpperCase().replace(/[CPN]/, '') : 0;

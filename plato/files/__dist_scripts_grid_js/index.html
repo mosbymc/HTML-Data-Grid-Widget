@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">58.97</p>
+      <p class="stat">59.02</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4175</p>
+      <p class="stat">4173</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">217.08</p>
+      <p class="stat">217.14</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">93.46</p>
+      <p class="stat">93.48</p>
     </div>
   </div>
 </div>
@@ -135,11 +135,11 @@
                 if (!err) {
                     gridData.dataSource.data = res.data;
                     gridData.dataSource.rowCount = isInteger(res.rowCount) ? res.rowCount : res.data.length;
-                    if (res.aggregations) {
-                        for (var col in gridData.aggregates) {
+                    if (res.aggregations &amp;&amp; gridData.aggregates) {
+                        Object.keys(gridData.aggregates).forEach(function _setAggregations(col) {
                             if (res.aggregations[col])
                                 gridData.aggregates[col].value = res.aggregations[col];
-                        }
+                        });
                     }
                 }
                 else {
@@ -900,9 +900,8 @@
             headWrap.scrollLeft(gridContent.scrollLeft());
         });
 
-        var headerId = &#039;grid-header-&#039; + gridContent.data(&#039;grid_content_id&#039;);
-        var headDiv = $(&#039;#&#039; + headerId);
-        var sizeDiff = headDiv[0].clientWidth - gridContent[0].clientWidth;
+        var headDiv = $(&#039;#&#039; + &#039;grid-header-&#039; + gridContent.data(&#039;grid_content_id&#039;)),
+            sizeDiff = headDiv[0].clientWidth - gridContent[0].clientWidth;
         headDiv.css(&#039;paddingRight&#039;, sizeDiff);
 
         copyGridWidth(gridElem);
@@ -3910,7 +3909,6 @@
             return num[format.length - idx] || &#039;&#039;;
         }).reverse().join(&#039;&#039;);
     }
-
 
     function createStandardNumberFormat(num, format) {
         var numDecimals = format.length &gt; 1 ? format.toUpperCase().replace(/[CPN]/, &#039;&#039;) : 0;

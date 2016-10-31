@@ -44,11 +44,11 @@ var grid = (function _grid($) {
                 if (!err) {
                     gridData.dataSource.data = res.data;
                     gridData.dataSource.rowCount = isInteger(res.rowCount) ? res.rowCount : res.data.length;
-                    if (res.aggregations) {
-                        for (var col in gridData.aggregates) {
+                    if (res.aggregations && gridData.aggregates) {
+                        Object.keys(gridData.aggregates).forEach(function _setAggregations(col) {
                             if (res.aggregations[col])
                                 gridData.aggregates[col].value = res.aggregations[col];
-                        }
+                        });
                     }
                 }
                 else {
@@ -809,9 +809,8 @@ var grid = (function _grid($) {
             headWrap.scrollLeft(gridContent.scrollLeft());
         });
 
-        var headerId = 'grid-header-' + gridContent.data('grid_content_id');
-        var headDiv = $('#' + headerId);
-        var sizeDiff = headDiv[0].clientWidth - gridContent[0].clientWidth;
+        var headDiv = $('#' + 'grid-header-' + gridContent.data('grid_content_id')),
+            sizeDiff = headDiv[0].clientWidth - gridContent[0].clientWidth;
         headDiv.css('paddingRight', sizeDiff);
 
         copyGridWidth(gridElem);
@@ -3819,7 +3818,6 @@ var grid = (function _grid($) {
             return num[format.length - idx] || '';
         }).reverse().join('');
     }
-
 
     function createStandardNumberFormat(num, format) {
         var numDecimals = format.length > 1 ? format.toUpperCase().replace(/[CPN]/, '') : 0;
