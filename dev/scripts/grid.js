@@ -4182,14 +4182,12 @@ var grid = (function _grid($) {
     }
 
     function dataTypeValueNormalizer(dataType, val) {
-        if (val == null) return null;
-        var value;
+        if (val == null) return val;
         switch(dataType) {
             case 'time':
-                value = getNumbersFromTime(val);
+                var value = getNumbersFromTime(val);
                 if (val.indexOf('PM') > -1) value[0] += 12;
-                value = convertTimeArrayToSeconds(value);
-                break;
+                return convertTimeArrayToSeconds(value);
             case 'datetime':
                 var re = new RegExp(dataTypes['datetime']),
                     execVal1;
@@ -4202,26 +4200,17 @@ var grid = (function _grid($) {
                     if (timeComp1[3] && timeComp1[3] === 'PM')
                         timeComp1[0] += 12;
                     dateComp1 = new Date(dateComp1);
-                    value = dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
+                    return dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
                 }
-                else {
-                    value = 0;
-                }
-                break;
+                else return 0;
             case 'number':
-                value = parseFloat(val);
-                break;
+                return parseFloat(val);
             case 'date':
-                value = new Date(val);
-                break;
+                return new Date(val);
             case 'boolean':
-                value = val.toString();
-                break;
             default:
-                value = val.toString();
-                break;
+                return val.toString();
         }
-        return value;
     }
 
     /**
@@ -4239,11 +4228,12 @@ var grid = (function _grid($) {
     }
 
     function existsInPutRequest(putRequest, model) {
+        var exists = -1;
         putRequest.forEach(function _findModelIdx(cur, idx) {
             if (model._initialRowIndex == putRequest[idx].dirtyData._initialRowIndex)
-                return idx;
+                exists = idx;
         });
-        return -1;
+        return exists;
     }
 
     /**

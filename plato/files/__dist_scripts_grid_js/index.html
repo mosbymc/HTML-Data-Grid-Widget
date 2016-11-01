@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">59.02</p>
+      <p class="stat">59.04</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4173</p>
+      <p class="stat">4163</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">217.14</p>
+      <p class="stat">216.88</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">93.48</p>
+      <p class="stat">93.43</p>
     </div>
   </div>
 </div>
@@ -3612,14 +3612,12 @@
     }
 
     function dataTypeValueNormalizer(dataType, val) {
-        if (val == null) return null;
-        var value;
+        if (val == null) return val;
         switch(dataType) {
             case &#039;time&#039;:
-                value = getNumbersFromTime(val);
+                var value = getNumbersFromTime(val);
                 if (val.indexOf(&#039;PM&#039;) &gt; -1) value[0] += 12;
-                value = convertTimeArrayToSeconds(value);
-                break;
+                return convertTimeArrayToSeconds(value);
             case &#039;datetime&#039;:
                 var re = new RegExp(dataTypes[&#039;datetime&#039;]),
                     execVal1;
@@ -3632,26 +3630,17 @@
                     if (timeComp1[3] &amp;&amp; timeComp1[3] === &#039;PM&#039;)
                         timeComp1[0] += 12;
                     dateComp1 = new Date(dateComp1);
-                    value = dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
+                    return dateComp1.getTime() + convertTimeArrayToSeconds(timeComp1);
                 }
-                else {
-                    value = 0;
-                }
-                break;
+                else return 0;
             case &#039;number&#039;:
-                value = parseFloat(val);
-                break;
+                return parseFloat(val);
             case &#039;date&#039;:
-                value = new Date(val);
-                break;
+                return new Date(val);
             case &#039;boolean&#039;:
-                value = val.toString();
-                break;
             default:
-                value = val.toString();
-                break;
+                return val.toString();
         }
-        return value;
     }
 
     function callGridEventHandlers(events, context, param) {
@@ -3663,11 +3652,12 @@
     }
 
     function existsInPutRequest(putRequest, model) {
+        var exists = -1;
         putRequest.forEach(function _findModelIdx(cur, idx) {
             if (model._initialRowIndex == putRequest[idx].dirtyData._initialRowIndex)
-                return idx;
+                exists = idx;
         });
-        return -1;
+        return exists;
     }
 
     function getFormattedCellText(column, value) {
