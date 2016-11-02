@@ -158,6 +158,15 @@ var grid = (function _grid($) {
             not: '!',
             contains: 'ct',
             notContains: 'nct'
+        },
+        jsTypes = {
+            'function': 'function',
+            'object': 'object',
+            'boolean': 'boolean',
+            'number': 'number',
+            'symbol': 'symbol',
+            'string': 'string',
+            'undefined': 'undefined'
         };
 
     /**
@@ -183,8 +192,8 @@ var grid = (function _grid($) {
 
             createGridInstanceMethods(gridElem, id);
 
-            (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
-            gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function';
+            (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === jsTypes.function) ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
+            gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === jsTypes.function;
 
             gridData.columnIndices = {};
             gridData.columns.forEach(function _createColumnIndices(col, idx) {
