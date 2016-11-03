@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">216.77</p>
+      <p class="stat">216.95</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">93.56</p>
+      <p class="stat">93.78</p>
     </div>
   </div>
 </div>
@@ -715,7 +715,7 @@
             }
 
             if (col.type !== &#039;custom&#039;) {
-                if (gridData.sortable === true &amp;&amp; (typeof col.sortable === &#039;undefined&#039; || col.sortable === true)) {
+                if (gridData.sortable === true &amp;&amp; (typeof col.sortable === jsTypes.undefined || col.sortable === true)) {
                     setSortableClickListener(th);
                     gridData.sortable = true;
                 }
@@ -737,7 +737,7 @@
             if (gridData.resizable) {
                 th.on(&#039;mouseleave&#039;, mouseLeaveHandlerCallback);
             }
-            if (gridData.reorderable === true &amp;&amp; (typeof col.reorderable === &#039;undefined&#039; || col.reorderable === true)) {
+            if (gridData.reorderable === true &amp;&amp; (typeof col.reorderable === jsTypes.undefined || col.reorderable === true)) {
                 th.prop(&#039;draggable&#039;, true);
                 setDragAndDropListeners(th);
             }
@@ -754,7 +754,7 @@
 
     function buildHeaderAggregations(gridId) {
         var gridData = gridState[gridId];
-        if (typeof gridState[gridId].dataSource.get !== &#039;function&#039;) {
+        if (typeof gridState[gridId].dataSource.get !== jsTypes.function) {
             var dataToFilter = gridData.alteredData &amp;&amp; gridData.alteredData.length ? gridData.alteredData : gridData.originalData;
                 dataToFilter.filter(function getRemainingRows(val, idx) {
                     return idx &gt; gridData.pageNum * gridData.pageSize - 1 || idx &lt; gridData.pageNum * gridData.pageSize - gridData.pageSize;
@@ -794,7 +794,7 @@
             contentTBody = $(&#039;&lt;tbody&gt;&lt;/tbody&gt;&#039;).appendTo(contentTable),
             text, item;
         contentTBody.css(&#039;width&#039;, &#039;auto&#039;);
-        if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; gridData.selectable) attachTableSelectHandler(contentTBody);
+        if (typeof gridData.parentGridId !== jsTypes.number &amp;&amp; gridData.selectable) attachTableSelectHandler(contentTBody);
 
         var rows = gridData.rows,
             currentGroupingValues = {};
@@ -807,7 +807,7 @@
                 if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) createGroupedRows(id, idx, currentGroupingValues, contentTBody);
 
                 var tr = $(&#039;&lt;tr class=&quot;data-row&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
-                if (typeof gridData.parentGridId === &#039;number&#039;) tr.addClass(&#039;drill-down-row&#039;);
+                if (typeof gridData.parentGridId === jsTypes.number) tr.addClass(&#039;drill-down-row&#039;);
                 if (idx % 2) {
                     tr.addClass(&#039;alt-row&#039;);
                     if (rows &amp;&amp; rows.alternateRows &amp;&amp; rows.alternateRows.constructor === Array)
@@ -849,7 +849,7 @@
                             td.addClass(col.class);
                         if (col.text) {
                             var customText;
-                            if (typeof col.text === &#039;function&#039;) {
+                            if (typeof col.text === jsTypes.function) {
                                 col.text(gridData.originalData[item._initialRowIndex]);
                             }
                             else customText = col.text;
@@ -857,18 +857,18 @@
                         }
                     }
 
-                    if (typeof col.events === &#039;object&#039;) {
+                    if (typeof col.events === jsTypes.object) {
                         attachCustomCellHandler(col, td, id);
                     }
-                    if (gridData.aggregates &amp;&amp; gridData.aggregates[col.field] &amp;&amp; typeof gridData.dataSource.get !== &#039;function&#039;) {
+                    if (gridData.aggregates &amp;&amp; gridData.aggregates[col.field] &amp;&amp; typeof gridData.dataSource.get !== jsTypes.function) {
                         if (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === undefined)
                             addValueToAggregations(id, col.field, item[col.field], gridData.gridAggregations);
                     }
-                    if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (col.editable &amp;&amp; col.editable !== &#039;drop-down&#039;)) {
+                    if (typeof gridData.parentGridId !== jsTypes.number &amp;&amp; (col.editable &amp;&amp; col.editable !== &#039;drop-down&#039;)) {
                         makeCellEditable(id, td);
                         gridState[id].editable = true;
                     }
-                    else if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; (col.editable === &#039;drop-down&#039;)) {
+                    else if (typeof gridData.parentGridId !== jsTypes.number &amp;&amp; (col.editable === &#039;drop-down&#039;)) {
                         makeCellSelectable(id, td);
                         gridState[id].editable = true;
                     }
@@ -879,7 +879,7 @@
             gridData.groupedBy.forEach(function _prependCols() { colGroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;); });
             if (gridData.drillDown) colGroup.prepend(&#039;&lt;col class=&quot;groupCol&quot;/&gt;&#039;);
 
-            if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039; &amp;&amp; typeof gridData.dataSource.get !== &#039;function&#039; &amp;&amp;
+            if (gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039; &amp;&amp; typeof gridData.dataSource.get !== jsTypes.function &amp;&amp;
                 (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === undefined))
                 buildHeaderAggregations(id);
 
@@ -922,7 +922,7 @@
 
     function attachCustomCellHandler(column, cellItem, gridId) {
         Object.keys(column.events).forEach(function _attachColumnEventHandlers(evt) {
-            if (typeof column.events[evt] === &#039;function&#039;) createEventHandler(cellItem, evt, column.events[evt]);
+            if (typeof column.events[evt] === jsTypes.function) createEventHandler(cellItem, evt, column.events[evt]);
         });
 
         function createEventHandler(cellItem, eventName, eventHandler) {
@@ -1044,10 +1044,10 @@
                     accRow.find(&#039;.drillDown_span&#039;).data(&#039;state&#039;, &#039;open&#039;);
                     var parentRowData = gridData.grid[0].grid.getCurrentDataSourceData(accRowIdx);
 
-                    if (typeof gridData.drillDown === &#039;function&#039;) {
+                    if (typeof gridData.drillDown === jsTypes.function) {
                         drillDownCreate(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
                     }
-                    else if (typeof gridData.drillDown === &#039;object&#039;) {
+                    else if (typeof gridData.drillDown === jsTypes.object) {
                         if (!gridData.drillDown.dataSource) gridData.drillDown.dataSource = {};
                         gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
                         gridData.drillDown.dataSource.rowCount = parentRowData[0].drillDownData ? parentRowData[0].drillDownData.length : 0;
@@ -1065,7 +1065,7 @@
                 aggregationObj[col.field] = &#039;&#039;;
                 return;
             }
-            if (typeof gridState[gridId].dataSource.get === &#039;function&#039;) {
+            if (typeof gridState[gridId].dataSource.get === jsTypes.function) {
                 if (gridState[gridId].aggregates[col.field].type &amp;&amp; gridState[gridId].aggregates[col.field].value) {
                     var text = getFormattedCellText(col, gridState[gridId].aggregates[col.field].value) || gridState[gridId].aggregates[col.field].value;
                     aggregationObj[col.field].text = aggregates[gridState[gridId].aggregates[col.field].type] + text;
@@ -1458,12 +1458,12 @@
             switch (type) {
                 case &#039;boolean&#039;:
                     input = $(&#039;&lt;input type=&quot;checkbox&quot; class=&quot;input checkbox active-cell&quot;&#039; + dataAttributes + &#039;/&gt;&#039;).appendTo(cell);
-                    val = typeof gridState[id].dataSource.data[index][field] === &#039;string&#039; ? gridState[id].dataSource.data[index][field] === &#039;true&#039; : !!val;
+                    val = typeof gridState[id].dataSource.data[index][field] === jsTypes.string ? gridState[id].dataSource.data[index][field] === &#039;true&#039; : !!val;
                     input[0].checked = val;
                     dataType = &#039;boolean&#039;;
                     break;
                 case &#039;number&#039;:
-                    if (typeof gridState[id].dataSource.data[index][field] === &#039;string&#039;)
+                    if (typeof gridState[id].dataSource.data[index][field] === jsTypes.string)
                         val = isNumber(parseFloat(gridState[id].dataSource.data[index][field])) ? parseFloat(gridState[id].dataSource.data[index][field]) : 0;
                     else
                         val = isNumber(gridState[id].dataSource.data[index][field]) ? gridState[id].dataSource.data[index][field] : 0;
@@ -1683,7 +1683,7 @@
                 case &#039;number&#039;:
                     re = new RegExp(dataTypes.number);
                     if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                    if (typeof gridState[id].dataSource.data[index][field] === &#039;string&#039;) saveVal = val;
+                    if (typeof gridState[id].dataSource.data[index][field] === jsTypes.string) saveVal = val;
                     else {
                         var tmpVal = parseFloat(val.replace(&#039;,&#039;, &#039;&#039;));
                         tmpVal === tmpVal ? saveVal = tmpVal : saveVal = 0;
@@ -1749,7 +1749,7 @@
                 case &#039;number&#039;:
                     re = new RegExp(dataTypes.number);
                     if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                    saveVal = typeof gridState[id].dataSource.data[index][field] === &#039;string&#039; ? val : parseFloat(val.replace(&#039;,&#039;, &#039;&#039;));
+                    saveVal = typeof gridState[id].dataSource.data[index][field] === jsTypes.string ? val : parseFloat(val.replace(&#039;,&#039;, &#039;&#039;));
                     break;
                 case &#039;date&#039;:
                 case &#039;time&#039;:
@@ -1791,7 +1791,7 @@
         var id = gridElem.find(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;);
         if ($(&#039;#grid_&#039; + id + &#039;_toolbar&#039;).length) return;   
 
-        if (typeof gridData.parentGridId !== &#039;number&#039; &amp;&amp; gridData.groupable) {
+        if (typeof gridData.parentGridId !== jsTypes.number &amp;&amp; gridData.groupable) {
             var groupMenuBar = $(&#039;&lt;div id=&quot;grid_&#039; + id + &#039;_group_div&quot; class=&quot;group_div clearfix&quot; data-grid_id=&quot;&#039; + id + &#039;&quot;&gt;&#039; + groupMenuText + &#039;&lt;/div&gt;&#039;).prependTo(gridElem);
             groupMenuBar.on(&#039;drop&#039;, function handleDropCallback(e) {
                 var droppedCol = $(&#039;#&#039; + e.originalEvent.dataTransfer.getData(&#039;text&#039;));
@@ -1990,7 +1990,7 @@
             });
 
             if (dirtyCells.length) {
-                if (typeof gridState[id].dataSource.put !== &#039;function&#039;) {
+                if (typeof gridState[id].dataSource.put !== jsTypes.function) {
                     for (i = 0; i &lt; dirtyCells.length; i++) {
                         var index = dirtyCells[i].parents(&#039;tr&#039;).index();
                         var field = dirtyCells[i].data(&#039;field&#039;);
@@ -2369,7 +2369,7 @@
         var filterModal = $(e.currentTarget).parents(&#039;.filter_modal&#039;),
             gridId = filterModal.data(&#039;grid_id&#039;),
             numFiltersAllowed = gridState[gridId].columns.length;
-        if (typeof gridState[gridId].advancedFiltering === &#039;object&#039; &amp;&amp; typeof gridState[gridId].advancedFiltering.filtersCount === &#039;number&#039;)
+        if (typeof gridState[gridId].advancedFiltering === jsTypes.object &amp;&amp; typeof gridState[gridId].advancedFiltering.filtersCount === jsTypes.number)
             numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
 
         if (filterModal.find(&#039;.filter_row_div&#039;).length &gt;= numFiltersAllowed) return;
@@ -2453,7 +2453,7 @@
             parentGroup = $(this).parents(&#039;.filter_group_container&#039;).first(),
             filterGroupCount = filterGroups.length,
             numFiltersAllowed = gridState[gridId].columns.length;
-        if (typeof gridState[gridId].advancedFiltering === &#039;object&#039; &amp;&amp; typeof gridState[gridId].advancedFiltering.groupsCount === &#039;number&#039;)
+        if (typeof gridState[gridId].advancedFiltering === jsTypes.object &amp;&amp; typeof gridState[gridId].advancedFiltering.groupsCount === jsTypes.number)
             numGroupsAllowed = gridState[gridId].advancedFiltering.groupsCount;
         else numGroupsAllowed = 3;
 
@@ -2461,7 +2461,7 @@
         else if (filterGroupCount === numGroupsAllowed - 1)
             filterModal.find(&#039;.add_filter_group&#039;).prop(&#039;disabled&#039;, true);
 
-        if (typeof gridState[gridId].advancedFiltering === &#039;object&#039; &amp;&amp; typeof gridState[gridId].advancedFiltering.filtersCount === &#039;number&#039;)
+        if (typeof gridState[gridId].advancedFiltering === jsTypes.object &amp;&amp; typeof gridState[gridId].advancedFiltering.filtersCount === jsTypes.number)
             numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
 
         if (filterModal.find(&#039;.filter_row_div&#039;).length &gt;= numFiltersAllowed) return;
@@ -2507,7 +2507,7 @@
         var gridId = filterModal.data(&#039;grid_id&#039;),
             numFilters = filterModal.find(&#039;.filter_row_div&#039;).length,
             allowedFilters = gridState[gridId].columns.length;
-        if (typeof gridState[gridId].advancedFiltering === &#039;object&#039;&amp;&amp; typeof gridState[gridId].advancedFiltering.filtersCount === &#039;number&#039;)
+        if (typeof gridState[gridId].advancedFiltering === jsTypes.object &amp;&amp; typeof gridState[gridId].advancedFiltering.filtersCount === jsTypes.number)
             allowedFilters = gridState[gridId].advancedFiltering.filtersCount;
         if (allowedFilters &gt; numFilters)
             filterModal.find(&#039;.add_filter_group&#039;).prop(&#039;disabled&#039;, false);
@@ -3910,7 +3910,7 @@
     }
 
     function createStandardNumberFormat(num, format) {
-        var numDecimals = format.length &gt; 1 ? format.toUpperCase().replace(/[CPN]/, &#039;&#039;) : 0;
+        var numDecimals = format.length &gt; 1 ? format.toUpperCase().replace(/[CPN]/, &#039;&#039;) : 2;
         if (~format.toUpperCase().indexOf(&#039;P&#039;))
             num = x100(+num).toString();
         num = (roundNumber(num, numDecimals)).toString();

@@ -624,7 +624,7 @@ var grid = (function _grid($) {
             }
 
             if (col.type !== 'custom') {
-                if (gridData.sortable === true && (typeof col.sortable === 'undefined' || col.sortable === true)) {
+                if (gridData.sortable === true && (typeof col.sortable === jsTypes.undefined || col.sortable === true)) {
                     setSortableClickListener(th);
                     gridData.sortable = true;
                 }
@@ -646,7 +646,7 @@ var grid = (function _grid($) {
             if (gridData.resizable) {
                 th.on('mouseleave', mouseLeaveHandlerCallback);
             }
-            if (gridData.reorderable === true && (typeof col.reorderable === 'undefined' || col.reorderable === true)) {
+            if (gridData.reorderable === true && (typeof col.reorderable === jsTypes.undefined || col.reorderable === true)) {
                 th.prop('draggable', true);
                 setDragAndDropListeners(th);
             }
@@ -663,7 +663,7 @@ var grid = (function _grid($) {
 
     function buildHeaderAggregations(gridId) {
         var gridData = gridState[gridId];
-        if (typeof gridState[gridId].dataSource.get !== 'function') {
+        if (typeof gridState[gridId].dataSource.get !== jsTypes.function) {
             var dataToFilter = gridData.alteredData && gridData.alteredData.length ? gridData.alteredData : gridData.originalData;
                 dataToFilter.filter(function getRemainingRows(val, idx) {
                     return idx > gridData.pageNum * gridData.pageSize - 1 || idx < gridData.pageNum * gridData.pageSize - gridData.pageSize;
@@ -703,7 +703,7 @@ var grid = (function _grid($) {
             contentTBody = $('<tbody></tbody>').appendTo(contentTable),
             text, item;
         contentTBody.css('width', 'auto');
-        if (typeof gridData.parentGridId !== 'number' && gridData.selectable) attachTableSelectHandler(contentTBody);
+        if (typeof gridData.parentGridId !== jsTypes.number && gridData.selectable) attachTableSelectHandler(contentTBody);
 
         var rows = gridData.rows,
             currentGroupingValues = {};
@@ -716,7 +716,7 @@ var grid = (function _grid($) {
                 if (gridData.groupedBy && gridData.groupedBy.length) createGroupedRows(id, idx, currentGroupingValues, contentTBody);
 
                 var tr = $('<tr class="data-row"></tr>').appendTo(contentTBody);
-                if (typeof gridData.parentGridId === 'number') tr.addClass('drill-down-row');
+                if (typeof gridData.parentGridId === jsTypes.number) tr.addClass('drill-down-row');
                 if (idx % 2) {
                     tr.addClass('alt-row');
                     if (rows && rows.alternateRows && rows.alternateRows.constructor === Array)
@@ -758,7 +758,7 @@ var grid = (function _grid($) {
                             td.addClass(col.class);
                         if (col.text) {
                             var customText;
-                            if (typeof col.text === 'function') {
+                            if (typeof col.text === jsTypes.function) {
                                 col.text(gridData.originalData[item._initialRowIndex]);
                             }
                             else customText = col.text;
@@ -766,18 +766,18 @@ var grid = (function _grid($) {
                         }
                     }
 
-                    if (typeof col.events === 'object') {
+                    if (typeof col.events === jsTypes.object) {
                         attachCustomCellHandler(col, td, id);
                     }
-                    if (gridData.aggregates && gridData.aggregates[col.field] && typeof gridData.dataSource.get !== 'function') {
+                    if (gridData.aggregates && gridData.aggregates[col.field] && typeof gridData.dataSource.get !== jsTypes.function) {
                         if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined)
                             addValueToAggregations(id, col.field, item[col.field], gridData.gridAggregations);
                     }
-                    if (typeof gridData.parentGridId !== 'number' && (col.editable && col.editable !== 'drop-down')) {
+                    if (typeof gridData.parentGridId !== jsTypes.number && (col.editable && col.editable !== 'drop-down')) {
                         makeCellEditable(id, td);
                         gridState[id].editable = true;
                     }
-                    else if (typeof gridData.parentGridId !== 'number' && (col.editable === 'drop-down')) {
+                    else if (typeof gridData.parentGridId !== jsTypes.number && (col.editable === 'drop-down')) {
                         makeCellSelectable(id, td);
                         gridState[id].editable = true;
                     }
@@ -788,7 +788,7 @@ var grid = (function _grid($) {
             gridData.groupedBy.forEach(function _prependCols() { colGroup.prepend('<col class="group_col"/>'); });
             if (gridData.drillDown) colGroup.prepend('<col class="groupCol"/>');
 
-            if (gridData.aggregates && gridData.aggregates.positionAt === 'top' && typeof gridData.dataSource.get !== 'function' &&
+            if (gridData.aggregates && gridData.aggregates.positionAt === 'top' && typeof gridData.dataSource.get !== jsTypes.function &&
                 (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined))
                 buildHeaderAggregations(id);
 
@@ -831,7 +831,7 @@ var grid = (function _grid($) {
 
     function attachCustomCellHandler(column, cellItem, gridId) {
         Object.keys(column.events).forEach(function _attachColumnEventHandlers(evt) {
-            if (typeof column.events[evt] === 'function') createEventHandler(cellItem, evt, column.events[evt]);
+            if (typeof column.events[evt] === jsTypes.function) createEventHandler(cellItem, evt, column.events[evt]);
         });
 
         function createEventHandler(cellItem, eventName, eventHandler) {
@@ -953,10 +953,10 @@ var grid = (function _grid($) {
                     accRow.find('.drillDown_span').data('state', 'open');
                     var parentRowData = gridData.grid[0].grid.getCurrentDataSourceData(accRowIdx);
 
-                    if (typeof gridData.drillDown === 'function') {
+                    if (typeof gridData.drillDown === jsTypes.function) {
                         drillDownCreate(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
                     }
-                    else if (typeof gridData.drillDown === 'object') {
+                    else if (typeof gridData.drillDown === jsTypes.object) {
                         if (!gridData.drillDown.dataSource) gridData.drillDown.dataSource = {};
                         gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
                         gridData.drillDown.dataSource.rowCount = parentRowData[0].drillDownData ? parentRowData[0].drillDownData.length : 0;
@@ -974,7 +974,7 @@ var grid = (function _grid($) {
                 aggregationObj[col.field] = '';
                 return;
             }
-            if (typeof gridState[gridId].dataSource.get === 'function') {
+            if (typeof gridState[gridId].dataSource.get === jsTypes.function) {
                 if (gridState[gridId].aggregates[col.field].type && gridState[gridId].aggregates[col.field].value) {
                     var text = getFormattedCellText(col, gridState[gridId].aggregates[col.field].value) || gridState[gridId].aggregates[col.field].value;
                     aggregationObj[col.field].text = aggregates[gridState[gridId].aggregates[col.field].type] + text;
@@ -1367,12 +1367,12 @@ var grid = (function _grid($) {
             switch (type) {
                 case 'boolean':
                     input = $('<input type="checkbox" class="input checkbox active-cell"' + dataAttributes + '/>').appendTo(cell);
-                    val = typeof gridState[id].dataSource.data[index][field] === 'string' ? gridState[id].dataSource.data[index][field] === 'true' : !!val;
+                    val = typeof gridState[id].dataSource.data[index][field] === jsTypes.string ? gridState[id].dataSource.data[index][field] === 'true' : !!val;
                     input[0].checked = val;
                     dataType = 'boolean';
                     break;
                 case 'number':
-                    if (typeof gridState[id].dataSource.data[index][field] === 'string')
+                    if (typeof gridState[id].dataSource.data[index][field] === jsTypes.string)
                         val = isNumber(parseFloat(gridState[id].dataSource.data[index][field])) ? parseFloat(gridState[id].dataSource.data[index][field]) : 0;
                     else
                         val = isNumber(gridState[id].dataSource.data[index][field]) ? gridState[id].dataSource.data[index][field] : 0;
@@ -1592,7 +1592,7 @@ var grid = (function _grid($) {
                 case 'number':
                     re = new RegExp(dataTypes.number);
                     if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                    if (typeof gridState[id].dataSource.data[index][field] === 'string') saveVal = val;
+                    if (typeof gridState[id].dataSource.data[index][field] === jsTypes.string) saveVal = val;
                     else {
                         var tmpVal = parseFloat(val.replace(',', ''));
                         tmpVal === tmpVal ? saveVal = tmpVal : saveVal = 0;
@@ -1658,7 +1658,7 @@ var grid = (function _grid($) {
                 case 'number':
                     re = new RegExp(dataTypes.number);
                     if (!re.test(val)) val = gridState[id].currentEdit[field] || gridState[id].dataSource.data[index][field];
-                    saveVal = typeof gridState[id].dataSource.data[index][field] === 'string' ? val : parseFloat(val.replace(',', ''));
+                    saveVal = typeof gridState[id].dataSource.data[index][field] === jsTypes.string ? val : parseFloat(val.replace(',', ''));
                     break;
                 case 'date':
                 case 'time':
@@ -1700,7 +1700,7 @@ var grid = (function _grid($) {
         var id = gridElem.find('.grid-wrapper').data('grid_id');
         if ($('#grid_' + id + '_toolbar').length) return;   
 
-        if (typeof gridData.parentGridId !== 'number' && gridData.groupable) {
+        if (typeof gridData.parentGridId !== jsTypes.number && gridData.groupable) {
             var groupMenuBar = $('<div id="grid_' + id + '_group_div" class="group_div clearfix" data-grid_id="' + id + '">' + groupMenuText + '</div>').prependTo(gridElem);
             groupMenuBar.on('drop', function handleDropCallback(e) {
                 var droppedCol = $('#' + e.originalEvent.dataTransfer.getData('text'));
@@ -1899,7 +1899,7 @@ var grid = (function _grid($) {
             });
 
             if (dirtyCells.length) {
-                if (typeof gridState[id].dataSource.put !== 'function') {
+                if (typeof gridState[id].dataSource.put !== jsTypes.function) {
                     for (i = 0; i < dirtyCells.length; i++) {
                         var index = dirtyCells[i].parents('tr').index();
                         var field = dirtyCells[i].data('field');
@@ -2278,7 +2278,7 @@ var grid = (function _grid($) {
         var filterModal = $(e.currentTarget).parents('.filter_modal'),
             gridId = filterModal.data('grid_id'),
             numFiltersAllowed = gridState[gridId].columns.length;
-        if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.filtersCount === 'number')
+        if (typeof gridState[gridId].advancedFiltering === jsTypes.object && typeof gridState[gridId].advancedFiltering.filtersCount === jsTypes.number)
             numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
 
         if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
@@ -2362,7 +2362,7 @@ var grid = (function _grid($) {
             parentGroup = $(this).parents('.filter_group_container').first(),
             filterGroupCount = filterGroups.length,
             numFiltersAllowed = gridState[gridId].columns.length;
-        if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.groupsCount === 'number')
+        if (typeof gridState[gridId].advancedFiltering === jsTypes.object && typeof gridState[gridId].advancedFiltering.groupsCount === jsTypes.number)
             numGroupsAllowed = gridState[gridId].advancedFiltering.groupsCount;
         else numGroupsAllowed = 3;
 
@@ -2370,7 +2370,7 @@ var grid = (function _grid($) {
         else if (filterGroupCount === numGroupsAllowed - 1)
             filterModal.find('.add_filter_group').prop('disabled', true);
 
-        if (typeof gridState[gridId].advancedFiltering === 'object' && typeof gridState[gridId].advancedFiltering.filtersCount === 'number')
+        if (typeof gridState[gridId].advancedFiltering === jsTypes.object && typeof gridState[gridId].advancedFiltering.filtersCount === jsTypes.number)
             numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
 
         if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
@@ -2416,7 +2416,7 @@ var grid = (function _grid($) {
         var gridId = filterModal.data('grid_id'),
             numFilters = filterModal.find('.filter_row_div').length,
             allowedFilters = gridState[gridId].columns.length;
-        if (typeof gridState[gridId].advancedFiltering === 'object'&& typeof gridState[gridId].advancedFiltering.filtersCount === 'number')
+        if (typeof gridState[gridId].advancedFiltering === jsTypes.object && typeof gridState[gridId].advancedFiltering.filtersCount === jsTypes.number)
             allowedFilters = gridState[gridId].advancedFiltering.filtersCount;
         if (allowedFilters > numFilters)
             filterModal.find('.add_filter_group').prop('disabled', false);
@@ -3819,7 +3819,7 @@ var grid = (function _grid($) {
     }
 
     function createStandardNumberFormat(num, format) {
-        var numDecimals = format.length > 1 ? format.toUpperCase().replace(/[CPN]/, '') : 0;
+        var numDecimals = format.length > 1 ? format.toUpperCase().replace(/[CPN]/, '') : 2;
         if (~format.toUpperCase().indexOf('P'))
             num = x100(+num).toString();
         num = (roundNumber(num, numDecimals)).toString();
