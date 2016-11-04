@@ -114,6 +114,7 @@
  - Implement a dbl-click handler to auto-resize columns - DONE
  - Make sure all grid functionalities are properly set - DONE
  - Add null/empty string values to filtering selectors - DONE
+ - Fix ._initialRowIndex_ property setting on local grid data handling
  - Add drag-drop columns between different grids
  - Update cell editing to include missing data types support; especially date-time
  - Remove anchors as links for grid functionality - clicking them just requires the event to halt propagation
@@ -859,10 +860,13 @@ var grid = (function _grid($) {
                 callback(null, data);
             });
         }
-        else if (typeof dataSource.get == 'function') {
+        else if (dataSource && typeof dataSource.get == 'function') {
             dataSource.get({ pageSize: pageSize, pageNum: 1 },
-                function gridDataCallback(data) {
-                    if (data) callback(null, data);
+                function gridDataCallback(res) {
+                    if (res) {
+                        dataSource.originalData = res.data;
+                        callback(null, res);
+                    }
                     else callback(true, {});
                 });
         }
@@ -2125,7 +2129,10 @@ var grid = (function _grid($) {
         var previousVal = gridState[id].dataSource.data[index][field];
         if (previousVal !== saveVal) {
             gridState[id].dataSource.data[index][field] = saveVal;
-            if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
+            var idxOffset = 0;
+            if (typeof gridState[id].dataSource.get !== jsTypes.function && gridState[id].pageNum > 1)
+                idxOffset = ((gridState[id].pageNum - 1) * gridState[id].pageSize) - 1;
+            if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index + idxOffset]._initialRowIndex][field]) {
                 setDirtyFlag = true;
                 if ('' !== saveVal) cell.prepend('<span class="dirty"></span>');
                 else if (previousVal != null) cell.prepend('<span class="dirty-blank"></span>');
@@ -3944,7 +3951,7 @@ var grid = (function _grid($) {
         gridData.grid.find('.grid-content-div').empty();
 
         callGridEventHandlers(gridState[id].events.pageRequested, gridData.grid, { element: gridData.grid });
-        if (gridData.dataSource.get && typeof gridData.dataSource.get === 'function') gridData.dataSource.get(requestObj, getPageDataRequestCallback);
+        if (gridData.dataSource.get && typeof gridData.dataSource.get === jsTypes.function) gridData.dataSource.get(requestObj, getPageDataRequestCallback);
         else {
             if (!gridData.alteredData || gridData.pageRequest.eventType === 'filter') gridData.alteredData = cloneGridData(gridData.originalData);
             getPageData(requestObj, id, getPageDataRequestCallback);
@@ -3966,6 +3973,8 @@ var grid = (function _grid($) {
                 gridData.groupedBy = requestObj.groupedBy || [];
                 gridData.sortedOn = requestObj.sortedOn || [];
                 gridData.filters = requestObj.filters || {};
+
+                if (typeof gridData.dataSource.get === jsTypes.function) gridData.originalData = cloneGridData(response.data);
 
                 if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group')
                     setColWidth(gridData, gridState[id].grid);
@@ -4287,9 +4296,9 @@ var grid = (function _grid($) {
 
         var template = column.template;
         if (template && text !== '') {
-            if (typeof template === 'function')
+            if (typeof template === jsTypes.function)
                 return template.call(column, text);
-            else if (typeof template === 'string')
+            else if (typeof template === jsTypes.string)
                 return template.replace('{{data}}', text);
             return text;
         }
@@ -4360,7 +4369,7 @@ var grid = (function _grid($) {
      * @param {string} option - The export option selected by the user
      */
     function exportDataAsExcelFile(gridId, option) {
-        if (excelExporter && typeof excelExporter.createWorkBook === 'function') {
+        if (excelExporter && typeof excelExporter.createWorkBook === jsTypes.function) {
             determineGridDataToExport(gridId, (option || 'page'), function gridDataCallback(excelDataAndColumns) {
                 excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(excelDataAndColumns.data, excelDataAndColumns.columns, 'testSheet'));
             });
@@ -4394,7 +4403,7 @@ var grid = (function _grid($) {
                 callback({ data: data, columns: columns});
                 break;
             case 'all':
-                if (typeof gridState[gridId].dataSource.get === 'function' && gridState[gridId].dataSource.rowCount > gridState[gridId].pageSize) {
+                if (typeof gridState[gridId].dataSource.get === jsTypes.function && gridState[gridId].dataSource.rowCount > gridState[gridId].pageSize) {
                     gridState[gridId].dataSource.get(createExcelRequestObject(gridId), function excelDataCallback(response) {
                         callback({ data: response.data, columns: columns});
                     });
@@ -4582,7 +4591,7 @@ var grid = (function _grid($) {
      * @returns {*} - Returns a new instance of whatever type was given to the function
      */
     function cloneGridData(gridData) { //Clones grid data so pass-by-reference doesn't mess up the values in other grids.
-        if (gridData == null || typeof (gridData) !== 'object')
+        if (gridData == null || typeof (gridData) !== jsTypes.object)
             return gridData;
 
         if (Object.prototype.toString.call(gridData) === '[object Array]')
@@ -4602,14 +4611,8 @@ var grid = (function _grid($) {
      */
     function cloneArray(arr) {
         var length = arr.length,
-            newArr = new arr.constructor(length);
-
-        if (length && typeof arr[0] == 'string' && hasOwnProperty.call(arr, 'index')) {
-            newArr.index = arr.index;
-            newArr.input = arr.input;
-        }
-
-        var index = -1;
+            newArr = new arr.constructor(length),
+            index = -1;
         while (++index < length) {
             newArr[index] = cloneGridData(arr[index]);
         }
@@ -4622,7 +4625,7 @@ var grid = (function _grid($) {
      * @returns {boolean} - Returns true if the variable is a DOM element, false if not
      */
     function isDomElement(node) {
-        return node && node instanceof Element && node instanceof Node && typeof node.ownerDocument === 'object';
+        return node && node instanceof Element && node instanceof Node && typeof node.ownerDocument === jsTypes.object;
     }
 
     /**
@@ -4631,7 +4634,7 @@ var grid = (function _grid($) {
      * @returns {boolean} Returns true if the value is a number, false if not
      */
     function isNumber(value) {
-        return typeof value === 'number' && value === value;
+        return typeof value === jsTypes.number && value === value;
     }
 
     function isInteger(value) {

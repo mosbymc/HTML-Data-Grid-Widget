@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">59.02</p>
+      <p class="stat">58.99</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4172</p>
+      <p class="stat">4174</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">216.95</p>
+      <p class="stat">217.40</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">93.78</p>
+      <p class="stat">93.99</p>
     </div>
   </div>
 </div>
@@ -607,10 +607,13 @@
                 callback(null, data);
             });
         }
-        else if (typeof dataSource.get == &#039;function&#039;) {
+        else if (dataSource &amp;&amp; typeof dataSource.get == &#039;function&#039;) {
             dataSource.get({ pageSize: pageSize, pageNum: 1 },
-                function gridDataCallback(data) {
-                    if (data) callback(null, data);
+                function gridDataCallback(res) {
+                    if (res) {
+                        dataSource.originalData = res.data;
+                        callback(null, res);
+                    }
                     else callback(true, {});
                 });
         }
@@ -1713,7 +1716,10 @@
         var previousVal = gridState[id].dataSource.data[index][field];
         if (previousVal !== saveVal) {
             gridState[id].dataSource.data[index][field] = saveVal;
-            if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
+            var idxOffset = 0;
+            if (typeof gridState[id].dataSource.get !== jsTypes.function &amp;&amp; gridState[id].pageNum &gt; 1)
+                idxOffset = ((gridState[id].pageNum - 1) * gridState[id].pageSize) - 1;
+            if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index + idxOffset]._initialRowIndex][field]) {
                 setDirtyFlag = true;
                 if (&#039;&#039; !== saveVal) cell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
                 else if (previousVal != null) cell.prepend(&#039;&lt;span class=&quot;dirty-blank&quot;&gt;&lt;/span&gt;&#039;);
@@ -3419,7 +3425,7 @@
         gridData.grid.find(&#039;.grid-content-div&#039;).empty();
 
         callGridEventHandlers(gridState[id].events.pageRequested, gridData.grid, { element: gridData.grid });
-        if (gridData.dataSource.get &amp;&amp; typeof gridData.dataSource.get === &#039;function&#039;) gridData.dataSource.get(requestObj, getPageDataRequestCallback);
+        if (gridData.dataSource.get &amp;&amp; typeof gridData.dataSource.get === jsTypes.function) gridData.dataSource.get(requestObj, getPageDataRequestCallback);
         else {
             if (!gridData.alteredData || gridData.pageRequest.eventType === &#039;filter&#039;) gridData.alteredData = cloneGridData(gridData.originalData);
             getPageData(requestObj, id, getPageDataRequestCallback);
@@ -3434,6 +3440,8 @@
                 gridData.groupedBy = requestObj.groupedBy || [];
                 gridData.sortedOn = requestObj.sortedOn || [];
                 gridData.filters = requestObj.filters || {};
+
+                if (typeof gridData.dataSource.get === jsTypes.function) gridData.originalData = cloneGridData(response.data);
 
                 if (gridData.pageRequest.eventType === &#039;newGrid&#039; || gridData.pageRequest.eventType === &#039;group&#039;)
                     setColWidth(gridData, gridState[id].grid);
@@ -3704,9 +3712,9 @@
 
         var template = column.template;
         if (template &amp;&amp; text !== &#039;&#039;) {
-            if (typeof template === &#039;function&#039;)
+            if (typeof template === jsTypes.function)
                 return template.call(column, text);
-            else if (typeof template === &#039;string&#039;)
+            else if (typeof template === jsTypes.string)
                 return template.replace(&#039;{{data}}&#039;, text);
             return text;
         }
@@ -3754,7 +3762,7 @@
     }
 
     function exportDataAsExcelFile(gridId, option) {
-        if (excelExporter &amp;&amp; typeof excelExporter.createWorkBook === &#039;function&#039;) {
+        if (excelExporter &amp;&amp; typeof excelExporter.createWorkBook === jsTypes.function) {
             determineGridDataToExport(gridId, (option || &#039;page&#039;), function gridDataCallback(excelDataAndColumns) {
                 excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(excelDataAndColumns.data, excelDataAndColumns.columns, &#039;testSheet&#039;));
             });
@@ -3780,7 +3788,7 @@
                 callback({ data: data, columns: columns});
                 break;
             case &#039;all&#039;:
-                if (typeof gridState[gridId].dataSource.get === &#039;function&#039; &amp;&amp; gridState[gridId].dataSource.rowCount &gt; gridState[gridId].pageSize) {
+                if (typeof gridState[gridId].dataSource.get === jsTypes.function &amp;&amp; gridState[gridId].dataSource.rowCount &gt; gridState[gridId].pageSize) {
                     gridState[gridId].dataSource.get(createExcelRequestObject(gridId), function excelDataCallback(response) {
                         callback({ data: response.data, columns: columns});
                     });
@@ -3940,7 +3948,7 @@
     }
 
     function cloneGridData(gridData) { 
-        if (gridData == null || typeof (gridData) !== &#039;object&#039;)
+        if (gridData == null || typeof (gridData) !== jsTypes.object)
             return gridData;
 
         if (Object.prototype.toString.call(gridData) === &#039;[object Array]&#039;)
@@ -3955,14 +3963,8 @@
 
     function cloneArray(arr) {
         var length = arr.length,
-            newArr = new arr.constructor(length);
-
-        if (length &amp;&amp; typeof arr[0] == &#039;string&#039; &amp;&amp; hasOwnProperty.call(arr, &#039;index&#039;)) {
-            newArr.index = arr.index;
-            newArr.input = arr.input;
-        }
-
-        var index = -1;
+            newArr = new arr.constructor(length),
+            index = -1;
         while (++index &lt; length) {
             newArr[index] = cloneGridData(arr[index]);
         }
@@ -3970,11 +3972,11 @@
     }
 
     function isDomElement(node) {
-        return node &amp;&amp; node instanceof Element &amp;&amp; node instanceof Node &amp;&amp; typeof node.ownerDocument === &#039;object&#039;;
+        return node &amp;&amp; node instanceof Element &amp;&amp; node instanceof Node &amp;&amp; typeof node.ownerDocument === jsTypes.object;
     }
 
     function isNumber(value) {
-        return typeof value === &#039;number&#039; &amp;&amp; value === value;
+        return typeof value === jsTypes.number &amp;&amp; value === value;
     }
 
     function isInteger(value) {
