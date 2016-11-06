@@ -3412,14 +3412,17 @@ var grid = (function _grid($) {
     function getPageData(requestObj, id, callback) {
         var eventType = gridState[id].pageRequest.eventType;
         var fullGridData = cloneGridData(gridState[id].alteredData);
+        if (!gridState[id].dataMap) gridState[id].dataMap = [];
 
         if (eventType === 'page' || eventType === 'pageSize' || eventType === 'newGrid') {
             limitPageData(requestObj, fullGridData, callback);
             return;
         }
         if (requestObj.filters && requestObj.filters.filterGroup && requestObj.filters.filterGroup.length) {
-            fullGridData = expressionParser.createFilterTreeFromFilterObject(requestObj.filters).filterCollection(cloneGridData(gridState[id].originalData));
-            requestObj.pageNum = 1;     
+            var filtered = expressionParser.createFilterTreeFromFilterObject(requestObj.filters).filterCollection(gridState[id].originalData);
+            fullGridData = filtered.filteredData;
+            gridState[id].dataMap = filtered.filteredDataMap;
+            requestObj.pageNum = 1;
             gridState[id].alteredData = fullGridData;
         }
         if (requestObj.groupedBy && requestObj.groupedBy.length || requestObj.sortedOn.length) {
@@ -3516,25 +3519,17 @@ var grid = (function _grid($) {
     function mergeSort(data, sortObj, type) {
         if (data.length < 2) return data;
         var middle = parseInt(data.length / 2);
-        var left   = data.slice(0, middle);
-        var right  = data.slice(middle, data.length);
-        return merge(mergeSort(left, sortObj, type), mergeSort(right, sortObj, type), sortObj, type);
+        return merge(mergeSort(data.slice(0, middle), sortObj, type), mergeSort(data.slice(middle, data.length), sortObj, type), sortObj, type);
     }
 
     function merge(left, right, sortObj, type) {
-        var result = [];
-        while (left.length && right.length) {
-            var operator = sortObj.sortDirection === 'asc' ? booleanOps.lessThanOrEqual : booleanOps.greaterThanOrEqual;
-            comparator(dataTypeValueNormalizer(type, left[0][sortObj.field]), dataTypeValueNormalizer(type, right[0][sortObj.field]), operator) ? result.push(left.shift()) : result.push(right.shift());
-        }
+        if (!left.length) return right;
+        if (!right.length) return left;
 
-        while (left.length)
-            result.push(left.shift());
-
-        while (right.length)
-            result.push(right.shift());
-
-        return result;
+        var operator = sortObj.sortDirection === 'asc' ? booleanOps.lessThanOrEqual : booleanOps.greaterThanOrEqual;
+        if (comparator(dataTypeValueNormalizer(type, left[0][sortObj.field]), dataTypeValueNormalizer(type, right[0][sortObj.field]), operator))
+            return [cloneGridData(left[0])].concat(merge(left.slice(1, left.length), right, sortObj, type));
+        else return [cloneGridData(right[0])].concat(merge(left, right.slice(1, right.length), sortObj, type));
     }
 
     function dataTypeValueNormalizer(dataType, val) {
@@ -3820,10 +3815,11 @@ var grid = (function _grid($) {
     }
 
     function createFormattedNumber(format, num) {
+        if (format.length < num.length) format = format.concat('#'.repeat(num.length - format.length));
         return format.split('').reverse().map(function _createFormattedNumber(char, idx) {
-            if (char === '0') return num[format.length - idx] || char;
-            return num[format.length - idx] || '';
-        }).reverse().join('');
+            if (char === '0') return num[format.length - idx - 1] || char;
+            return num[format.length - idx - 1] || '';
+        }).join('');
     }
 
     function createStandardNumberFormat(num, format) {
@@ -3864,9 +3860,9 @@ var grid = (function _grid($) {
             return cloneArray(gridData);
 
         var temp = {};
-        for (var key in gridData)
-            temp[key] = cloneGridData(gridData[key]);
-
+        Object.keys(gridData).forEach(function _cloneGridData(field) {
+            temp[field] = cloneGridData(gridData[field]);
+        });
         return temp;
     }
 
@@ -3935,10 +3931,15 @@ var grid = (function _grid($) {
                 this.rootNode.addChildren(this.queue);
         };
         booleanExpressionTree.filterCollection = function _filterCollection(collection) {
-            return collection.filter(function collectionMap(curr) {
-                this.context = curr;
-                return this.rootNode.evaluate(curr);
-            }, this);
+            var dataMap = [];
+            return {
+                filteredData: collection.filter(function collectionFilter(curr, idx) {
+                    this.context = curr;
+                    if (this.rootNode.value) dataMap.push(idx);
+                    return this.rootNode.value;
+                }, this),
+                filteredDataMap: dataMap
+            };
         };
         booleanExpressionTree.internalGetContext = function _internalGetContext() {
             return this.context;
@@ -4001,24 +4002,16 @@ var grid = (function _grid($) {
         astNode.evaluate = function _evaluate() {
             if (this.children && this.children.length) {
                 switch (this.operator) {
-                    case 'or':
-                        return this.children[1].evaluate() || this.children[0].evaluate();
-                    case 'and':
-                        return this.children[1].evaluate() && this.children[0].evaluate();
-                    case 'xor':
-                        return !!(this.children[1].evaluate() ^ this.children[0].evaluate());
-                    case 'nor':
-                        return !(this.children[1].evaluate() || this.children[0].evaluate());
-                    case 'nand':
-                        return !(this.children[1].evaluate() && this.children[0].evaluate());
-                    case 'xnor':
-                        return !(this.children[1].evaluate() ^ this.children[0].evaluate());
+                    case 'or': return this.children[1].evaluate() || this.children[0].evaluate();
+                    case 'and': return this.children[1].evaluate() && this.children[0].evaluate();
+                    case 'xor': return !!(this.children[1].evaluate() ^ this.children[0].evaluate());
+                    case 'nor': return !(this.children[1].evaluate() || this.children[0].evaluate());
+                    case 'nand': return !(this.children[1].evaluate() && this.children[0].evaluate());
+                    case 'xnor': return !(this.children[1].evaluate() ^ this.children[0].evaluate());
                 }
             }
             else {
-                var initialVal = this.getContext()[this.field],
-                    normalizedBase = this.standard != null ? dataTypeValueNormalizer(this.dataType, this.standard) : null;
-                this._value = comparator(dataTypeValueNormalizer(this.dataType, initialVal), normalizedBase, this.operation);
+                this._value = comparator(dataTypeValueNormalizer(this.dataType, this.getContext()[this.field]), dataTypeValueNormalizer(this.dataType, this.standard), this.operation);
                 return this._value;
             }
         };
@@ -4030,7 +4023,7 @@ var grid = (function _grid($) {
 
         Object.defineProperty(astNode, 'value', {
             get: function _getValue() {
-                if (!this._value) this._value = this.evaluate();
+                if (this._value == null) this._value = this.evaluate();
                 return this._value;
             }
         });

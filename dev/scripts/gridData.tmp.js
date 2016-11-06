@@ -41,7 +41,8 @@ var gridDataTmp = {
                 field: 'Year',
                 filterable: true,
                 width: 100,
-                type: 'date'
+                type: 'number',
+                format: '##00'
             },
             {
                 field: 'Doors',
