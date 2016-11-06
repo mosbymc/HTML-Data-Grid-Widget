@@ -114,6 +114,7 @@
  - Implement a dbl-click handler to auto-resize columns - DONE
  - Make sure all grid functionalities are properly set - DONE
  - Add null/empty string values to filtering selectors - DONE
+ - Create data store object to hold cached grid data
  - Fix ._initialRowIndex_ property setting on local grid data handling
  - Add drag-drop columns between different grids
  - Update cell editing to include missing data types support; especially date-time
@@ -122,7 +123,6 @@
  - Code clean up
  - Remove excessive event handlers
  - Documentation
- - Test, test, test!
  - Refactor
  - UPDATE TO ES6
  - Determine a shared way to check for and reset the hasAddedColumn property of the grid state cache
