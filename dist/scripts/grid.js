@@ -3805,21 +3805,26 @@ var grid = (function _grid($) {
             formatDecimals = format.substring(formatDecimalIndex + 1, format.length);
         num = (roundNumber(+num, formatDecimals.length)).toString();
         var dataDecimalIndex = ~num.indexOf('.') ? num.indexOf('.') : num.length,
-            dataWholeNums = num.substring(0, dataDecimalIndex).split('').reverse(),
-            dataDecimalNums = num.substring(dataDecimalIndex + 1, num.length).split('').reverse();
+            dataWholeNums = num.substring(0, dataDecimalIndex).split(''),
+            dataDecimalNums = num.substring(dataDecimalIndex + 1, num.length).split('');
 
-        var wholeNums = createFormattedNumber(formatWholeNums, dataWholeNums);
+        var wholeNums = createFormattedNumber(shoreLengths(formatWholeNums, dataWholeNums), dataWholeNums);
         if (~format.indexOf(',')) wholeNums = numberWithCommas(wholeNums);
         if (formatDecimalIndex < format.length) return wholeNums + '.' + createFormattedNumber(formatDecimals, dataDecimalNums);
         return wholeNums;
     }
 
     function createFormattedNumber(format, num) {
-        if (format.length < num.length) format = format.concat('#'.repeat(num.length - format.length));
         return format.split('').reverse().map(function _createFormattedNumber(char, idx) {
             if (char === '0') return num[format.length - idx - 1] || char;
             return num[format.length - idx - 1] || '';
-        }).join('');
+        }).reverse().join('');
+    }
+
+    function shoreLengths(format, num) {
+        if (format.length < num.length) format = format.split('').reverse().concat('#'.repeat(num.length - format.length)).reverse().join('');
+        else if (num.length < format.length) format = format.substring((format.length - num.length), format.length);
+        return format;
     }
 
     function createStandardNumberFormat(num, format) {
