@@ -3532,6 +3532,7 @@ var grid = (function _grid($) {
         else return [cloneGridData(right[0])].concat(merge(left, right.slice(1, right.length), sortObj, type));
     }
 
+
     function dataTypeValueNormalizer(dataType, val) {
         if (val == null) return val;
         switch(dataType) {

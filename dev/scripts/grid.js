@@ -4198,6 +4198,35 @@ var grid = (function _grid($) {
         else return [cloneGridData(right[0])].concat(merge(left, right.slice(1, right.length), sortObj, type));
     }
 
+    //To make this work I'll also need to figure out if start === 0 and end === data.length; if not, I'd need to
+    //figure out what the actual indices I'm dealing with are, and reassign the values before calling merge/mergeSort.
+    //This also creates an issue with the merge algorithm because not only do I have to keep track of the indices there
+    //as well, but I need to be able to reassemble them properly... I might need to see if I can't find a better way
+    //to flag or map these indices; that, or use a different sorting algorithm.
+    /*function mergeSort2(data, sortObj, type, start, end) {
+        if (data.length < 2) return data;
+        var middle = parseInt(data.length / 2),
+            first = data.slice(0, middle),
+            second = data.slice(middle, data.length);
+        return merge2(mergeSort2(first, sortObj, type, 0, middle - 1), mergeSort2(second, sortObj, type, middle, data.length - 1), sortObj, type);
+    }
+
+    function merge2(left, right, sortObj, type) {
+        if (!left.length) return right;
+        if (!right.length) return left;
+
+        var operator = sortObj.sortDirection === 'asc' ? booleanOps.lessThanOrEqual : booleanOps.greaterThanOrEqual;
+        if (comparator(dataTypeValueNormalizer(type, left[0][sortObj.field]), dataTypeValueNormalizer(type, right[0][sortObj.field]), operator)) {
+            var res = merge2(left.slice(1, left.length), right, sortObj, type);
+            return {
+                data: [cloneGridData(left[0])].concat(merge2(left.slice(1, left.length), right, sortObj, type)),
+                dataMap: [1]
+            };
+        }
+            //return [cloneGridData(left[0])].concat(merge2(left.slice(1, left.length), right, sortObj, type));
+        else return [cloneGridData(right[0])].concat(merge2(left, right.slice(1, right.length), sortObj, type));
+    }*/
+
     function dataTypeValueNormalizer(dataType, val) {
         if (val == null) return val;
         switch(dataType) {
