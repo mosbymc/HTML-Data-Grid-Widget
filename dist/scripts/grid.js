@@ -221,7 +221,7 @@ var grid = (function _grid($) {
                         var newModel = {}, prop;
                         if (!data) {
                             for (prop in gridState[gridId].dataSource.data[0]) {
-                                if (prop !== '_initialRowIndex') newModel[prop] = null;
+                                newModel[prop] = null;
                             }
                         }
                         else if (typeof data === 'object') {
@@ -232,7 +232,6 @@ var grid = (function _grid($) {
                         }
                         gridState[gridId].originalData.push(newModel);
                         var dataSourceModel = cloneGridData(newModel);
-                        dataSourceModel._initialRowIndex = gridState[gridId].dataSource.data.length;
                         gridState[gridId].dataSource.data.push(dataSourceModel);
                         gridState[gridId].dataSource.rowCount++;
 
@@ -300,19 +299,9 @@ var grid = (function _grid($) {
                 },
                 'getCurrentDataSourceData': {
                     value: function _getCurrentDataSourceData(index) {
-                        var i;
-                        if (typeof index === 'number' && index > -1 && index <= gridState[gridId].dataSource.data.length) {
-                            var val = cloneGridData([].concat(gridState[gridId].dataSource.data[index]));
-                            delete val[0]._initialRowIndex;
-                            return val;
-                        }
-                        else {
-                            var gd = cloneGridData(gridState[gridId].dataSource.data);
-                            for (i = 0; i < gd.length; i++) {
-                                delete gd[i]._initialRowIndex;
-                            }
-                            return gd;
-                        }
+                        if (typeof index === 'number' && index > -1 && index <= gridState[gridId].dataSource.data.length)
+                            return cloneGridData([].concat(gridState[gridId].dataSource.data[index]));
+                        else return cloneGridData(gridState[gridId].dataSource.data);
                     },
                     writable: false,
                     configurable: false
@@ -715,7 +704,6 @@ var grid = (function _grid($) {
 
         if (gridData.dataSource.data.length) {
             gridData.dataSource.data.forEach(function _createGridContentRows(item, idx) {
-                item._initialRowIndex = idx;
                 if (gridData.groupedBy && gridData.groupedBy.length) createGroupedRows(id, idx, currentGroupingValues, contentTBody);
 
                 var tr = $('<tr class="data-row"></tr>').appendTo(contentTBody);
@@ -762,7 +750,7 @@ var grid = (function _grid($) {
                         if (col.text) {
                             var customText;
                             if (typeof col.text === jsTypes.function) {
-                                col.text(gridData.originalData[item._initialRowIndex]);
+                                col.text(gridData.originalData[gridData.dataMap[idx]]);
                             }
                             else customText = col.text;
                             td.text(customText);
@@ -1628,7 +1616,7 @@ var grid = (function _grid($) {
             var idxOffset = 0;
             if (typeof gridState[id].dataSource.get !== jsTypes.function && gridState[id].pageNum > 1)
                 idxOffset = ((gridState[id].pageNum - 1) * gridState[id].pageSize) - 1;
-            if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index + idxOffset]._initialRowIndex][field]) {
+            if (saveVal !== gridState[id].originalData[gridState[id].dataMap[index + idxOffset]][field]) {
                 setDirtyFlag = true;
                 if ('' !== saveVal) cell.prepend('<span class="dirty"></span>');
                 else if (previousVal != null) cell.prepend('<span class="dirty-blank"></span>');
@@ -1689,7 +1677,10 @@ var grid = (function _grid($) {
         var previousVal = gridState[id].dataSource.data[index][field];
         if (previousVal !== saveVal) {  
             gridState[id].dataSource.data[index][field] = saveVal;
-            if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
+            var idxOffset = 0;
+            if (typeof gridState[id].dataSource.get !== jsTypes.function && gridState[id].pageNum > 1)
+                idxOffset = ((gridState[id].pageNum - 1) * gridState[id].pageSize) - 1;
+            if (saveVal !== gridState[id].originalData[gridState[id].dataMap[index + idxOffset]][field]) {
                 parentCell.prepend('<span class="dirty"></span>');
                 setDirtyFlag = true;
             }
@@ -1909,7 +1900,10 @@ var grid = (function _grid($) {
                     for (i = 0; i < dirtyCells.length; i++) {
                         var index = dirtyCells[i].parents('tr').index();
                         var field = dirtyCells[i].data('field');
-                        var origIndex = gridState[id].dataSource.data[index]._initialRowIndex;
+                        var idxOffset = 0;
+                        if (typeof gridState[id].dataSource.get !== jsTypes.function && gridState[id].pageNum > 1)
+                            idxOffset = ((gridState[id].pageNum - 1) * gridState[id].pageSize) - 1;
+                        var origIndex = gridState[id].dataMap[index + idxOffset];
                         gridState[id].originalData[origIndex][field] = gridState[id].dataSource.data[index][field];
                         dirtyCells[i].find('.dirty').add('.dirty-blank').remove();
                     }
@@ -1920,17 +1914,21 @@ var grid = (function _grid($) {
                     gridState[id].putRequest.models = [];
                     var putRequestModels = gridState[id].putRequest.models;
                     for (i = 0; i < dirtyCells.length; i++) {
-                        var tmpModel = cloneGridData(gridState[id].dataSource.data[dirtyCells[i].parents('tr').index()]);
-                        var tmpMap = tmpModel._initialRowIndex;
-                        var idx = existsInPutRequest(putRequestModels, tmpModel);
-                        if (~idx)
-                            putRequestModels[idx].dirtyFields.push(dirtyCells[i].data('field'));
-                        else
-                            putRequestModels.push({ cleanData: gridState[id].originalData[tmpMap], dirtyData: tmpModel, dirtyFields: [dirtyCells[i].data('field')] });
-                    }
-
-                    for (i = 0; i < putRequestModels.length; i++) {
-                        delete putRequestModels[i].dirtyData._initialRowIndex;
+                        var dataIndex = dirtyCells[i].parents('tr').index();
+                        var exists = putRequestModels.some(function _upsertPutRequest(cur) {
+                            if (cur.dataIdx = dataIndex) {
+                                cur.dirtyFields.push(dirtyCells[i].data('field'));
+                                return true;
+                            }
+                        });
+                        if (!exists) {
+                            putRequestModels.push({
+                                cleanData: gridState[id].originalData[dirtyCells[i].parents('tr').index()],
+                                dirtyData: cloneGridData(gridState[id].dataSource.data[dataIndex]),
+                                dirtyFields: [dirtyCells[i].data('field')],
+                                dataIdx: dataIndex
+                            });
+                        }
                     }
 
                     prepareGridDataUpdateRequest(id);
@@ -3390,7 +3388,7 @@ var grid = (function _grid($) {
                 gridState[id].grid.find('.dirty').add('.dirty-blank').each(function iterateDirtySpansCallback(idx, val) {
                     var index = $(val).parents('tr').index();
                     var field = $(val).parents('td').data('field');
-                    var origIdx = gridState[id].dataSource.data[index]._initialRowIndex;
+                    var origIdx = gridState[id].dataMap[index];
                     gridState[id].originalData[origIdx][field] = gridState[id].dataSource.data[index][field];
                     $(val).remove();
                 });
@@ -3410,12 +3408,12 @@ var grid = (function _grid($) {
     }
 
     function getPageData(requestObj, id, callback) {
-        var eventType = gridState[id].pageRequest.eventType;
-        var fullGridData = cloneGridData(gridState[id].alteredData);
+        var eventType = gridState[id].pageRequest.eventType,
+            fullGridData = cloneGridData(gridState[id].alteredData);
         if (!gridState[id].dataMap) gridState[id].dataMap = [];
 
         if (eventType === 'page' || eventType === 'pageSize' || eventType === 'newGrid') {
-            limitPageData(requestObj, fullGridData, callback);
+            limitPageData(requestObj, cloneGridData(gridState[id].alteredData), callback);
             return;
         }
         if (requestObj.filters && requestObj.filters.filterGroup && requestObj.filters.filterGroup.length) {
@@ -3426,8 +3424,14 @@ var grid = (function _grid($) {
             gridState[id].alteredData = fullGridData;
         }
         if (requestObj.groupedBy && requestObj.groupedBy.length || requestObj.sortedOn.length) {
-            var sortedData = sortGridData((requestObj.groupedBy || []).concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
-            gridState[id].alteredData = sortedData;
+            var sorted_mapped_Data = sortGridData((requestObj.groupedBy || []).concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id),
+                sortedData = sorted_mapped_Data.map(function _extractValues(item) {
+                return item[0];
+            });
+                gridState[id].alteredData = sortedData;
+                gridState[id].dataMap = sorted_mapped_Data.map(function _extractIndices(item) {
+                    return item[1];
+                });
             limitPageData(requestObj, sortedData, callback);
             return;
         }
@@ -3485,21 +3489,24 @@ var grid = (function _grid($) {
         }
     }
 
-    function sortGridData (sortedItems, gridData, gridId) {
+    function sortGridData(sortedItems, gridData, gridId) {
+        var dataMap = gridData.map(function _mapIndices(item, idx) {
+            return [item, gridState[gridId].dataMap[idx]];
+        });
         sortedItems.forEach(function _sortItems(cur, idx) {
             var columnIdx = gridState[gridId].columnIndices[cur.field];
             var column = gridState[gridId].columns[columnIdx];
             if (idx === 0)
-                gridData = mergeSort(gridData, cur, column.type || 'string');
+                gridData = mergeSort(dataMap, cur, column.type || 'string');
             else {
                 var sortedGridData = [];
                 var itemsToSort = [];
                 gridData.forEach(function _sortGridData(data, i) {
                     var prevField = sortedItems[idx - 1].field,
-                        prevVal = itemsToSort.length ? itemsToSort[0][prevField] : null,
+                        prevVal = itemsToSort.length ? itemsToSort[0][0][prevField] : null,
                         prevColIdx = itemsToSort.length ? gridState[gridId].columnIndices[prevField] : null,
                         dataType = itemsToSort.length ? gridState[gridId].columns[prevColIdx].type : null;
-                    if (!itemsToSort.length || comparator(dataTypeValueNormalizer(dataType, prevVal), dataTypeValueNormalizer(dataType, gridData[i][prevField]), booleanOps.strictEqual))
+                    if (!itemsToSort.length || comparator(dataTypeValueNormalizer(dataType, prevVal), dataTypeValueNormalizer(dataType, gridData[i][0][prevField]), booleanOps.strictEqual))
                         itemsToSort.push(gridData[i]);
                     else {
                         if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
@@ -3527,11 +3534,10 @@ var grid = (function _grid($) {
         if (!right.length) return left;
 
         var operator = sortObj.sortDirection === 'asc' ? booleanOps.lessThanOrEqual : booleanOps.greaterThanOrEqual;
-        if (comparator(dataTypeValueNormalizer(type, left[0][sortObj.field]), dataTypeValueNormalizer(type, right[0][sortObj.field]), operator))
-            return [cloneGridData(left[0])].concat(merge(left.slice(1, left.length), right, sortObj, type));
-        else return [cloneGridData(right[0])].concat(merge(left, right.slice(1, right.length), sortObj, type));
+        if (comparator(dataTypeValueNormalizer(type, left[0][0][sortObj.field]), dataTypeValueNormalizer(type, right[0][0][sortObj.field]), operator))
+            return [[cloneGridData(left[0][0]), left[0][1]]].concat(merge(left.slice(1, left.length), right, sortObj, type));
+        else  return [[cloneGridData(right[0][0]), right[0][1]]].concat(merge(left, right.slice(1, right.length), sortObj, type));
     }
-
 
     function dataTypeValueNormalizer(dataType, val) {
         if (val == null) return val;
@@ -3571,15 +3577,6 @@ var grid = (function _grid($) {
                 fn.call(context, param);
             });
         }
-    }
-
-    function existsInPutRequest(putRequest, model) {
-        var exists = -1;
-        putRequest.forEach(function _findModelIdx(cur, idx) {
-            if (model._initialRowIndex == putRequest[idx].dirtyData._initialRowIndex)
-                exists = idx;
-        });
-        return exists;
     }
 
     function getFormattedCellText(column, value) {
@@ -3941,7 +3938,8 @@ var grid = (function _grid($) {
             return {
                 filteredData: collection.filter(function collectionFilter(curr, idx) {
                     this.context = curr;
-                    if (this.rootNode.value) dataMap.push(idx);
+                    var isTrue = this.rootNode.evaluate();
+                    if (isTrue) dataMap.push(idx);
                     return this.rootNode.value;
                 }, this),
                 filteredDataMap: dataMap

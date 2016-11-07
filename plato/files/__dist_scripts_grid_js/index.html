@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">59.02</p>
+      <p class="stat">59.08</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4173</p>
+      <p class="stat">4171</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">218.00</p>
+      <p class="stat">218.65</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">94.42</p>
+      <p class="stat">94.66</p>
     </div>
   </div>
 </div>
@@ -312,7 +312,7 @@
                         var newModel = {}, prop;
                         if (!data) {
                             for (prop in gridState[gridId].dataSource.data[0]) {
-                                if (prop !== &#039;_initialRowIndex&#039;) newModel[prop] = null;
+                                newModel[prop] = null;
                             }
                         }
                         else if (typeof data === &#039;object&#039;) {
@@ -323,7 +323,6 @@
                         }
                         gridState[gridId].originalData.push(newModel);
                         var dataSourceModel = cloneGridData(newModel);
-                        dataSourceModel._initialRowIndex = gridState[gridId].dataSource.data.length;
                         gridState[gridId].dataSource.data.push(dataSourceModel);
                         gridState[gridId].dataSource.rowCount++;
 
@@ -391,19 +390,9 @@
                 },
                 &#039;getCurrentDataSourceData&#039;: {
                     value: function _getCurrentDataSourceData(index) {
-                        var i;
-                        if (typeof index === &#039;number&#039; &amp;&amp; index &gt; -1 &amp;&amp; index &lt;= gridState[gridId].dataSource.data.length) {
-                            var val = cloneGridData([].concat(gridState[gridId].dataSource.data[index]));
-                            delete val[0]._initialRowIndex;
-                            return val;
-                        }
-                        else {
-                            var gd = cloneGridData(gridState[gridId].dataSource.data);
-                            for (i = 0; i &lt; gd.length; i++) {
-                                delete gd[i]._initialRowIndex;
-                            }
-                            return gd;
-                        }
+                        if (typeof index === &#039;number&#039; &amp;&amp; index &gt; -1 &amp;&amp; index &lt;= gridState[gridId].dataSource.data.length)
+                            return cloneGridData([].concat(gridState[gridId].dataSource.data[index]));
+                        else return cloneGridData(gridState[gridId].dataSource.data);
                     },
                     writable: false,
                     configurable: false
@@ -806,7 +795,6 @@
 
         if (gridData.dataSource.data.length) {
             gridData.dataSource.data.forEach(function _createGridContentRows(item, idx) {
-                item._initialRowIndex = idx;
                 if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) createGroupedRows(id, idx, currentGroupingValues, contentTBody);
 
                 var tr = $(&#039;&lt;tr class=&quot;data-row&quot;&gt;&lt;/tr&gt;&#039;).appendTo(contentTBody);
@@ -853,7 +841,7 @@
                         if (col.text) {
                             var customText;
                             if (typeof col.text === jsTypes.function) {
-                                col.text(gridData.originalData[item._initialRowIndex]);
+                                col.text(gridData.originalData[gridData.dataMap[idx]]);
                             }
                             else customText = col.text;
                             td.text(customText);
@@ -1719,7 +1707,7 @@
             var idxOffset = 0;
             if (typeof gridState[id].dataSource.get !== jsTypes.function &amp;&amp; gridState[id].pageNum &gt; 1)
                 idxOffset = ((gridState[id].pageNum - 1) * gridState[id].pageSize) - 1;
-            if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index + idxOffset]._initialRowIndex][field]) {
+            if (saveVal !== gridState[id].originalData[gridState[id].dataMap[index + idxOffset]][field]) {
                 setDirtyFlag = true;
                 if (&#039;&#039; !== saveVal) cell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
                 else if (previousVal != null) cell.prepend(&#039;&lt;span class=&quot;dirty-blank&quot;&gt;&lt;/span&gt;&#039;);
@@ -1780,7 +1768,10 @@
         var previousVal = gridState[id].dataSource.data[index][field];
         if (previousVal !== saveVal) {  
             gridState[id].dataSource.data[index][field] = saveVal;
-            if (saveVal !== gridState[id].originalData[gridState[id].dataSource.data[index]._initialRowIndex][field]) {
+            var idxOffset = 0;
+            if (typeof gridState[id].dataSource.get !== jsTypes.function &amp;&amp; gridState[id].pageNum &gt; 1)
+                idxOffset = ((gridState[id].pageNum - 1) * gridState[id].pageSize) - 1;
+            if (saveVal !== gridState[id].originalData[gridState[id].dataMap[index + idxOffset]][field]) {
                 parentCell.prepend(&#039;&lt;span class=&quot;dirty&quot;&gt;&lt;/span&gt;&#039;);
                 setDirtyFlag = true;
             }
@@ -2000,7 +1991,10 @@
                     for (i = 0; i &lt; dirtyCells.length; i++) {
                         var index = dirtyCells[i].parents(&#039;tr&#039;).index();
                         var field = dirtyCells[i].data(&#039;field&#039;);
-                        var origIndex = gridState[id].dataSource.data[index]._initialRowIndex;
+                        var idxOffset = 0;
+                        if (typeof gridState[id].dataSource.get !== jsTypes.function &amp;&amp; gridState[id].pageNum &gt; 1)
+                            idxOffset = ((gridState[id].pageNum - 1) * gridState[id].pageSize) - 1;
+                        var origIndex = gridState[id].dataMap[index + idxOffset];
                         gridState[id].originalData[origIndex][field] = gridState[id].dataSource.data[index][field];
                         dirtyCells[i].find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).remove();
                     }
@@ -2011,17 +2005,21 @@
                     gridState[id].putRequest.models = [];
                     var putRequestModels = gridState[id].putRequest.models;
                     for (i = 0; i &lt; dirtyCells.length; i++) {
-                        var tmpModel = cloneGridData(gridState[id].dataSource.data[dirtyCells[i].parents(&#039;tr&#039;).index()]);
-                        var tmpMap = tmpModel._initialRowIndex;
-                        var idx = existsInPutRequest(putRequestModels, tmpModel);
-                        if (~idx)
-                            putRequestModels[idx].dirtyFields.push(dirtyCells[i].data(&#039;field&#039;));
-                        else
-                            putRequestModels.push({ cleanData: gridState[id].originalData[tmpMap], dirtyData: tmpModel, dirtyFields: [dirtyCells[i].data(&#039;field&#039;)] });
-                    }
-
-                    for (i = 0; i &lt; putRequestModels.length; i++) {
-                        delete putRequestModels[i].dirtyData._initialRowIndex;
+                        var dataIndex = dirtyCells[i].parents(&#039;tr&#039;).index();
+                        var exists = putRequestModels.some(function _upsertPutRequest(cur) {
+                            if (cur.dataIdx = dataIndex) {
+                                cur.dirtyFields.push(dirtyCells[i].data(&#039;field&#039;));
+                                return true;
+                            }
+                        });
+                        if (!exists) {
+                            putRequestModels.push({
+                                cleanData: gridState[id].originalData[dirtyCells[i].parents(&#039;tr&#039;).index()],
+                                dirtyData: cloneGridData(gridState[id].dataSource.data[dataIndex]),
+                                dirtyFields: [dirtyCells[i].data(&#039;field&#039;)],
+                                dataIdx: dataIndex
+                            });
+                        }
                     }
 
                     prepareGridDataUpdateRequest(id);
@@ -3481,7 +3479,7 @@
                 gridState[id].grid.find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).each(function iterateDirtySpansCallback(idx, val) {
                     var index = $(val).parents(&#039;tr&#039;).index();
                     var field = $(val).parents(&#039;td&#039;).data(&#039;field&#039;);
-                    var origIdx = gridState[id].dataSource.data[index]._initialRowIndex;
+                    var origIdx = gridState[id].dataMap[index];
                     gridState[id].originalData[origIdx][field] = gridState[id].dataSource.data[index][field];
                     $(val).remove();
                 });
@@ -3501,12 +3499,12 @@
     }
 
     function getPageData(requestObj, id, callback) {
-        var eventType = gridState[id].pageRequest.eventType;
-        var fullGridData = cloneGridData(gridState[id].alteredData);
+        var eventType = gridState[id].pageRequest.eventType,
+            fullGridData = cloneGridData(gridState[id].alteredData);
         if (!gridState[id].dataMap) gridState[id].dataMap = [];
 
         if (eventType === &#039;page&#039; || eventType === &#039;pageSize&#039; || eventType === &#039;newGrid&#039;) {
-            limitPageData(requestObj, fullGridData, callback);
+            limitPageData(requestObj, cloneGridData(gridState[id].alteredData), callback);
             return;
         }
         if (requestObj.filters &amp;&amp; requestObj.filters.filterGroup &amp;&amp; requestObj.filters.filterGroup.length) {
@@ -3517,8 +3515,14 @@
             gridState[id].alteredData = fullGridData;
         }
         if (requestObj.groupedBy &amp;&amp; requestObj.groupedBy.length || requestObj.sortedOn.length) {
-            var sortedData = sortGridData((requestObj.groupedBy || []).concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id);
-            gridState[id].alteredData = sortedData;
+            var sorted_mapped_Data = sortGridData((requestObj.groupedBy || []).concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id),
+                sortedData = sorted_mapped_Data.map(function _extractValues(item) {
+                return item[0];
+            });
+                gridState[id].alteredData = sortedData;
+                gridState[id].dataMap = sorted_mapped_Data.map(function _extractIndices(item) {
+                    return item[1];
+                });
             limitPageData(requestObj, sortedData, callback);
             return;
         }
@@ -3576,21 +3580,24 @@
         }
     }
 
-    function sortGridData (sortedItems, gridData, gridId) {
+    function sortGridData(sortedItems, gridData, gridId) {
+        var dataMap = gridData.map(function _mapIndices(item, idx) {
+            return [item, gridState[gridId].dataMap[idx]];
+        });
         sortedItems.forEach(function _sortItems(cur, idx) {
             var columnIdx = gridState[gridId].columnIndices[cur.field];
             var column = gridState[gridId].columns[columnIdx];
             if (idx === 0)
-                gridData = mergeSort(gridData, cur, column.type || &#039;string&#039;);
+                gridData = mergeSort(dataMap, cur, column.type || &#039;string&#039;);
             else {
                 var sortedGridData = [];
                 var itemsToSort = [];
                 gridData.forEach(function _sortGridData(data, i) {
                     var prevField = sortedItems[idx - 1].field,
-                        prevVal = itemsToSort.length ? itemsToSort[0][prevField] : null,
+                        prevVal = itemsToSort.length ? itemsToSort[0][0][prevField] : null,
                         prevColIdx = itemsToSort.length ? gridState[gridId].columnIndices[prevField] : null,
                         dataType = itemsToSort.length ? gridState[gridId].columns[prevColIdx].type : null;
-                    if (!itemsToSort.length || comparator(dataTypeValueNormalizer(dataType, prevVal), dataTypeValueNormalizer(dataType, gridData[i][prevField]), booleanOps.strictEqual))
+                    if (!itemsToSort.length || comparator(dataTypeValueNormalizer(dataType, prevVal), dataTypeValueNormalizer(dataType, gridData[i][0][prevField]), booleanOps.strictEqual))
                         itemsToSort.push(gridData[i]);
                     else {
                         if (itemsToSort.length === 1) sortedGridData = sortedGridData.concat(itemsToSort);
@@ -3618,11 +3625,10 @@
         if (!right.length) return left;
 
         var operator = sortObj.sortDirection === &#039;asc&#039; ? booleanOps.lessThanOrEqual : booleanOps.greaterThanOrEqual;
-        if (comparator(dataTypeValueNormalizer(type, left[0][sortObj.field]), dataTypeValueNormalizer(type, right[0][sortObj.field]), operator))
-            return [cloneGridData(left[0])].concat(merge(left.slice(1, left.length), right, sortObj, type));
-        else return [cloneGridData(right[0])].concat(merge(left, right.slice(1, right.length), sortObj, type));
+        if (comparator(dataTypeValueNormalizer(type, left[0][0][sortObj.field]), dataTypeValueNormalizer(type, right[0][0][sortObj.field]), operator))
+            return [[cloneGridData(left[0][0]), left[0][1]]].concat(merge(left.slice(1, left.length), right, sortObj, type));
+        else  return [[cloneGridData(right[0][0]), right[0][1]]].concat(merge(left, right.slice(1, right.length), sortObj, type));
     }
-
 
     function dataTypeValueNormalizer(dataType, val) {
         if (val == null) return val;
@@ -3662,15 +3668,6 @@
                 fn.call(context, param);
             });
         }
-    }
-
-    function existsInPutRequest(putRequest, model) {
-        var exists = -1;
-        putRequest.forEach(function _findModelIdx(cur, idx) {
-            if (model._initialRowIndex == putRequest[idx].dirtyData._initialRowIndex)
-                exists = idx;
-        });
-        return exists;
     }
 
     function getFormattedCellText(column, value) {
@@ -4032,7 +4029,8 @@
             return {
                 filteredData: collection.filter(function collectionFilter(curr, idx) {
                     this.context = curr;
-                    if (this.rootNode.value) dataMap.push(idx);
+                    var isTrue = this.rootNode.evaluate();
+                    if (isTrue) dataMap.push(idx);
                     return this.rootNode.value;
                 }, this),
                 filteredDataMap: dataMap
