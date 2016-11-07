@@ -3799,8 +3799,8 @@ var grid = (function _grid($) {
         if (/[CPN]/.test(format.toUpperCase())) return createStandardNumberFormat(num, format);
         format = format.replace(/[^0#,.]/g , '');
         var formatDecimalIndex = ~format.indexOf('.') ? format.indexOf('.') : format.length,
-            formatWholeNums = format.substring(0, formatDecimalIndex).replace(',', ''),
-            formatDecimals = format.substring(formatDecimalIndex + 1, format.length);
+            formatWholeNums = ensureCorrectFormat(/(0+#+)/g, format.substring(0, formatDecimalIndex).replace(',', '')),
+            formatDecimals = ensureCorrectFormat(/(#+0+)/g, format.substring(formatDecimalIndex + 1, format.length));
         num = (roundNumber(+num, formatDecimals.length)).toString();
         var dataDecimalIndex = ~num.indexOf('.') ? num.indexOf('.') : num.length,
             dataWholeNums = num.substring(0, dataDecimalIndex).split(''),
@@ -3840,6 +3840,16 @@ var grid = (function _grid($) {
             return numberWithCommas(wholeNums) + '.' + decimals.toString().substring(0, numDecimals).concat('0'.repeat((numDecimals - decimals.length) > 0 ? numDecimals - decimals.length : 0));
         }
         else return numberWithCommas(wholeNums);
+    }
+
+    function ensureCorrectFormat(pattern, format) {
+        var matches;
+        if (matches = format.match(pattern)) {
+            matches.forEach(function _replace(match) {
+                format = format.replace(match, '0'.repeat(match.length));
+            });
+        }
+        return format;
     }
 
     function numberWithCommas(num) {
