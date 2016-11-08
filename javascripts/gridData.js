@@ -1,5 +1,5 @@
 var gridData = {
-    height: 400,
+    height: 250,
     useValidator: true,
     useFormatter: true,
     sortable: true,
@@ -17,40 +17,48 @@ var gridData = {
         resizable: true,
         excelExport: true,
         pageSize: 5,
-        columns: {
-            MechanicName: {
+        columns: [
+            {
+                field: 'MechanicName',
                 title: 'Mechanic',
                 filterable: true,
                 width: 250,
                 type: 'string'
             },
-            Make: {
+            {
+                field: 'Make',
                 filterable: true,
                 width: 150,
                 type: 'string'
             },
-            Model: {
+            {
+                field: 'Model',
                 filterable: true,
                 width: 150,
                 type: 'string'
             },
-            Year: {
+            {
+                field: 'Year',
                 filterable: true,
                 width: 100,
-                type: 'date'
+                type: 'number',
+                format: '##00'
             },
-            Doors: {
+            {
+                field: 'Doors',
                 filterable: true,
                 width: 100,
                 type: 'number',
             },
-            EngineType: {
+            {
+                field: 'EngineType',
                 title: 'Engine Type',
                 width: 150,
                 type: 'string',
                 filterable: true
             },
-            EngineSize: {
+            {
+                field: 'EngineSize',
                 title: 'Engine Size',
                 width: 150,
                 type: 'number',
@@ -58,7 +66,7 @@ var gridData = {
                 format: '##.##',
                 filterable: true
             }
-        }
+        ],
     },
     pagingOptions: [25, 50, 100],
     menu: ['filter', 'excel', 'save', 'sort', 'selection'],
@@ -75,10 +83,12 @@ var gridData = {
         },
         positionAt: "top"
     },
-    columns: {
-        FirstName: {
+    columns: [
+        {
+            field: 'FirstName',
             title: 'First Name',
             type: 'string',
+            nullable: true,
             filterable: true,
             editable: true,
             width: 160,
@@ -88,35 +98,41 @@ var gridData = {
                 headerClasses: ["custom-class"]
             }
         },
-        LastName: {
+        {
+            field: 'LastName',
             title: 'Last Name',
             type: "string",
             width: 180
         },
-        Phone: {
+        {
+            field: 'Phone',
             type: "string",
             editable: true,
             width: 130,
             inputFormat: "{{###}}-{{###}}-{{####}}",
             title: "Phone Number"
         },
-        Email: {
+        {
+            field: 'Email',
             type: "string",
             editable: true,
             width: 200
         },
-        Address: {
+        {
+            field: 'Address',
             width: 200,
             type: "string",
             filterable: true,
             editable: true
         },
-        City: {
+        {
+            field: 'City',
             type: "string",
             editable: true,
             width: 155
         },
-        State: {
+        {
+            field:' State',
             filterable: false,
             type: "string",
             width: 140,
@@ -126,8 +142,10 @@ var gridData = {
                 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
                 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY']
         },
-        Zip: {
+        {
+            field: 'Zip',
             title: 'Zip Code',
+            nullable: true,
             filterable: true,
             type: "number",
             format: '00000',
@@ -145,7 +163,7 @@ var gridData = {
                 }
             }
         }
-    },
+    ],
     dataSource: {
         rowCount: 54,
         data: [
@@ -203,8 +221,8 @@ var gridData = {
                 Phone: '888-999-9999',
                 Email: 'lll@lll.net',
                 Address: '777 Peachtree Rd.',
-                City: 'Atlanta',
-                State: 'GA',
+                City: 'Newark',
+                State: 'NJ',
                 Zip: '30156',
                 drillDownData: [
                     {
@@ -278,8 +296,8 @@ var gridData = {
                 Phone: '555-555-5555',
                 Email: 'lb@lblb.com',
                 Address: '425 Peachtree Ln.',
-                City: 'Atlanta',
-                State: 'GA',
+                City: 'Newark',
+                State: 'NJ',
                 Zip: '30151',
                 drillDownData: [
                     {
@@ -657,8 +675,8 @@ var gridData = {
                 ]
             },
             {
-                FirstName: 'Mr. Panucci',
-                LastName: '',
+                FirstName: 'Mr.',
+                LastName: 'Panucci',
                 Phone: '123-456-7890',
                 Email: 'mrPanuccis@pizza.net',
                 Address: '999 Somewhere St.',
@@ -753,10 +771,10 @@ var gridData = {
                 ]
             },
             {
-                FirstName: 'Turanga',
-                LastName: 'Morris',
+                FirstName: 'Morris',
+                LastName: 'Leela',
                 Phone: '',
-                Email: 'mTurange@sewerlife.net',
+                Email: 'mLeela@sewerlife.net',
                 Address: '123 DungBeetle Ln.',
                 City: 'Old New York',
                 State: 'NY',
@@ -1000,7 +1018,7 @@ var gridData = {
                 Address: '992 Gelatinous St.',
                 City: 'Asteroid Belt',
                 State: '',
-                Zip: '30154-232442',
+                Zip: '30154232442',
                 drillDownData: [
                     {
                         MechanicName: 'Headless Body of Agnew',
@@ -1185,14 +1203,14 @@ var gridData = {
                 ]
             },
             {
-                FirstName: 'Mark',
-                LastName: 'Mosby',
+                FirstName: 'Turanga',
+                LastName: 'Leela',
                 Phone: '999-999-9999',
-                Email: 'mmm@mmm.net',
-                Address: '999 Peachtree St.',
-                City: 'Atlanta',
-                State: 'GA',
-                Zip: '30154',
+                Email: 'leela@turange.net',
+                Address: '9271 Some St.',
+                City: 'New New York',
+                State: 'NY',
+                Zip: '89898',
                 drillDownData: [
                     {
                         MechanicName: 'Clamps',
