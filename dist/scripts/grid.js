@@ -1,6 +1,6 @@
 var grid = (function _grid($) {
     'use strict';
-    var dataTypes, events, aggregates, generateId, expressionParser,
+    var dataTypes, events, aggregates, generateId, expressionParser, dataStore,
         gridState = [],
         groupMenuText = 'Drag and drop a column header here to group by that column',
         booleanOps = {
@@ -28,7 +28,12 @@ var grid = (function _grid($) {
 
     function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
-            var id = generateId();
+            var im = 2;
+            if (!gridData) {
+                var tmp = dataStore.addInstance(gridData);
+                im = tmp.getGridInstance();
+            }
+            var id = generateId(im);
             gridElem = $(gridElem).addClass('grid_elem');
             var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class=grid-wrapper></div>').appendTo(gridElem);
             var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class=grid-header-div></div>').appendTo(wrapperDiv);
@@ -485,9 +490,7 @@ var grid = (function _grid($) {
                 }
             });
 
-        Object.getOwnPropertyNames(gridElem[0].grid).forEach(function _preventExensionsToInstanceMethods(method) {
-            Object.preventExtensions(gridElem[0].grid[method]);
-        });
+        Object.seal(gridElem[0].grid);
     }
 
     function getInitialGridData(dataSource, pageSize, callback) {
@@ -526,7 +529,7 @@ var grid = (function _grid($) {
         };
 
         Object.keys(storageData.events).forEach(function setEvtHandlers(evt) {
-            storageData.events[evt] = storageData.events[evt].map(function mapEventsCallback(fn) {
+            storageData.events[evt] = storageData.events[evt].filter(function mapEventsCallback(fn) {
                 if (typeof fn == 'function') return fn;
             });
         });
@@ -553,7 +556,7 @@ var grid = (function _grid($) {
         storageData.groupedBy = [];
         storageData.gridAggregations = {};
         storageData.advancedFiltering = storageData.filterable ? storageData.advancedFiltering : false;
-        if (storageData.advancedFiltering) {
+        if (typeof storageData.advancedFiltering === jsTypes.object) {
             storageData.advancedFiltering.groupsCount = isInteger(storageData.advancedFiltering.groupsCount) ? storageData.advancedFiltering.groupsCount : 5;
             storageData.advancedFiltering.filtersCount = isInteger(storageData.advancedFiltering.filtersCount) ? storageData.advancedFiltering.filtersCount : 10;
         }
@@ -3893,6 +3896,162 @@ var grid = (function _grid($) {
     function isInteger(value) {
         return isNumber(value) && value % 1 === 0;
     }
+
+    dataStore = (function _createDataStore() {
+        var mutators = {
+                getter: 0,
+                setter: 1,
+                getterSetter: 2
+            },
+            configConfigs = {
+                groupAggregates: mutators.getterSetter,
+                aggregates: mutators.getterSetter,
+                dataSource: {
+                    data: mutators.getterSetter,
+                    rowCount: mutators.getterSetter
+                },
+                originalData: mutators.getterSetter,
+                dataMap: mutators.getterSetter,
+                events: {
+                    beforeCellEdit: mutators.getterSetter,
+                    cellEditChange: mutators.getterSetter,
+                    afterCellEdit: mutators.getterSetter,
+                    pageRequested: mutators.getterSetter,
+                    beforeDataBind: mutators.getterSetter,
+                    afterDataBind: mutators.getterSetter,
+                    columnReorder: mutators.getterSetter
+                },
+                pageNum: mutators.getterSetter,
+                currentEdit: mutators.getterSetter,
+                pageRequest: mutators.getterSetter,
+                putRequest: mutators.getterSetter,
+                resizing: mutators.getterSetter,
+                sortedOn: mutators.getterSetter,
+                basicFilters: mutators.getterSetter,
+                advancedFilters: mutators.getterSetter,
+                groupedBy: mutators.getterSetter,
+                gridAggregations: mutators.getterSetter
+            };
+
+        var store = {},
+            dataStore = {
+                addInstance: function _addInstance(config, gridElem) {
+                    var id = generateId();
+                    store[id] = {
+                        state: {},
+                        instance: {}
+                    };
+
+                    store[id].state.height = config.height || 400;
+                    store[id].state.useValidator = config.useValidator === true && window.validator && typeof window.validator.setAdditionalEvents === jsTypes.function;
+                    if (store[id].state.useValidator) validator.setAdditionalEvents(['blur', 'change']);
+                    store[id].state.userFormatter = config.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === jsTypes.function;
+                    store[id].state.sortable = config.sortable || false;
+                    store[id].state.reorderable = config.reorderable || false;
+                    store[id].state.resizable = config.resizable || false;
+                    store[id].state.groupable = config.groupable || false;
+                    store[id].state.selectable = config.selectable || false;
+                    store[id].state.groupAggregates = config.groupAggregates || false;
+                    store[id].state.excelExport = config.excelExport || false;
+                    store[id].state.columnToggle = config.columnToggle || false;
+                    store[id].state.rows = config.rows || {};
+                    store[id].state.advancedFiltering = config.filterable ? config.advancedFiltering : false;
+                    store[id].state.pagingOptions = config.pagingOptions || null;
+                    store[id].state.drillDown = config.drillDown || undefined;
+                    store[id].state.aggregate = config.aggregates || {};
+                    store[id].state.pageNum = 1;
+                    store[id].state.pageSize = config.pageSize || 25;
+                    store[id].state.grid = gridElem;
+                    store[id].state.grid[0].grid = {};
+                    store[id].state.currentEdit = {};
+                    store[id].state.pageRequest = {};
+                    store[id].state.putRequest = {};
+                    store[id].state.resizing = false;
+                    store[id].state.sortedOn = [];
+                    store[id].state.basicFilters = {conjunct: 'and', filterGroup: null};
+                    store[id].state.advancedFilters = {};
+                    store[id].state.filters = {};
+                    store[id].state.groupedBy = [];
+                    store[id].state.gridAggregations = {};
+                    store[id].state.parentGridId = config.parentGridId != null ? config.parentGridId : null;
+
+                    if (typeof store[id].state.advancedFiltering === jsTypes.object) {
+                        store[id].state.advancedFiltering.groupsCount = isInteger(store[id].state.advancedFiltering.groupsCount) ? store[id].state.advancedFiltering.groupsCount : 5;
+                        store[id].state.advancedFiltering.filtersCount = isInteger(store[id].state.advancedFiltering.filtersCount) ? store[id].state.advancedFiltering.filtersCount : 10;
+                    }
+
+                    store[id].state.events = {
+                        beforeCellEdit: typeof config.beforeCellEdit === jsTypes.object && config.beforeCellEdit.constructor === Array ? config.beforeCellEdit : [],
+                        cellEditChange: typeof config.cellEditChange === jsTypes.object && config.cellEditChange.constructor === Array ? config.cellEditChange : [],
+                        afterCellEdit: typeof config.afterCellEdit === jsTypes.object && config.afterCellEdit.constructor === Array ? config.afterCellEdit : [],
+                        pageRequested: typeof config.pageRequested === jsTypes.object && config.pageRequested.constructor === Array ? config.pageRequested : [],
+                        beforeDataBind: typeof config.beforeDataBind === jsTypes.object && config.beforeDataBind.constructor === Array ? config.beforeDataBind : [],
+                        afterDataBind: typeof config.afterDataBind === jsTypes.object && config.afterDataBind.constructor === Array ? config.afterDataBind : [],
+                        columnReorder: typeof config.columnReorder === jsTypes.object && config.columnReorder.constructor === Array ? config.columnReorder : []
+                    };
+
+                    Object.keys(store[id].state.events).forEach(function setEvtHandlers(evt) {
+                        store[id].state.events[evt] = store[id].state.events[evt].filter(function mapEventsCallback(fn) {
+                            if (typeof fn == 'function') return fn;
+                        });
+                    });
+
+                    store[id].state.columns = cloneGridData(config.columns);
+                    store[id].state.columnIndices = {};
+                    store[id].state.columns = store[id].state.columns.forEach(function _createColumnIndices(col, idx) {
+                        config.columnIndices[col.field] = idx;
+                    });
+                    store[id].state.dataSource = {
+                        rowCount: config.dataSource.rowCount || 25
+                    };
+                    store[id].state.originalData = {};
+                    this.createInstanceMutators(id);
+                },
+                getGridInstance: function _getGridInstance(id) {
+                    return store[id].instance;
+                },
+                createInstanceMutators: function _createInstanceMutators(instanceId) {
+                    var state = store[instanceId].state,
+                        instance = store[instanceId].instance;
+                    Object.keys(state).forEach(function _createMutators(prop) {
+                        Object.defineProperty(
+                            instance,
+                            prop, {
+                                configurable: false,
+                                writable: false,
+                                get: function _get() {
+                                    return instance[prop];
+                                }
+                            }
+                        );
+                        if (prop in configConfigs) {
+                            Object.defineProperty(
+                                instance,
+                                prop, {
+                                    set: function _set(val) {
+                                        if (!testNestedValues(instance[prop], val)) return false;
+                                        instance[prop] = val;
+                                    }
+                                }
+                            );
+                        }
+                    });
+                }
+            };
+
+        function testNestedValues(standard, obj) {
+            if (typeof obj !== jsTypes.object) return obj;
+            return Object.keys(obj).every(function ensureTypeCorrectness(prop) {
+                if (typeof standard[prop] === jsTypes.object && typeof obj[prop] === jsTypes.object)
+                    return testNestedValues(standard[prop], obj[prop]);
+                else if (standard[prop] && typeof standard[prop] !== typeof obj[prop])
+                    return false;
+                return true;
+            });
+        }
+
+        return Object.create(dataStore).init();
+    })();
 
     expressionParser = (function _expressionParser() {
         var stack = {

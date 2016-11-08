@@ -36,7 +36,7 @@ var excelExporter = (function _excelExporter(global) {
 
     /**
      * This is the base object to which all other excel object delegate for
-     * creating themselves, adding/creating child node, and toXmlString()-ing themselves
+     * creating themselves, adding/creating child nodes, and toXmlString()-ing themselves
      * @type {Object}
      */
     var xmlNode = {
