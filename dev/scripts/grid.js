@@ -116,7 +116,7 @@
  - Add null/empty string values to filtering selectors - DONE
  - Fix ._initialRowIndex_ property setting on local grid data handling - DONE
  - Fix broken number formatter - DONE
- - Add update to .dataMap after adding rows
+ - Add update to .dataMap after adding rows - DONE
  - Create data store object to hold cached grid data
  - Add drag-drop columns between different grids
  - Update cell editing to include missing data types support; especially date-time
@@ -457,24 +457,16 @@ var grid = (function _grid($) {
                      * @param {Object} data - A javascript model object with the same properties as the grid's model collection objects.
                      */
                     value: function _addRow(data) {
-                        var newModel = {}, prop;
-                        if (!data) {
-                            for (prop in gridState[gridId].dataSource.data[0]) {
-                                newModel[prop] = null;
-                            }
-                        }
-                        else if (typeof data === 'object') {
-                            for (prop in gridState[gridId].dataSource.data[0]) {
-                                if (typeof data[prop] !== 'undefined') newModel[prop] = data[prop];
-                                else newModel[prop] = null;
-                            }
-                        }
-                        gridState[gridId].originalData.push(newModel);
-                        var dataSourceModel = cloneGridData(newModel);
-                        gridState[gridId].dataSource.data.push(dataSourceModel);
+                        data = data || {};
+                        Object.keys(gridState[gridId].dataSource.data[0]).forEach(function _applyNullProps(prop) {
+                            if (data[prop] === undefined) data[prop] = null;
+                        });
+                        gridState[gridId].originalData.push(cloneGridData(data));   //clone data here for original data
+                        gridState[gridId].dataSource.data.push(cloneGridData(data));    //clone here to keep cloned original data from being updated when data source data is updated
                         gridState[gridId].dataSource.rowCount++;
-
-                        gridState[gridId].pageSize = gridState[gridId].pageSize + 1;
+                        if (gridState[gridId].dataSource.dataMap)
+                            gridState[gridId].dataSource.dataMap[gridState[gridId].dataSource.rowCount] = gridState[gridId].dataSource.rowCount;
+                        gridState[gridId].pageSize++;
                         gridState[gridId].grid.find('.grid-content-div').empty();
                         createGridContent(gridState[gridId], gridState[gridId].grid);
                         gridState[gridId].grid.find('.grid-footer-div').empty();
@@ -4439,7 +4431,8 @@ var grid = (function _grid($) {
         '((?:1[6-9]|[2-9]\\d)?\\d{2}))))|(?:(?:((?:1[6-9]|[2-9]\\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00)))(\\/|-|\\.)(?:(?:(?:(0?2)(?:\\31)(29))))' +
         '|((?:1[6-9]|[2-9]\\d)?\\d{2})(\\/|-|\\.)(?:(?:(?:(0?[13578]|1[02])\\35(31))|(?:(0?[1,3-9]|1[0-2])\\35(29|30)))|((?:0?[1-9])|(?:1[0-2]))\\35(0?[1-9]|1\\d|2[0-8])))))' +
         '(?: |T)((0?[1-9]|1[012])(?:(?:(:|\\.)([0-5]\\d))(?:\\44([0-5]\\d))?)?(?:(\\ [AP]M))$|([01]?\\d|2[0-3])(?:(?:(:|\\.)([0-5]\\d))(?:\\49([0-5]\\d))?)$))',
-        dateChar: '\\d|\\-|\\/|\\.'
+        dateChar: '\\d|\\-|\\/|\\.',
+        dateTimeChar: '[\\d\\.:\\sAMP\\-\\/]'
     };
 
     events = ['cellEditChange', 'beforeCellEdit', 'afterCellEdit', 'pageRequested', 'beforeDataBind', 'afterDataBind', 'columnReorder'];
