@@ -102,12 +102,11 @@ var grid = (function _grid($) {
                         if (events.includes(evt) && (funcs || (typeof funcs === 'function' || Array.isArray(funcs)))) {
                             if (typeof funcs === 'function') funcs = [funcs];
                             var tmpEvts = [];
-                            for (var i = 0; i < gridState[gridId].events[evt].length; i++) {
-                                for (var j = 0; j < funcs.length; j++) {
-                                    if (gridState[gridId].events[evt][i] !== funcs[j])
-                                        tmpEvts.push(gridState[gridId].events[evt][i]);
-                                }
-                            }
+                            gridState[gridId].events[evt] = gridState[gridId].events[evt].filter(function _unbindEvents(e) {
+                                return funcs.some(function _unBindEventFunctions(fn) {
+                                    return e !== fn;
+                                });
+                            });
                             gridState[gridId].events[evt] = tmpEvts;
                             return true;
                         }
@@ -127,12 +126,9 @@ var grid = (function _grid($) {
                 },
                 'getHandledEvents': {
                     value: function _getHandledEvents() {
-                        var evts = [];
-                        events.forEach(function _returnHandledEvents(evt, idx) {
-                            if (gridState[gridId].events[evt].length)
-                                evts.push(events[idx]);
+                        return events.filter(function _findHandledEvents(evt) {
+                            return gridState[gridId].events[evt].length;
                         });
-                        return evts;
                     },
                     writable: false,
                     configurable: false
@@ -530,7 +526,7 @@ var grid = (function _grid($) {
 
         Object.keys(storageData.events).forEach(function setEvtHandlers(evt) {
             storageData.events[evt] = storageData.events[evt].filter(function mapEventsCallback(fn) {
-                if (typeof fn == 'function') return fn;
+                return typeof fn === jsTypes.function;
             });
         });
 
@@ -3934,7 +3930,7 @@ var grid = (function _grid($) {
             };
 
         var store = {},
-            dataStore = {
+            _dataStore = {
                 addInstance: function _addInstance(config, gridElem) {
                     var id = generateId();
                     store[id] = {
@@ -4010,6 +4006,15 @@ var grid = (function _grid($) {
                 getGridInstance: function _getGridInstance(id) {
                     return store[id].instance;
                 },
+                getProperty: function _getProperty(nameSpace, property, id) {
+                    var loc = store[id].state.concat(nameSpace.split('.')).reduce(function findValidationRuleCallback(prev, curr) {
+                        if (typeof prev[curr] !== jsTypes.object && typeof prev[curr] !== jsTypes.function) return false;
+                        return prev[curr];
+                    });
+
+                    if (loc) return loc[property];
+                    return false;
+                },
                 createInstanceMutators: function _createInstanceMutators(instanceId) {
                     var state = store[instanceId].state,
                         instance = store[instanceId].instance;
@@ -4018,7 +4023,6 @@ var grid = (function _grid($) {
                             instance,
                             prop, {
                                 configurable: false,
-                                writable: false,
                                 get: function _get() {
                                     return instance[prop];
                                 }
@@ -4036,6 +4040,67 @@ var grid = (function _grid($) {
                             );
                         }
                     });
+
+                    function createNewProperty(prop, val) {
+                        var parentObj = null;
+                        function on(prop) {
+                            var loc = state.concat(prop.split('.')).reduce(function findValidationRuleCallback(prev, curr) {
+                                if (typeof prev[curr] !== jsTypes.object && typeof prev[curr] !== jsTypes.function) return false;
+                                return prev[curr];
+                            });
+
+                            if (loc !== undefined || (typeof loc !== jsTypes.object && typeof loc !== jsTypes.function))  parentObj = loc;
+                            else parentObj = false;
+                            return {
+                                withInstanceMutators: withInstanceMutators
+                            };
+                        }
+
+                        function withInstanceMutators(accessors) {
+                            if (parentObj === false) return false;
+                            parentObj = parentObj || state;
+                            if (parentObj[prop] !== undefined) return false;
+                            parentObj[prop] = val;
+                            Object.defineProperty(
+                                instance,
+                                prop, {
+                                    configurable: !accessors || accessors === mutators.getterSetter,
+                                    get: function _get() {
+                                        return parentObj[prop];
+                                    }
+                                }
+                            );
+
+                            if (accessors === mutators.getterSetter) {
+                                Object.defineProperty(
+                                    instance,
+                                    prop, {
+                                        configurable: false,
+                                        set: function _set(val) {
+                                            parentObj[prop] = val;
+                                        }
+                                    }
+                                );
+                            }
+
+                            return true;
+                        }
+
+                        return {
+                            on: on,
+                            withInstanceMutators: withInstanceMutators
+                        };
+                    }
+                    Object.defineProperty(
+                        instance,
+                        'createNewProperty', {
+                            writable: false,
+                            configurable: false,
+                            value: createNewProperty
+                        }
+                    );
+
+                    return instance;
                 }
             };
 
@@ -4050,7 +4115,7 @@ var grid = (function _grid($) {
             });
         }
 
-        return Object.create(dataStore).init();
+        return Object.create(_dataStore);
     })();
 
     expressionParser = (function _expressionParser() {

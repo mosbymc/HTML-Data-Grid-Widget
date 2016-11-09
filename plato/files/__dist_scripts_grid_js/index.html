@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">59.10</p>
+      <p class="stat">59.33</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4333</p>
+      <p class="stat">4398</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">224.25</p>
+      <p class="stat">224.39</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">99.30</p>
+      <p class="stat">100.15</p>
     </div>
   </div>
 </div>
@@ -193,12 +193,11 @@
                         if (events.includes(evt) &amp;&amp; (funcs || (typeof funcs === &#039;function&#039; || Array.isArray(funcs)))) {
                             if (typeof funcs === &#039;function&#039;) funcs = [funcs];
                             var tmpEvts = [];
-                            for (var i = 0; i &lt; gridState[gridId].events[evt].length; i++) {
-                                for (var j = 0; j &lt; funcs.length; j++) {
-                                    if (gridState[gridId].events[evt][i] !== funcs[j])
-                                        tmpEvts.push(gridState[gridId].events[evt][i]);
-                                }
-                            }
+                            gridState[gridId].events[evt] = gridState[gridId].events[evt].filter(function _unbindEvents(e) {
+                                return funcs.some(function _unBindEventFunctions(fn) {
+                                    return e !== fn;
+                                });
+                            });
                             gridState[gridId].events[evt] = tmpEvts;
                             return true;
                         }
@@ -218,12 +217,9 @@
                 },
                 &#039;getHandledEvents&#039;: {
                     value: function _getHandledEvents() {
-                        var evts = [];
-                        events.forEach(function _returnHandledEvents(evt, idx) {
-                            if (gridState[gridId].events[evt].length)
-                                evts.push(events[idx]);
+                        return events.filter(function _findHandledEvents(evt) {
+                            return gridState[gridId].events[evt].length;
                         });
-                        return evts;
                     },
                     writable: false,
                     configurable: false
@@ -621,7 +617,7 @@
 
         Object.keys(storageData.events).forEach(function setEvtHandlers(evt) {
             storageData.events[evt] = storageData.events[evt].filter(function mapEventsCallback(fn) {
-                if (typeof fn == &#039;function&#039;) return fn;
+                return typeof fn === jsTypes.function;
             });
         });
 
@@ -4025,7 +4021,7 @@
             };
 
         var store = {},
-            dataStore = {
+            _dataStore = {
                 addInstance: function _addInstance(config, gridElem) {
                     var id = generateId();
                     store[id] = {
@@ -4101,6 +4097,15 @@
                 getGridInstance: function _getGridInstance(id) {
                     return store[id].instance;
                 },
+                getProperty: function _getProperty(nameSpace, property, id) {
+                    var loc = store[id].state.concat(nameSpace.split(&#039;.&#039;)).reduce(function findValidationRuleCallback(prev, curr) {
+                        if (typeof prev[curr] !== jsTypes.object &amp;&amp; typeof prev[curr] !== jsTypes.function) return false;
+                        return prev[curr];
+                    });
+
+                    if (loc) return loc[property];
+                    return false;
+                },
                 createInstanceMutators: function _createInstanceMutators(instanceId) {
                     var state = store[instanceId].state,
                         instance = store[instanceId].instance;
@@ -4109,7 +4114,6 @@
                             instance,
                             prop, {
                                 configurable: false,
-                                writable: false,
                                 get: function _get() {
                                     return instance[prop];
                                 }
@@ -4127,6 +4131,67 @@
                             );
                         }
                     });
+
+                    function createNewProperty(prop, val) {
+                        var parentObj = null;
+                        function on(prop) {
+                            var loc = state.concat(prop.split(&#039;.&#039;)).reduce(function findValidationRuleCallback(prev, curr) {
+                                if (typeof prev[curr] !== jsTypes.object &amp;&amp; typeof prev[curr] !== jsTypes.function) return false;
+                                return prev[curr];
+                            });
+
+                            if (loc !== undefined || (typeof loc !== jsTypes.object &amp;&amp; typeof loc !== jsTypes.function))  parentObj = loc;
+                            else parentObj = false;
+                            return {
+                                withInstanceMutators: withInstanceMutators
+                            };
+                        }
+
+                        function withInstanceMutators(accessors) {
+                            if (parentObj === false) return false;
+                            parentObj = parentObj || state;
+                            if (parentObj[prop] !== undefined) return false;
+                            parentObj[prop] = val;
+                            Object.defineProperty(
+                                instance,
+                                prop, {
+                                    configurable: !accessors || accessors === mutators.getterSetter,
+                                    get: function _get() {
+                                        return parentObj[prop];
+                                    }
+                                }
+                            );
+
+                            if (accessors === mutators.getterSetter) {
+                                Object.defineProperty(
+                                    instance,
+                                    prop, {
+                                        configurable: false,
+                                        set: function _set(val) {
+                                            parentObj[prop] = val;
+                                        }
+                                    }
+                                );
+                            }
+
+                            return true;
+                        }
+
+                        return {
+                            on: on,
+                            withInstanceMutators: withInstanceMutators
+                        };
+                    }
+                    Object.defineProperty(
+                        instance,
+                        &#039;createNewProperty&#039;, {
+                            writable: false,
+                            configurable: false,
+                            value: createNewProperty
+                        }
+                    );
+
+                    return instance;
                 }
             };
 
@@ -4141,7 +4206,7 @@
             });
         }
 
-        return Object.create(dataStore).init();
+        return Object.create(_dataStore);
     })();
 
     expressionParser = (function _expressionParser() {

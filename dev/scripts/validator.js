@@ -278,7 +278,7 @@ var validator = (function validator($) {
                 if (!inputsArray[i].failedRequired) {      //if the input wasn't 'required', or it passed validation for that function, then move on through the array for that input
                     var fn = [window].concat(rule.split('.')).reduce(function findValidationRuleCallback(prev, curr) {
                         return (typeof prev === "function" ? prev()[curr] : prev[curr]);
-                    });;
+                    });
                     if (typeof fn === "function") createContextWrapper(rule, options.time, fn, elem, inputsArray[i]);
                     else setRuleStatus(elem, rule, null);    //if the validator cannot find the supplied function name, then it just gets skipped.
                 }

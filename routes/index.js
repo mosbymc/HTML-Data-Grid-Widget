@@ -41,11 +41,28 @@ var getGridPageData = function _getGridPageData(req, response) {
     });
 };
 
-var updateGridData = function _updateGridData(req, res) {
-    res.send(req.body);
-    //res.send(false);
-    res.end();
+var updateGridData = function _updateGridData(request, response) {
+    response.send(request.body);
+    response.end();
+    /*performUpdate(function _updatesComplete(err, res) {
+        response.send(res);
+        response.end();
+    });*/
 };
+
+function performUpdate(models, callback) {
+    var idx = 0;
+    makePutRequest(models[idx], function _updateCallback(err, res) {
+        if (!err && models.length > 1) performUpdate(models.slice(1, models.length), callback);
+        else callback(err, res);
+    });
+}
+
+function makePutRequest(model, callback) {
+    request.put('http://localhost:5500/auto-repairs', model, function(err, res, body) {
+        callback(err, res, body);
+    });
+}
 
 var getInitialGridDataSource = function _getInitialGridDataSource(req, res) {
     res.send(originalData);
