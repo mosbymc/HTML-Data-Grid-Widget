@@ -4766,9 +4766,28 @@ var grid = (function _grid($) {
                     };
                     store[id].state.originalData = {};
                     this.createInstanceMutators(id);
+                    this.createInstanceMethods(id, store[id].instance);
                 },
                 getGridInstance: function _getGridInstance(id) {
+                    //TODO: remove this call to destroy grid instance when complete.... need now for linter to stop being a bitch
+                    this.destroyGridInstance(id);
                     return store[id].instance;
+                },
+                destroyGridInstance: function _destroyGridInstance(id) {
+                    findChildren(store[id].state.grid.children());
+                    var gridElem = store[id].state.grid;
+                    delete store[id].state;
+                    return gridElem;
+
+                    function findChildren(nodes) {
+                        for (var i = 0; i < nodes.length; i++) {
+                            var child = $(nodes[i]);
+                            while (child.children().length)
+                                findChildren(child.children());
+                            child.off();
+                            child.remove();
+                        }
+                    }
                 },
                 getProperty: function _getProperty(nameSpace, property, id) {
                     var loc = store[id].state.concat(nameSpace.split('.')).reduce(function findValidationRuleCallback(prev, curr) {
@@ -4778,6 +4797,35 @@ var grid = (function _grid($) {
 
                     if (loc) return loc[property];
                     return false;
+                },
+                createInstanceMethods: function _createInstanceMethods(id, instance) {
+                    instance.getProperty = function _getProperty(property) {
+                        var prop;
+                        if (store[id].state[property] !== undefined) prop = cloneGridData(store[id].state[property]);
+                        return prop;
+                    };
+
+                    instance.setProperty = function _setProperty(property, value) {
+                        value = cloneGridData(value);
+                        if (!store[id].state[property]) store[id].state[property] = value;
+                        else if (checkTypes(store[id].state[property], value)) {
+                            store[id].state[property] = value;
+                            return true;
+                        }
+                        return false;
+                    };
+
+                    //TODO: not sure if this is something I want to run every time a property is updated on instance state...
+                    //TODO: could be times when property needs to be updated, but type should change; maybe allow a flag param
+                    function checkTypes(standard, value) {
+                        if (value == null || typeof value !== jsTypes.object || typeof value !== jsTypes.function)
+                            return typeof value === typeof standard;
+                        else if (typeof standard !== jsTypes.object && typeof standard !== jsTypes.function)
+                            return false;
+                        return Object.keys(value).every(function _verifyAllTypes(prop) {
+                            return checkTypes(standard[prop], value[prop]);
+                        });
+                    }
                 },
                 createInstanceMutators: function _createInstanceMutators(instanceId) {
                     var state = store[instanceId].state,
