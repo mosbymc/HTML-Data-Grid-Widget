@@ -182,32 +182,14 @@ var grid = (function _grid($) {
      */
     function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
-            //TODO: clean this tmp code up once jsHint will stop screaming
-            var im = 2;
-            if (!gridData) {
-                var tmp = dataStore.initializeInstance(gridData);
-                im = tmp.getGridInstance();
-            }
-            var id = generateId(im);
-            gridElem = $(gridElem).addClass('grid_elem');
+            var instanceId = dataStore.initializeInstance(gridData, gridElem);
             var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class=grid-wrapper></div>').appendTo(gridElem);
             var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class=grid-header-div></div>').appendTo(wrapperDiv);
             headerDiv.append('<div class=grid-header-wrapper></div>');
             wrapperDiv.append('<div id="grid-content-' + id + '" data-grid_content_id="' + id + '" class=grid-content-div></div>');
             wrapperDiv.append('<div id="grid-footer-' + id + '" data-grid_footer_id="' + id + '" class=grid-footer-div></div>');
 
-            gridState[id] = {};
-            gridElem[0].grid = {};
-
-            createGridInstanceMethods(gridElem, id);
-
-            (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === jsTypes.function) ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
-            gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === jsTypes.function;
-
-            gridData.columnIndices = {};
-            gridData.columns.forEach(function _createColumnIndices(col, idx) {
-                gridData.columnIndices[col.field] = idx;
-            });
+            createGridInstanceMethods(instanceId);
             createGridHeaders(gridData, gridElem);
             getInitialGridData(gridData.dataSource, gridData.pageSize || 25, function initialGridDataCallback(err, res) {
                 if (!err) {
@@ -247,10 +229,11 @@ var grid = (function _grid($) {
      * passed to the 'create' function to initialize the grid widget
      * @method createGridInstanceMethods
      * @private
-     * @param {object} gridElem - The DOM element that should be used to create the grid widget
      * @param {number} gridId - The id of this grid's instance
      */
-    function createGridInstanceMethods(gridElem, gridId) {
+    function createGridInstanceMethods(gridId) {
+        var gridInstance = dataStore.getGridInstance(gridId),
+            gridElem = gridInstance.getProperty('grid');
 
         Object.defineProperties(
             gridElem[0].grid, {
@@ -273,7 +256,7 @@ var grid = (function _grid($) {
                         if (!funcs || (typeof funcs !== 'function' && !Array.isArray(funcs))) return false;
                         if (typeof funcs === 'function') funcs = [funcs];
                         if (events.includes(evt)) {
-                            gridState[gridId].events[evt] = gridState[gridId].events[evt].concat(funcs);
+                            gridInstance.setProperty('events.' + evt, gridInstance.getProperty('events')[evt].concat(funcs));
                             return true;
                         }
                         return false;
@@ -295,19 +278,11 @@ var grid = (function _grid($) {
                         //if (~events.indexOf(evt) && (funcs || (typeof funcs === 'function' || funcs.constructor === Array))) {
                         if (events.includes(evt) && (funcs || (typeof funcs === 'function' || Array.isArray(funcs)))) {
                             if (typeof funcs === 'function') funcs = [funcs];
-                            var tmpEvts = [];
-                            gridState[gridId].events[evt] = gridState[gridId].events[evt].filter(function _unbindEvents(e) {
+                            gridInstance.setProperty('events.' + evt, gridInstance.getProperty('events')[evt].filter(function _unbindEvents(e) {
                                 return funcs.some(function _unBindEventFunctions(fn) {
                                     return e !== fn;
                                 });
-                            });
-                            /*for (var i = 0; i < gridState[gridId].events[evt].length; i++) {
-                                for (var j = 0; j < funcs.length; j++) {
-                                    if (gridState[gridId].events[evt][i] !== funcs[j])
-                                        tmpEvts.push(gridState[gridId].events[evt][i]);
-                                }
-                            }*/
-                            gridState[gridId].events[evt] = tmpEvts;
+                            }));
                             return true;
                         }
                         return false;
@@ -324,7 +299,7 @@ var grid = (function _grid($) {
                      */
                     value: function _removeAllEventHandlers() {
                         events.forEach(function _removeEventHandlers(evt) {
-                            gridState[gridId].events[evt] = [];
+                            gridInstance.setProperty('events.' + evt, []);
                         });
                     },
                     writable: false,
@@ -342,15 +317,10 @@ var grid = (function _grid($) {
                      * @returns {Array} - The list of events that currently have a handler
                      */
                     value: function _getHandledEvents() {
+                        var gridEvents = gridInstance.getProperty('events');
                         return events.filter(function _findHandledEvents(evt) {
-                            return gridState[gridId].events[evt].length;
+                            return gridEvents[evt].length;
                         });
-                        /*var evts = [];
-                        events.forEach(function _returnHandledEvents(evt, idx) {
-                            if (gridState[gridId].events[evt].length)
-                                evts.push(events[idx]);
-                        });
-                        return evts;*/
                     },
                     writable: false,
                     configurable: false
@@ -378,21 +348,21 @@ var grid = (function _grid($) {
                      * @param {string} col - The name of the column to hide
                      */
                     value: function _hideColumn(col) {
-                        var colIdx = gridState[gridId].columnIndices[col];
+                        var colIdx = gridInstance.getProperty('columnIndices')[col];
                         if (colIdx != null) {
-                            gridState[gridId].columns[colIdx].isHidden = true;
-                            var column = gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]'),
+                            gridInstance.setProperty('columns.' + colIdx + '.isHidden', true);//[colIdx].isHidden = true;
+                            var column = gridElem.find('.grid-header-wrapper').find('[data-field="' + col + '"]'),
                                 columnIdx = column.data('index');
                             column.css('display', 'none');
-                            gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', 'none');
-                            var colGroups = gridState[gridId].grid.find('colgroup');
+                            gridElem.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', 'none');
+                            var colGroups = gridElem.find('colgroup');
                             var group1 = $(colGroups[0]).find('col');
                             var group2 = $(colGroups[1]).find('col');
                             var offset = columnIdx;
-                            if (gridState[gridId].drillDown)
+                            if (gridInstance.getProperty('drillDown'))
                                 ++offset;
-                            if (gridState[gridId].groupedBy)
-                                offset += gridState[gridId].groupedBy.length;
+                            if (gridInstance.getProperty('groupedBy'))
+                                offset += gridInstance.getProperty('groupedBy').length;
                             group1.eq(offset).remove();
                             group2.eq(offset).remove();
                         }
@@ -406,14 +376,15 @@ var grid = (function _grid($) {
                      * @param {string} col - The name of the hidden column
                      */
                     value: function _showColumn(col) {
-                        col = gridState[gridId].columnIndices[col];
-                        if (gridState[gridId].columns[col] && gridState[gridId].columns[col].isHidden) {
-                            gridState[gridId].columns[col].isHidden = false;
-                            gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
-                            gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
-                            gridState[gridId].grid.find('colgroup').append('<col>');
-                            setColWidth(gridState[gridId], gridState[gridId].grid);
-                            copyGridWidth(gridState[gridId].grid);
+                        var colKey = gridInstance.getProperty('columnIndices')[col];
+                            col = gridInstance.getProperty('columns')[colKey];
+                        if (col && col.isHidden) {
+                            gridInstance.setProperty('columns.' + col + '.isHidden', false);
+                            gridElem.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
+                            gridElem.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
+                            gridElem.find('colgroup').append('<col>');
+                            setColWidth(gridId, gridElem);
+                            copyGridWidth(gridElem);
                         }
                     },
                     writable: false,
@@ -432,10 +403,13 @@ var grid = (function _grid($) {
                             return;
                         var field = typeof column === 'object' ? column.field || 'field' : column,
                             newCol;
-                        if (!gridState[gridId].columnIndices[field]) {
-                            for (var i = 0; i < gridState[gridId].dataSource.data.length; i++) {
-                                gridState[gridId].dataSource.data[i][field] = data[i] ? data[i] : null;
-                            }
+                        if (!gridInstance.getProperty('columnIndices')[field]) {
+                            var dataSource = gridInstance.getProperty('dataSource');
+                            var newModels = dataSource.data.map(function _addFieldToDataModels(cur, idx) {
+                                dataSource.data[idx][field] = data[idx] ? data[idx] : null;
+                            });
+
+                            gridInstance.setProperty('dataSource.data', newModels);
                             if (typeof column === 'object') newCol = column;
                             else {
                                 newCol = {};
@@ -445,20 +419,16 @@ var grid = (function _grid($) {
                             newCol.selectable = newCol.selectable ||false;
                             newCol.title = newCol.title || field;
                             newCol.type = newCol.type || 'string';
+                            gridInstance.setProperty('columns', gridInstance.getProperty('columns').push(newCol));
 
-                            gridState[gridId].columns.push(newCol);
-                            if (gridState[gridId].aggregates) gridState[gridId].aggregates[field] = {
-                                type: newCol.type
-                            };
-
-                            gridState[gridId].hasAddedColumn = true;
-                            gridState[gridId].grid.find('.grid-header-wrapper').empty();
-                            createGridHeaders(gridState[gridId], gridElem);
-                            gridState[gridId].grid.find('.grid-content-div').empty();
-                            //setColWidth(gridState[gridId], gridState[gridId].grid);
-                            createGridContent(gridState[gridId], gridState[gridId].grid);
-                            gridState[gridId].grid.find('.grid-footer-div').empty();
-                            createGridFooter(gridState[gridId], gridState[gridId].grid);
+                            if (gridInstance.getProperty('aggregates')) gridInstance.setProperty('aggregates.' + field, { type: newCol.type });
+                            gridInstance.setProperty('hasAddedColumn', true);
+                            gridElem.find('.grid-header-wrapper').empty();
+                            createGridHeaders(gridId, gridElem);
+                            gridElem.find('.grid-content-div').empty();
+                            createGridContent(gridId, gridElem);
+                            gridElem.find('.grid-footer-div').empty();
+                            createGridFooter(gridId, gridElem);
                             buildHeaderAggregations(gridId);
                         }
                     },
@@ -472,19 +442,21 @@ var grid = (function _grid($) {
                      */
                     value: function _addRow(data) {
                         data = data || {};
-                        Object.keys(gridState[gridId].dataSource.data[0]).forEach(function _applyNullProps(prop) {
+                        Object.keys(gridInstance.getProperty('dataSource').data[0]).forEach(function _applyNullProps(prop) {
                             if (data[prop] === undefined) data[prop] = null;
                         });
-                        gridState[gridId].originalData.push(cloneGridData(data));   //clone data here for original data
-                        gridState[gridId].dataSource.data.push(cloneGridData(data));    //clone here to keep cloned original data from being updated when data source data is updated
-                        gridState[gridId].dataSource.rowCount++;
-                        if (gridState[gridId].dataSource.dataMap)
-                            gridState[gridId].dataSource.dataMap[gridState[gridId].dataSource.rowCount] = gridState[gridId].dataSource.rowCount;
-                        gridState[gridId].pageSize++;
-                        gridState[gridId].grid.find('.grid-content-div').empty();
-                        createGridContent(gridState[gridId], gridState[gridId].grid);
-                        gridState[gridId].grid.find('.grid-footer-div').empty();
-                        createGridFooter(gridState[gridId], gridState[gridId].grid);
+                        gridInstance.setProperty('originalData', gridInstance.getProperty('originalData').push(cloneGridData(data)));
+                        gridInstance.setProperty('dataSource.data', gridInstance.getProperty('dataSource').data.push(cloneGridData(data)));
+                        var rowCount = gridInstance.getProperty('rowCount'),
+                            pageSize = gridInstance.getProperty('pageSize');
+                        gridInstance.setProperty('dataSource.rowCount', ++rowCount);
+                        if (gridInstance.getProperty('dataSource').dataMap)
+                            gridInstance.setProperty('dataSource.dataMap', gridInstance.getProperty('dataSource').dataMap = rowCount);
+                        gridInstance.setProperty('pageSize', ++pageSize);
+                        gridElem.find('.grid-content-div').empty();
+                        createGridContent(gridId, gridElem);
+                        gridElem.find('.grid-footer-div').empty();
+                        createGridFooter(gridId, gridElem);
                         buildHeaderAggregations(gridId);
                     },
                     writable: false,
@@ -4705,7 +4677,7 @@ var grid = (function _grid($) {
                     store[id].state.aggregate = config.aggregates || {};
                     store[id].state.pageNum = 1;
                     store[id].state.pageSize = config.pageSize || 25;
-                    store[id].state.grid = gridElem;
+                    store[id].state.grid = $(gridElem).addClass('grid_elem');
                     store[id].state.grid[0].grid = {};
                     store[id].state.currentEdit = {};
                     store[id].state.pageRequest = {};
@@ -4744,7 +4716,7 @@ var grid = (function _grid($) {
                     store[id].state.columns = cloneGridData(config.columns);
                     store[id].state.columnIndices = {};
                     store[id].state.columns = store[id].state.columns.forEach(function _createColumnIndices(col, idx) {
-                        config.columnIndices[col.field] = idx;
+                        store[id].state.columnIndices[col.field] = idx;
                     });
                     store[id].state.dataSource = {
                         rowCount: config.dataSource.rowCount || 25
@@ -4752,6 +4724,7 @@ var grid = (function _grid($) {
                     store[id].state.originalData = {};
                     this.createInstanceMutators(id);
                     this.createInstanceMethods(id, store[id].instance);
+                    return id;
                 },
                 getGridInstance: function _getGridInstance(id) {
                     //TODO: remove this call to destroy grid instance when complete.... need now for linter to stop being a bitch
@@ -4764,7 +4737,7 @@ var grid = (function _grid($) {
                     });
                     var gridElem = store[id].state.grid;
                     delete store[id];
-                    return gridElem;
+                    return gridElem.removeClass('grid_elem');
                 },
                 getProperty: function _getProperty(nameSpace, property, id) {
                     var loc = store[id].state.concat(nameSpace.split('.')).reduce(function findValidationRuleCallback(prev, curr) {
@@ -4778,15 +4751,20 @@ var grid = (function _grid($) {
                 createInstanceMethods: function _createInstanceMethods(id, instance) {
                     instance.getProperty = function _getProperty(property) {
                         var prop;
-                        if (store[id].state[property] !== undefined) prop = cloneGridData(store[id].state[property]);
+                        if (store[id].state[property] !== undefined) prop = isDomElement(store[id].state[property]) ? store[id].state[property] : cloneGridData(store[id].state[property]);
                         return prop;
                     };
 
-                    instance.setProperty = function _setProperty(property, value) {
+                    instance.setProperty = function _setProperty(propertyNamespace, value) {
                         value = cloneGridData(value);
-                        if (!store[id].state[property]) store[id].state[property] = value;
-                        else if (checkTypes(store[id].state[property], value)) {
-                            store[id].state[property] = value;
+                        var property = !~propertyNamespace.indexOf('.') ? store[id].state[propertyNamespace] :
+                        [store[id].state].concat(propertyNamespace.split('.')).reduce(function findValidationRuleCallback(prev, curr) {
+                            if (typeof prev[curr] !== 'object' && typeof prev[curr] !== 'function') return false;
+                            return prev[curr];
+                        });
+                        if (!property) property = value;
+                        else if (checkTypes(property, value)) {
+                            property = value;
                             return true;
                         }
                         return false;
