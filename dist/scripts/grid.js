@@ -30,7 +30,7 @@ var grid = (function _grid($) {
         if (gridData && isDomElement(gridElem)) {
             var im = 2;
             if (!gridData) {
-                var tmp = dataStore.addInstance(gridData);
+                var tmp = dataStore.initializeInstance(gridData);
                 im = tmp.getGridInstance();
             }
             var id = generateId(im);
@@ -397,20 +397,12 @@ var grid = (function _grid($) {
                 },
                 'destroy': {
                     value: function _destroy() {
-                        findChildren(gridState[gridId].grid.children());
+                        gridState[gridId].grid.children().each(function _removeChildrenFromDOM(child) {
+                            $(child).remove();
+                        });
                         var gridElem = gridState[gridId].grid;
                         delete gridState[gridId];
                         return gridElem;
-
-                        function findChildren(nodes) {
-                            for (var i = 0; i < nodes.length; i++) {
-                                var child = $(nodes[i]);
-                                while (child.children().length)
-                                    findChildren(child.children());
-                                child.off();
-                                child.remove();
-                            }
-                        }
                     },
                     writable: false,
                     configurable: false
@@ -485,8 +477,6 @@ var grid = (function _grid($) {
                     configurable: false
                 }
             });
-
-        Object.seal(gridElem[0].grid);
     }
 
     function getInitialGridData(dataSource, pageSize, callback) {
@@ -3931,7 +3921,7 @@ var grid = (function _grid($) {
 
         var store = {},
             _dataStore = {
-                addInstance: function _addInstance(config, gridElem) {
+                initializeInstance: function _addInstance(config, gridElem) {
                     var id = generateId();
                     store[id] = {
                         state: {},
@@ -4009,20 +3999,12 @@ var grid = (function _grid($) {
                     return store[id].instance;
                 },
                 destroyGridInstance: function _destroyGridInstance(id) {
-                    findChildren(store[id].state.grid.children());
+                    store[id].state.grid.children().each(function _removeChildrenFromDOM(child) {
+                        $(child).remove();
+                    });
                     var gridElem = store[id].state.grid;
-                    delete store[id].state;
+                    delete store[id];
                     return gridElem;
-
-                    function findChildren(nodes) {
-                        for (var i = 0; i < nodes.length; i++) {
-                            var child = $(nodes[i]);
-                            while (child.children().length)
-                                findChildren(child.children());
-                            child.off();
-                            child.remove();
-                        }
-                    }
                 },
                 getProperty: function _getProperty(nameSpace, property, id) {
                     var loc = store[id].state.concat(nameSpace.split('.')).reduce(function findValidationRuleCallback(prev, curr) {
@@ -4067,7 +4049,7 @@ var grid = (function _grid($) {
                         Object.defineProperty(
                             instance,
                             prop, {
-                                configurable: false,
+                                configurable: prop in configConfigs,
                                 get: function _get() {
                                     return instance[prop];
                                 }
@@ -4136,6 +4118,7 @@ var grid = (function _grid($) {
                             withInstanceMutators: withInstanceMutators
                         };
                     }
+
                     Object.defineProperty(
                         instance,
                         'createNewProperty', {

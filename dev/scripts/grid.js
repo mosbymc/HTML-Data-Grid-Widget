@@ -185,7 +185,7 @@ var grid = (function _grid($) {
             //TODO: clean this tmp code up once jsHint will stop screaming
             var im = 2;
             if (!gridData) {
-                var tmp = dataStore.addInstance(gridData);
+                var tmp = dataStore.initializeInstance(gridData);
                 im = tmp.getGridInstance();
             }
             var id = generateId(im);
@@ -709,20 +709,12 @@ var grid = (function _grid($) {
                      * @protected
                      */
                     value: function _destroy() {
-                        findChildren(gridState[gridId].grid.children());
+                        gridState[gridId].grid.children().each(function _removeChildrenFromDOM(child) {
+                            $(child).remove();
+                        });
                         var gridElem = gridState[gridId].grid;
                         delete gridState[gridId];
                         return gridElem;
-
-                        function findChildren(nodes) {
-                            for (var i = 0; i < nodes.length; i++) {
-                                var child = $(nodes[i]);
-                                while (child.children().length)
-                                    findChildren(child.children());
-                                child.off();
-                                child.remove();
-                            }
-                        }
                     },
                     writable: false,
                     configurable: false
@@ -834,13 +826,6 @@ var grid = (function _grid($) {
                  configurable: false
                  }*/
             });
-
-        //TODO: need to make sure I am pointed at the correct object here, but if I am, I won't need to set
-        //TODO: each instance method to .configurable = false
-        Object.seal(gridElem[0].grid);
-        /*Object.getOwnPropertyNames(gridElem[0].grid).forEach(function _preventExensionsToInstanceMethods(method) {
-            Object.preventExtensions(gridElem[0].grid[method]);
-        });*/
     }
 
     /**
@@ -4694,7 +4679,7 @@ var grid = (function _grid($) {
 
         var store = {},
             _dataStore = {
-                addInstance: function _addInstance(config, gridElem) {
+                initializeInstance: function _addInstance(config, gridElem) {
                     var id = generateId();
                     store[id] = {
                         state: {},
@@ -4774,20 +4759,12 @@ var grid = (function _grid($) {
                     return store[id].instance;
                 },
                 destroyGridInstance: function _destroyGridInstance(id) {
-                    findChildren(store[id].state.grid.children());
+                    store[id].state.grid.children().each(function _removeChildrenFromDOM(child) {
+                        $(child).remove();
+                    });
                     var gridElem = store[id].state.grid;
-                    delete store[id].state;
+                    delete store[id];
                     return gridElem;
-
-                    function findChildren(nodes) {
-                        for (var i = 0; i < nodes.length; i++) {
-                            var child = $(nodes[i]);
-                            while (child.children().length)
-                                findChildren(child.children());
-                            child.off();
-                            child.remove();
-                        }
-                    }
                 },
                 getProperty: function _getProperty(nameSpace, property, id) {
                     var loc = store[id].state.concat(nameSpace.split('.')).reduce(function findValidationRuleCallback(prev, curr) {
@@ -4834,7 +4811,7 @@ var grid = (function _grid($) {
                         Object.defineProperty(
                             instance,
                             prop, {
-                                configurable: false,
+                                configurable: prop in configConfigs,
                                 get: function _get() {
                                     return instance[prop];
                                 }
@@ -4903,8 +4880,7 @@ var grid = (function _grid($) {
                             withInstanceMutators: withInstanceMutators
                         };
                     }
-                    //createNewProperty('face', function logFace() { console.log('face!'); }).on('b')
-                    //dataStore.getInstance(id).createNewProperty(propName, val).on().withInstanceMutators(mutators.getterSetter);
+
                     Object.defineProperty(
                         instance,
                         'createNewProperty', {

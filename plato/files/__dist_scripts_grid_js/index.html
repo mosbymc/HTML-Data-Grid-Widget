@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">59.46</p>
+      <p class="stat">59.50</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4443</p>
+      <p class="stat">4426</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">225.31</p>
+      <p class="stat">224.99</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">101.13</p>
+      <p class="stat">100.83</p>
     </div>
   </div>
 </div>
@@ -121,7 +121,7 @@
         if (gridData &amp;&amp; isDomElement(gridElem)) {
             var im = 2;
             if (!gridData) {
-                var tmp = dataStore.addInstance(gridData);
+                var tmp = dataStore.initializeInstance(gridData);
                 im = tmp.getGridInstance();
             }
             var id = generateId(im);
@@ -488,20 +488,12 @@
                 },
                 &#039;destroy&#039;: {
                     value: function _destroy() {
-                        findChildren(gridState[gridId].grid.children());
+                        gridState[gridId].grid.children().each(function _removeChildrenFromDOM(child) {
+                            $(child).remove();
+                        });
                         var gridElem = gridState[gridId].grid;
                         delete gridState[gridId];
                         return gridElem;
-
-                        function findChildren(nodes) {
-                            for (var i = 0; i &lt; nodes.length; i++) {
-                                var child = $(nodes[i]);
-                                while (child.children().length)
-                                    findChildren(child.children());
-                                child.off();
-                                child.remove();
-                            }
-                        }
                     },
                     writable: false,
                     configurable: false
@@ -576,8 +568,6 @@
                     configurable: false
                 }
             });
-
-        Object.seal(gridElem[0].grid);
     }
 
     function getInitialGridData(dataSource, pageSize, callback) {
@@ -4022,7 +4012,7 @@
 
         var store = {},
             _dataStore = {
-                addInstance: function _addInstance(config, gridElem) {
+                initializeInstance: function _addInstance(config, gridElem) {
                     var id = generateId();
                     store[id] = {
                         state: {},
@@ -4100,20 +4090,12 @@
                     return store[id].instance;
                 },
                 destroyGridInstance: function _destroyGridInstance(id) {
-                    findChildren(store[id].state.grid.children());
+                    store[id].state.grid.children().each(function _removeChildrenFromDOM(child) {
+                        $(child).remove();
+                    });
                     var gridElem = store[id].state.grid;
-                    delete store[id].state;
+                    delete store[id];
                     return gridElem;
-
-                    function findChildren(nodes) {
-                        for (var i = 0; i &lt; nodes.length; i++) {
-                            var child = $(nodes[i]);
-                            while (child.children().length)
-                                findChildren(child.children());
-                            child.off();
-                            child.remove();
-                        }
-                    }
                 },
                 getProperty: function _getProperty(nameSpace, property, id) {
                     var loc = store[id].state.concat(nameSpace.split(&#039;.&#039;)).reduce(function findValidationRuleCallback(prev, curr) {
@@ -4158,7 +4140,7 @@
                         Object.defineProperty(
                             instance,
                             prop, {
-                                configurable: false,
+                                configurable: prop in configConfigs,
                                 get: function _get() {
                                     return instance[prop];
                                 }
@@ -4227,6 +4209,7 @@
                             withInstanceMutators: withInstanceMutators
                         };
                     }
+
                     Object.defineProperty(
                         instance,
                         &#039;createNewProperty&#039;, {
