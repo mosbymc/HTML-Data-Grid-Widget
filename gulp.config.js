@@ -2,7 +2,6 @@ module.exports = function _gulpConfig() {
     'use strict';
     var build = './build/',
         dist = './dist/',
-        source = './src/',
         dev = './dev/',
         tests = './tests/';
 
@@ -11,11 +10,9 @@ module.exports = function _gulpConfig() {
         buildCss: build + 'styles/grid.css',
         devCss: dev + 'styles/grid.css',
         build: build,
-        source: source,
         dist: dist,
         buildFiles: [build + 'styles', build + 'scripts'],
         distFiles: [dist + 'styles', dist + 'scripts'],
-        sourceFiles: [source + 'styles', source + 'scripts'],
         gridJs: dev + 'scripts/grid.js',
         images: dev + 'images/**/*.*',
         temp: './.tmp/',
