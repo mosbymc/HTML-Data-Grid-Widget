@@ -10,5 +10,5 @@
   "disallowSpacesInCallExpression": true,
   "disallowTrailingComma": true,
   "validateQuoteMarks": "'",
-  "excludeFiles": ["./routes/**", "./tests/**", "./**", "./public/**"]
+  "excludeFiles": ["./routes/**", "./tests/**", "./**", "./public/**", "./.tmp/**", "./dist/**", "./node_modules/**", "./tests/**", "./yuidoc/**"]
 }

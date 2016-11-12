@@ -40,7 +40,6 @@ var grid = (function _grid($) {
             headerDiv.append('<div class=grid-header-wrapper></div>');
             wrapperDiv.append('<div id="grid-content-' + id + '" data-grid_content_id="' + id + '" class=grid-content-div></div>');
             wrapperDiv.append('<div id="grid-footer-' + id + '" data-grid_footer_id="' + id + '" class=grid-footer-div></div>');
-
             gridState[id] = {};
             gridElem[0].grid = {};
 

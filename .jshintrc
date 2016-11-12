@@ -11,34 +11,23 @@
   "validthis": true,
   "predef": [
     "require",
-    "console",
-    "window",
-    "document",
-    "validator",
-    "formatter",
     "module",
     "process",
-    "setTimeout",
-    "Node",
-    "Element",
-    "excelExporter",
-    "toggle",
-    "createFilterTreeFromFilterObject",
-    "conjunct"
+    "Element"
   ],
   "loopfunc": true,
   "boss": true,
   "expr": true,
   "sub": true,
-  "jquery": true,
   "-W086": true,
-  "globals": [
-    "grid",
-    "formatter",
-    "validator",
-    "window",
-    "document",
-    "excelExporter",
-    "toggle"
-  ]
+  "globals": {
+    "formatter": false,
+    "validator": false,
+    "excelExporter": false,
+    "toggle": false
+  },
+  "browser": true,
+  "jquery": true,
+  "node": true,
+  "excludePath": "./.jshintignore"
 }
