@@ -28,30 +28,14 @@ var grid = (function _grid($) {
 
     function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
-            var im = 2;
-            if (!gridData) {
-                var tmp = dataStore.initializeInstance(gridData);
-                im = tmp.getGridInstance();
-            }
-            var id = generateId(im);
-            gridElem = $(gridElem).addClass('grid_elem');
-            var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class=grid-wrapper></div>').appendTo(gridElem);
-            var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class=grid-header-div></div>').appendTo(wrapperDiv);
+            var instanceId = dataStore.initializeInstance(gridData, gridElem);
+            var wrapperDiv = $('<div id="grid-wrapper-' + instanceId + '" data-grid_id="' + instanceId + '" class="grid-wrapper"></div>').appendTo(gridElem);
+            var headerDiv = $('<div id="grid-header-' + instanceId + '" data-grid_header_id="' + instanceId + '" class="grid-header-div"></div>').appendTo(wrapperDiv);
             headerDiv.append('<div class=grid-header-wrapper></div>');
-            wrapperDiv.append('<div id="grid-content-' + id + '" data-grid_content_id="' + id + '" class=grid-content-div></div>');
-            wrapperDiv.append('<div id="grid-footer-' + id + '" data-grid_footer_id="' + id + '" class=grid-footer-div></div>');
-            gridState[id] = {};
-            gridElem[0].grid = {};
+            wrapperDiv.append('<div id="grid-content-' + instanceId + '" data-grid_content_id="' + instanceId + '" class="grid-content-div"></div>');
+            wrapperDiv.append('<div id="grid-footer-' + instanceId + '" data-grid_footer_id="' + instanceId + '" class="grid-footer-div"></div>');
 
-            createGridInstanceMethods(gridElem, id);
-
-            (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === jsTypes.function) ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
-            gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === jsTypes.function;
-
-            gridData.columnIndices = {};
-            gridData.columns.forEach(function _createColumnIndices(col, idx) {
-                gridData.columnIndices[col.field] = idx;
-            });
+            createGridInstanceMethods(instanceId);
             createGridHeaders(gridData, gridElem);
             getInitialGridData(gridData.dataSource, gridData.pageSize || 25, function initialGridDataCallback(err, res) {
                 if (!err) {
@@ -68,7 +52,7 @@ var grid = (function _grid($) {
                     gridData.dataSource.data = {};
                     gridData.dataSource.rowCount = 0;
                 }
-                initializeGrid(id, gridData, gridElem);
+                initializeGrid(instanceId, gridData, gridElem);
             });
         }
         return gridElem[0].grid;
@@ -79,7 +63,9 @@ var grid = (function _grid($) {
         grid.createGrid(gridData, gridElem);
     }
 
-    function createGridInstanceMethods(gridElem, gridId) {
+    function createGridInstanceMethods(gridId) {
+        var gridInstance = dataStore.getGridInstance(gridId),
+            gridElem = gridInstance.getProperty('grid');
 
         Object.defineProperties(
             gridElem[0].grid, {
@@ -88,7 +74,7 @@ var grid = (function _grid($) {
                         if (!funcs || (typeof funcs !== 'function' && !Array.isArray(funcs))) return false;
                         if (typeof funcs === 'function') funcs = [funcs];
                         if (events.includes(evt)) {
-                            gridState[gridId].events[evt] = gridState[gridId].events[evt].concat(funcs);
+                            gridInstance.setProperty('events.' + evt, gridInstance.getProperty('events')[evt].concat(funcs));
                             return true;
                         }
                         return false;
@@ -100,13 +86,11 @@ var grid = (function _grid($) {
                     value: function _unbindEvents(evt, funcs) {
                         if (events.includes(evt) && (funcs || (typeof funcs === 'function' || Array.isArray(funcs)))) {
                             if (typeof funcs === 'function') funcs = [funcs];
-                            var tmpEvts = [];
-                            gridState[gridId].events[evt] = gridState[gridId].events[evt].filter(function _unbindEvents(e) {
+                            gridInstance.setProperty('events.' + evt, gridInstance.getProperty('events')[evt].filter(function _unbindEvents(e) {
                                 return funcs.some(function _unBindEventFunctions(fn) {
                                     return e !== fn;
                                 });
-                            });
-                            gridState[gridId].events[evt] = tmpEvts;
+                            }));
                             return true;
                         }
                         return false;
@@ -117,7 +101,7 @@ var grid = (function _grid($) {
                 'removeAllEventHandlers': {
                     value: function _removeAllEventHandlers() {
                         events.forEach(function _removeEventHandlers(evt) {
-                            gridState[gridId].events[evt] = [];
+                            gridInstance.setProperty('events.' + evt, []);
                         });
                     },
                     writable: false,
@@ -125,8 +109,9 @@ var grid = (function _grid($) {
                 },
                 'getHandledEvents': {
                     value: function _getHandledEvents() {
+                        var gridEvents = gridInstance.getProperty('events');
                         return events.filter(function _findHandledEvents(evt) {
-                            return gridState[gridId].events[evt].length;
+                            return gridEvents[evt].length;
                         });
                     },
                     writable: false,
@@ -141,21 +126,21 @@ var grid = (function _grid($) {
                 },
                 'hideColumn': {
                     value: function _hideColumn(col) {
-                        var colIdx = gridState[gridId].columnIndices[col];
+                        var colIdx = gridInstance.getProperty('columnIndices')[col];
                         if (colIdx != null) {
-                            gridState[gridId].columns[colIdx].isHidden = true;
-                            var column = gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]'),
+                            gridInstance.setProperty('columns.' + colIdx + '.isHidden', true);
+                            var column = gridElem.find('.grid-header-wrapper').find('[data-field="' + col + '"]'),
                                 columnIdx = column.data('index');
                             column.css('display', 'none');
-                            gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', 'none');
-                            var colGroups = gridState[gridId].grid.find('colgroup');
+                            gridElem.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', 'none');
+                            var colGroups = gridElem.find('colgroup');
                             var group1 = $(colGroups[0]).find('col');
                             var group2 = $(colGroups[1]).find('col');
                             var offset = columnIdx;
-                            if (gridState[gridId].drillDown)
+                            if (gridInstance.getProperty('drillDown'))
                                 ++offset;
-                            if (gridState[gridId].groupedBy)
-                                offset += gridState[gridId].groupedBy.length;
+                            if (gridInstance.getProperty('groupedBy'))
+                                offset += gridInstance.getProperty('groupedBy').length;
                             group1.eq(offset).remove();
                             group2.eq(offset).remove();
                         }
@@ -165,14 +150,15 @@ var grid = (function _grid($) {
                 },
                 'showColumn': {
                     value: function _showColumn(col) {
-                        col = gridState[gridId].columnIndices[col];
-                        if (gridState[gridId].columns[col] && gridState[gridId].columns[col].isHidden) {
-                            gridState[gridId].columns[col].isHidden = false;
-                            gridState[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
-                            gridState[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
-                            gridState[gridId].grid.find('colgroup').append('<col>');
-                            setColWidth(gridState[gridId], gridState[gridId].grid);
-                            copyGridWidth(gridState[gridId].grid);
+                        var colKey = gridInstance.getProperty('columnIndices')[col];
+                            col = gridInstance.getProperty('columns')[colKey];
+                        if (col && col.isHidden) {
+                            gridInstance.setProperty('columns.' + col + '.isHidden', false);
+                            gridElem.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
+                            gridElem.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
+                            gridElem.find('colgroup').append('<col>');
+                            setColWidth(gridId, gridElem);
+                            copyGridWidth(gridElem);
                         }
                     },
                     writable: false,
@@ -184,10 +170,13 @@ var grid = (function _grid($) {
                             return;
                         var field = typeof column === 'object' ? column.field || 'field' : column,
                             newCol;
-                        if (!gridState[gridId].columnIndices[field]) {
-                            for (var i = 0; i < gridState[gridId].dataSource.data.length; i++) {
-                                gridState[gridId].dataSource.data[i][field] = data[i] ? data[i] : null;
-                            }
+                        if (!gridInstance.getProperty('columnIndices')[field]) {
+                            var dataSource = gridInstance.getProperty('dataSource');
+                            var newModels = dataSource.data.map(function _addFieldToDataModels(cur, idx) {
+                                dataSource.data[idx][field] = data[idx] ? data[idx] : null;
+                            });
+
+                            gridInstance.setProperty('dataSource.data', newModels);
                             if (typeof column === 'object') newCol = column;
                             else {
                                 newCol = {};
@@ -197,19 +186,16 @@ var grid = (function _grid($) {
                             newCol.selectable = newCol.selectable ||false;
                             newCol.title = newCol.title || field;
                             newCol.type = newCol.type || 'string';
+                            gridInstance.setProperty('columns', gridInstance.getProperty('columns').push(newCol));
 
-                            gridState[gridId].columns.push(newCol);
-                            if (gridState[gridId].aggregates) gridState[gridId].aggregates[field] = {
-                                type: newCol.type
-                            };
-
-                            gridState[gridId].hasAddedColumn = true;
-                            gridState[gridId].grid.find('.grid-header-wrapper').empty();
-                            createGridHeaders(gridState[gridId], gridElem);
-                            gridState[gridId].grid.find('.grid-content-div').empty();
-                            createGridContent(gridState[gridId], gridState[gridId].grid);
-                            gridState[gridId].grid.find('.grid-footer-div').empty();
-                            createGridFooter(gridState[gridId], gridState[gridId].grid);
+                            if (gridInstance.getProperty('aggregates')) gridInstance.setProperty('aggregates.' + field, { type: newCol.type });
+                            gridInstance.setProperty('hasAddedColumn', true);
+                            gridElem.find('.grid-header-wrapper').empty();
+                            createGridHeaders(gridId, gridElem);
+                            gridElem.find('.grid-content-div').empty();
+                            createGridContent(gridId, gridElem);
+                            gridElem.find('.grid-footer-div').empty();
+                            createGridFooter(gridId, gridElem);
                             buildHeaderAggregations(gridId);
                         }
                     },
@@ -219,19 +205,21 @@ var grid = (function _grid($) {
                 'addRow': {
                     value: function _addRow(data) {
                         data = data || {};
-                        Object.keys(gridState[gridId].dataSource.data[0]).forEach(function _applyNullProps(prop) {
+                        Object.keys(gridInstance.getProperty('dataSource').data[0]).forEach(function _applyNullProps(prop) {
                             if (data[prop] === undefined) data[prop] = null;
                         });
-                        gridState[gridId].originalData.push(cloneGridData(data));   
-                        gridState[gridId].dataSource.data.push(cloneGridData(data));    
-                        gridState[gridId].dataSource.rowCount++;
-                        if (gridState[gridId].dataSource.dataMap)
-                            gridState[gridId].dataSource.dataMap[gridState[gridId].dataSource.rowCount] = gridState[gridId].dataSource.rowCount;
-                        gridState[gridId].pageSize++;
-                        gridState[gridId].grid.find('.grid-content-div').empty();
-                        createGridContent(gridState[gridId], gridState[gridId].grid);
-                        gridState[gridId].grid.find('.grid-footer-div').empty();
-                        createGridFooter(gridState[gridId], gridState[gridId].grid);
+                        gridInstance.setProperty('originalData', gridInstance.getProperty('originalData').push(cloneGridData(data)));
+                        gridInstance.setProperty('dataSource.data', gridInstance.getProperty('dataSource').data.push(cloneGridData(data)));
+                        var rowCount = gridInstance.getProperty('rowCount'),
+                            pageSize = gridInstance.getProperty('pageSize');
+                        gridInstance.setProperty('dataSource.rowCount', ++rowCount);
+                        if (gridInstance.getProperty('dataSource').dataMap)
+                            gridInstance.setProperty('dataSource.dataMap', gridInstance.getProperty('dataSource').dataMap = rowCount);
+                        gridInstance.setProperty('pageSize', ++pageSize);
+                        gridElem.find('.grid-content-div').empty();
+                        createGridContent(gridId, gridElem);
+                        gridElem.find('.grid-footer-div').empty();
+                        createGridFooter(gridId, gridElem);
                         buildHeaderAggregations(gridId);
                     },
                     writable: false,
@@ -239,7 +227,7 @@ var grid = (function _grid($) {
                 },
                 'getAggregates': {
                     value: function _getAggregates() {
-                        return gridState[gridId].gridAggregations;
+                        return gridInstance.getProperty('gridAggregations');
                     },
                     writable: false,
                     configurable: false
@@ -250,31 +238,34 @@ var grid = (function _grid($) {
                             result = [],
                             tmpRowModel,
                             validRow;
-                        if (typeof index === 'number' && index > -1 && index <= gridState[gridId].dataSource.data.length) {
+                        if (isNumber(index) && index > -1 && index <= gridInstance.getProperty('dataSource').data.length) {
                             validRow = findValidRows(index);
                             if (validRow) rows.push(validRow);
                         }
                         else {
+                            gridInstance.getProperty('pageSize').every(function _findValidRows(val, idx) {
+                                validRow = findValidRows(idx);
+                                if (validRow) rows.push(validRow);
+                            });
                             for (var i = 0; i < gridState[gridId].pageSize; i++) {
                                 validRow = findValidRows(i);
                                 if (validRow) rows.push(validRow);
                             }
                         }
 
-                        for (var j = 0; j < rows.length; j++) {
+                        rows.forEach(function _retrieveGridRowData(row) {
                             tmpRowModel = {};
-                            var cells = rows[j].find('td');
-                            for (var k = 0; k < cells.length; k++) {
-                                tmpRowModel[$(cells[k]).data('field')] = $(cells[k]).text();
-                            }
+                            row.find('td').forEach(function _retrieveGridCellData(cell) {
+                                tmpRowModel[$(cell).data('field')] = $(cell).text();
+                            });
                             result.push(tmpRowModel);
-                        }
+                        });
                         return result;
 
                         function findValidRows(index) {
                             var counter = 0;
                             var row = null;
-                            gridState[gridId].grid.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
+                            gridElem.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
                                 if ($(this).hasClass('grouped_row_header'))
                                     return true;
                                 if (counter === index) {
@@ -291,23 +282,24 @@ var grid = (function _grid($) {
                 },
                 'getCurrentDataSourceData': {
                     value: function _getCurrentDataSourceData(index) {
-                        if (typeof index === 'number' && index > -1 && index <= gridState[gridId].dataSource.data.length)
-                            return cloneGridData([].concat(gridState[gridId].dataSource.data[index]));
-                        else return cloneGridData(gridState[gridId].dataSource.data);
+                        var data = gridInstance.getProperty('dataSource').data;
+                        if (isNumber(index) && index > -1 && index <= data.length)
+                            return data[index];
+                        else return data;
                     },
                     writable: false,
                     configurable: false
                 },
                 'updatePageData': {
                     value: function _updatePageData(data) {
-                        if (data != null && typeof data === 'object' && data.constructor === Array) {
-                            gridState[gridId].dataSource.data = data;
-                            gridState[gridId].pageSize = data.length;
-                            gridState[gridId].dataSource.rowCount = data.length;
-                            gridState[gridId].grid.find('.grid-content-div').empty();
-                            createGridContent(gridState[gridId], gridState[gridId].grid);
-                            gridState[gridId].grid.find('.grid-footer-div').empty();
-                            createGridFooter(gridState[gridId], gridState[gridId].grid);
+                        if (data != null && typeof data === jsTypes.object && data.constructor === Array) {
+                            gridInstance.setProperty('dataSource.data', data);
+                            gridInstance.setProperty('pageSize', data.length);
+                            gridInstance.setProperty('dataSource.rowCount', data.length);
+                            gridElem.find('.grid-content-div').empty();
+                            createGridContent(gridId, gridElem);
+                            gridElem.find('.grid-footer-div').empty();
+                            createGridFooter(gridId, gridElem);
                             buildHeaderAggregations(gridId);
                         }
                     },
@@ -316,27 +308,28 @@ var grid = (function _grid($) {
                 },
                 'updateRowData': {
                     value: function _updateRowData(rowData) {
-                        var appliedUpdate = false;
-                        if (!rowData)
-                            return;
+                        if (!rowData || typeof rowData !== jsTypes.object) return;
+                        var appliedUpdate = false,
+                            data = gridInstance.getProperty('dataSource').data;
                         if (rowData.constructor === Array) {
-                            for (var i = 0; i < rowData.length; i++) {
-                                if (typeof rowData[i].index !== 'number' || rowData[i].index >= gridState[gridId].dataSource.data.length)
-                                    continue;
-                                gridState[gridId].dataSource.data[rowData[i].index] = rowData[i].data;
-                                appliedUpdate = true;
-                            }
+                            rowData.forEach(function _updateGridData(model) {
+                                if (isNumber(model.index) && model.index < data.length) {
+                                    data[model.index] = model.data;
+                                    appliedUpdate = true;
+                                }
+                            });
                         }
-                        else if (typeof rowData.index === 'number') {
-                            gridState[gridId].dataSource.data[rowData.index] = rowData.data;
+                        else if (isNumber(rowData.index)) {
+                            data[rowData.index] = rowData.data;
                             appliedUpdate = true;
                         }
 
                         if (appliedUpdate) {
-                            gridState[gridId].grid.find('.grid-content-div').empty();
-                            createGridContent(gridState[gridId], gridState[gridId].grid);
-                            gridState[gridId].grid.find('.grid-footer-div').empty();
-                            createGridFooter(gridState[gridId], gridState[gridId].grid);
+                            gridInstance.setProperty('dataSource.data', data);
+                            gridElem.find('.grid-content-div').empty();
+                            createGridContent(gridId, gridElem);
+                            gridElem.find('.grid-footer-div').empty();
+                            createGridFooter(gridId, gridElem);
                             buildHeaderAggregations(gridId);
                         }
                     },
@@ -443,15 +436,15 @@ var grid = (function _grid($) {
                     },
                     set: function _setSelectedItems(itemArray) {
                         if (!itemArray || itemArray.constructor !== Array) return;
-                        for (var i = 0; i < itemArray.length; i++) {
-                            if (typeof itemArray[i].rowIndex !== 'number') continue;
-                            var row = gridElem.find('.grid-content-div').find('tbody').children('tr:nth-child(' + (itemArray[i].rowIndex + 1) + ')');
-                            if (typeof itemArray[i].columnIndex === 'number') {
-                                row.children('td:nth-child(' + (itemArray[i].columnIndex + 1) + ')').addClass('selected');
+                        itemArray.forEach(function _selectGridItems(item) {
+                            if (typeof item.rowIndex !== jsTypes.number) return;
+                            var row = gridElem.find('.grid-content-div').find('tbody').children('tr:nth-child(' + (item.rowIndex + 1) + ')');
+                            if (typeof item.columnIndex === 'number') {
+                                row.children('td:nth-child(' + (item.columnIndex + 1) + ')').addClass('selected');
                             }
                             else
                                 row.addClass('selected');
-                        }
+                        });
                     },
                     configurable: false
                 },
@@ -3946,7 +3939,7 @@ var grid = (function _grid($) {
                     store[id].state.aggregate = config.aggregates || {};
                     store[id].state.pageNum = 1;
                     store[id].state.pageSize = config.pageSize || 25;
-                    store[id].state.grid = gridElem;
+                    store[id].state.grid = $(gridElem).addClass('grid_elem');
                     store[id].state.grid[0].grid = {};
                     store[id].state.currentEdit = {};
                     store[id].state.pageRequest = {};
@@ -3984,7 +3977,7 @@ var grid = (function _grid($) {
                     store[id].state.columns = cloneGridData(config.columns);
                     store[id].state.columnIndices = {};
                     store[id].state.columns = store[id].state.columns.forEach(function _createColumnIndices(col, idx) {
-                        config.columnIndices[col.field] = idx;
+                        store[id].state.columnIndices[col.field] = idx;
                     });
                     store[id].state.dataSource = {
                         rowCount: config.dataSource.rowCount || 25
@@ -3992,9 +3985,9 @@ var grid = (function _grid($) {
                     store[id].state.originalData = {};
                     this.createInstanceMutators(id);
                     this.createInstanceMethods(id, store[id].instance);
+                    return id;
                 },
                 getGridInstance: function _getGridInstance(id) {
-                    this.destroyGridInstance(id);
                     return store[id].instance;
                 },
                 destroyGridInstance: function _destroyGridInstance(id) {
@@ -4003,7 +3996,7 @@ var grid = (function _grid($) {
                     });
                     var gridElem = store[id].state.grid;
                     delete store[id];
-                    return gridElem;
+                    return gridElem.removeClass('grid_elem');
                 },
                 getProperty: function _getProperty(nameSpace, property, id) {
                     var loc = store[id].state.concat(nameSpace.split('.')).reduce(function findValidationRuleCallback(prev, curr) {
@@ -4017,18 +4010,41 @@ var grid = (function _grid($) {
                 createInstanceMethods: function _createInstanceMethods(id, instance) {
                     instance.getProperty = function _getProperty(property) {
                         var prop;
-                        if (store[id].state[property] !== undefined) prop = cloneGridData(store[id].state[property]);
+                        if (store[id].state[property] !== undefined) prop = isDomElement(store[id].state[property]) ? store[id].state[property] : cloneGridData(store[id].state[property]);
                         return prop;
                     };
 
-                    instance.setProperty = function _setProperty(property, value) {
+                    instance.setProperty = function _setProperty(propertyNamespace, value) {
                         value = cloneGridData(value);
-                        if (!store[id].state[property]) store[id].state[property] = value;
-                        else if (checkTypes(store[id].state[property], value)) {
-                            store[id].state[property] = value;
+                        var parent = null,
+                            splitNameSpace = propertyNamespace.split('.'),
+                            property = !~propertyNamespace.indexOf('.') ? store[id].state[propertyNamespace] :
+                        [store[id].state].concat(splitNameSpace).reduce(function findValidationRuleCallback(prev, curr) {
+                            parent = prev;
+                            if (typeof prev !== jsTypes.object && typeof prev !== jsTypes.function) {
+                                return undefined;
+                            }
+                            return prev[curr];
+                        });
+                        if (property === undefined && (typeof parent === jsTypes.object || typeof parent === jsTypes.function)) {
+                            parent[splitNameSpace[splitNameSpace.length - 1]] = value;
                             return true;
                         }
-                        return false;
+
+                        if (property === undefined && typeof parent !== jsTypes.object && typeof parent !== jsTypes.function) return false;
+
+                        if (typeof property !== jsTypes.object && typeof property !== jsTypes.function) {
+                            parent[splitNameSpace[splitNameSpace.length - 1]] = value;
+                            return true;
+                        }
+
+                        property = value;
+                        return true;
+
+                    };
+
+                    instance.getPageData = function _getPageData(requestObj) {
+
                     };
 
                     function checkTypes(standard, value) {

@@ -513,14 +513,13 @@ var grid = (function _grid($) {
                             }
                         }
 
-                        for (var j = 0; j < rows.length; j++) {
+                        rows.forEach(function _retrieveGridRowData(row) {
                             tmpRowModel = {};
-                            var cells = rows[j].find('td');
-                            for (var k = 0; k < cells.length; k++) {
-                                tmpRowModel[$(cells[k]).data('field')] = $(cells[k]).text();
-                            }
+                            row.find('td').forEach(function _retrieveGridCellData(cell) {
+                                tmpRowModel[$(cell).data('field')] = $(cell).text();
+                            });
                             result.push(tmpRowModel);
-                        }
+                        });
                         return result;
 
                         function findValidRows(index) {
@@ -761,15 +760,15 @@ var grid = (function _grid($) {
                      */
                     set: function _setSelectedItems(itemArray) {
                         if (!itemArray || itemArray.constructor !== Array) return;
-                        for (var i = 0; i < itemArray.length; i++) {
-                            if (typeof itemArray[i].rowIndex !== 'number') continue;
-                            var row = gridElem.find('.grid-content-div').find('tbody').children('tr:nth-child(' + (itemArray[i].rowIndex + 1) + ')');
-                            if (typeof itemArray[i].columnIndex === 'number') {
-                                row.children('td:nth-child(' + (itemArray[i].columnIndex + 1) + ')').addClass('selected');
+                        itemArray.forEach(function _selectGridItems(item) {
+                            if (typeof item.rowIndex !== jsTypes.number) return;
+                            var row = gridElem.find('.grid-content-div').find('tbody').children('tr:nth-child(' + (item.rowIndex + 1) + ')');
+                            if (typeof item.columnIndex === 'number') {
+                                row.children('td:nth-child(' + (item.columnIndex + 1) + ')').addClass('selected');
                             }
                             else
                                 row.addClass('selected');
-                        }
+                        });
                     },
                     configurable: false
                 },
@@ -4765,24 +4764,35 @@ var grid = (function _grid($) {
                     instance.setProperty = function _setProperty(propertyNamespace, value) {
                         value = cloneGridData(value);
                         var parent = null,
+                            splitNameSpace = propertyNamespace.split('.'),
                             property = !~propertyNamespace.indexOf('.') ? store[id].state[propertyNamespace] :
-                        [store[id].state].concat(propertyNamespace.split('.')).reduce(function findValidationRuleCallback(prev, curr) {
+                        [store[id].state].concat(splitNameSpace).reduce(function findValidationRuleCallback(prev, curr) {
                             parent = prev;
                             if (typeof prev !== jsTypes.object && typeof prev !== jsTypes.function) {
                                 return undefined;
                             }
                             return prev[curr];
                         });
-                        if (property === undefined && parent && (typeof parent === jsTypes.object || typeof parent === jsTypes.function)) {
-                            parent[property] = value;
+                        if (property === undefined && (typeof parent === jsTypes.object || typeof parent === jsTypes.function)) {
+                            parent[splitNameSpace[splitNameSpace.length - 1]] = value;
                             return true;
                         }
-                        
-                        if (checkTypes(property, value)) {
+
+                        if (property === undefined && typeof parent !== jsTypes.object && typeof parent !== jsTypes.function) return false;
+
+                        if (typeof property !== jsTypes.object && typeof property !== jsTypes.function) {
+                            parent[splitNameSpace[splitNameSpace.length - 1]] = value;
+                            return true;
+                        }
+
+                        property = value;
+                        return true;
+
+                       /*if (checkTypes(property, value)) {
                             property = value;
                             return true;
-                        }
-                        return false;
+                        }*/
+                        //return false;
                     };
 
                     instance.getPageData = function _getPageData(requestObj) {
