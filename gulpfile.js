@@ -42,7 +42,7 @@ gulp.task('lint', /*['plato'],*/ function _lint() {
         .pipe(_.jshint.reporter('fail'));
 });
 
-gulp.task('jscs', ['lint'], function _jscs(done) {
+gulp.task('jscs', ['lint'], function _jscs() {
     log('Linting source with JSCS and JSHint.');
     return gulp
         .src(config.gridJs)

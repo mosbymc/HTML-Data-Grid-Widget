@@ -4764,17 +4764,29 @@ var grid = (function _grid($) {
 
                     instance.setProperty = function _setProperty(propertyNamespace, value) {
                         value = cloneGridData(value);
-                        var property = !~propertyNamespace.indexOf('.') ? store[id].state[propertyNamespace] :
+                        var parent = null,
+                            property = !~propertyNamespace.indexOf('.') ? store[id].state[propertyNamespace] :
                         [store[id].state].concat(propertyNamespace.split('.')).reduce(function findValidationRuleCallback(prev, curr) {
-                            if (typeof prev[curr] !== 'object' && typeof prev[curr] !== 'function') return false;
+                            parent = prev;
+                            if (typeof prev !== jsTypes.object && typeof prev !== jsTypes.function) {
+                                return undefined;
+                            }
                             return prev[curr];
                         });
-                        if (!property) property = value;
-                        else if (checkTypes(property, value)) {
+                        if (property === undefined && parent && (typeof parent === jsTypes.object || typeof parent === jsTypes.function)) {
+                            parent[property] = value;
+                            return true;
+                        }
+                        
+                        if (checkTypes(property, value)) {
                             property = value;
                             return true;
                         }
                         return false;
+                    };
+
+                    instance.getPageData = function _getPageData(requestObj) {
+
                     };
 
                     //TODO: not sure if this is something I want to run every time a property is updated on instance state...
