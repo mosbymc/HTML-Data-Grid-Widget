@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">59.73</p>
+      <p class="stat">59.77</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4441</p>
+      <p class="stat">4522</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">216.29</p>
+      <p class="stat">217.41</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">100.60</p>
+      <p class="stat">102.05</p>
     </div>
   </div>
 </div>
@@ -4002,11 +4002,23 @@
                 gridAggregations: mutators.getterSetter
             };
 
+        var idGen = {
+            generateId: (function _generateId(seed) {
+                return function _genId() {
+                    ++seed;
+                    return seed.toString();
+                }
+            })(-1)
+        };
+
         var store = {},
             _dataStore = {
+                instanceId: -1,
                 initializeInstance: function _addInstance(config, gridElem) {
                     var id = generateId();
+                    this.instanceId = id;
                     store[id] = {
+                        stateHistory: [],
                         state: {},
                         instance: {}
                     };
@@ -4105,38 +4117,107 @@
                         return prop;
                     };
 
-                    instance.setProperty = function _setProperty(propertyNamespace, value) {
+                    instance.putProperty = function _setProperty(propertyNamespace, value) {
+                        var propertyLocation = findDateLocation(propertyNamespace),
+                            splitNameSpace = propertyNamespace.split(&#039;.&#039;);
                         value = cloneGridData(value);
-                        var parent = null,
-                            splitNameSpace = propertyNamespace.split(&#039;.&#039;),
-                            property = !~propertyNamespace.indexOf(&#039;.&#039;) ? store[id].state[propertyNamespace] :
-                        [store[id].state].concat(splitNameSpace).reduce(function findValidationRuleCallback(prev, curr) {
-                            parent = prev;
-                            if (typeof prev !== jsTypes.object &amp;&amp; typeof prev !== jsTypes.function) {
-                                return undefined;
-                            }
-                            return prev[curr];
-                        });
-                        if (property === undefined &amp;&amp; (typeof parent === jsTypes.object || typeof parent === jsTypes.function)) {
-                            parent[splitNameSpace[splitNameSpace.length - 1]] = value;
+                        if (propertyLocation.property === undefined &amp;&amp; (typeof propertyLocation.parent === jsTypes.object || typeof propertyLocation.parent === jsTypes.function)) {
+                            propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
                             return true;
                         }
 
-                        if (property === undefined &amp;&amp; typeof parent !== jsTypes.object &amp;&amp; typeof parent !== jsTypes.function) return false;
+                        if (propertyLocation.property === undefined &amp;&amp; typeof propertyLocation.parent !== jsTypes.object &amp;&amp; typeof propertyLocation.parent !== jsTypes.function) return false;
 
-                        if (typeof property !== jsTypes.object &amp;&amp; typeof property !== jsTypes.function) {
-                            parent[splitNameSpace[splitNameSpace.length - 1]] = value;
+                        if (typeof propertyLocation.property !== jsTypes.object &amp;&amp; typeof propertyLocation.property !== jsTypes.function) {
+                            propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
                             return true;
                         }
 
-                        property = value;
+                        propertyLocation.property = value;
                         return true;
 
+                    };
+
+                    instance.postProperty = function _postProperty(propertyNamespace, value) {
+                        var propertyLocation = findDateLocation(propertyNamespace),
+                            splitNameSpace = propertyNamespace.split(&#039;.&#039;);
+                        value = cloneGridData(value);
+                        if (propertyLocation.property === undefined &amp;&amp; (typeof propertyLocation.parent === jsTypes.object || typeof propertyLocation.parent === jsTypes.function)) {
+                            propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
+                            return true;
+                        }
+                        return false;
+                    };
+
+                    instance.patchProperty = function _patchProperty(propertyNamespace, value) {
+                        var propertyLocation = findExistingProp(propertyNamespace),
+                            splitNameSpace = propertyNamespace.split(&#039;.&#039;);
+                        if (!propertyLocation) return false;
+                        value = cloneGridData(value);
+                        if (typeof propertyLocation.property !== jsTypes.object &amp;&amp; typeof propertyLocation.property !== jsTypes.function) {
+                            propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
+                            return true;
+                        }
+
+                        propertyLocation.property = value;
+                        return true;
+                    };
+
+                    instance.add = function _add(propertyNamespace, value) {
+                        var propertyLocation = findExistingProp(propertyNamespace),
+                            splitNameSpace = propertyNamespace.split(&#039;.&#039;);
+                        if (!propertyLocation) return false;
+                        value = cloneGridData(value);
+
+                        switch (typeof propertyLocation.property) {
+                            case &#039;string&#039;:
+                            case &#039;number&#039;:
+                            case &#039;boolean&#039;:
+                                var curVal = propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]];
+                                propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = curVal + value;
+                                return;
+                            case &#039;object&#039;:
+                            case &#039;function&#039;:
+                                if (!propertyLocation.property) return; 
+                                propertyLocation.parent = propertyLocation.parent + value;
+                                return;
+                            case &#039;undefined&#039;:
+                                return;
+                            case &#039;symbol&#039;:
+                                return;
+                        }
+
+                        if (typeof propertyLocation.property !== jsTypes.object &amp;&amp; typeof propertyLocation.property !== jsTypes.function) {
+                            propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
+                            return true;
+                        }
+
+                        propertyLocation.property = value;
+                        return true;
                     };
 
                     instance.getPageData = function _getPageData(requestObj) {
 
                     };
+
+                    function findExistingProp(propertyNamespace) {
+                        var propertyLocation = findDateLocation(propertyNamespace);
+                        if (propertyLocation.property === undefined) return false;
+                        return propertyLocation;
+                    }
+
+                    function findDateLocation(propertyNamespace) {
+                        var parent = null,
+                            property = !~propertyNamespace.indexOf(&#039;.&#039;) ? store[id].state[propertyNamespace] :
+                                [store[id].state].concat(propertyNamespace.split(&#039;.&#039;)).reduce(function findValidationRuleCallback(prev, curr) {
+                                    parent = prev;
+                                    if (typeof prev !== jsTypes.object &amp;&amp; typeof prev !== jsTypes.function) {
+                                        return undefined;
+                                    }
+                                    return prev[curr];
+                                });
+                        return { parent: parent, property: property };
+                    }
 
                     function checkTypes(standard, value) {
                         if (value == null || typeof value !== jsTypes.object || typeof value !== jsTypes.function)
@@ -4502,7 +4583,7 @@
 
     generateId = (function uid(seed) {
         return function _generateId() {
-            seed++;
+            ++seed;
             return seed.toString();
         };
     })(-1);

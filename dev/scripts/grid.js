@@ -4655,11 +4655,23 @@ var grid = (function _grid($) {
                 gridAggregations: mutators.getterSetter
             };
 
+        var idGen = {
+            generateId: (function _generateId(seed) {
+                return function _genId() {
+                    ++seed;
+                    return seed.toString();
+                }
+            })(-1)
+        };
+
         var store = {},
             _dataStore = {
+                instanceId: -1,
                 initializeInstance: function _addInstance(config, gridElem) {
                     var id = generateId();
+                    this.instanceId = id;
                     store[id] = {
+                        stateHistory: [],
                         state: {},
                         instance: {}
                     };
@@ -4732,11 +4744,13 @@ var grid = (function _grid($) {
                     this.createInstanceMethods(id, store[id].instance);
                     return id;
                 },
+                //TODO: this function should be on the data store, not an instance...
                 getGridInstance: function _getGridInstance(id) {
                     //TODO: remove this call to destroy grid instance when complete.... need now for linter to stop being a bitch
                     //this.destroyGridInstance(id);
                     return store[id].instance;
                 },
+                //TODO: this function should be on the data store, not an instance...
                 destroyGridInstance: function _destroyGridInstance(id) {
                     store[id].state.grid.children().each(function _removeChildrenFromDOM(child) {
                         $(child).remove();
@@ -4761,31 +4775,24 @@ var grid = (function _grid($) {
                         return prop;
                     };
 
-                    instance.setProperty = function _setProperty(propertyNamespace, value) {
+                    instance.putProperty = function _setProperty(propertyNamespace, value) {
+                        var propertyLocation = findDateLocation(propertyNamespace),
+                            splitNameSpace = propertyNamespace.split('.');
+                        //TODO: need to update .instanceHistory here; generate new instance id and add to collection
                         value = cloneGridData(value);
-                        var parent = null,
-                            splitNameSpace = propertyNamespace.split('.'),
-                            property = !~propertyNamespace.indexOf('.') ? store[id].state[propertyNamespace] :
-                        [store[id].state].concat(splitNameSpace).reduce(function findValidationRuleCallback(prev, curr) {
-                            parent = prev;
-                            if (typeof prev !== jsTypes.object && typeof prev !== jsTypes.function) {
-                                return undefined;
-                            }
-                            return prev[curr];
-                        });
-                        if (property === undefined && (typeof parent === jsTypes.object || typeof parent === jsTypes.function)) {
-                            parent[splitNameSpace[splitNameSpace.length - 1]] = value;
+                        if (propertyLocation.property === undefined && (typeof propertyLocation.parent === jsTypes.object || typeof propertyLocation.parent === jsTypes.function)) {
+                            propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
                             return true;
                         }
 
-                        if (property === undefined && typeof parent !== jsTypes.object && typeof parent !== jsTypes.function) return false;
+                        if (propertyLocation.property === undefined && typeof propertyLocation.parent !== jsTypes.object && typeof propertyLocation.parent !== jsTypes.function) return false;
 
-                        if (typeof property !== jsTypes.object && typeof property !== jsTypes.function) {
-                            parent[splitNameSpace[splitNameSpace.length - 1]] = value;
+                        if (typeof propertyLocation.property !== jsTypes.object && typeof propertyLocation.property !== jsTypes.function) {
+                            propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
                             return true;
                         }
 
-                        property = value;
+                        propertyLocation.property = value;
                         return true;
 
                        /*if (checkTypes(property, value)) {
@@ -4795,9 +4802,86 @@ var grid = (function _grid($) {
                         //return false;
                     };
 
+                    instance.postProperty = function _postProperty(propertyNamespace, value) {
+                        var propertyLocation = findDateLocation(propertyNamespace),
+                            splitNameSpace = propertyNamespace.split('.');
+                        value = cloneGridData(value);
+                        if (propertyLocation.property === undefined && (typeof propertyLocation.parent === jsTypes.object || typeof propertyLocation.parent === jsTypes.function)) {
+                            propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
+                            return true;
+                        }
+                        return false;
+                    };
+
+                    instance.patchProperty = function _patchProperty(propertyNamespace, value) {
+                        var propertyLocation = findExistingProp(propertyNamespace),
+                            splitNameSpace = propertyNamespace.split('.');
+                        if (!propertyLocation) return false;
+                        value = cloneGridData(value);
+                        if (typeof propertyLocation.property !== jsTypes.object && typeof propertyLocation.property !== jsTypes.function) {
+                            propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
+                            return true;
+                        }
+
+                        propertyLocation.property = value;
+                        return true;
+                    };
+
+                    instance.add = function _add(propertyNamespace, value) {
+                        var propertyLocation = findExistingProp(propertyNamespace),
+                            splitNameSpace = propertyNamespace.split('.');
+                        if (!propertyLocation) return false;
+                        value = cloneGridData(value);
+
+                        switch (typeof propertyLocation.property) {
+                            case 'string':
+                            case 'number':
+                            case 'boolean':
+                                var curVal = propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]];
+                                propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = curVal + value;
+                                return;
+                            case 'object':
+                            case 'function':
+                                if (!propertyLocation.property) return; //null check
+                                propertyLocation.parent = propertyLocation.parent + value;
+                                return;
+                            case 'undefined':
+                                return;
+                            case 'symbol':
+                                return;
+                        }
+
+                        if (typeof propertyLocation.property !== jsTypes.object && typeof propertyLocation.property !== jsTypes.function) {
+                            propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
+                            return true;
+                        }
+
+                        propertyLocation.property = value;
+                        return true;
+                    };
+
                     instance.getPageData = function _getPageData(requestObj) {
 
                     };
+
+                    function findExistingProp(propertyNamespace) {
+                        var propertyLocation = findDateLocation(propertyNamespace);
+                        if (propertyLocation.property === undefined) return false;
+                        return propertyLocation;
+                    }
+
+                    function findDateLocation(propertyNamespace) {
+                        var parent = null,
+                            property = !~propertyNamespace.indexOf('.') ? store[id].state[propertyNamespace] :
+                                [store[id].state].concat(propertyNamespace.split('.')).reduce(function findValidationRuleCallback(prev, curr) {
+                                    parent = prev;
+                                    if (typeof prev !== jsTypes.object && typeof prev !== jsTypes.function) {
+                                        return undefined;
+                                    }
+                                    return prev[curr];
+                                });
+                        return { parent: parent, property: property };
+                    }
 
                     //TODO: not sure if this is something I want to run every time a property is updated on instance state...
                     //TODO: could be times when property needs to be updated, but type should change; maybe allow a flag param
@@ -5166,7 +5250,7 @@ var grid = (function _grid($) {
 
     generateId = (function uid(seed) {
         return function _generateId() {
-            seed++;
+            ++seed;
             return seed.toString();
         };
     })(-1);
