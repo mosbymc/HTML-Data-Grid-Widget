@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">59.77</p>
+      <p class="stat">59.75</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4522</p>
+      <p class="stat">4529</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">217.41</p>
+      <p class="stat">218.02</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">102.05</p>
+      <p class="stat">102.39</p>
     </div>
   </div>
 </div>
@@ -4002,15 +4002,6 @@
                 gridAggregations: mutators.getterSetter
             };
 
-        var idGen = {
-            generateId: (function _generateId(seed) {
-                return function _genId() {
-                    ++seed;
-                    return seed.toString();
-                }
-            })(-1)
-        };
-
         var store = {},
             _dataStore = {
                 instanceId: -1,
@@ -4120,6 +4111,7 @@
                     instance.putProperty = function _setProperty(propertyNamespace, value) {
                         var propertyLocation = findDateLocation(propertyNamespace),
                             splitNameSpace = propertyNamespace.split(&#039;.&#039;);
+                        updateInstanceState();
                         value = cloneGridData(value);
                         if (propertyLocation.property === undefined &amp;&amp; (typeof propertyLocation.parent === jsTypes.object || typeof propertyLocation.parent === jsTypes.function)) {
                             propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
@@ -4141,6 +4133,7 @@
                     instance.postProperty = function _postProperty(propertyNamespace, value) {
                         var propertyLocation = findDateLocation(propertyNamespace),
                             splitNameSpace = propertyNamespace.split(&#039;.&#039;);
+                        updateInstanceState();
                         value = cloneGridData(value);
                         if (propertyLocation.property === undefined &amp;&amp; (typeof propertyLocation.parent === jsTypes.object || typeof propertyLocation.parent === jsTypes.function)) {
                             propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
@@ -4153,6 +4146,7 @@
                         var propertyLocation = findExistingProp(propertyNamespace),
                             splitNameSpace = propertyNamespace.split(&#039;.&#039;);
                         if (!propertyLocation) return false;
+                        updateInstanceState();
                         value = cloneGridData(value);
                         if (typeof propertyLocation.property !== jsTypes.object &amp;&amp; typeof propertyLocation.property !== jsTypes.function) {
                             propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
@@ -4167,6 +4161,7 @@
                         var propertyLocation = findExistingProp(propertyNamespace),
                             splitNameSpace = propertyNamespace.split(&#039;.&#039;);
                         if (!propertyLocation) return false;
+                        updateInstanceState();
                         value = cloneGridData(value);
 
                         switch (typeof propertyLocation.property) {
@@ -4199,6 +4194,18 @@
                     instance.getPageData = function _getPageData(requestObj) {
 
                     };
+
+                    instance.rollback = function _rollback(count) {
+                        if (!isNumber(count) || count == null) count = 0;
+                        if (count &gt; store[id].stateHistory.length -1) count = store[id].stateHistory.length -1;
+                        store[id].state = store[id].stateHistory[count];
+                        store[id].stateHistory = store[id].stateHistory.slice(0, count);
+                    };
+
+                    function updateInstanceState() {
+                        store[id].stateHistory = store[id].stateHistory.concat([store[id].state]);
+                        store[id].state = cloneGridData(store[id].state);
+                    }
 
                     function findExistingProp(propertyNamespace) {
                         var propertyLocation = findDateLocation(propertyNamespace);

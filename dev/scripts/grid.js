@@ -4655,15 +4655,6 @@ var grid = (function _grid($) {
                 gridAggregations: mutators.getterSetter
             };
 
-        var idGen = {
-            generateId: (function _generateId(seed) {
-                return function _genId() {
-                    ++seed;
-                    return seed.toString();
-                }
-            })(-1)
-        };
-
         var store = {},
             _dataStore = {
                 instanceId: -1,
@@ -4778,7 +4769,7 @@ var grid = (function _grid($) {
                     instance.putProperty = function _setProperty(propertyNamespace, value) {
                         var propertyLocation = findDateLocation(propertyNamespace),
                             splitNameSpace = propertyNamespace.split('.');
-                        //TODO: need to update .instanceHistory here; generate new instance id and add to collection
+                        updateInstanceState();
                         value = cloneGridData(value);
                         if (propertyLocation.property === undefined && (typeof propertyLocation.parent === jsTypes.object || typeof propertyLocation.parent === jsTypes.function)) {
                             propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
@@ -4805,6 +4796,7 @@ var grid = (function _grid($) {
                     instance.postProperty = function _postProperty(propertyNamespace, value) {
                         var propertyLocation = findDateLocation(propertyNamespace),
                             splitNameSpace = propertyNamespace.split('.');
+                        updateInstanceState();
                         value = cloneGridData(value);
                         if (propertyLocation.property === undefined && (typeof propertyLocation.parent === jsTypes.object || typeof propertyLocation.parent === jsTypes.function)) {
                             propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
@@ -4817,6 +4809,7 @@ var grid = (function _grid($) {
                         var propertyLocation = findExistingProp(propertyNamespace),
                             splitNameSpace = propertyNamespace.split('.');
                         if (!propertyLocation) return false;
+                        updateInstanceState();
                         value = cloneGridData(value);
                         if (typeof propertyLocation.property !== jsTypes.object && typeof propertyLocation.property !== jsTypes.function) {
                             propertyLocation.parent[splitNameSpace[splitNameSpace.length - 1]] = value;
@@ -4831,6 +4824,7 @@ var grid = (function _grid($) {
                         var propertyLocation = findExistingProp(propertyNamespace),
                             splitNameSpace = propertyNamespace.split('.');
                         if (!propertyLocation) return false;
+                        updateInstanceState();
                         value = cloneGridData(value);
 
                         switch (typeof propertyLocation.property) {
@@ -4863,6 +4857,20 @@ var grid = (function _grid($) {
                     instance.getPageData = function _getPageData(requestObj) {
 
                     };
+
+                    instance.rollback = function _rollback(count) {
+                        //TODO: should I retain the state before the rollback and just concat with the state at the index provided to add to the state history;
+                        //TODO: or should I just 'delete' all history following the rollback index?
+                        if (!isNumber(count) || count == null) count = 0;
+                        if (count > store[id].stateHistory.length -1) count = store[id].stateHistory.length -1;
+                        store[id].state = store[id].stateHistory[count];
+                        store[id].stateHistory = store[id].stateHistory.slice(0, count);
+                    };
+
+                    function updateInstanceState() {
+                        store[id].stateHistory = store[id].stateHistory.concat([store[id].state]);
+                        store[id].state = cloneGridData(store[id].state);
+                    }
 
                     function findExistingProp(propertyNamespace) {
                         var propertyLocation = findDateLocation(propertyNamespace);
