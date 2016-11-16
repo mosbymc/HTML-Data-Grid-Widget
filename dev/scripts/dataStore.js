@@ -80,9 +80,27 @@ var dataStore = (function _createDataStore() {
                 return false;
             },
             createInstanceMethods: function _createInstanceMethods(id, instance) {
-                instance.select = function _select() {
-
+                instance.select = function _select(fields) {
+                    fields = fields.split(',');
+                    return {
+                        from: 2
+                    }
                 };
+
+                function from(model) {
+                    return {
+                        where: 1,
+                        join: 2
+                    }
+                }
+
+                function where(predicate) {
+
+                }
+
+                function join() {
+
+                }
 
                 instance.update = function _update() {
 

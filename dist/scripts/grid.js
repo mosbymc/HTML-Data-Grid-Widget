@@ -430,7 +430,7 @@ var grid = (function _grid($) {
                     get: function _getSelectedItems() {
                         var selectedItems = [];
                         gridElem.find('.selected').each(function iteratedSelectedGridItems(idx, val) {
-                            selectedItems.push(val);
+                            selectedItems = selectedItems.concat([val]);
                         });
                         return selectedItems;
                     },

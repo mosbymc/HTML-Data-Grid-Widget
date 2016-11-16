@@ -749,7 +749,7 @@ var grid = (function _grid($) {
                     get: function _getSelectedItems() {
                         var selectedItems = [];
                         gridElem.find('.selected').each(function iteratedSelectedGridItems(idx, val) {
-                            selectedItems.push(val);
+                            selectedItems = selectedItems.concat([val]);
                         });
                         return selectedItems;
                     },
@@ -861,6 +861,7 @@ var grid = (function _grid($) {
             columnReorder: typeof storageData.columnReorder === 'object' && storageData.columnReorder.constructor === Array ? storageData.columnReorder : []
         };
 
+        //TODO: is 'evt' the key or the object ref?
         Object.keys(storageData.events).forEach(function setEvtHandlers(evt) {
             storageData.events[evt] = storageData.events[evt].filter(function mapEventsCallback(fn) {
                 return typeof fn === jsTypes.function;
