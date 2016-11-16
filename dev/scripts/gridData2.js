@@ -322,6 +322,28 @@ var gridData2 = {
                     cb(json);
                 }
             });
-        }
+        },
+        aggregates: [
+            {
+                field: 'Service',
+                aggregate: 'count'
+            },
+            {
+                field: 'Labor',
+                aggregate: 'average'
+            },
+            {
+                field: 'Cost',
+                aggregate: 'max'
+            },
+            {
+                field: 'Paid',
+                aggregate: 'count'
+            },
+            {
+                field: 'Billed',
+                aggregate: 'total'
+            }
+        ]
     }
 };

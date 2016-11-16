@@ -74,15 +74,6 @@ var gridDataTmp = {
         alternateRows: ["testAlt"],
         all: ["testAll"]
     },
-    aggregates: {
-        FirstName: {
-            type: "count"
-        },
-        Zip: {
-            type: "average"
-        },
-        positionAt: "top"
-    },
     columns: [
         {
             field: 'FirstName',
@@ -166,6 +157,16 @@ var gridDataTmp = {
     ],
     dataSource: {
         rowCount: 54,
+        aggregates: [
+            {
+                field: 'FirstName',
+                aggregate: 'count'
+            },
+            {
+                field: 'Zip',
+                aggregate: 'average'
+            }
+        ],
         data: [
             {
                 FirstName: 'Phillip J.',

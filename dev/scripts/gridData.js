@@ -58,39 +58,6 @@ var gridData = {
     },
     pagingOptions: [25, 50, 100],
     menu: ['filter', 'excel', 'save', 'sort', 'selection'],
-    aggregates: {
-        Service: {
-            type: "count"
-        },
-        Labor: {
-            type: "average"
-        },
-        Cost: {
-            type: "max"
-        },
-        Date: {
-            type: ""
-        },
-        Time: {
-            type: ""
-        },
-        Paid: {
-            type: "count"
-        },
-        Customer: {
-            type: ""
-        },
-        Phone: {
-            type: ""
-        },
-        Billed: {
-            type: "total"
-        },
-        Markup: {
-            type: ""
-        },
-        positionAt: "top"
-    },
     rows: {
         alternateRows: ["testAlt"],
         all: ["testAll"]
@@ -233,6 +200,28 @@ var gridData = {
     },
     dataSource: {
         rowCount: 54,
+        aggregates: [
+            {
+                field: 'Service',
+                aggregate: 'count'
+            },
+            {
+                field: 'Labor',
+                aggregate: 'average'
+            },
+            {
+                field: 'Cost',
+                aggregate: 'max'
+            },
+            {
+                field: 'Paid',
+                aggregate: 'count'
+            },
+            {
+                field: 'Billed',
+                aggregate: 'total'
+            }
+        ],
         data: [
             {
                 Service: "New Brakes",
