@@ -231,12 +231,14 @@
 
   .grid-header-wrapper {
     width: 100%;
-    border-right: 1px solid;
+    border-width: 1px 0 0;
     border-color: @border-color;
     overflow-x: hidden;
   }
 
   .grid-footer-div {
+    padding-right: 17px;
+    zoom: 1;
     width: auto;
     border-bottom: 1px solid;
     border-color: @border-color;
@@ -245,50 +247,59 @@
     background-repeat: no-repeat;
     background-position: center;*/
 
-    table {
-      box-sizing: content-box;
-      max-width: none;
-      table-layout: fixed;
+    .grid-footer-wrap {
+      position: relative;
       width: 100%;
-      /*border-spacing: 0; -- This seems to be the setting needed to make the header borders stretch from top to bottom
-                              but when applied, it won't allow the table to expand past it's container div
-      */
-      border-collapse: separate;
-      border-spacing: 0;
-      empty-cells: show;
-      border-width:0;
-      outline:0;
-      list-style: none;
-      line-height: normal;
-      margin: 0;
+      overflow: hidden;
+      border-style: solid;
+      border-width: 0 1px 0 0;
+      zoom: 1;
 
-      tbody {
-        display: table-header-group;
+      table {
+        box-sizing: content-box;
+        max-width: none;
+        table-layout: fixed;
+        width: 100%;
+        /*border-spacing: 0; -- This seems to be the setting needed to make the header borders stretch from top to bottom
+                                but when applied, it won't allow the table to expand past it's container div
+        */
+        border-collapse: separate;
+        border-spacing: 0;
+        empty-cells: show;
+        border-width:0;
+        outline:0;
+        list-style: none;
+        line-height: normal;
+        margin: 0;
 
-        tr {
-          background-color: rgb(250, 250, 250);
-          border-color: @header-row-border-color;
-          border-collapse: separate;
+        tbody {
+          display: table-header-group;
+
+          tr {
+            background-color: rgb(250, 250, 250);
+            border-color: @header-row-border-color;
+            border-collapse: separate;
+          }
         }
       }
-    }
 
-    td {
-      text-align: left;
-      font-family: @base-font-family;
-      font-size: @base-font-size;
-      font-style: @base-font-style;
-      color: @header-td-font-color;
-      border-color: @border-color;
-      border-left: 1px solid;
-      border-top: 1px solid;
-      border-right: none;
-      border-bottom: none;
-      .grid-th-td;
-      white-space: nowrap;
+      td {
+        text-align: left;
+        font-family: @base-font-family;
+        font-size: @base-font-size;
+        font-style: @base-font-style;
+        color: @header-td-font-color;
+        border-color: @border-color;
+        border-left: 1px solid;
+        border-top: 1px solid;
+        border-right: none;
+        border-bottom: none;
+        .grid-th-td;
+        white-space: nowrap;
 
-      &:first-child {
-        border-left-width: 0;
+        &:first-child {
+          border-left-width: 0;
+        }
       }
     }
   }

@@ -192,12 +192,12 @@ var grid = (function _grid($) {
             }
             var id = generateId(im);
             gridElem = $(gridElem).addClass('grid_elem');
-            var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class=grid-wrapper></div>').appendTo(gridElem);
-            var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class=grid-header-div></div>').appendTo(wrapperDiv);
-            headerDiv.append('<div class=grid-header-wrapper></div>');
-            wrapperDiv.append('<div id="grid-content-' + id + '" data-grid_content_id="' + id + '" class=grid-content-div></div>');
+            var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class="grid-wrapper"></div>').appendTo(gridElem);
+            var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class="grid-header-div"></div>').appendTo(wrapperDiv);
+            headerDiv.append('<div class="grid-header-wrapper"></div>');
+            wrapperDiv.append('<div id="grid-content-' + id + '" data-grid_content_id="' + id + '" class="grid-content-div"></div>');
             //wrapperDiv.append('<div id="grid-footer-' + id + '" data-grid_footer_id="' + id + '" class=grid-footer-div></div>');
-            wrapperDiv.append('<div id="grid-pager-' + id + '" data-grid_pager_id="' + id + '" class=grid-pager-div></div>');
+            wrapperDiv.append('<div id="grid-pager-' + id + '" data-grid_pager_id="' + id + '" class="grid-pager-div"></div>');
             gridState[id] = {};
             gridElem[0].grid = {};
 
@@ -1072,7 +1072,8 @@ var grid = (function _grid($) {
         else constructAggregationsFromServer2(gridId, gridData.gridAggregations);
 
         var gridPager = gridState[gridId].grid.find('.grid-pager-div'),
-            gridFooterWrap = $('<div id="grid-footer-' + gridId + '" data-grid_footer_id="' + gridId + '" class=grid-footer-div></div>').insertBefore(gridPager),
+            gridFooterDiv = $('<div id="grid-footer-' + gridId + '" data-grid_footer_id="' + gridId + '" class="grid-footer-div"></div>').insertBefore(gridPager),
+            gridFooterWrap = $('<div id="grid-footer-wrap-' + gridId + '" data-grid_footer_id="' + gridId + '" class="grid-footer-wrap"></div>').appendTo(gridFooterDiv),
             footer = $('<table class="grid-footer"></table>').appendTo(gridFooterWrap);
 
         var colgroup = $('<colgroup></colgroup>').appendTo(footer),

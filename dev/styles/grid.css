@@ -260,11 +260,13 @@
 }
 .grid_elem .grid-header-wrapper {
   width: 100%;
-  border-right: 1px solid;
+  border-width: 1px 0 0;
   border-color: #e6e6e6;
   overflow-x: hidden;
 }
 .grid_elem .grid-footer-div {
+  padding-right: 17px;
+  zoom: 1;
   width: auto;
   border-bottom: 1px solid;
   border-color: #e6e6e6;
@@ -273,14 +275,22 @@
     background-repeat: no-repeat;
     background-position: center;*/
 }
-.grid_elem .grid-footer-div table {
+.grid_elem .grid-footer-div .grid-footer-wrap {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-style: solid;
+  border-width: 0 1px 0 0;
+  zoom: 1;
+}
+.grid_elem .grid-footer-div .grid-footer-wrap table {
   box-sizing: content-box;
   max-width: none;
   table-layout: fixed;
   width: 100%;
   /*border-spacing: 0; -- This seems to be the setting needed to make the header borders stretch from top to bottom
-                              but when applied, it won't allow the table to expand past it's container div
-      */
+                                but when applied, it won't allow the table to expand past it's container div
+        */
   border-collapse: separate;
   border-spacing: 0;
   empty-cells: show;
@@ -290,15 +300,15 @@
   line-height: normal;
   margin: 0;
 }
-.grid_elem .grid-footer-div table tbody {
+.grid_elem .grid-footer-div .grid-footer-wrap table tbody {
   display: table-header-group;
 }
-.grid_elem .grid-footer-div table tbody tr {
+.grid_elem .grid-footer-div .grid-footer-wrap table tbody tr {
   background-color: #fafafa;
   border-color: #808080;
   border-collapse: separate;
 }
-.grid_elem .grid-footer-div td {
+.grid_elem .grid-footer-div .grid-footer-wrap td {
   text-align: left;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 14px;
@@ -318,7 +328,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.grid_elem .grid-footer-div td:first-child {
+.grid_elem .grid-footer-div .grid-footer-wrap td:first-child {
   border-left-width: 0;
 }
 .grid_elem .group-asc {

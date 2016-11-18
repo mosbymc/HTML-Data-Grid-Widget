@@ -35,11 +35,11 @@ var grid = (function _grid($) {
             }
             var id = generateId(im);
             gridElem = $(gridElem).addClass('grid_elem');
-            var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class=grid-wrapper></div>').appendTo(gridElem);
-            var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class=grid-header-div></div>').appendTo(wrapperDiv);
-            headerDiv.append('<div class=grid-header-wrapper></div>');
-            wrapperDiv.append('<div id="grid-content-' + id + '" data-grid_content_id="' + id + '" class=grid-content-div></div>');
-            wrapperDiv.append('<div id="grid-pager-' + id + '" data-grid_pager_id="' + id + '" class=grid-pager-div></div>');
+            var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class="grid-wrapper"></div>').appendTo(gridElem);
+            var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class="grid-header-div"></div>').appendTo(wrapperDiv);
+            headerDiv.append('<div class="grid-header-wrapper"></div>');
+            wrapperDiv.append('<div id="grid-content-' + id + '" data-grid_content_id="' + id + '" class="grid-content-div"></div>');
+            wrapperDiv.append('<div id="grid-pager-' + id + '" data-grid_pager_id="' + id + '" class="grid-pager-div"></div>');
             gridState[id] = {};
             gridElem[0].grid = {};
 
@@ -679,7 +679,8 @@ var grid = (function _grid($) {
         else constructAggregationsFromServer2(gridId, gridData.gridAggregations);
 
         var gridPager = gridState[gridId].grid.find('.grid-pager-div'),
-            gridFooterWrap = $('<div id="grid-footer-' + gridId + '" data-grid_footer_id="' + gridId + '" class=grid-footer-div></div>').insertBefore(gridPager),
+            gridFooterDiv = $('<div id="grid-footer-' + gridId + '" data-grid_footer_id="' + gridId + '" class="grid-footer-div"></div>').insertBefore(gridPager),
+            gridFooterWrap = $('<div id="grid-footer-wrap-' + gridId + '" data-grid_footer_id="' + gridId + '" class="grid-footer-wrap"></div>').appendTo(gridFooterDiv),
             footer = $('<table class="grid-footer"></table>').appendTo(gridFooterWrap);
 
         var colgroup = $('<colgroup></colgroup>').appendTo(footer),
@@ -688,15 +689,8 @@ var grid = (function _grid($) {
         if (footerRow.length) footerRow.remove();
         footerRow = $('<tr class="aggregate-row"></tr>').appendTo(footerTBody);
 
-
-        if (gridData.drillDown) {
-            colgroup.prepend('<col class="groupCol"/>');
-            footerRow.append('<td class="group_spacer">&nbsp</td>');
-        }
-
         gridState[gridId].groupedBy.forEach(function _appendSpacerCells() {
             footerRow.append('<td class="group_spacer">&nbsp</td>');
-            colgroup.prepend('<col class="group_col"/>');
         });
         if (gridState[gridId].drillDown) footerRow.append('<td class="group_spacer">&nbsp</td>');
 
@@ -737,7 +731,7 @@ var grid = (function _grid($) {
             contentTable = $('<table id="' + gridElem[0].id + '_content" style="height:auto;"></table>').appendTo(gridContent),
             colGroup = $('<colgroup></colgroup>').appendTo(contentTable),
             contentTBody = $('<tbody></tbody>').appendTo(contentTable),
-            text, item;
+            text;
         contentTBody.css('width', 'auto');
         if (typeof gridData.parentGridId !== jsTypes.number && gridData.selectable) attachTableSelectHandler(contentTBody);
 
@@ -826,15 +820,17 @@ var grid = (function _grid($) {
             if (gridData.dataSource.aggregates && (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined))
                 createAggregatesTmp(id);
 
-
             createGroupTrEventHandlers(id);
             attachDrillDownAccordionHandler(id);
         }
 
         gridContent[0].addEventListener('scroll', function contentDivScrollHandler() {
-            var headWrap = gridContent.parents('.grid-wrapper').first().find('.grid-header-wrapper');
+            var headWrap = gridContent.parents('.grid-wrapper').first().find('.grid-header-wrapper'),
+                footer = gridContent.parents('.grid-wrapper').first().find('.grid-footer-div');
             if (gridState[id].resizing) return;
             headWrap.scrollLeft(gridContent.scrollLeft());
+            if (footer.length)
+                footer.scrollLeft(gridContent.scrollLeft());
         });
 
         var headDiv = $('#' + 'grid-header-' + gridContent.data('grid_content_id')),
