@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">59.49</p>
+      <p class="stat">59.48</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4537</p>
+      <p class="stat">4541</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">228.62</p>
+      <p class="stat">228.92</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">104.06</p>
+      <p class="stat">104.16</p>
     </div>
   </div>
 </div>
@@ -668,8 +668,8 @@
         }
 
         if (gridData.drillDown) {
-            colgroup.prepend(&#039;&lt;col class=&quot;groupCol&quot;/&gt;&#039;);
-            headerRow.prepend(&#039;&lt;th class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/th&gt;&#039;);
+            colgroup.prepend(&#039;&lt;col class=&quot;drill_down_col&quot;/&gt;&#039;);
+            headerRow.prepend(&#039;&lt;th class=&quot;drill_down_spacer&quot;&gt;&amp;nbsp&lt;/th&gt;&#039;);
         }
 
         gridData.columns.forEach(function _createColumnHeaders(col, idx) {
@@ -738,10 +738,10 @@
         var aggrs = gridData.gridAggregations;
         if (aggrs) {
             var headerTHead = $(&#039;#grid-header-&#039; + gridId).find(&#039;thead&#039;);
-            var aggRow = headerTHead.find(&#039;.summary-row-header&#039;);
+            var aggRow = headerTHead.find(&#039;.aggregate-row&#039;);
             if (aggRow.length)
                 aggRow.remove();
-            aggRow = $(&#039;&lt;tr class=summary-row-header&gt;&lt;/tr&gt;&#039;).appendTo(headerTHead);
+            aggRow = $(&#039;&lt;tr class=aggregate-row&gt;&lt;/tr&gt;&#039;).appendTo(headerTHead);
             gridData.groupedBy.forEach(function _appendSpacerCells() {
                 aggRow.append(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
             });
@@ -771,7 +771,7 @@
 
         var gridPager = gridState[gridId].grid.find(&#039;.grid-pager-div&#039;),
             gridFooterDiv = $(&#039;&lt;div id=&quot;grid-footer-&#039; + gridId + &#039;&quot; data-grid_footer_id=&quot;&#039; + gridId + &#039;&quot; class=&quot;grid-footer-div&quot;&gt;&lt;/div&gt;&#039;).insertBefore(gridPager),
-            gridFooterWrap = $(&#039;&lt;div id=&quot;grid-footer-wrap-&#039; + gridId + &#039;&quot; data-grid_footer_id=&quot;&#039; + gridId + &#039;&quot; class=&quot;grid-footer-wrap&quot;&gt;&lt;/div&gt;&#039;).appendTo(gridFooterDiv),
+            gridFooterWrap = $(&#039;&lt;div id=&quot;grid-footer-wrapper-&#039; + gridId + &#039;&quot; data-grid_footer_id=&quot;&#039; + gridId + &#039;&quot; class=&quot;grid-footer-wrapper&quot;&gt;&lt;/div&gt;&#039;).appendTo(gridFooterDiv),
             footer = $(&#039;&lt;table class=&quot;grid-footer&quot;&gt;&lt;/table&gt;&#039;).appendTo(gridFooterWrap);
 
         var colgroup = $(&#039;&lt;colgroup&gt;&lt;/colgroup&gt;&#039;).appendTo(footer),
@@ -910,7 +910,7 @@
 
             gridData.columns.forEach(function appendCols() { colGroup.append(&#039;&lt;col/&gt;&#039;); });
             gridData.groupedBy.forEach(function _prependCols() { colGroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;); });
-            if (gridData.drillDown) colGroup.prepend(&#039;&lt;col class=&quot;groupCol&quot;/&gt;&#039;);
+            if (gridData.drillDown) colGroup.prepend(&#039;&lt;col class=&quot;drill_down_col&quot;/&gt;&#039;);
 
             if (gridData.dataSource.aggregates &amp;&amp; (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === undefined))
                 createAggregatesTmp(id);
@@ -921,7 +921,7 @@
 
         gridContent[0].addEventListener(&#039;scroll&#039;, function contentDivScrollHandler() {
             var headWrap = gridContent.parents(&#039;.grid-wrapper&#039;).first().find(&#039;.grid-header-wrapper&#039;),
-                footerWrap = gridContent.parents(&#039;.grid-wrapper&#039;).first().find(&#039;.grid-footer-wrap&#039;);
+                footerWrap = gridContent.parents(&#039;.grid-wrapper&#039;).first().find(&#039;.grid-footer-wrapper&#039;);
             if (gridState[id].resizing) return;
             headWrap.scrollLeft(gridContent.scrollLeft());
             if (footerWrap.length)
@@ -1054,7 +1054,7 @@
                     drillDownRow.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
                     var drillDownCellLength = 0;
                     gridData.grid.find(&#039;.grid-header-div&#039;).find(&#039;col&#039;).each(function getTotalGridLength() {
-                        if (!$(this).hasClass(&#039;groupCol&#039;))
+                        if (!$(this).hasClass(&#039;drill_down_col&#039;) &amp;&amp; !$(this).hasClass(&#039;groupCol&#039;))
                             drillDownCellLength += $(this).width();
                     });
                     var containerCell = $(&#039;&lt;td class=&quot;drill-down-cell&quot; colspan=&quot;&#039; + gridData.columns.length + &#039;&quot; style=&quot;width: &#039; + drillDownCellLength + &#039;;&quot;&gt;&lt;/td&gt;&#039;).appendTo(drillDownRow),
@@ -1940,7 +1940,7 @@
                     $(val).prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;);
                 });
                 gridState[id].grid.find(&#039;.grid-headerRow&#039;).prepend(&#039;&lt;th class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/th&gt;&#039;);
-                gridState[id].grid.find(&#039;.summary-row-header&#039;).prepend(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
+                gridState[id].grid.find(&#039;.aggregate-row&#039;).prepend(&#039;&lt;td class=&quot;group_spacer&quot;&gt;&amp;nbsp&lt;/td&gt;&#039;);
 
                 gridState[id].groupedBy = groupings;
                 gridState[id].pageRequest.eventType = &#039;group&#039;;
@@ -2047,7 +2047,7 @@
             if (gridState[id].updating) return;     
             gridState[id].grid.find(&#039;colgroup&#039;).first().children().first().remove();
             gridState[id].grid.find(&#039;.grid-headerRow&#039;).children(&#039;.group_spacer&#039;).first().remove();
-            gridState[id].grid.find(&#039;.summary-row-header&#039;).children(&#039;.group_spacer&#039;).first().remove();
+            gridState[id].grid.find(&#039;.aggregate-row&#039;).children(&#039;.group_spacer&#039;).first().remove();
             groupedCol.remove();
             groupMenuBar.find(&#039;.group_item&#039;).each(function iterateGroupedColumnsCallback(idx, val) {
                 var item = $(val);
@@ -2271,10 +2271,10 @@
     }
 
     function createSaveDeleteMenuItems(gridId) {
-        var saveMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;);
-        var saveMenuAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Save Grid Changes&lt;/a&gt;&#039;);
-        var deleteMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;);
-        var deleteMenuAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Delete Grid Changes&lt;/a&gt;&#039;);
+        var saveMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;),
+            saveMenuAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Save Grid Changes&lt;/a&gt;&#039;),
+            deleteMenuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;),
+            deleteMenuAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Delete Grid Changes&lt;/a&gt;&#039;);
 
         attachSaveAndDeleteHandlers(gridId, gridState[gridId].grid, saveMenuItem, deleteMenuItem);
 
@@ -2659,7 +2659,7 @@
             headerColGroup.children().first().remove();
         }
         gridState[gridId].grid.find(&#039;.grid-headerRow&#039;).children(&#039;.group_spacer&#039;).remove();
-        gridState[gridId].grid.find(&#039;.summary-row-header&#039;).children(&#039;.group_spacer&#039;).remove();
+        gridState[gridId].grid.find(&#039;.aggregate-row&#039;).children(&#039;.group_spacer&#039;).remove();
         gridState[gridId].grid.find(&#039;.group_div&#039;).text(groupMenuText);
 
         if (gridState[gridId].groupedBy.length) {
@@ -2732,7 +2732,6 @@
             displayedRows = (count - gridState[id].pageSize) &gt; 0 ? gridState[id].pageSize : count,
             totalPages = (count - displayedRows) &gt; 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1,
             pageNum = gridState[id].pageNum;
-
 
         var first = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;first&quot; data-pagenum=&quot;1&quot; title=&quot;First Page&quot;&gt;&lt;span class=&quot;grid-page-span span-first&quot;&gt;First Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridPager);
         var prev = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;prev&quot; data-pagenum=&quot;1&quot; title=&quot;Previous Page&quot;&gt;&lt;span class=&quot;grid-page-span span-prev&quot;&gt;Prev Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridPager);
@@ -3163,27 +3162,27 @@
     function handleDropCallback(e) {
         var droppedCol = $(&#039;#&#039; + e.originalEvent.dataTransfer.getData(&#039;text&#039;));
         droppedCol.data(&#039;dragging&#039;, false);
-        var targetCol = $(e.currentTarget);
-        var id = targetCol.parents(&#039;.grid-header-div&#039;).length ? targetCol.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;) : null;
-        var droppedId = droppedCol.parents(&#039;.grid-header-div&#039;).length ? droppedCol.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;) : null;
+        var targetCol = $(e.currentTarget),
+            id = targetCol.parents(&#039;.grid-header-div&#039;).length ? targetCol.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;) : null,
+            droppedId = droppedCol.parents(&#039;.grid-header-div&#039;).length ? droppedCol.parents(&#039;.grid-wrapper&#039;).data(&#039;grid_id&#039;) : null;
         if (id == null || droppedId == null || id !== droppedId) return;  
         if (gridState[id].updating) return;     
         if (droppedCol[0].cellIndex === targetCol[0].cellIndex) return;
         if (droppedCol[0].id === &#039;sliderDiv&#039;) return;
 
-        var parentDiv = targetCol.parents(&#039;.grid-header-div&#039;);
-        var parentDivId = parentDiv.data(&#039;grid_header_id&#039;);
-        var gridWrapper = parentDiv.parent(&#039;.grid-wrapper&#039;);
-        var colGroups = gridWrapper.find(&#039;colgroup&#039;);
+        var parentDiv = targetCol.parents(&#039;.grid-header-div&#039;),
+            parentDivId = parentDiv.data(&#039;grid_header_id&#039;),
+            gridWrapper = parentDiv.parent(&#039;.grid-wrapper&#039;),
+            colGroups = gridWrapper.find(&#039;colgroup&#039;);
 
-        var droppedIndex = droppedCol[0].dataset.index;
-        var targetIndex = targetCol[0].dataset.index;
+        var droppedIndex = droppedCol[0].dataset.index,
+            targetIndex = targetCol[0].dataset.index;
 
-        var droppedClone = droppedCol.clone(false, true);
-        var targetClone = targetCol.clone(false, true);
+        var droppedClone = droppedCol.clone(false, true),
+            targetClone = targetCol.clone(false, true);
 
-        var droppedEvents = $._data(droppedCol[0], &#039;events&#039;);
-        var targetEvents = $._data(targetCol[0], &#039;events&#039;);
+        var droppedEvents = $._data(droppedCol[0], &#039;events&#039;),
+            targetEvents = $._data(targetCol[0], &#039;events&#039;);
         if (droppedEvents.click) setSortableClickListener(droppedClone);
         if (gridState[id].resizable) {
             droppedClone.on(&#039;mouseleave&#039;, mouseLeaveHandlerCallback);
@@ -3221,11 +3220,16 @@
         colGroups[1].children[targetIndex].style.width = targetWidth;
         colGroups[1].children[droppedIndex].style.width = droppedWidth;
 
-        var sumRow = parentDiv.find(&#039;.summary-row-header&#039;);
-        if (sumRow.length) {
+        if (colGroups[2]) {
+            colGroups[2].children[targetIndex].style.width = targetWidth;
+            colGroups[2].children[droppedIndex].style.width = droppedWidth;
+        }
+
+        var aggRow = gridWrapper.find(&#039;.aggregate-row&#039;);
+        if (aggRow.length) {
             var droppedColSum = null,
                 targetColSum = null;
-            sumRow.children().each(function iterateSumRowCellsCallback(idx, val) {
+            aggRow.children().each(function iterateSumRowCellsCallback(idx, val) {
                 if ($(val).data(&#039;field&#039;) === droppedCol.data(&#039;field&#039;)) droppedColSum = $(val);
                 else if ($(val).data(&#039;field&#039;) === targetCol.data(&#039;field&#039;)) targetColSum = $(val);
             });

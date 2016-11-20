@@ -577,8 +577,8 @@ var grid = (function _grid($) {
         }
 
         if (gridData.drillDown) {
-            colgroup.prepend('<col class="groupCol"/>');
-            headerRow.prepend('<th class="group_spacer">&nbsp</th>');
+            colgroup.prepend('<col class="drill_down_col"/>');
+            headerRow.prepend('<th class="drill_down_spacer">&nbsp</th>');
         }
 
         gridData.columns.forEach(function _createColumnHeaders(col, idx) {
@@ -647,10 +647,10 @@ var grid = (function _grid($) {
         var aggrs = gridData.gridAggregations;
         if (aggrs) {
             var headerTHead = $('#grid-header-' + gridId).find('thead');
-            var aggRow = headerTHead.find('.summary-row-header');
+            var aggRow = headerTHead.find('.aggregate-row');
             if (aggRow.length)
                 aggRow.remove();
-            aggRow = $('<tr class=summary-row-header></tr>').appendTo(headerTHead);
+            aggRow = $('<tr class=aggregate-row></tr>').appendTo(headerTHead);
             gridData.groupedBy.forEach(function _appendSpacerCells() {
                 aggRow.append('<td class="group_spacer">&nbsp</td>');
             });
@@ -680,7 +680,7 @@ var grid = (function _grid($) {
 
         var gridPager = gridState[gridId].grid.find('.grid-pager-div'),
             gridFooterDiv = $('<div id="grid-footer-' + gridId + '" data-grid_footer_id="' + gridId + '" class="grid-footer-div"></div>').insertBefore(gridPager),
-            gridFooterWrap = $('<div id="grid-footer-wrap-' + gridId + '" data-grid_footer_id="' + gridId + '" class="grid-footer-wrap"></div>').appendTo(gridFooterDiv),
+            gridFooterWrap = $('<div id="grid-footer-wrapper-' + gridId + '" data-grid_footer_id="' + gridId + '" class="grid-footer-wrapper"></div>').appendTo(gridFooterDiv),
             footer = $('<table class="grid-footer"></table>').appendTo(gridFooterWrap);
 
         var colgroup = $('<colgroup></colgroup>').appendTo(footer),
@@ -819,7 +819,7 @@ var grid = (function _grid($) {
 
             gridData.columns.forEach(function appendCols() { colGroup.append('<col/>'); });
             gridData.groupedBy.forEach(function _prependCols() { colGroup.prepend('<col class="group_col"/>'); });
-            if (gridData.drillDown) colGroup.prepend('<col class="groupCol"/>');
+            if (gridData.drillDown) colGroup.prepend('<col class="drill_down_col"/>');
 
             if (gridData.dataSource.aggregates && (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined))
                 createAggregatesTmp(id);
@@ -830,7 +830,7 @@ var grid = (function _grid($) {
 
         gridContent[0].addEventListener('scroll', function contentDivScrollHandler() {
             var headWrap = gridContent.parents('.grid-wrapper').first().find('.grid-header-wrapper'),
-                footerWrap = gridContent.parents('.grid-wrapper').first().find('.grid-footer-wrap');
+                footerWrap = gridContent.parents('.grid-wrapper').first().find('.grid-footer-wrapper');
             if (gridState[id].resizing) return;
             headWrap.scrollLeft(gridContent.scrollLeft());
             if (footerWrap.length)
@@ -963,7 +963,7 @@ var grid = (function _grid($) {
                     drillDownRow.append('<td class="grouped_cell"></td>');
                     var drillDownCellLength = 0;
                     gridData.grid.find('.grid-header-div').find('col').each(function getTotalGridLength() {
-                        if (!$(this).hasClass('groupCol'))
+                        if (!$(this).hasClass('drill_down_col') && !$(this).hasClass('groupCol'))
                             drillDownCellLength += $(this).width();
                     });
                     var containerCell = $('<td class="drill-down-cell" colspan="' + gridData.columns.length + '" style="width: ' + drillDownCellLength + ';"></td>').appendTo(drillDownRow),
@@ -1849,7 +1849,7 @@ var grid = (function _grid($) {
                     $(val).prepend('<col class="group_col"/>');
                 });
                 gridState[id].grid.find('.grid-headerRow').prepend('<th class="group_spacer">&nbsp</th>');
-                gridState[id].grid.find('.summary-row-header').prepend('<td class="group_spacer">&nbsp</td>');
+                gridState[id].grid.find('.aggregate-row').prepend('<td class="group_spacer">&nbsp</td>');
 
                 gridState[id].groupedBy = groupings;
                 gridState[id].pageRequest.eventType = 'group';
@@ -1956,7 +1956,7 @@ var grid = (function _grid($) {
             if (gridState[id].updating) return;     
             gridState[id].grid.find('colgroup').first().children().first().remove();
             gridState[id].grid.find('.grid-headerRow').children('.group_spacer').first().remove();
-            gridState[id].grid.find('.summary-row-header').children('.group_spacer').first().remove();
+            gridState[id].grid.find('.aggregate-row').children('.group_spacer').first().remove();
             groupedCol.remove();
             groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
                 var item = $(val);
@@ -2180,10 +2180,10 @@ var grid = (function _grid($) {
     }
 
     function createSaveDeleteMenuItems(gridId) {
-        var saveMenuItem = $('<li class="menu_item"></li>');
-        var saveMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Save Grid Changes</a>');
-        var deleteMenuItem = $('<li class="menu_item"></li>');
-        var deleteMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Delete Grid Changes</a>');
+        var saveMenuItem = $('<li class="menu_item"></li>'),
+            saveMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Save Grid Changes</a>'),
+            deleteMenuItem = $('<li class="menu_item"></li>'),
+            deleteMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Delete Grid Changes</a>');
 
         attachSaveAndDeleteHandlers(gridId, gridState[gridId].grid, saveMenuItem, deleteMenuItem);
 
@@ -2568,7 +2568,7 @@ var grid = (function _grid($) {
             headerColGroup.children().first().remove();
         }
         gridState[gridId].grid.find('.grid-headerRow').children('.group_spacer').remove();
-        gridState[gridId].grid.find('.summary-row-header').children('.group_spacer').remove();
+        gridState[gridId].grid.find('.aggregate-row').children('.group_spacer').remove();
         gridState[gridId].grid.find('.group_div').text(groupMenuText);
 
         if (gridState[gridId].groupedBy.length) {
@@ -2641,7 +2641,6 @@ var grid = (function _grid($) {
             displayedRows = (count - gridState[id].pageSize) > 0 ? gridState[id].pageSize : count,
             totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1,
             pageNum = gridState[id].pageNum;
-
 
         var first = $('<a href="#" class="grid-page-link" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridPager);
         var prev = $('<a href="#" class="grid-page-link" data-link="prev" data-pagenum="1" title="Previous Page"><span class="grid-page-span span-prev">Prev Page</span></a>').appendTo(gridPager);
@@ -3072,27 +3071,27 @@ var grid = (function _grid($) {
     function handleDropCallback(e) {
         var droppedCol = $('#' + e.originalEvent.dataTransfer.getData('text'));
         droppedCol.data('dragging', false);
-        var targetCol = $(e.currentTarget);
-        var id = targetCol.parents('.grid-header-div').length ? targetCol.parents('.grid-wrapper').data('grid_id') : null;
-        var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
+        var targetCol = $(e.currentTarget),
+            id = targetCol.parents('.grid-header-div').length ? targetCol.parents('.grid-wrapper').data('grid_id') : null,
+            droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
         if (id == null || droppedId == null || id !== droppedId) return;  
         if (gridState[id].updating) return;     
         if (droppedCol[0].cellIndex === targetCol[0].cellIndex) return;
         if (droppedCol[0].id === 'sliderDiv') return;
 
-        var parentDiv = targetCol.parents('.grid-header-div');
-        var parentDivId = parentDiv.data('grid_header_id');
-        var gridWrapper = parentDiv.parent('.grid-wrapper');
-        var colGroups = gridWrapper.find('colgroup');
+        var parentDiv = targetCol.parents('.grid-header-div'),
+            parentDivId = parentDiv.data('grid_header_id'),
+            gridWrapper = parentDiv.parent('.grid-wrapper'),
+            colGroups = gridWrapper.find('colgroup');
 
-        var droppedIndex = droppedCol[0].dataset.index;
-        var targetIndex = targetCol[0].dataset.index;
+        var droppedIndex = droppedCol[0].dataset.index,
+            targetIndex = targetCol[0].dataset.index;
 
-        var droppedClone = droppedCol.clone(false, true);
-        var targetClone = targetCol.clone(false, true);
+        var droppedClone = droppedCol.clone(false, true),
+            targetClone = targetCol.clone(false, true);
 
-        var droppedEvents = $._data(droppedCol[0], 'events');
-        var targetEvents = $._data(targetCol[0], 'events');
+        var droppedEvents = $._data(droppedCol[0], 'events'),
+            targetEvents = $._data(targetCol[0], 'events');
         if (droppedEvents.click) setSortableClickListener(droppedClone);
         if (gridState[id].resizable) {
             droppedClone.on('mouseleave', mouseLeaveHandlerCallback);
@@ -3130,11 +3129,16 @@ var grid = (function _grid($) {
         colGroups[1].children[targetIndex].style.width = targetWidth;
         colGroups[1].children[droppedIndex].style.width = droppedWidth;
 
-        var sumRow = parentDiv.find('.summary-row-header');
-        if (sumRow.length) {
+        if (colGroups[2]) {
+            colGroups[2].children[targetIndex].style.width = targetWidth;
+            colGroups[2].children[droppedIndex].style.width = droppedWidth;
+        }
+
+        var aggRow = gridWrapper.find('.aggregate-row');
+        if (aggRow.length) {
             var droppedColSum = null,
                 targetColSum = null;
-            sumRow.children().each(function iterateSumRowCellsCallback(idx, val) {
+            aggRow.children().each(function iterateSumRowCellsCallback(idx, val) {
                 if ($(val).data('field') === droppedCol.data('field')) droppedColSum = $(val);
                 else if ($(val).data('field') === targetCol.data('field')) targetColSum = $(val);
             });
