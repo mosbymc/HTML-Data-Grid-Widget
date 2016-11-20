@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">59.50</p>
+      <p class="stat">59.49</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4533</p>
+      <p class="stat">4537</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">228.64</p>
+      <p class="stat">228.62</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">103.93</p>
+      <p class="stat">104.06</p>
     </div>
   </div>
 </div>
@@ -792,6 +792,10 @@
             footerRow.append(&#039;&lt;td data-field=&quot;&#039; + col.field + &#039;&quot; class=aggregate-cell&quot;&gt;&#039; + text + &#039;&lt;/td&gt;&#039;);
             colgroup.append(&#039;&lt;col&gt;&#039;);
         });
+
+        var gridContent = gridState[gridId].grid.find(&#039;.grid-content-div&#039;),
+            sizeDiff = gridFooterWrap[0].clientWidth - gridContent[0].clientWidth;
+        gridFooterWrap.css(&#039;paddingRight&#039;, sizeDiff);
     }
 
     function constructAggregationsFromServer2(gridId, aggregationObj) {
@@ -917,11 +921,11 @@
 
         gridContent[0].addEventListener(&#039;scroll&#039;, function contentDivScrollHandler() {
             var headWrap = gridContent.parents(&#039;.grid-wrapper&#039;).first().find(&#039;.grid-header-wrapper&#039;),
-                footer = gridContent.parents(&#039;.grid-wrapper&#039;).first().find(&#039;.grid-footer-div&#039;);
+                footerWrap = gridContent.parents(&#039;.grid-wrapper&#039;).first().find(&#039;.grid-footer-wrap&#039;);
             if (gridState[id].resizing) return;
             headWrap.scrollLeft(gridContent.scrollLeft());
-            if (footer.length)
-                footer.scrollLeft(gridContent.scrollLeft());
+            if (footerWrap.length)
+                footerWrap.scrollLeft(gridContent.scrollLeft());
         });
 
         var headDiv = $(&#039;#&#039; + &#039;grid-header-&#039; + gridContent.data(&#039;grid_content_id&#039;)),

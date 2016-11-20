@@ -231,9 +231,9 @@
 
   .grid-header-wrapper {
     width: 100%;
-    border-width: 1px 0 0;
-    border-color: @border-color;
     overflow-x: hidden;
+    border: 0 solid @border-color;
+    border-right-width: 1px;
   }
 
   .grid-footer-div {
@@ -242,7 +242,8 @@
     width: auto;
     border-bottom: 1px solid;
     border-color: @border-color;
-    background-color: @base-background-color;
+    /*background-color: @base-background-color;*/
+    background-color: #f5f5f5;
     /*background-image: url(download.png);
     background-repeat: no-repeat;
     background-position: center;*/
@@ -251,34 +252,62 @@
       position: relative;
       width: 100%;
       overflow: hidden;
-      border-style: solid;
-      border-width: 0 1px 0 0;
+      border: 0 solid #dedee0;
+      border-right-width: 1px;
       zoom: 1;
 
       table {
-        box-sizing: content-box;
-        max-width: none;
-        table-layout: fixed;
         width: 100%;
-        /*border-spacing: 0; -- This seems to be the setting needed to make the header borders stretch from top to bottom
-                                but when applied, it won't allow the table to expand past it's container div
-        */
+        margin: 0;
+        max-width: none;
         border-collapse: separate;
         border-spacing: 0;
         empty-cells: show;
-        border-width:0;
-        outline:0;
+        border-width: 0;
+        outline: 0;
+        display: table;
+
+        box-sizing: content-box;
+        table-layout: fixed;
+        /*border-spacing: 0; -- This seems to be the setting needed to make the header borders stretch from top to bottom
+                                but when applied, it won't allow the table to expand past it's container div
+        */
         list-style: none;
         line-height: normal;
-        margin: 0;
 
         tbody {
-          display: table-header-group;
+          display: table-row-group;
+          vertical-align: middle;
+          border-color: inherit;
+
+          /*display: table-header-group;*/
 
           tr {
+            display: table-row;
+            vertical-align: inherit;
+            border-color: inherit;
+
             background-color: rgb(250, 250, 250);
-            border-color: @header-row-border-color;
+            /*border-color: @header-row-border-color;*/
             border-collapse: separate;
+
+            td {
+              color: #515967;
+              font-weight: 700;
+              background-color: #f5f5f5;
+              border: 1px solid #ceced2;
+              border-right-width: 0;
+              border-bottom-width: 0;
+              padding: .4em .6em;
+              overflow: hidden;
+              line-height: 1.6em;
+              vertical-align: middle;
+              text-overflow: ellipsis;
+
+              &:first-child {
+                border-left-width: 0;
+              }
+            }
           }
         }
       }

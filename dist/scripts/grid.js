@@ -701,6 +701,10 @@ var grid = (function _grid($) {
             footerRow.append('<td data-field="' + col.field + '" class=aggregate-cell">' + text + '</td>');
             colgroup.append('<col>');
         });
+
+        var gridContent = gridState[gridId].grid.find('.grid-content-div'),
+            sizeDiff = gridFooterWrap[0].clientWidth - gridContent[0].clientWidth;
+        gridFooterWrap.css('paddingRight', sizeDiff);
     }
 
     function constructAggregationsFromServer2(gridId, aggregationObj) {
@@ -826,11 +830,11 @@ var grid = (function _grid($) {
 
         gridContent[0].addEventListener('scroll', function contentDivScrollHandler() {
             var headWrap = gridContent.parents('.grid-wrapper').first().find('.grid-header-wrapper'),
-                footer = gridContent.parents('.grid-wrapper').first().find('.grid-footer-div');
+                footerWrap = gridContent.parents('.grid-wrapper').first().find('.grid-footer-wrap');
             if (gridState[id].resizing) return;
             headWrap.scrollLeft(gridContent.scrollLeft());
-            if (footer.length)
-                footer.scrollLeft(gridContent.scrollLeft());
+            if (footerWrap.length)
+                footerWrap.scrollLeft(gridContent.scrollLeft());
         });
 
         var headDiv = $('#' + 'grid-header-' + gridContent.data('grid_content_id')),
