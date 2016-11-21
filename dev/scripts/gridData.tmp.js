@@ -165,6 +165,10 @@ var gridDataTmp = {
             {
                 field: 'Zip',
                 aggregate: 'average'
+            },
+            {
+                field: 'Zip',
+                aggregate: 'max'
             }
         ],
         data: [

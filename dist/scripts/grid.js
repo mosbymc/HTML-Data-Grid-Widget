@@ -211,7 +211,7 @@ var grid = (function _grid($) {
                             createGridContent(gridState[gridId], gridState[gridId].grid);
                             gridState[gridId].grid.find('.grid-pager-div').empty();
                             createGridPager(gridState[gridId], gridState[gridId].grid);
-                            buildHeaderAggregations(gridId);
+                            createAggregates(gridId);
                         }
                     },
                     writable: false,
@@ -233,7 +233,7 @@ var grid = (function _grid($) {
                         createGridContent(gridState[gridId], gridState[gridId].grid);
                         gridState[gridId].grid.find('.grid-pager-div').empty();
                         createGridPager(gridState[gridId], gridState[gridId].grid);
-                        buildHeaderAggregations(gridId);
+                        createAggregates(gridId);
                     },
                     writable: false,
                     configurable: false
@@ -309,7 +309,7 @@ var grid = (function _grid($) {
                             createGridContent(gridState[gridId], gridState[gridId].grid);
                             gridState[gridId].grid.find('.grid-pager-div').empty();
                             createGridPager(gridState[gridId], gridState[gridId].grid);
-                            buildHeaderAggregations(gridId);
+                            createAggregates(gridId);
                         }
                     },
                     writable: false,
@@ -338,7 +338,7 @@ var grid = (function _grid($) {
                             createGridContent(gridState[gridId], gridState[gridId].grid);
                             gridState[gridId].grid.find('.grid-pager-div').empty();
                             createGridPager(gridState[gridId], gridState[gridId].grid);
-                            buildHeaderAggregations(gridId);
+                            createAggregates(gridId);
                         }
                     },
                     writable: false,
@@ -553,7 +553,6 @@ var grid = (function _grid($) {
         callGridEventHandlers(storageData.events.beforeDataBind, storageData.grid, eventObj);
 
         gridState[id] = storageData;
-
         createGridPager(storageData, gridElem);
         createGridContent(storageData, gridElem);
         callGridEventHandlers(storageData.events.afterDataBind, storageData.grid, eventObj);
@@ -630,41 +629,7 @@ var grid = (function _grid($) {
             $('<span id="loader-span_' + id + '" class="spinner"></span>').appendTo(gridContent).css('top', top).css('left', left);
     }
 
-    function buildHeaderAggregations(gridId) {
-        var gridData = gridState[gridId];
-        if (typeof gridState[gridId].dataSource.get !== jsTypes.function) {
-            var dataToFilter = gridData.alteredData && gridData.alteredData.length ? gridData.alteredData : gridData.originalData;
-                dataToFilter.filter(function getRemainingRows(val, idx) {
-                    return idx > gridData.pageNum * gridData.pageSize - 1 || idx < gridData.pageNum * gridData.pageSize - gridData.pageSize;
-                }).forEach(function _iterateRemainingRows(row) {
-                    gridData.columns.forEach(function _addColumnValsToAggregates(col) {
-                        if (gridData.aggregates[col.field])
-                            addValueToAggregations(gridId, col.field, row[col.field], gridData.gridAggregations);
-                    });
-                });
-        }
-
-        var aggrs = gridData.gridAggregations;
-        if (aggrs) {
-            var headerTHead = $('#grid-header-' + gridId).find('thead');
-            var aggRow = headerTHead.find('.aggregate-row');
-            if (aggRow.length)
-                aggRow.remove();
-            aggRow = $('<tr class=aggregate-row></tr>').appendTo(headerTHead);
-            gridData.groupedBy.forEach(function _appendSpacerCells() {
-                aggRow.append('<td class="group_spacer">&nbsp</td>');
-            });
-            if (gridData.drillDown) aggRow.append('<td class="group_spacer">&nbsp</td>');
-
-            gridData.columns.forEach(function _createAggregates(col) {
-                var text = '';
-                if (col.field in aggrs) text = aggrs[col.field].text || '';
-                aggRow.append('<td data-field="' + col.field + '" class=summary-cell-header>' + text + '</td>');
-            });
-        }
-    }
-
-    function createAggregatesTmp(gridId) {
+    function createAggregates(gridId) {
         var gridData = gridState[gridId];
         if (typeof gridState[gridId].dataSource.get !== jsTypes.function) {
             var dataToFilter = gridData.alteredData && gridData.alteredData.length ? gridData.alteredData : gridData.originalData;
@@ -672,11 +637,11 @@ var grid = (function _grid($) {
                 return idx > gridData.pageNum * gridData.pageSize - 1 || idx < gridData.pageNum * gridData.pageSize - gridData.pageSize;
             }).forEach(function _iterateRemainingRows(row) {
                 gridData.columns.forEach(function _addColumnValsToAggregates(col) {
-                    addValueToAggregations2(gridId, col.field, row[col.field], gridData.gridAggregations);
+                    addValueToAggregations(gridId, col.field, row[col.field], gridData.gridAggregations);
                 });
             });
         }
-        else constructAggregationsFromServer2(gridId, gridData.gridAggregations);
+        else constructAggregationsFromServer(gridId, gridData.gridAggregations);
 
         var gridPager = gridState[gridId].grid.find('.grid-pager-div'),
             gridFooterDiv = $('<div id="grid-footer-' + gridId + '" data-grid_footer_id="' + gridId + '" class="grid-footer-div"></div>').insertBefore(gridPager),
@@ -697,7 +662,12 @@ var grid = (function _grid($) {
         var aggregates = gridState[gridId].gridAggregations;
         gridState[gridId].columns.forEach(function _createAggregates(col) {
             var text = '';
-            if (col.field in aggregates) text = aggregates[col.field].text || '';
+            if (col.field in aggregates) {
+                aggregates[col.field].forEach(function _createAggregateText(aggregate, idx) {
+                    text += aggregate.text;
+                    if (idx < aggregates[col.field].length - 1) text += ', ';
+                });
+            }
             footerRow.append('<td data-field="' + col.field + '" class=aggregate-cell">' + text + '</td>');
             colgroup.append('<col>');
         });
@@ -707,26 +677,105 @@ var grid = (function _grid($) {
         gridFooterWrap.css('paddingRight', sizeDiff);
     }
 
-    function constructAggregationsFromServer2(gridId, aggregationObj) {
+    function constructAggregationsFromServer(gridId, aggregationObj) {
         gridState[gridId].columns.forEach(function _constructAggregationsFromServer(col) {
-            var currentAggregate = null;
-            if (!aggregationObj[col.field]) aggregationObj[col.field] = {};
-            gridState[gridId].dataSource.aggregates.some(function _findAggregateColumn(val) {
-                if (val.field !== col.field) {
-                    aggregationObj[col.field] = {};
-                }
-                else{
-                    currentAggregate = val;
-                    return true;
-                }
-            });
+            var aggregateObj = {},
+                aggregateArr = [];
+            if (!aggregationObj[col.field]) aggregationObj[col.field] = [];
 
-            if (currentAggregate && currentAggregate.aggregate && currentAggregate.value) {
-                var text = getFormattedCellText(col, currentAggregate.value) || currentAggregate.value;
-                aggregationObj[col.field].text = aggregates[currentAggregate.aggregate] + text;
-            }
-            else aggregationObj[col.field].text = null;
+            gridState[gridId].dataSource.aggregates.filter(function _findAggregateColumn(val) {
+                return val.field === col.field;
+            }).forEach(function _getAggregateText(item) {
+                if (item.aggregate && item.value) {
+                    var text = getFormattedCellText(col, item.value) || item.value;
+                    aggregateObj.text = aggregates[item.aggregate] + text ;
+                }
+                else aggregateObj.text = '';
+                aggregateArr.push(aggregateObj);
+            });
+            aggregationObj[col.field] = aggregateArr;
         });
+    }
+
+    function addValueToAggregations(gridId, field, value, aggregationObj) {
+        if (value == null) return;
+        var text, total,
+            column = gridState[gridId].columns[gridState[gridId].columnIndices[field]];
+        if (!aggregationObj[field]) aggregationObj[field] = [];
+        var aggregateArr = [];
+        gridState[gridId].dataSource.aggregates.filter(function _findMatchingAggregateColumn(item) {
+            return item.field === field;
+        }).forEach(function _calculateAggregate(col) {
+            var aggregateObj = {};
+            switch (col.aggregate.toLowerCase()) {
+                case 'count':
+                    if (!aggregateObj.value) {
+                        aggregateObj.value = gridState[gridId].dataSource.rowCount || gridState[gridId].dataSource.data.length;
+                        aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + aggregateObj.value;
+                        aggregateObj.aggregate = aggregates.count;
+                        aggregateArr.push(aggregateObj);
+                    }
+                    else {
+                        aggregateArr.concat(aggregationObj[field].filter(function _findMatchingAggregateObj(item) {
+                            return item.aggregate === col.aggregate.toLowerCase();
+                        }));
+                    }
+                    return;
+                case 'average':
+                    var count = aggregateObj.count ? aggregateObj.count + 1 : 1;
+                    value = parseFloat(value.toString());
+                    total = aggregateObj.total ? aggregateObj.total + value : value;
+                    var avg = total/count;
+                    text = getFormattedCellText(column, avg.toFixed(2)) || avg.toFixed(2);
+                    aggregateObj.total = total;
+                    aggregateObj.count = count;
+                    aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + text;
+                    aggregateObj.value = avg;
+                    aggregateObj.aggregate = aggregates.average;
+                    aggregateArr.push(aggregateObj);
+                    return;
+                case 'max':
+                    if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) < parseFloat(value.toString())) {
+                        text = getFormattedCellText(column, value) || value;
+                        aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + text;
+                        aggregateObj.value = value;
+                        aggregateObj.aggregate = aggregates.max;
+                        aggregateArr.push(aggregateObj);
+                    }
+                    else {
+                        aggregateArr.concat(aggregationObj[field].filter(function _findMatchingAggregateObj(item) {
+                            return item.aggregate === col.aggregate.toLowerCase();
+                        }));
+                    }
+                    return;
+                case 'min':
+                    if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) > parseFloat(value.toString())) {
+                        text = getFormattedCellText(column, value) || value;
+                        aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + text;
+                        aggregateObj.value = text;
+                        aggregateObj.aggregate = aggregates.min;
+                        aggregateArr.push(aggregateObj);
+                    }
+                    else {
+                        aggregateArr.concat(aggregationObj[field].filter(function _findMatchingAggregateObj(item) {
+                            return item.aggregate === col.aggregate.toLowerCase();
+                        }));
+                    }
+                    return;
+                case 'total':
+                    total = (parseFloat(aggregationObj[field].total) || 0) + parseFloat(value);
+                    text = getFormattedCellText(column, total) || total;
+                    aggregateObj.total = total;
+                    aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + text;
+                    aggregateObj.value = text;
+                    aggregateArr.push(aggregateObj);
+                    return;
+                default:
+                    aggregateObj.text = null;
+                    aggregateArr.push(aggregateObj);
+            }
+        });
+        aggregationObj[field] = aggregateArr;
     }
 
     function createGridContent(gridData, gridElem) {
@@ -804,7 +853,7 @@ var grid = (function _grid($) {
                     }
                     if (gridData.dataSource.aggregates && typeof gridData.dataSource.get !== jsTypes.function) {
                         if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined)
-                            addValueToAggregations2(id, col.field, item[col.field], gridData.gridAggregations);
+                            addValueToAggregations(id, col.field, item[col.field], gridData.gridAggregations);
                     }
                     if (typeof gridData.parentGridId !== jsTypes.number && (col.editable && col.editable !== 'drop-down')) {
                         makeCellEditable(id, td);
@@ -822,7 +871,7 @@ var grid = (function _grid($) {
             if (gridData.drillDown) colGroup.prepend('<col class="drill_down_col"/>');
 
             if (gridData.dataSource.aggregates && (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined))
-                createAggregatesTmp(id);
+                createAggregates(id);
 
             createGroupTrEventHandlers(id);
             attachDrillDownAccordionHandler(id);
@@ -916,7 +965,7 @@ var grid = (function _grid($) {
                 }
                 gridData.columns.forEach(function _aggregateValues(col) {
                     if (gridData.aggregates)
-                        addValueToAggregations2(gridId, col.field, gridData.dataSource.data[rowIndex][col.field], gridData.groupAggregations[idx]);
+                        addValueToAggregations(gridId, col.field, gridData.dataSource.data[rowIndex][col.field], gridData.groupAggregations[idx]);
                 });
                 gridData.groupAggregations[idx]._items_++;
             }
@@ -984,124 +1033,6 @@ var grid = (function _grid($) {
                 }
             }
         });
-    }
-
-    function constructAggregationsFromServer(gridId, aggregationObj) {
-        gridState[gridId].columns.forEach(function _constructAggregationsFromServer(col) {
-            if (!aggregationObj[col.field]) aggregationObj[col.field] = {};
-                if (!gridState[gridId].aggregates[col.field]) {
-                    aggregationObj[col.field] = '';
-                    return;
-                }
-                if (typeof gridState[gridId].dataSource.get === jsTypes.function) {
-                    if (gridState[gridId].aggregates[col.field].type && gridState[gridId].aggregates[col.field].value) {
-                        var text = getFormattedCellText(col, gridState[gridId].aggregates[col.field].value) || gridState[gridId].aggregates[col.field].value;
-                        aggregationObj[col.field].text = aggregates[gridState[gridId].aggregates[col.field].type] + text;
-                    }
-                    else aggregationObj[col.field].text = null;
-            }
-        });
-    }
-
-    function addValueToAggregations2(gridId, field, value, aggregationObj) {
-        var text, total,
-            column = gridState[gridId].columns[gridState[gridId].columnIndices[field]],
-            aggregateCol = gridState[gridId].dataSource.aggregates.filter(function _findMatchingAggregateColumn(item) {
-                return item.field === field;
-            });
-        if (!aggregateCol.length) return;
-        aggregateCol = aggregateCol[0];
-        if (!aggregationObj[field]) aggregationObj[field] = {};
-        if (value == null) return;
-        switch (aggregateCol.aggregate.toLowerCase()) {
-            case 'count':
-                if (!aggregationObj[field].value) {
-                    aggregationObj[field].value = gridState[gridId].dataSource.rowCount || gridState[gridId].dataSource.data.length;
-                    aggregationObj[field].text = aggregates[aggregateCol.aggregate.toLowerCase()] + aggregationObj[field].value;
-                }
-                return;
-            case 'average':
-                var count = aggregationObj[field].count ? aggregationObj[field].count + 1 : 1;
-                value = parseFloat(value.toString());
-                total = aggregationObj[field].total ? aggregationObj[field].total + value : value;
-                var avg = total/count;
-                text = getFormattedCellText(column, avg.toFixed(2)) || avg.toFixed(2);
-                aggregationObj[field].total = total;
-                aggregationObj[field].count = count;
-                aggregationObj[field].text = aggregates[aggregateCol.aggregate.toLowerCase()] + text;
-                aggregationObj[field].value = avg;
-                return;
-            case 'max':
-                if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) < parseFloat(value.toString())) {
-                    text = getFormattedCellText(column, value) || value;
-                    aggregationObj[field].text = aggregates[aggregateCol.aggregate.toLowerCase()] + text;
-                    aggregationObj[field].value = value;
-                }
-                return;
-            case 'min':
-                if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) > parseFloat(value.toString())) {
-                    text = getFormattedCellText(column, value) || value;
-                    aggregationObj[field].text = aggregates[aggregateCol.aggregate.toLowerCase()] + text;
-                    aggregationObj[field].value = text;
-                }
-                return;
-            case 'total':
-                total = (parseFloat(aggregationObj[field].total) || 0) + parseFloat(value);
-                text = getFormattedCellText(column, total) || total;
-                aggregationObj[field].total = total;
-                aggregationObj[field].text = aggregates[aggregateCol.aggregate.toLowerCase()] + text;
-                aggregationObj[field].value = text;
-                return;
-            default:
-                aggregationObj[field].text = null;
-        }
-    }
-
-    function addValueToAggregations(gridId, field, value, aggregationObj) {
-        var text, total,
-            column = gridState[gridId].columns[gridState[gridId].columnIndices[field]];
-        if (!aggregationObj[field]) aggregationObj[field] = {};
-        if (value == null) return;
-        switch (gridState[gridId].aggregates[field].type) {
-            case 'count':
-                aggregationObj[field].value = gridState[gridId].dataSource.rowCount || gridState[gridId].dataSource.data.length;
-                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + aggregationObj[field].value;
-                return;
-            case 'average':
-                var count = aggregationObj[field].count ? aggregationObj[field].count + 1 : 1;
-                value = parseFloat(value.toString());
-                total = aggregationObj[field].total ? aggregationObj[field].total + value : value;
-                var avg = total/count;
-                text = getFormattedCellText(column, avg.toFixed(2)) || avg.toFixed(2);
-                aggregationObj[field].total = total;
-                aggregationObj[field].count = count;
-                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
-                aggregationObj[field].value = avg;
-                return;
-            case 'max':
-                if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) < parseFloat(value.toString())) {
-                    text = getFormattedCellText(column, value) || value;
-                    aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
-                    aggregationObj[field].value = value;
-                }
-                return;
-            case 'min':
-                if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) > parseFloat(value.toString())) {
-                    text = getFormattedCellText(column, value) || value;
-                    aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
-                    aggregationObj[field].value = text;
-                }
-                return;
-            case 'total':
-                total = (parseFloat(aggregationObj[field].total) || 0) + parseFloat(value);
-                text = getFormattedCellText(column, total) || total;
-                aggregationObj[field].total = total;
-                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
-                aggregationObj[field].value = text;
-                return;
-            default:
-                aggregationObj[field].text = null;
-        }
     }
 
     function attachTableSelectHandler(tableBody) {
@@ -3462,7 +3393,7 @@ var grid = (function _grid($) {
                         }
                         constructAggregationsFromServer(id, gridData.gridAggregations);
                     }
-                    buildHeaderAggregations(id);
+                    createAggregates(id);
                 }
                 gridData.pageRequest = {};
             }
