@@ -44,7 +44,7 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">59.64</p>
+      <p class="stat">59.66</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">224.35</p>
+      <p class="stat">220.27</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">101.83</p>
+      <p class="stat">101.91</p>
     </div>
   </div>
 </div>
@@ -961,8 +961,10 @@
             gridData.groupedBy.forEach(function _prependCols() { colGroup.prepend(&#039;&lt;col class=&quot;group_col&quot;/&gt;&#039;); });
             if (gridData.drillDown) colGroup.prepend(&#039;&lt;col class=&quot;drill_down_col&quot;/&gt;&#039;);
 
-            if (gridData.dataSource.aggregates &amp;&amp; (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === undefined))
+            if (gridData.dataSource.aggregates &amp;&amp; (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === undefined)) {
+                gridData.grid.find(&#039;.grid-footer-div&#039;).remove();
                 createAggregates(id);
+            }
 
             createGroupTrEventHandlers(id);
             attachDrillDownAccordionHandler(id);
@@ -3471,20 +3473,18 @@
                 if (gridData.pageRequest.eventType === &#039;newGrid&#039; || gridData.pageRequest.eventType === &#039;group&#039;)
                     setColWidth(gridData, gridState[id].grid);
 
+                if (response.aggregations &amp;&amp; gridData.dataSource.aggregates) {
+                    gridData.dataSource.aggregates = gridData.dataSource.aggregates.map(function _mapAggregateValues(val) {
+                        if (response.aggregations[val.field])
+                            return { aggregate: val.aggregate, field: val.field, value: response.aggregations[val.field] };
+                        else return { aggregate: val.aggregate, field: val.field, value: null };
+                    });
+                }
+
                 createGridContent(gridData, gridState[id].grid);
                 if (gridData.pageRequest.eventType === &#039;filter&#039; || gridData.pageRequest.eventType === &#039;pageSize&#039;) {
                     gridData.grid.find(&#039;.grid-pager-div&#039;).empty();
                     createGridPager(gridData, gridData.grid);
-                }
-                if (gridData.pageRequest.eventType === &#039;filter&#039; &amp;&amp; gridData.aggregates &amp;&amp; gridData.aggregates.positionAt === &#039;top&#039;) {
-                    if (response.aggregations) {
-                        for (var col in response.aggregations) {
-                            if (col in gridData.aggregates)
-                                gridData.aggregates[col].value = response.aggregations[col];
-                        }
-                        constructAggregationsFromServer(id, gridData.gridAggregations);
-                    }
-                    createAggregates(id);
                 }
                 gridData.pageRequest = {};
             }

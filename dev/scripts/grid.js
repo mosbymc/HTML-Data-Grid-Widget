@@ -1286,8 +1286,10 @@ var grid = (function _grid($) {
             gridData.groupedBy.forEach(function _prependCols() { colGroup.prepend('<col class="group_col"/>'); });
             if (gridData.drillDown) colGroup.prepend('<col class="drill_down_col"/>');
 
-            if (gridData.dataSource.aggregates && (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined))
+            if (gridData.dataSource.aggregates && (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined)) {
+                gridData.grid.find('.grid-footer-div').remove();
                 createAggregates(id);
+            }
 
             createGroupTrEventHandlers(id);
             attachDrillDownAccordionHandler(id);
@@ -4026,20 +4028,18 @@ var grid = (function _grid($) {
                 if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group')
                     setColWidth(gridData, gridState[id].grid);
 
+                if (response.aggregations && gridData.dataSource.aggregates) {
+                    gridData.dataSource.aggregates = gridData.dataSource.aggregates.map(function _mapAggregateValues(val) {
+                        if (response.aggregations[val.field])
+                            return { aggregate: val.aggregate, field: val.field, value: response.aggregations[val.field] };
+                        else return { aggregate: val.aggregate, field: val.field, value: null };
+                    });
+                }
+
                 createGridContent(gridData, gridState[id].grid);
                 if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === 'pageSize') {
                     gridData.grid.find('.grid-pager-div').empty();
                     createGridPager(gridData, gridData.grid);
-                }
-                if (gridData.pageRequest.eventType === 'filter' && gridData.aggregates && gridData.aggregates.positionAt === 'top') {
-                    if (response.aggregations) {
-                        for (var col in response.aggregations) {
-                            if (col in gridData.aggregates)
-                                gridData.aggregates[col].value = response.aggregations[col];
-                        }
-                        constructAggregationsFromServer(id, gridData.gridAggregations);
-                    }
-                    createAggregates(id);
                 }
                 gridData.pageRequest = {};
             }
