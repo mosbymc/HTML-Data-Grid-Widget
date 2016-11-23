@@ -706,68 +706,61 @@ var grid = (function _grid($) {
         gridState[gridId].dataSource.aggregates.filter(function _findMatchingAggregateColumn(item) {
             return item.field === field;
         }).forEach(function _calculateAggregate(col) {
-            var aggregateObj = {};
+            var aggregateObj = {},
+                prevAgg = aggregationObj[field].filter(function _findMatchingAggregateObj(item) {
+                    return item.aggregate === col.aggregate.toLowerCase();
+                });
             switch (col.aggregate.toLowerCase()) {
                 case 'count':
-                    if (!aggregateObj.value) {
+                    if (!prevAgg || !prevAgg.length) {
                         aggregateObj.value = gridState[gridId].dataSource.rowCount || gridState[gridId].dataSource.data.length;
                         aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + aggregateObj.value;
-                        aggregateObj.aggregate = aggregates.count;
+                        aggregateObj.aggregate = col.aggregate.toLowerCase();
                         aggregateArr.push(aggregateObj);
                     }
-                    else {
-                        aggregateArr.concat(aggregationObj[field].filter(function _findMatchingAggregateObj(item) {
-                            return item.aggregate === col.aggregate.toLowerCase();
-                        }));
-                    }
+                    else aggregateArr = aggregateArr.concat(prevAgg);
                     return;
                 case 'average':
-                    var count = aggregateObj.count ? aggregateObj.count + 1 : 1;
+                    var count = prevAgg.length ? prevAgg[0].count + 1 : 1;
                     value = parseFloat(value.toString());
-                    total = aggregateObj.total ? aggregateObj.total + value : value;
+                    value = isNumber(value) ? value : 0;
+                    total = prevAgg.length ? prevAgg[0].total + value : value;
                     var avg = total/count;
                     text = getFormattedCellText(column, avg.toFixed(2)) || avg.toFixed(2);
                     aggregateObj.total = total;
                     aggregateObj.count = count;
                     aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + text;
                     aggregateObj.value = avg;
-                    aggregateObj.aggregate = aggregates.average;
+                    aggregateObj.aggregate = col.aggregate.toLowerCase();
                     aggregateArr.push(aggregateObj);
                     return;
                 case 'max':
-                    if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) < parseFloat(value.toString())) {
+                    if (!prevAgg || !prevAgg.length) {
                         text = getFormattedCellText(column, value) || value;
                         aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + text;
                         aggregateObj.value = value;
-                        aggregateObj.aggregate = aggregates.max;
+                        aggregateObj.aggregate = col.aggregate.toLowerCase();
                         aggregateArr.push(aggregateObj);
                     }
-                    else {
-                        aggregateArr.concat(aggregationObj[field].filter(function _findMatchingAggregateObj(item) {
-                            return item.aggregate === col.aggregate.toLowerCase();
-                        }));
-                    }
+                    else aggregateArr = aggregateArr.concat(prevAgg);
                     return;
                 case 'min':
-                    if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) > parseFloat(value.toString())) {
+                    if (!prevAgg || !prevAgg.length) {
                         text = getFormattedCellText(column, value) || value;
                         aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + text;
                         aggregateObj.value = text;
-                        aggregateObj.aggregate = aggregates.min;
+                        aggregateObj.aggregate = col.aggregate.toLowerCase();
                         aggregateArr.push(aggregateObj);
                     }
-                    else {
-                        aggregateArr.concat(aggregationObj[field].filter(function _findMatchingAggregateObj(item) {
-                            return item.aggregate === col.aggregate.toLowerCase();
-                        }));
-                    }
+                    else aggregateArr = aggregateArr.concat(prevAgg);
                     return;
                 case 'total':
-                    total = (parseFloat(aggregationObj[field].total) || 0) + parseFloat(value);
+                    total = (parseFloat(prevAgg[0].total) || 0) + parseFloat(value);
                     text = getFormattedCellText(column, total) || total;
                     aggregateObj.total = total;
                     aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + text;
                     aggregateObj.value = text;
+                    aggregateObj.aggregate = col.aggregate.toLowerCase();
                     aggregateArr.push(aggregateObj);
                     return;
                 default:
@@ -3382,12 +3375,15 @@ var grid = (function _grid($) {
                 if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group')
                     setColWidth(gridData, gridState[id].grid);
 
-                if (response.aggregations && gridData.dataSource.aggregates) {
-                    gridData.dataSource.aggregates = gridData.dataSource.aggregates.map(function _mapAggregateValues(val) {
-                        if (response.aggregations[val.field])
-                            return { aggregate: val.aggregate, field: val.field, value: response.aggregations[val.field] };
-                        else return { aggregate: val.aggregate, field: val.field, value: null };
-                    });
+                if (gridData.pageRequest.eventType === 'filter') {
+                    gridData.gridAggregations = {};
+                    if (response.aggregations && gridData.dataSource.aggregates) {
+                        gridData.dataSource.aggregates = gridData.dataSource.aggregates.map(function _mapAggregateValues(val) {
+                            if (response.aggregations[val.field])
+                                return { aggregate: val.aggregate, field: val.field, value: response.aggregations[val.field] };
+                            else return { aggregate: val.aggregate, field: val.field, value: null };
+                        });
+                    }
                 }
 
                 createGridContent(gridData, gridState[id].grid);
