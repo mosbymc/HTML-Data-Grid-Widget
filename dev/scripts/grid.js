@@ -117,6 +117,8 @@
  - Fix ._initialRowIndex_ property setting on local grid data handling - DONE
  - Fix broken number formatter - DONE
  - Add update to .dataMap after adding rows - DONE
+ - Change aggregates to array and create at as a table footer only
+ - Allow column-grouping aggregates to be defined separate from grid aggregates
  - Create data store object to hold cached grid data
  - Add drag-drop columns between different grids
  - Update cell editing to include missing data types support; especially date-time
@@ -183,11 +185,12 @@ var grid = (function _grid($) {
     function create(gridData, gridElem) {
         if (gridData && isDomElement(gridElem)) {
             var instanceId = dataStore.initializeInstance(gridData, gridElem);
-            var wrapperDiv = $('<div id="grid-wrapper-' + instanceId + '" data-grid_id="' + instanceId + '" class="grid-wrapper"></div>').appendTo(gridElem);
-            var headerDiv = $('<div id="grid-header-' + instanceId + '" data-grid_header_id="' + instanceId + '" class="grid-header-div"></div>').appendTo(wrapperDiv);
-            headerDiv.append('<div class=grid-header-wrapper></div>');
-            wrapperDiv.append('<div id="grid-content-' + instanceId + '" data-grid_content_id="' + instanceId + '" class="grid-content-div"></div>');
-            wrapperDiv.append('<div id="grid-footer-' + instanceId + '" data-grid_footer_id="' + instanceId + '" class="grid-footer-div"></div>');
+            var wrapperDiv = $('<div id="grid-wrapper-' + id + '" data-grid_id="' + id + '" class="grid-wrapper"></div>').appendTo(gridElem);
+            var headerDiv = $('<div id="grid-header-' + id + '" data-grid_header_id="' + id + '" class="grid-header-div"></div>').appendTo(wrapperDiv);
+            headerDiv.append('<div class="grid-header-wrapper"></div>');
+            wrapperDiv.append('<div id="grid-content-' + id + '" data-grid_content_id="' + id + '" class="grid-content-div"></div>');
+            //wrapperDiv.append('<div id="grid-footer-' + id + '" data-grid_footer_id="' + id + '" class=grid-footer-div></div>');
+            wrapperDiv.append('<div id="grid-pager-' + id + '" data-grid_pager_id="' + id + '" class="grid-pager-div"></div>');
 
             createGridInstanceMethods(instanceId);
             createGridHeaders(gridData, gridElem);
@@ -195,10 +198,11 @@ var grid = (function _grid($) {
                 if (!err) {
                     gridData.dataSource.data = res.data;
                     gridData.dataSource.rowCount = isInteger(res.rowCount) ? res.rowCount : res.data.length;
-                    if (res.aggregations && gridData.aggregates) {
-                        Object.keys(gridData.aggregates).forEach(function _setAggregations(col) {
-                            if (res.aggregations[col])
-                                gridData.aggregates[col].value = res.aggregations[col];
+                    if (res.aggregations && gridData.dataSource.aggregates) {
+                        gridData.dataSource.aggregates = gridData.dataSource.aggregates.map(function _mapAggregateValues(val) {
+                            if (res.aggregations[val.field])
+                                return { aggregate: val.aggregate, field: val.field, value: res.aggregations[val.field] };
+                            else return { aggregate: val.aggregate, field: val.field, value: null };
                         });
                     }
                 }
@@ -426,10 +430,11 @@ var grid = (function _grid($) {
                             gridElem.find('.grid-header-wrapper').empty();
                             createGridHeaders(gridId, gridElem);
                             gridElem.find('.grid-content-div').empty();
+			
                             createGridContent(gridId, gridElem);
-                            gridElem.find('.grid-footer-div').empty();
-                            createGridFooter(gridId, gridElem);
-                            buildHeaderAggregations(gridId);
+                            gridState[gridId].grid.find('.grid-pager-div').empty();
+                            createGridPager(gridState[gridId], gridState[gridId].grid);
+                            createAggregates(gridId);
                         }
                     },
                     writable: false,
@@ -455,9 +460,9 @@ var grid = (function _grid($) {
                         gridInstance.setProperty('pageSize', ++pageSize);
                         gridElem.find('.grid-content-div').empty();
                         createGridContent(gridId, gridElem);
-                        gridElem.find('.grid-footer-div').empty();
-                        createGridFooter(gridId, gridElem);
-                        buildHeaderAggregations(gridId);
+                        gridState[gridId].grid.find('.grid-pager-div').empty();
+                        createGridPager(gridState[gridId], gridState[gridId].grid);
+                        createAggregates(gridId);
                     },
                     writable: false,
                     configurable: false
@@ -574,9 +579,9 @@ var grid = (function _grid($) {
                             gridInstance.setProperty('dataSource.rowCount', data.length);
                             gridElem.find('.grid-content-div').empty();
                             createGridContent(gridId, gridElem);
-                            gridElem.find('.grid-footer-div').empty();
-                            createGridFooter(gridId, gridElem);
-                            buildHeaderAggregations(gridId);
+                            gridState[gridId].grid.find('.grid-pager-div').empty();
+                            createGridPager(gridState[gridId], gridState[gridId].grid);
+                            createAggregates(gridId);
                         }
                     },
                     writable: false,
@@ -611,9 +616,9 @@ var grid = (function _grid($) {
                             gridInstance.setProperty('dataSource.data', data);
                             gridElem.find('.grid-content-div').empty();
                             createGridContent(gridId, gridElem);
-                            gridElem.find('.grid-footer-div').empty();
-                            createGridFooter(gridId, gridElem);
-                            buildHeaderAggregations(gridId);
+                            gridState[gridId].grid.find('.grid-pager-div').empty();
+                            createGridPager(gridState[gridId], gridState[gridId].grid);
+                            createAggregates(gridId);
                         }
                     },
                     writable: false,
@@ -901,12 +906,7 @@ var grid = (function _grid($) {
         callGridEventHandlers(storageData.events.beforeDataBind, storageData.grid, eventObj);
 
         gridState[id] = storageData;
-        if (gridData.aggregates && typeof gridData.dataSource.get === 'function') {
-            constructAggregationsFromServer(id, storageData.gridAggregations);
-            buildHeaderAggregations(id);
-        }
-
-        createGridFooter(storageData, gridElem);
+        createGridPager(storageData, gridElem);
         createGridContent(storageData, gridElem);
         callGridEventHandlers(storageData.events.afterDataBind, storageData.grid, eventObj);
     }
@@ -937,8 +937,8 @@ var grid = (function _grid($) {
         }
 
         if (gridData.drillDown) {
-            colgroup.prepend('<col class="groupCol"/>');
-            headerRow.prepend('<th class="group_spacer">&nbsp</th>');
+            colgroup.prepend('<col class="drill_down_col"/>');
+            headerRow.prepend('<th class="drill_down_spacer">&nbsp</th>');
         }
 
         gridData.columns.forEach(function _createColumnHeaders(col, idx) {
@@ -994,43 +994,168 @@ var grid = (function _grid($) {
     /**
      * Builds the header's aggregations row if specified to be displayed at the
      * top of the grid
-     * @method buildHeaderAggregations
+     * @method createAggregates
      * @for grid
      * @private
      * @param {number} gridId
      */
-    function buildHeaderAggregations(gridId) {
+    function createAggregates(gridId) {
         var gridData = gridState[gridId];
         if (typeof gridState[gridId].dataSource.get !== jsTypes.function) {
             var dataToFilter = gridData.alteredData && gridData.alteredData.length ? gridData.alteredData : gridData.originalData;
-                dataToFilter.filter(function getRemainingRows(val, idx) {
-                    return idx > gridData.pageNum * gridData.pageSize - 1 || idx < gridData.pageNum * gridData.pageSize - gridData.pageSize;
-                }).forEach(function _iterateRemainingRows(row) {
-                    gridData.columns.forEach(function _addColumnValsToAggregates(col) {
-                        if (gridData.aggregates[col.field])
-                            addValueToAggregations(gridId, col.field, row[col.field], gridData.gridAggregations);
-                    });
+            dataToFilter.filter(function getRemainingRows(val, idx) {
+                return idx > gridData.pageNum * gridData.pageSize - 1 || idx < gridData.pageNum * gridData.pageSize - gridData.pageSize;
+            }).forEach(function _iterateRemainingRows(row) {
+                gridData.columns.forEach(function _addColumnValsToAggregates(col) {
+                    addValueToAggregations(gridId, col.field, row[col.field], gridData.gridAggregations);
                 });
-        }
-
-        var aggrs = gridData.gridAggregations;
-        if (aggrs) {
-            var headerTHead = $('#grid-header-' + gridId).find('thead');
-            var aggRow = headerTHead.find('.summary-row-header');
-            if (aggRow.length)
-                aggRow.remove();
-            aggRow = $('<tr class=summary-row-header></tr>').appendTo(headerTHead);
-            gridData.groupedBy.forEach(function _appendSpacerCells() {
-                aggRow.append('<td class="group_spacer">&nbsp</td>');
-            });
-            if (gridData.drillDown) aggRow.append('<td class="group_spacer">&nbsp</td>');
-
-            gridData.columns.forEach(function _createAggregates(col) {
-                var text = '';
-                if (col.field in aggrs) text = aggrs[col.field].text || '';
-                aggRow.append('<td data-field="' + col.field + '" class=summary-cell-header>' + text + '</td>');
             });
         }
+        else constructAggregationsFromServer(gridId, gridData.gridAggregations);
+
+        var gridPager = gridState[gridId].grid.find('.grid-pager-div'),
+            gridFooterDiv = $('<div id="grid-footer-' + gridId + '" data-grid_footer_id="' + gridId + '" class="grid-footer-div"></div>').insertBefore(gridPager),
+            gridFooterWrap = $('<div id="grid-footer-wrapper-' + gridId + '" data-grid_footer_id="' + gridId + '" class="grid-footer-wrapper"></div>').appendTo(gridFooterDiv),
+            footer = $('<table class="grid-footer"></table>').appendTo(gridFooterWrap);
+
+        var colgroup = $('<colgroup></colgroup>').appendTo(footer),
+            footerTBody = $('<tbody></tbody>').appendTo(footer),
+            footerRow = footerTBody.find('.aggregate-row');
+        if (footerRow.length) footerRow.remove();
+        footerRow = $('<tr class="aggregate-row"></tr>').appendTo(footerTBody);
+
+        gridState[gridId].groupedBy.forEach(function _appendSpacerCells() {
+            footerRow.append('<td class="group_spacer">&nbsp</td>');
+        });
+        if (gridState[gridId].drillDown) footerRow.append('<td class="group_spacer">&nbsp</td>');
+
+        var aggregates = gridState[gridId].gridAggregations;
+        gridState[gridId].columns.forEach(function _createAggregates(col) {
+            var text = '';
+            if (col.field in aggregates) {
+                aggregates[col.field].forEach(function _createAggregateText(aggregate, idx) {
+                    text += aggregate.text;
+                    if (idx < aggregates[col.field].length - 1) text += ', ';
+                });
+            }
+            footerRow.append('<td data-field="' + col.field + '" class=aggregate-cell">' + text + '</td>');
+            colgroup.append('<col>');
+        });
+
+        /*
+         This is set to make up for the vertical scroll bar that the gridContent div has.
+         It helps keep the header columns aligned with the content columns, and makes
+         the scroll handler for the content grid work correctly.
+         */
+        var gridContent = gridState[gridId].grid.find('.grid-content-div'),
+            sizeDiff = gridFooterWrap[0].clientWidth - gridContent[0].clientWidth;
+        gridFooterWrap.css('paddingRight', sizeDiff);
+    }
+
+    /**
+     * Takes the server's aggregate calculations and formats them for grid consumption
+     * @param {number} gridId - The id of the grid widget instance
+     * @param {Object} aggregationObj - The object that hold the aggregates
+     */
+    function constructAggregationsFromServer(gridId, aggregationObj) {
+        gridState[gridId].columns.forEach(function _constructAggregationsFromServer(col) {
+            var aggregateObj = {},
+                aggregateArr = [];
+            if (!aggregationObj[col.field]) aggregationObj[col.field] = [];
+
+            gridState[gridId].dataSource.aggregates.filter(function _findAggregateColumn(val) {
+                return val.field === col.field;
+            }).forEach(function _getAggregateText(item) {
+                if (item.aggregate && item.value) {
+                    var text = getFormattedCellText(col, item.value) || item.value;
+                    aggregateObj.text = aggregates[item.aggregate] + text ;
+                }
+                else aggregateObj.text = '';
+                aggregateArr.push(aggregateObj);
+            });
+            aggregationObj[col.field] = aggregateArr;
+        });
+    }
+
+    /**
+     * Used for calculating both client-side full-grid aggregates, as well as grouped aggregates
+     * @param {number} gridId - The id of the grid widget instance
+     * @param {string} field - The name of the field being aggregated
+     * @param {*} value - The value of the current row's field (i.e. a single cell in the grid)
+     * @param {Object} aggregationObj - The object used to cache the aggregates
+     */
+    function addValueToAggregations(gridId, field, value, aggregationObj) {
+        if (value == null) return;
+        var text, total,
+            column = gridState[gridId].columns[gridState[gridId].columnIndices[field]];
+        if (!aggregationObj[field]) aggregationObj[field] = [];
+        var aggregateArr = [];
+        gridState[gridId].dataSource.aggregates.filter(function _findMatchingAggregateColumn(item) {
+            return item.field === field;
+        }).forEach(function _calculateAggregate(col) {
+            var aggregateObj = {},
+                prevAgg = aggregationObj[field].filter(function _findMatchingAggregateObj(item) {
+                    return item.aggregate === col.aggregate.toLowerCase();
+                });
+            switch (col.aggregate.toLowerCase()) {
+                case 'count':
+                    if (!prevAgg || !prevAgg.length) {
+                        aggregateObj.value = gridState[gridId].dataSource.rowCount || gridState[gridId].dataSource.data.length;
+                        aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + aggregateObj.value;
+                        aggregateObj.aggregate = col.aggregate.toLowerCase();
+                        aggregateArr.push(aggregateObj);
+                    }
+                    else aggregateArr = aggregateArr.concat(prevAgg);
+                    return;
+                case 'average':
+                    var count = prevAgg.length ? prevAgg[0].count + 1 : 1;
+                    value = parseFloat(value.toString());
+                    value = isNumber(value) ? value : 0;
+                    total = prevAgg.length ? prevAgg[0].total + value : value;
+                    var avg = total/count;
+                    text = getFormattedCellText(column, avg.toFixed(2)) || avg.toFixed(2);
+                    aggregateObj.total = total;
+                    aggregateObj.count = count;
+                    aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + text;
+                    aggregateObj.value = avg;
+                    aggregateObj.aggregate = col.aggregate.toLowerCase();
+                    aggregateArr.push(aggregateObj);
+                    return;
+                case 'max':
+                    if (!prevAgg || !prevAgg.length) {
+                        text = getFormattedCellText(column, value) || value;
+                        aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + text;
+                        aggregateObj.value = value;
+                        aggregateObj.aggregate = col.aggregate.toLowerCase();
+                        aggregateArr.push(aggregateObj);
+                    }
+                    else aggregateArr = aggregateArr.concat(prevAgg);
+                    return;
+                case 'min':
+                    if (!prevAgg || !prevAgg.length) {
+                        text = getFormattedCellText(column, value) || value;
+                        aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + text;
+                        aggregateObj.value = text;
+                        aggregateObj.aggregate = col.aggregate.toLowerCase();
+                        aggregateArr.push(aggregateObj);
+                    }
+                    else aggregateArr = aggregateArr.concat(prevAgg);
+                    return;
+                case 'total':
+                    total = (parseFloat(prevAgg[0].total) || 0) + parseFloat(value);
+                    text = getFormattedCellText(column, total) || total;
+                    aggregateObj.total = total;
+                    aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + text;
+                    aggregateObj.value = text;
+                    aggregateObj.aggregate = col.aggregate.toLowerCase();
+                    aggregateArr.push(aggregateObj);
+                    return;
+                default:
+                    aggregateObj.text = null;
+                    aggregateArr.push(aggregateObj);
+            }
+        });
+        aggregationObj[field] = aggregateArr;
     }
 
     /**
@@ -1048,7 +1173,7 @@ var grid = (function _grid($) {
             contentTable = $('<table id="' + gridElem[0].id + '_content" style="height:auto;"></table>').appendTo(gridContent),
             colGroup = $('<colgroup></colgroup>').appendTo(contentTable),
             contentTBody = $('<tbody></tbody>').appendTo(contentTable),
-            text, item;
+            text;
         contentTBody.css('width', 'auto');
         if (typeof gridData.parentGridId !== jsTypes.number && gridData.selectable) attachTableSelectHandler(contentTBody);
 
@@ -1115,7 +1240,7 @@ var grid = (function _grid($) {
                     if (typeof col.events === jsTypes.object) {
                         attachCustomCellHandler(col, td, id);
                     }
-                    if (gridData.aggregates && gridData.aggregates[col.field] && typeof gridData.dataSource.get !== jsTypes.function) {
+                    if (gridData.dataSource.aggregates && typeof gridData.dataSource.get !== jsTypes.function) {
                         if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined)
                             addValueToAggregations(id, col.field, item[col.field], gridData.gridAggregations);
                     }
@@ -1133,26 +1258,11 @@ var grid = (function _grid($) {
 
             gridData.columns.forEach(function appendCols() { colGroup.append('<col/>'); });
             gridData.groupedBy.forEach(function _prependCols() { colGroup.prepend('<col class="group_col"/>'); });
-            if (gridData.drillDown) colGroup.prepend('<col class="groupCol"/>');
+            if (gridData.drillDown) colGroup.prepend('<col class="drill_down_col"/>');
 
-            if (gridData.aggregates && gridData.aggregates.positionAt === 'top' && typeof gridData.dataSource.get !== jsTypes.function &&
-                (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined))
-                buildHeaderAggregations(id);
-
-            if (gridData.aggregates && gridData.aggregates.positionAt === 'bottom') {
-                var aggrs = gridState[id].gridAggregations;
-                if (aggrs) {
-                    var aggRow = $('<tr class="summary-row-footer"></tr>').appendTo(contentTBody);
-                    if (gridState[id].groupedBy.length) {
-                        gridState[id].groupedBy.forEach(function _appendGroupSpacers() {
-                            aggRow.append('<td class="group_spacer">&nbsp</td>');
-                        });
-                    }
-                    for (item in aggrs) {
-                        text = aggrs[item].value || '';
-                        aggRow.append('<td data-field="' + item + '" class=summary-cell-header>' + text + '</td>');
-                    }
-                }
+            if (gridData.dataSource.aggregates && (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined)) {
+                gridData.grid.find('.grid-footer-div').remove();
+                createAggregates(id);
             }
 
             createGroupTrEventHandlers(id);
@@ -1160,9 +1270,12 @@ var grid = (function _grid($) {
         }
 
         gridContent[0].addEventListener('scroll', function contentDivScrollHandler() {
-            var headWrap = gridContent.parents('.grid-wrapper').first().find('.grid-header-wrapper');
+            var headWrap = gridContent.parents('.grid-wrapper').first().find('.grid-header-wrapper'),
+                footerWrap = gridContent.parents('.grid-wrapper').first().find('.grid-footer-wrapper');
             if (gridState[id].resizing) return;
             headWrap.scrollLeft(gridContent.scrollLeft());
+            if (footerWrap.length)
+                footerWrap.scrollLeft(gridContent.scrollLeft());
         });
 
         /*
@@ -1269,7 +1382,7 @@ var grid = (function _grid($) {
                     gridData.groupAggregations[idx] = { _items_: 0 };
                 }
                 gridData.columns.forEach(function _aggregateValues(col) {
-                    if (gridData.aggregates && gridData.aggregates[col.field])
+                    if (gridData.aggregates)
                         addValueToAggregations(gridId, col.field, gridData.dataSource.data[rowIndex][col.field], gridData.groupAggregations[idx]);
                 });
                 gridData.groupAggregations[idx]._items_++;
@@ -1323,7 +1436,7 @@ var grid = (function _grid($) {
                     drillDownRow.append('<td class="grouped_cell"></td>');
                     var drillDownCellLength = 0;
                     gridData.grid.find('.grid-header-div').find('col').each(function getTotalGridLength() {
-                        if (!$(this).hasClass('groupCol'))
+                        if (!$(this).hasClass('drill_down_col') && !$(this).hasClass('groupCol'))
                             drillDownCellLength += $(this).width();
                     });
                     var containerCell = $('<td class="drill-down-cell" colspan="' + gridData.columns.length + '" style="width: ' + drillDownCellLength + ';"></td>').appendTo(drillDownRow),
@@ -1344,83 +1457,6 @@ var grid = (function _grid($) {
                 }
             }
         });
-    }
-
-    /**
-     * Takes the server's aggregate calculations and formats them for grid consumption
-     * @param {number} gridId - The id of the grid widget instance
-     * @param {Object} aggregationObj - The object that hold the aggregates
-     */
-    function constructAggregationsFromServer(gridId, aggregationObj) {
-        gridState[gridId].columns.forEach(function _constructAggregationsFromServer(col) {
-            if (!aggregationObj[col.field]) aggregationObj[col.field] = {};
-            if (!gridState[gridId].aggregates[col.field]) {
-                aggregationObj[col.field] = '';
-                return;
-            }
-            if (typeof gridState[gridId].dataSource.get === jsTypes.function) {
-                //TODO: why do I need to check for typing here? Can't I just use it if it's available and assume a string if not?
-                if (gridState[gridId].aggregates[col.field].type && gridState[gridId].aggregates[col.field].value) {
-                    var text = getFormattedCellText(col, gridState[gridId].aggregates[col.field].value) || gridState[gridId].aggregates[col.field].value;
-                    aggregationObj[col.field].text = aggregates[gridState[gridId].aggregates[col.field].type] + text;
-                }
-                else aggregationObj[col.field].text = null;
-            }
-        });
-    }
-
-    /**
-     * Used for calculating both client-side full-grid aggregates, as well as grouped aggregates
-     * @param {number} gridId - The id of the grid widget instance
-     * @param {string} field - The name of the field being aggregated
-     * @param {*} value - The value of the current row's field (i.e. a single cell in the grid)
-     * @param {Object} aggregationObj - The object used to cache the aggregates
-     */
-    function addValueToAggregations(gridId, field, value, aggregationObj) {
-        var text, total,
-            column = gridState[gridId].columns[gridState[gridId].columnIndices[field]];
-        if (!aggregationObj[field]) aggregationObj[field] = {};
-        if (value == null) return;
-        switch (gridState[gridId].aggregates[field].type) {
-            case 'count':
-                aggregationObj[field].value = gridState[gridId].dataSource.rowCount || gridState[gridId].dataSource.data.length;
-                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + aggregationObj[field].value;
-                return;
-            case 'average':
-                var count = aggregationObj[field].count ? aggregationObj[field].count + 1 : 1;
-                value = parseFloat(value.toString());
-                total = aggregationObj[field].total ? aggregationObj[field].total + value : value;
-                var avg = total/count;
-                text = getFormattedCellText(column, avg.toFixed(2)) || avg.toFixed(2);
-                aggregationObj[field].total = total;
-                aggregationObj[field].count = count;
-                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
-                aggregationObj[field].value = avg;
-                return;
-            case 'max':
-                if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) < parseFloat(value.toString())) {
-                    text = getFormattedCellText(column, value) || value;
-                    aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
-                    aggregationObj[field].value = value;
-                }
-                return;
-            case 'min':
-                if (!aggregationObj[field].value || parseFloat(aggregationObj[field].value) > parseFloat(value.toString())) {
-                    text = getFormattedCellText(column, value) || value;
-                    aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
-                    aggregationObj[field].value = text;
-                }
-                return;
-            case 'total':
-                total = (parseFloat(aggregationObj[field].total) || 0) + parseFloat(value);
-                text = getFormattedCellText(column, total) || total;
-                aggregationObj[field].total = total;
-                aggregationObj[field].text = aggregates[gridState[gridId].aggregates[field].type] + text;
-                aggregationObj[field].value = text;
-                return;
-            default:
-                aggregationObj[field].text = null;
-        }
     }
 
     /**
@@ -1989,14 +2025,23 @@ var grid = (function _grid($) {
      * @param {object} gridElem
      */
     function copyGridWidth(gridElem) {
-        var headerCols = gridElem.find('.grid-header-div').find('col');
-        var contentCols = gridElem.find('.grid-content-div').find('col');
-        var headerTable = gridElem.find('.grid-header-div').find('table');
-        var contentTable = gridElem.find('.grid-content-div').find('table');
+        var headerCols = gridElem.find('.grid-header-div').find('col'),
+            contentCols = gridElem.find('.grid-content-div').find('col'),
+            footerCols = gridElem.find('.grid-footer-div').find('col'),
+            headerTable = gridElem.find('.grid-header-div').find('table'),
+            contentTable = gridElem.find('.grid-content-div').find('table'),
+            footerTable = gridElem.find('.grid-footer-div').find('table');
 
         contentTable.css('width', headerTable[0].clientWidth);
+        footerTable.css('width', headerTable[0].clientWidth);
 
         contentCols.each(function colIterationCallback(idx, val) {
+            if ($(val).hasClass('group_col')) return;
+            var width;
+            if (width = $(headerCols[idx]).width()) $(val).css('width', width);
+        });
+
+        footerCols.each(function colIterationCallback(idx, val) {
             if ($(val).hasClass('group_col')) return;
             var width;
             if (width = $(headerCols[idx]).width()) $(val).css('width', width);
@@ -2255,7 +2300,7 @@ var grid = (function _grid($) {
                     $(val).prepend('<col class="group_col"/>');
                 });
                 gridState[id].grid.find('.grid-headerRow').prepend('<th class="group_spacer">&nbsp</th>');
-                gridState[id].grid.find('.summary-row-header').prepend('<td class="group_spacer">&nbsp</td>');
+                gridState[id].grid.find('.aggregate-row').prepend('<td class="group_spacer">&nbsp</td>');
 
                 gridState[id].groupedBy = groupings;
                 gridState[id].pageRequest.eventType = 'group';
@@ -2369,7 +2414,7 @@ var grid = (function _grid($) {
             if (gridState[id].updating) return;     //can't resort columns if grid is updating
             gridState[id].grid.find('colgroup').first().children().first().remove();
             gridState[id].grid.find('.grid-headerRow').children('.group_spacer').first().remove();
-            gridState[id].grid.find('.summary-row-header').children('.group_spacer').first().remove();
+            gridState[id].grid.find('.aggregate-row').children('.group_spacer').first().remove();
             groupedCol.remove();
             groupMenuBar.find('.group_item').each(function iterateGroupedColumnsCallback(idx, val) {
                 var item = $(val);
@@ -2623,10 +2668,10 @@ var grid = (function _grid($) {
      * @returns {Array} - Returns an array of the two DOM menu items
      */
     function createSaveDeleteMenuItems(gridId) {
-        var saveMenuItem = $('<li class="menu_item"></li>');
-        var saveMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Save Grid Changes</a>');
-        var deleteMenuItem = $('<li class="menu_item"></li>');
-        var deleteMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Delete Grid Changes</a>');
+        var saveMenuItem = $('<li class="menu_item"></li>'),
+            saveMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Save Grid Changes</a>'),
+            deleteMenuItem = $('<li class="menu_item"></li>'),
+            deleteMenuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Delete Grid Changes</a>');
 
         attachSaveAndDeleteHandlers(gridId, gridState[gridId].grid, saveMenuItem, deleteMenuItem);
 
@@ -3013,7 +3058,7 @@ var grid = (function _grid($) {
             headerColGroup.children().first().remove();
         }
         gridState[gridId].grid.find('.grid-headerRow').children('.group_spacer').remove();
-        gridState[gridId].grid.find('.summary-row-header').children('.group_spacer').remove();
+        gridState[gridId].grid.find('.aggregate-row').children('.group_spacer').remove();
         gridState[gridId].grid.find('.group_div').text(groupMenuText);
 
         if (gridState[gridId].groupedBy.length) {
@@ -3084,20 +3129,20 @@ var grid = (function _grid($) {
      * @param {object} gridData - The metadata describing this grid widget instance
      * @param {object} gridElem - The DOM element that contains the grid widget
      */
-    function createGridFooter(gridData, gridElem) {
-        var gridFooter = gridElem.find('.grid-footer-div'),
-            id = gridFooter.data('grid_footer_id'),
+    function createGridPager(gridData, gridElem) {
+        var gridPager = gridElem.find('.grid-pager-div'),
+            id = gridPager.data('grid_pager_id'),
             count = gridState[id].dataSource.rowCount || gridState[id].dataSource.data.length,
             displayedRows = (count - gridState[id].pageSize) > 0 ? gridState[id].pageSize : count,
             totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1,
             pageNum = gridState[id].pageNum;
 
-        var first = $('<a href="#" class="grid-page-link" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridFooter);
-        var prev = $('<a href="#" class="grid-page-link" data-link="prev" data-pagenum="1" title="Previous Page"><span class="grid-page-span span-prev">Prev Page</span></a>').appendTo(gridFooter);
-        var text = 'Page ' + gridState[parseInt(gridFooter.data('grid_footer_id'))].pageNum + '/' + (totalPages);
-        gridFooter.append('<span class="grid-pagenum-span page-counter">' + text + '</span>');
-        var next = $('<a href="#" class="grid-page-link" data-link="next" data-pagenum="2" title="Next Page"><span class="grid-page-span span-next">Next Page</span></a>').appendTo(gridFooter);
-        var last = $('<a href="#" class="grid-page-link" data-link="last" data-pagenum="' + (totalPages) + '" title="Last Page"><span class="grid-page-span span-last">Last Page</span></a>').appendTo(gridFooter);
+        var first = $('<a href="#" class="grid-page-link" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridPager);
+        var prev = $('<a href="#" class="grid-page-link" data-link="prev" data-pagenum="1" title="Previous Page"><span class="grid-page-span span-prev">Prev Page</span></a>').appendTo(gridPager);
+        var text = 'Page ' + gridState[parseInt(gridPager.data('grid_pager_id'))].pageNum + '/' + (totalPages);
+        gridPager.append('<span class="grid-pagenum-span page-counter">' + text + '</span>');
+        var next = $('<a href="#" class="grid-page-link" data-link="next" data-pagenum="2" title="Next Page"><span class="grid-page-span span-next">Next Page</span></a>').appendTo(gridPager);
+        var last = $('<a href="#" class="grid-page-link" data-link="last" data-pagenum="' + (totalPages) + '" title="Last Page"><span class="grid-page-span span-last">Last Page</span></a>').appendTo(gridPager);
 
         if (pageNum === 1) {
             first.addClass('link-disabled');
@@ -3120,7 +3165,7 @@ var grid = (function _grid($) {
                 }
             }
             if (numOptions) {
-                sizeSelectorSpan.appendTo(gridFooter);
+                sizeSelectorSpan.appendTo(gridPager);
                 sizeSelect.appendTo(sizeSelectorSpan);
             }
             sizeSelect.val(~pageOptions.indexOf(gridState[id].pageSize) ? gridState[id].pageSize : pageOptions[0]);
@@ -3141,31 +3186,31 @@ var grid = (function _grid($) {
         var rowStart = displayedRows ? (1 + (displayedRows * (pageNum - 1))) : 0;
         var rowEnd = gridData.dataSource.rowCount < gridData.pageSize * pageNum ? gridData.dataSource.rowCount : gridData.pageSize * pageNum;
         text = rowStart + ' - ' + rowEnd + ' of ' + count + ' rows';
-        gridFooter.append('<span class="pageinfo">' + text + '</span>');
+        gridPager.append('<span class="pageinfo">' + text + '</span>');
 
-        setPagerEventListeners(gridFooter);
+        setPagerEventListeners(gridPager);
     }
 
     /**
      * Attaches click handlers to each pager
-     * @param {object} gridFooter - The grid's DOM footer element
+     * @param {object} gridPager - The grid's DOM pager element
      */
-    function setPagerEventListeners(gridFooter) {
-        gridFooter.find('a').each(function iterateGridFooterAnchorsCallback(idx, val) {
+    function setPagerEventListeners(gridPager) {
+        gridPager.find('a').each(function iterateGridFooterAnchorsCallback(idx, val) {
             $(val).on('click', function gridFooterAnchorClickHandlerCallback(e) {
                 e.preventDefault();
                 var link = e.currentTarget.tagName === 'A' ? $(e.currentTarget) : $(e.srcElement).parents('.grid-page-link');
                 if (link.hasClass('link-disabled')) {   //If the pager link that was clicked on is disabled, return.
                     return;
                 }
-                var gridFooter = link.parents('.grid-footer-div');
-                var allPagers = gridFooter.find('a');
+                var gridPager = link.parents('.grid-pager-div');
+                var allPagers = gridPager.find('a');
                 var id = parseInt(link.parents('.grid-wrapper')[0].dataset.grid_id);
                 if (gridState[id].updating) return;     //can't page if grid is updating
                 var gridData = gridState[id];
                 var pageSize = gridData.pageSize;
-                var pagerInfo = gridFooter.find('.pageinfo');
-                var pagerSpan = gridFooter.find('.grid-pagenum-span');
+                var pagerInfo = gridPager.find('.pageinfo');
+                var pagerSpan = gridPager.find('.grid-pagenum-span');
                 var totalPages = (gridData.dataSource.rowCount - pageSize) > 0 ? Math.ceil((gridData.dataSource.rowCount - pageSize)/pageSize) + 1 : 1;
                 var pageNum = parseInt(link[0].dataset.pagenum);
                 gridData.pageNum = pageNum;
@@ -3546,27 +3591,27 @@ var grid = (function _grid($) {
     function handleDropCallback(e) {
         var droppedCol = $('#' + e.originalEvent.dataTransfer.getData('text'));
         droppedCol.data('dragging', false);
-        var targetCol = $(e.currentTarget);
-        var id = targetCol.parents('.grid-header-div').length ? targetCol.parents('.grid-wrapper').data('grid_id') : null;
-        var droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
+        var targetCol = $(e.currentTarget),
+            id = targetCol.parents('.grid-header-div').length ? targetCol.parents('.grid-wrapper').data('grid_id') : null,
+            droppedId = droppedCol.parents('.grid-header-div').length ? droppedCol.parents('.grid-wrapper').data('grid_id') : null;
         if (id == null || droppedId == null || id !== droppedId) return;  //at least one of the involved dom elements is not a grid column, or they are from different grids
         if (gridState[id].updating) return;     //can't resort columns if grid is updating
         if (droppedCol[0].cellIndex === targetCol[0].cellIndex) return;
         if (droppedCol[0].id === 'sliderDiv') return;
 
-        var parentDiv = targetCol.parents('.grid-header-div');
-        var parentDivId = parentDiv.data('grid_header_id');
-        var gridWrapper = parentDiv.parent('.grid-wrapper');
-        var colGroups = gridWrapper.find('colgroup');
+        var parentDiv = targetCol.parents('.grid-header-div'),
+            parentDivId = parentDiv.data('grid_header_id'),
+            gridWrapper = parentDiv.parent('.grid-wrapper'),
+            colGroups = gridWrapper.find('colgroup');
 
-        var droppedIndex = droppedCol[0].dataset.index;
-        var targetIndex = targetCol[0].dataset.index;
+        var droppedIndex = droppedCol[0].dataset.index,
+            targetIndex = targetCol[0].dataset.index;
 
-        var droppedClone = droppedCol.clone(false, true);
-        var targetClone = targetCol.clone(false, true);
+        var droppedClone = droppedCol.clone(false, true),
+            targetClone = targetCol.clone(false, true);
 
-        var droppedEvents = $._data(droppedCol[0], 'events');
-        var targetEvents = $._data(targetCol[0], 'events');
+        var droppedEvents = $._data(droppedCol[0], 'events'),
+            targetEvents = $._data(targetCol[0], 'events');
         if (droppedEvents.click) setSortableClickListener(droppedClone);
         if (gridState[id].resizable) {
             droppedClone.on('mouseleave', mouseLeaveHandlerCallback);
@@ -3604,11 +3649,16 @@ var grid = (function _grid($) {
         colGroups[1].children[targetIndex].style.width = targetWidth;
         colGroups[1].children[droppedIndex].style.width = droppedWidth;
 
-        var sumRow = parentDiv.find('.summary-row-header');
-        if (sumRow.length) {
+        if (colGroups[2]) {
+            colGroups[2].children[targetIndex].style.width = targetWidth;
+            colGroups[2].children[droppedIndex].style.width = droppedWidth;
+        }
+
+        var aggRow = gridWrapper.find('.aggregate-row');
+        if (aggRow.length) {
             var droppedColSum = null,
                 targetColSum = null;
-            sumRow.children().each(function iterateSumRowCellsCallback(idx, val) {
+            aggRow.children().each(function iterateSumRowCellsCallback(idx, val) {
                 if ($(val).data('field') === droppedCol.data('field')) droppedColSum = $(val);
                 else if ($(val).data('field') === targetCol.data('field')) targetColSum = $(val);
             });
@@ -3952,20 +4002,21 @@ var grid = (function _grid($) {
                 if (gridData.pageRequest.eventType === 'newGrid' || gridData.pageRequest.eventType === 'group')
                     setColWidth(gridData, gridState[id].grid);
 
+                if (gridData.pageRequest.eventType === 'filter') {
+                    gridData.gridAggregations = {};
+                    if (response.aggregations && gridData.dataSource.aggregates) {
+                        gridData.dataSource.aggregates = gridData.dataSource.aggregates.map(function _mapAggregateValues(val) {
+                            if (response.aggregations[val.field])
+                                return { aggregate: val.aggregate, field: val.field, value: response.aggregations[val.field] };
+                            else return { aggregate: val.aggregate, field: val.field, value: null };
+                        });
+                    }
+                }
+
                 createGridContent(gridData, gridState[id].grid);
                 if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === 'pageSize') {
-                    gridData.grid.find('.grid-footer-div').empty();
-                    createGridFooter(gridData, gridData.grid);
-                }
-                if (gridData.pageRequest.eventType === 'filter' && gridData.aggregates && gridData.aggregates.positionAt === 'top') {
-                    if (response.aggregations) {
-                        for (var col in response.aggregations) {
-                            if (col in gridData.aggregates)
-                                gridData.aggregates[col].value = response.aggregations[col];
-                        }
-                        constructAggregationsFromServer(id, gridData.gridAggregations);
-                    }
-                    buildHeaderAggregations(id);
+                    gridData.grid.find('.grid-pager-div').empty();
+                    createGridPager(gridData, gridData.grid);
                 }
                 gridData.pageRequest = {};
             }

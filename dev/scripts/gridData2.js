@@ -93,42 +93,6 @@ var gridData2 = {
             }
         }
     },
-    aggregates: {
-        Service: {
-            type: "count"
-        },
-        Labor: {
-            type: "average"
-        },
-        Cost: {
-            type: "max"
-        },
-        Date: {
-            type: ""
-        },
-        Time: {
-            type: ""
-        },
-        Paid: {
-            type: "count"
-        },
-        Customer: {
-            type: ""
-        },
-        Phone: {
-            type: ""
-        },
-        Billed: {
-            type: "total"
-        },
-        Markup: {
-            type: ""
-        },
-        Icon: {
-            type: ""
-        },
-        positionAt: "top"
-    },
     columns: [
         {
             field: 'Service',
@@ -317,6 +281,28 @@ var gridData2 = {
                     cb(json);
                 }
             });
-        }
+        },
+        aggregates: [
+            {
+                field: 'Service',
+                aggregate: 'count'
+            },
+            {
+                field: 'Labor',
+                aggregate: 'average'
+            },
+            {
+                field: 'Cost',
+                aggregate: 'max'
+            },
+            {
+                field: 'Paid',
+                aggregate: 'count'
+            },
+            {
+                field: 'Billed',
+                aggregate: 'total'
+            }
+        ]
     }
 };
