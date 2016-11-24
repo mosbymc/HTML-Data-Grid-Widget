@@ -93,42 +93,6 @@ var gridData2 = {
             }
         }
     },
-    aggregates: {
-        Service: {
-            type: "count"
-        },
-        Labor: {
-            type: "average"
-        },
-        Cost: {
-            type: "max"
-        },
-        Date: {
-            type: ""
-        },
-        Time: {
-            type: ""
-        },
-        Paid: {
-            type: "count"
-        },
-        Customer: {
-            type: ""
-        },
-        Phone: {
-            type: ""
-        },
-        Billed: {
-            type: "total"
-        },
-        Markup: {
-            type: ""
-        },
-        Icon: {
-            type: ""
-        },
-        positionAt: "top"
-    },
     columns: [
         {
             field: 'Service',
