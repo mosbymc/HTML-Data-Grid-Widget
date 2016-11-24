@@ -172,6 +172,12 @@ var grid = (function _grid($) {
             'symbol': 'symbol',
             'string': 'string',
             'undefined': 'undefined'
+        },
+        gridEvents = {
+            filter: 'filter',
+            page: 'page',
+            group: 'group',
+            sort: 'sort'
         };
 
     /**
@@ -2303,7 +2309,7 @@ var grid = (function _grid($) {
                 gridState[id].grid.find('.aggregate-row').prepend('<td class="group_spacer">&nbsp</td>');
 
                 gridState[id].groupedBy = groupings;
-                gridState[id].pageRequest.eventType = 'group';
+                gridState[id].pageRequest.eventType = gridEvents.group;
                 attachGroupItemEventHandlers(groupMenuBar, groupDirSpan, cancelButton);
                 preparePageDataGetRequest(id);
             });
@@ -2402,7 +2408,7 @@ var grid = (function _grid($) {
                 });
             });
             gridState[id].groupedBy = groupElements;
-            gridState[id].pageRequest.eventType = 'group';
+            gridState[id].pageRequest.eventType = gridEvents.group;
             preparePageDataGetRequest(id);
         });
 
@@ -2426,7 +2432,7 @@ var grid = (function _grid($) {
             gridState[id].grid.find('.grid-header-div').find('th [data-field="' + groupElem.data('field') + '"]').data('grouped', false);
             if (!groupElements.length) groupMenuBar.text(groupMenuText);
             gridState[id].groupedBy = groupElements;
-            gridState[id].pageRequest.eventType = 'group';
+            gridState[id].pageRequest.eventType = gridEvents.group;
             preparePageDataGetRequest(id);
         });
     }
@@ -3033,7 +3039,7 @@ var grid = (function _grid($) {
         gridState[gridId].grid.find('.sortSpan').remove();
         if (gridState[gridId].sortedOn.length) {
             gridState[gridId].sortedOn = [];
-            gridState[gridId].pageRequest.eventType = 'sort';
+            gridState[gridId].pageRequest.eventType = gridEvents.sort;
             preparePageDataGetRequest(gridId);
         }
         e.preventDefault();
@@ -3063,7 +3069,7 @@ var grid = (function _grid($) {
 
         if (gridState[gridId].groupedBy.length) {
             gridState[gridId].groupedBy = [];
-            gridState[gridId].pageRequest.eventType = 'group';
+            gridState[gridId].pageRequest.eventType = gridEvents.group;
             preparePageDataGetRequest(gridId);
         }
         e.preventDefault();
@@ -3254,7 +3260,7 @@ var grid = (function _grid($) {
                 pagerSpan.text('Page ' + pageNum + '/' + totalPages);
                 pagerInfo.text(rowStart + ' - ' + rowEnd + ' of ' + gridData.dataSource.rowCount + ' rows');
                 gridData.grid.find('.grid-content-div').empty();
-                gridData.pageRequest.eventType = 'page';
+                gridData.pageRequest.eventType = gridEvents.page;
                 gridData.pageRequest.pageNum = pageNum;
                 preparePageDataGetRequest(id);
             });
@@ -3350,7 +3356,7 @@ var grid = (function _grid($) {
                     gridState[id].advancedFilters = {};
 
                     filterDiv.addClass('hiddenFilter');
-                    gridState[id].pageRequest.eventType = 'filter';
+                    gridState[id].pageRequest.eventType = gridEvents.filter;
                     preparePageDataGetRequest(id);
                 }
             });
@@ -3454,7 +3460,7 @@ var grid = (function _grid($) {
 
         if (gridState[gridId].filters && Object.keys(gridState[gridId].filters.filterGroup).length) {
             gridState[gridId].filters = {};
-            gridState[gridId].pageRequest.eventType = 'filter';
+            gridState[gridId].pageRequest.eventType = gridEvents.filter;
             preparePageDataGetRequest(gridId);
         }
     }
@@ -3463,7 +3469,6 @@ var grid = (function _grid($) {
         var filterDiv = $(e.currentTarget).parents('.filter-div'),
             value = filterDiv.find('.filterInput').val(),
             field = $(this).data('field'),
-            remainingFilters = [],
             gridId = filterDiv.parents('.grid-wrapper').first().data('grid_id');
         if (gridState[gridId].updating) return;     //can't filter if grid is updating
         var gridData = gridState[gridId];
@@ -3472,14 +3477,10 @@ var grid = (function _grid($) {
         filterDiv.find('.filterInput').val('');
         filterDiv.addClass('hiddenFilter');
 
-        for (var i = 0; i < gridState[gridId].filters.filterGroup.length; i++) {
-            if (gridState[gridId].filters.filterGroup[i].field !== field) {
-                remainingFilters.push(gridState[gridId].filters.filterGroup[i]);
-            }
-        }
-
-        gridData.filters.filterGroup = remainingFilters;
-        gridData.pageRequest.eventType = 'filter';
+        gridData.filters.filterGroup = gridState[gridId].filters.filterGroup.filter(function filterRemainingFilters(filter) {
+            return filter.field !== field;
+        });
+        gridData.pageRequest.eventType = gridEvents.filter;
         preparePageDataGetRequest(gridId);
         e.preventDefault();
     }
@@ -3538,7 +3539,7 @@ var grid = (function _grid($) {
         gridState[gridId].advancedFilters = {};
 
         filterDiv.addClass('hiddenFilter');
-        gridData.pageRequest.eventType = 'filter';
+        gridData.pageRequest.eventType = gridEvents.filter;
         preparePageDataGetRequest(gridId);
     }
 
@@ -3823,7 +3824,7 @@ var grid = (function _grid($) {
                 gridState[id].sortedOn.push({ field: field, sortDirection: 'asc' });
                 elem.find('.header-anchor').append('<span class="sort-asc sortSpan">Sort</span>');
             }
-            gridState[id].pageRequest.eventType = 'sort';
+            gridState[id].pageRequest.eventType = gridEvents.sort;
             preparePageDataGetRequest(id);
             e.preventDefault();
         });
@@ -4175,13 +4176,13 @@ var grid = (function _grid($) {
             return [item, gridState[gridId].dataMap[idx]];
         });
         sortedItems.forEach(function _sortItems(cur, idx) {
-            var columnIdx = gridState[gridId].columnIndices[cur.field];
-            var column = gridState[gridId].columns[columnIdx];
+            var columnIdx = gridState[gridId].columnIndices[cur.field],
+                column = gridState[gridId].columns[columnIdx];
             if (idx === 0)
                 gridData = mergeSort(dataMap, cur, column.type || 'string');
             else {
-                var sortedGridData = [];
-                var itemsToSort = [];
+                var sortedGridData = [],
+                    itemsToSort = [];
                 gridData.forEach(function _sortGridData(data, i) {
                     var prevField = sortedItems[idx - 1].field,
                         prevVal = itemsToSort.length ? itemsToSort[0][0][prevField] : null,
@@ -4326,9 +4327,9 @@ var grid = (function _grid($) {
     function getNumbersFromTime(val) {
         var re = new RegExp(dataTypes.time);
         if (!re.test(val)) return [];
-        var timeGroups = re.exec(val);
-        var hours = timeGroups[1] ? +timeGroups[1] : +timeGroups[6];
-        var minutes, seconds, meridiem, retVal = [];
+        var timeGroups = re.exec(val),
+            hours = timeGroups[1] ? +timeGroups[1] : +timeGroups[6],
+            minutes, seconds, meridiem, retVal = [];
         if (timeGroups[2]) {
             minutes = timeGroups[3] || '00';
             seconds = timeGroups[4]  || '00';
