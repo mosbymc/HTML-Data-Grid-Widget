@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">60.11</p>
+      <p class="stat">60.32</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4572</p>
+      <p class="stat">4558</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">212.28</p>
+      <p class="stat">211.46</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">103.30</p>
+      <p class="stat">102.93</p>
     </div>
   </div>
 </div>
@@ -1090,10 +1090,10 @@
                 }
                 else {
                     var drillDownRow = $(&#039;&lt;tr class=&quot;drill-down-parent&quot;&gt;&lt;/tr&gt;&#039;).insertAfter(accRow);
-                    if (gridData.groupedBy &amp;&amp; gridData.groupedBy.length) {
-                        for (var i = 0; i &lt; gridData.groupedBy.length; i++) {
+                    if (gridData.groupedBy) {
+                        gridData.groupedBy.forEach(function _appendGroupedCells() {
                             drillDownRow.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
-                        }
+                        });
                     }
                     drillDownRow.append(&#039;&lt;td class=&quot;grouped_cell&quot;&gt;&lt;/td&gt;&#039;);
                     var drillDownCellLength = 0;
@@ -1396,26 +1396,15 @@
             var elem = $(this),
                 accRow = elem.parents(&#039;tr&#039;),
                 indent = accRow.data(&#039;group-indent&#039;);
-            if (elem.data(&#039;state&#039;) === &#039;open&#039;) {
-                elem.data(&#039;state&#039;, &#039;closed&#039;).removeClass(&#039;group-desc&#039;).addClass(&#039;group-asc&#039;);
-                accRow.nextAll().each(function iterateAccordionRowSiblingsToCloseCallback(idx, val) {
-                    var row = $(val),
-                        rowIndent = row.data(&#039;group-indent&#039;);
-                    if (!rowIndent || rowIndent &lt; indent)
-                        row.css(&#039;display&#039;, &#039;none&#039;);
-                    else return false;
-                });
-            }
-            else {
-                elem.data(&#039;state&#039;, &#039;open&#039;).removeClass(&#039;group-asc&#039;).addClass(&#039;group-desc&#039;);
-                accRow.nextAll().each(function iterateAccordionRowSiblingsToOpenCallback(idx, val) {
-                    var row = $(val),
-                        rowIndent = row.data(&#039;group-indent&#039;);
-                    if (!rowIndent || rowIndent &lt; indent)
-                        row.css(&#039;display&#039;, &#039;table-row&#039;);
-                    else return false;
-                });
-            }
+            if (elem.data(&#039;state&#039;) === &#039;open&#039;) elem.data(&#039;state&#039;, &#039;closed&#039;).removeClass(&#039;group-desc&#039;).addClass(&#039;group-asc&#039;);
+            else elem.data(&#039;state&#039;, &#039;open&#039;).removeClass(&#039;group-asc&#039;).addClass(&#039;group-desc&#039;);
+            accRow.nextAll().each(function iterateAccordionRowSiblingsToOpenCallback(idx, val) {
+                var row = $(val),
+                    rowIndent = row.data(&#039;group-indent&#039;);
+                if (!rowIndent || rowIndent &lt; indent)
+                    row.css(&#039;display&#039;, elem.data(&#039;state&#039;) === &#039;open&#039; ? &#039;none&#039; : &#039;table-row&#039;);
+                else return false;
+            });
         });
     }
 
@@ -1852,12 +1841,12 @@
 
                 if (gridState[id].sortedOn &amp;&amp; gridState[id].sortedOn.length) {
                     var sortArr = [];
-                    for (var l = 0; l &lt; gridState[id].sortedOn.length; l++) {
-                        if (gridState[id].sortedOn[l].field !== field) sortArr.push(gridState[id].sortedOn[l]);
+                    gridState[id].sortedOn.forEach(function _filterExistingSorts(col) {
+                        if (col.field !== field) sortArr.push(col);
                         else {
                             gridState[id].grid.find(&#039;.grid-header-wrapper&#039;).find(&#039;#&#039; + field + &#039;_grid_id_&#039; + id).find(&#039;.sortSpan&#039;).remove();
                         }
-                    }
+                    });
                     gridState[id].sortedOn = sortArr;
                 }
 
@@ -2005,31 +1994,30 @@
 
             if (dirtyCells.length) {
                 if (typeof gridState[id].dataSource.put !== jsTypes.function) {
-                    for (i = 0; i &lt; dirtyCells.length; i++) {
-                        var index = dirtyCells[i].parents(&#039;tr&#039;).index();
-                        var field = dirtyCells[i].data(&#039;field&#039;);
-                        var idxOffset = 0;
+                    dirtyCells.forEach(function _removeDirtyCells(cell) {
+                        var index = cell.parents(&#039;tr&#039;).index(),
+                            field = cell.data(&#039;field&#039;),
+                            idxOffset = 0;
                         if (typeof gridState[id].dataSource.get !== jsTypes.function &amp;&amp; gridState[id].pageNum &gt; 1)
                             idxOffset = ((gridState[id].pageNum - 1) * gridState[id].pageSize) - 1;
                         var origIndex = gridState[id].dataMap[index + idxOffset];
                         gridState[id].originalData[origIndex][field] = gridState[id].dataSource.data[index][field];
-                        dirtyCells[i].find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).remove();
-                    }
+                        cell.find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).remove();
+                    });
                 }
                 else {
                     gridState[id].putRequest.eventType = &#039;save&#039;;
                     gridState[id].putRequest.pageNum = pageNum;
                     gridState[id].putRequest.models = [];
                     var putRequestModels = gridState[id].putRequest.models;
-                    for (i = 0; i &lt; dirtyCells.length; i++) {
-                        var dataIndex = dirtyCells[i].parents(&#039;tr&#039;).index();
-                        var exists = putRequestModels.some(function _upsertPutRequest(cur) {
-                            if (cur.dataIdx = dataIndex) {
-                                cur.dirtyFields.push(dirtyCells[i].data(&#039;field&#039;));
-                                return true;
-                            }
-                        });
-                        if (!exists) {
+                    dirtyCells.forEach(function _collectionDirtyCellData(cell) {
+                        var dataIndex = cell.parents(&#039;tr&#039;).index();
+                        if (!putRequestModels.some(function _upsertPutRequest(cur) {
+                                if (cur.dataIdx = dataIndex) {
+                                    cur.dirtyFields.push(dirtyCells[i].data(&#039;field&#039;));
+                                    return true;
+                                }
+                            })) {
                             putRequestModels.push({
                                 cleanData: gridState[id].originalData[dirtyCells[i].parents(&#039;tr&#039;).index()],
                                 dirtyData: cloneGridData(gridState[id].dataSource.data[dataIndex]),
@@ -2037,7 +2025,7 @@
                                 dataIdx: dataIndex
                             });
                         }
-                    }
+                    });
 
                     prepareGridDataUpdateRequest(id);
                 }
@@ -2056,19 +2044,17 @@
             });
 
             if (dirtyCells.length) {
-                for (var i = 0; i &lt; dirtyCells.length; i++) {
-                    var field = dirtyCells[i].data(&#039;field&#039;),
-                        index = dirtyCells[i].parents(&#039;tr&#039;).index(),
-                        pageNum = gridState[id].pageNum,
-                        rowNum = gridState[id].pageSize,
-                        addend = (pageNum-1)*rowNum,
+                dirtyCells.forEach(function _cleanDirtyCells(cell) {
+                    var field = cell.data(&#039;field&#039;),
+                        index = cell.parents(&#039;tr&#039;).index(),
+                        addend = (gridState[id].pageNum - 1) * gridState[id].pageSize,
                         column = gridState[id].columns[gridState[id].columnIndices[field]],
                         cellVal = gridState[id].originalData[index][field] !== undefined ? gridState[id].originalData[index][field] : &#039;&#039;,
                         text = getFormattedCellText(column, cellVal) || cellVal;
-                    dirtyCells[i].text(text);
-                    dirtyCells[i].find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).remove();
+                    cell.text(text);
+                    cell.find(&#039;.dirty&#039;).add(&#039;.dirty-blank&#039;).remove();
                     gridState[id].dataSource.data[index][field] = gridState[id].originalData[index + addend][field];
-                }
+                });
             }
         });
     }
@@ -2597,9 +2583,9 @@
     }
 
     function createColumnToggleMenuOptions(menu, gridId) {
-        var menuList = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;);
-        var menuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;);
-        var menuAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Toggle Columns&lt;span class=&quot;menu_arrow&quot;/&gt;&lt;/span&gt;&lt;/a&gt;&#039;);
+        var menuList = $(&#039;&lt;ul class=&quot;menu-list&quot;&gt;&lt;/ul&gt;&#039;),
+            menuItem = $(&#039;&lt;li class=&quot;menu_item&quot;&gt;&lt;/li&gt;&#039;),
+            menuAnchor = $(&#039;&lt;a href=&quot;#&quot; class=&quot;menu_option&quot;&gt;&lt;span class=&quot;excel_span&quot;&gt;Toggle Columns&lt;span class=&quot;menu_arrow&quot;/&gt;&lt;/span&gt;&lt;/a&gt;&#039;);
         menuItem.on(&#039;mouseover&#039;, function columnToggleMenuItemHoverHandler() {
             var toggleOptions = gridState[gridId].grid.find(&#039;#toggle_grid_id_&#039; + gridId);
             if (!toggleOptions.length || gridState[gridId].hasAddedColumn) {
@@ -2659,9 +2645,9 @@
             totalPages = (count - displayedRows) &gt; 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1,
             pageNum = gridState[id].pageNum;
 
-        var first = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;first&quot; data-pagenum=&quot;1&quot; title=&quot;First Page&quot;&gt;&lt;span class=&quot;grid-page-span span-first&quot;&gt;First Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridPager);
-        var prev = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;prev&quot; data-pagenum=&quot;1&quot; title=&quot;Previous Page&quot;&gt;&lt;span class=&quot;grid-page-span span-prev&quot;&gt;Prev Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridPager);
-        var text = &#039;Page &#039; + gridState[parseInt(gridPager.data(&#039;grid_pager_id&#039;))].pageNum + &#039;/&#039; + (totalPages);
+        var first = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;first&quot; data-pagenum=&quot;1&quot; title=&quot;First Page&quot;&gt;&lt;span class=&quot;grid-page-span span-first&quot;&gt;First Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridPager),
+            prev = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;prev&quot; data-pagenum=&quot;1&quot; title=&quot;Previous Page&quot;&gt;&lt;span class=&quot;grid-page-span span-prev&quot;&gt;Prev Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridPager),
+            text = &#039;Page &#039; + gridState[parseInt(gridPager.data(&#039;grid_pager_id&#039;))].pageNum + &#039;/&#039; + (totalPages);
         gridPager.append(&#039;&lt;span class=&quot;grid-pagenum-span page-counter&quot;&gt;&#039; + text + &#039;&lt;/span&gt;&#039;);
         var next = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;next&quot; data-pagenum=&quot;2&quot; title=&quot;Next Page&quot;&gt;&lt;span class=&quot;grid-page-span span-next&quot;&gt;Next Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridPager);
         var last = $(&#039;&lt;a href=&quot;#&quot; class=&quot;grid-page-link&quot; data-link=&quot;last&quot; data-pagenum=&quot;&#039; + (totalPages) + &#039;&quot; title=&quot;Last Page&quot;&gt;&lt;span class=&quot;grid-page-span span-last&quot;&gt;Last Page&lt;/span&gt;&lt;/a&gt;&#039;).appendTo(gridPager);

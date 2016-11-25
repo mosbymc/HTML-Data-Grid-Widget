@@ -999,10 +999,10 @@ var grid = (function _grid($) {
                 }
                 else {
                     var drillDownRow = $('<tr class="drill-down-parent"></tr>').insertAfter(accRow);
-                    if (gridData.groupedBy && gridData.groupedBy.length) {
-                        for (var i = 0; i < gridData.groupedBy.length; i++) {
+                    if (gridData.groupedBy) {
+                        gridData.groupedBy.forEach(function _appendGroupedCells() {
                             drillDownRow.append('<td class="grouped_cell"></td>');
-                        }
+                        });
                     }
                     drillDownRow.append('<td class="grouped_cell"></td>');
                     var drillDownCellLength = 0;
@@ -1305,26 +1305,15 @@ var grid = (function _grid($) {
             var elem = $(this),
                 accRow = elem.parents('tr'),
                 indent = accRow.data('group-indent');
-            if (elem.data('state') === 'open') {
-                elem.data('state', 'closed').removeClass('group-desc').addClass('group-asc');
-                accRow.nextAll().each(function iterateAccordionRowSiblingsToCloseCallback(idx, val) {
-                    var row = $(val),
-                        rowIndent = row.data('group-indent');
-                    if (!rowIndent || rowIndent < indent)
-                        row.css('display', 'none');
-                    else return false;
-                });
-            }
-            else {
-                elem.data('state', 'open').removeClass('group-asc').addClass('group-desc');
-                accRow.nextAll().each(function iterateAccordionRowSiblingsToOpenCallback(idx, val) {
-                    var row = $(val),
-                        rowIndent = row.data('group-indent');
-                    if (!rowIndent || rowIndent < indent)
-                        row.css('display', 'table-row');
-                    else return false;
-                });
-            }
+            if (elem.data('state') === 'open') elem.data('state', 'closed').removeClass('group-desc').addClass('group-asc');
+            else elem.data('state', 'open').removeClass('group-asc').addClass('group-desc');
+            accRow.nextAll().each(function iterateAccordionRowSiblingsToOpenCallback(idx, val) {
+                var row = $(val),
+                    rowIndent = row.data('group-indent');
+                if (!rowIndent || rowIndent < indent)
+                    row.css('display', elem.data('state') === 'open' ? 'none' : 'table-row');
+                else return false;
+            });
         });
     }
 
@@ -1761,12 +1750,12 @@ var grid = (function _grid($) {
 
                 if (gridState[id].sortedOn && gridState[id].sortedOn.length) {
                     var sortArr = [];
-                    for (var l = 0; l < gridState[id].sortedOn.length; l++) {
-                        if (gridState[id].sortedOn[l].field !== field) sortArr.push(gridState[id].sortedOn[l]);
+                    gridState[id].sortedOn.forEach(function _filterExistingSorts(col) {
+                        if (col.field !== field) sortArr.push(col);
                         else {
                             gridState[id].grid.find('.grid-header-wrapper').find('#' + field + '_grid_id_' + id).find('.sortSpan').remove();
                         }
-                    }
+                    });
                     gridState[id].sortedOn = sortArr;
                 }
 
@@ -1914,31 +1903,30 @@ var grid = (function _grid($) {
 
             if (dirtyCells.length) {
                 if (typeof gridState[id].dataSource.put !== jsTypes.function) {
-                    for (i = 0; i < dirtyCells.length; i++) {
-                        var index = dirtyCells[i].parents('tr').index();
-                        var field = dirtyCells[i].data('field');
-                        var idxOffset = 0;
+                    dirtyCells.forEach(function _removeDirtyCells(cell) {
+                        var index = cell.parents('tr').index(),
+                            field = cell.data('field'),
+                            idxOffset = 0;
                         if (typeof gridState[id].dataSource.get !== jsTypes.function && gridState[id].pageNum > 1)
                             idxOffset = ((gridState[id].pageNum - 1) * gridState[id].pageSize) - 1;
                         var origIndex = gridState[id].dataMap[index + idxOffset];
                         gridState[id].originalData[origIndex][field] = gridState[id].dataSource.data[index][field];
-                        dirtyCells[i].find('.dirty').add('.dirty-blank').remove();
-                    }
+                        cell.find('.dirty').add('.dirty-blank').remove();
+                    });
                 }
                 else {
                     gridState[id].putRequest.eventType = 'save';
                     gridState[id].putRequest.pageNum = pageNum;
                     gridState[id].putRequest.models = [];
                     var putRequestModels = gridState[id].putRequest.models;
-                    for (i = 0; i < dirtyCells.length; i++) {
-                        var dataIndex = dirtyCells[i].parents('tr').index();
-                        var exists = putRequestModels.some(function _upsertPutRequest(cur) {
-                            if (cur.dataIdx = dataIndex) {
-                                cur.dirtyFields.push(dirtyCells[i].data('field'));
-                                return true;
-                            }
-                        });
-                        if (!exists) {
+                    dirtyCells.forEach(function _collectionDirtyCellData(cell) {
+                        var dataIndex = cell.parents('tr').index();
+                        if (!putRequestModels.some(function _upsertPutRequest(cur) {
+                                if (cur.dataIdx = dataIndex) {
+                                    cur.dirtyFields.push(dirtyCells[i].data('field'));
+                                    return true;
+                                }
+                            })) {
                             putRequestModels.push({
                                 cleanData: gridState[id].originalData[dirtyCells[i].parents('tr').index()],
                                 dirtyData: cloneGridData(gridState[id].dataSource.data[dataIndex]),
@@ -1946,7 +1934,7 @@ var grid = (function _grid($) {
                                 dataIdx: dataIndex
                             });
                         }
-                    }
+                    });
 
                     prepareGridDataUpdateRequest(id);
                 }
@@ -1965,19 +1953,17 @@ var grid = (function _grid($) {
             });
 
             if (dirtyCells.length) {
-                for (var i = 0; i < dirtyCells.length; i++) {
-                    var field = dirtyCells[i].data('field'),
-                        index = dirtyCells[i].parents('tr').index(),
-                        pageNum = gridState[id].pageNum,
-                        rowNum = gridState[id].pageSize,
-                        addend = (pageNum-1)*rowNum,
+                dirtyCells.forEach(function _cleanDirtyCells(cell) {
+                    var field = cell.data('field'),
+                        index = cell.parents('tr').index(),
+                        addend = (gridState[id].pageNum - 1) * gridState[id].pageSize,
                         column = gridState[id].columns[gridState[id].columnIndices[field]],
                         cellVal = gridState[id].originalData[index][field] !== undefined ? gridState[id].originalData[index][field] : '',
                         text = getFormattedCellText(column, cellVal) || cellVal;
-                    dirtyCells[i].text(text);
-                    dirtyCells[i].find('.dirty').add('.dirty-blank').remove();
+                    cell.text(text);
+                    cell.find('.dirty').add('.dirty-blank').remove();
                     gridState[id].dataSource.data[index][field] = gridState[id].originalData[index + addend][field];
-                }
+                });
             }
         });
     }
@@ -2506,9 +2492,9 @@ var grid = (function _grid($) {
     }
 
     function createColumnToggleMenuOptions(menu, gridId) {
-        var menuList = $('<ul class="menu-list"></ul>');
-        var menuItem = $('<li class="menu_item"></li>');
-        var menuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Toggle Columns<span class="menu_arrow"/></span></a>');
+        var menuList = $('<ul class="menu-list"></ul>'),
+            menuItem = $('<li class="menu_item"></li>'),
+            menuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Toggle Columns<span class="menu_arrow"/></span></a>');
         menuItem.on('mouseover', function columnToggleMenuItemHoverHandler() {
             var toggleOptions = gridState[gridId].grid.find('#toggle_grid_id_' + gridId);
             if (!toggleOptions.length || gridState[gridId].hasAddedColumn) {
@@ -2568,9 +2554,9 @@ var grid = (function _grid($) {
             totalPages = (count - displayedRows) > 0 ? Math.ceil((count - displayedRows)/displayedRows) + 1: 1,
             pageNum = gridState[id].pageNum;
 
-        var first = $('<a href="#" class="grid-page-link" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridPager);
-        var prev = $('<a href="#" class="grid-page-link" data-link="prev" data-pagenum="1" title="Previous Page"><span class="grid-page-span span-prev">Prev Page</span></a>').appendTo(gridPager);
-        var text = 'Page ' + gridState[parseInt(gridPager.data('grid_pager_id'))].pageNum + '/' + (totalPages);
+        var first = $('<a href="#" class="grid-page-link" data-link="first" data-pagenum="1" title="First Page"><span class="grid-page-span span-first">First Page</span></a>').appendTo(gridPager),
+            prev = $('<a href="#" class="grid-page-link" data-link="prev" data-pagenum="1" title="Previous Page"><span class="grid-page-span span-prev">Prev Page</span></a>').appendTo(gridPager),
+            text = 'Page ' + gridState[parseInt(gridPager.data('grid_pager_id'))].pageNum + '/' + (totalPages);
         gridPager.append('<span class="grid-pagenum-span page-counter">' + text + '</span>');
         var next = $('<a href="#" class="grid-page-link" data-link="next" data-pagenum="2" title="Next Page"><span class="grid-page-span span-next">Next Page</span></a>').appendTo(gridPager);
         var last = $('<a href="#" class="grid-page-link" data-link="last" data-pagenum="' + (totalPages) + '" title="Last Page"><span class="grid-page-span span-last">Last Page</span></a>').appendTo(gridPager);
