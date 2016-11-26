@@ -162,7 +162,9 @@ var grid = (function _grid($) {
             lessThan: 'lt',
             not: '!',
             contains: 'ct',
-            notContains: 'nct'
+            notContains: 'nct',
+            startsWith: 'startsWith',
+            endsWith: 'endsWith'
         },
         jsTypes = {
             'function': 'function',
@@ -4113,12 +4115,12 @@ var grid = (function _grid($) {
      * Using various equality operators, checks for truth based on the type of the operator(s)
      * @param {string|number|boolean} val - The value that is being checked against a base value
      * @param {*} base - The based value against which values are compared
-     * @param {string} type - The type of equality operator(s) to be used in the comparison
+     * @param {string} operation - The type of equality operator(s) to be used in the comparison
      * @returns {boolean} - Returns a boolean indicating that whether the comparison was true of false
      */
-    function comparator(val, base, type) {
-        switch (type) {
-            case 'eq':
+    function comparator(val, base, operation) {
+        switch (operation) {
+            case booleanOps.strictEqual:
             case '===':
                 return val === base;
             case '==':
@@ -4128,28 +4130,32 @@ var grid = (function _grid($) {
                 return val !== base;
             case '!=':
                 return val != base;
-            case 'gte':
+            case booleanOps.greaterThanOrEqual:
             case '>=':
                 return val >= base;
-            case 'gt':
+            case booleanOps.greaterThan:
             case '>':
                 return val > base;
-            case 'lte':
+            case booleanOps.lessThanOrEqual:
             case '<=':
                 return val <= base;
-            case 'lt':
+            case booleanOps.lessThan:
             case '<':
                 return val < base;
-            case 'not':
+            case booleanOps.not:
             case '!':
             case 'falsey':
                 return !val;
             case 'truthy':
                 return !!val;
-            case 'ct':
+            case booleanOps.contains:
                 return !!~val.toLowerCase().indexOf(base.toLowerCase());
-            case 'nct':
+            case booleanOps.notContains:
                 return !~val.toLowerCase().indexOf(base.toLowerCase());
+            case booleanOps.startsWith:
+                return val.substring(0, base.length - 1) === base;
+            case booleanOps.endsWith:
+                return val.substring((val.length - base.length), val.length - 1) === base;
         }
     }
 

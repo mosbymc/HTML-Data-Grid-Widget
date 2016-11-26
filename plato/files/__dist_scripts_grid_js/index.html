@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">60.32</p>
+      <p class="stat">60.30</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4558</p>
+      <p class="stat">4564</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">211.46</p>
+      <p class="stat">211.56</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">102.93</p>
+      <p class="stat">103.17</p>
     </div>
   </div>
 </div>
@@ -105,7 +105,9 @@
             lessThan: &#039;lt&#039;,
             not: &#039;!&#039;,
             contains: &#039;ct&#039;,
-            notContains: &#039;nct&#039;
+            notContains: &#039;nct&#039;,
+            startsWith: &#039;startsWith&#039;,
+            endsWith: &#039;endsWith&#039;
         },
         jsTypes = {
             &#039;function&#039;: &#039;function&#039;,
@@ -3545,9 +3547,9 @@
         callback({ rowCount: fullGridData.length, data: returnData });
     }
 
-    function comparator(val, base, type) {
-        switch (type) {
-            case &#039;eq&#039;:
+    function comparator(val, base, operation) {
+        switch (operation) {
+            case booleanOps.strictEqual:
             case &#039;===&#039;:
                 return val === base;
             case &#039;==&#039;:
@@ -3557,28 +3559,32 @@
                 return val !== base;
             case &#039;!=&#039;:
                 return val != base;
-            case &#039;gte&#039;:
+            case booleanOps.greaterThanOrEqual:
             case &#039;&gt;=&#039;:
                 return val &gt;= base;
-            case &#039;gt&#039;:
+            case booleanOps.greaterThan:
             case &#039;&gt;&#039;:
                 return val &gt; base;
-            case &#039;lte&#039;:
+            case booleanOps.lessThanOrEqual:
             case &#039;&lt;=&#039;:
                 return val &lt;= base;
-            case &#039;lt&#039;:
+            case booleanOps.lessThan:
             case &#039;&lt;&#039;:
                 return val &lt; base;
-            case &#039;not&#039;:
+            case booleanOps.not:
             case &#039;!&#039;:
             case &#039;falsey&#039;:
                 return !val;
             case &#039;truthy&#039;:
                 return !!val;
-            case &#039;ct&#039;:
+            case booleanOps.contains:
                 return !!~val.toLowerCase().indexOf(base.toLowerCase());
-            case &#039;nct&#039;:
+            case booleanOps.notContains:
                 return !~val.toLowerCase().indexOf(base.toLowerCase());
+            case booleanOps.startsWith:
+                return val.substring(0, base.length - 1) === base;
+            case booleanOps.endsWith:
+                return val.substring((val.length - base.length), val.length - 1) === base;
         }
     }
 
