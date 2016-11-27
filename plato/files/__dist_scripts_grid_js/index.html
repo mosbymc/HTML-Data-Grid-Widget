@@ -44,11 +44,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
-      <p class="stat">60.30</p>
+      <p class="stat">60.29</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
-      <p class="stat">4564</p>
+      <p class="stat">4565</p>
     </div>
   </div>
   <div class="row historical">
@@ -62,11 +62,11 @@
   <div class="row">
     <div class="col-md-6">
       <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
-      <p class="stat">211.56</p>
+      <p class="stat">211.89</p>
     </div>
     <div class="col-md-6">
       <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
-      <p class="stat">103.17</p>
+      <p class="stat">103.38</p>
     </div>
   </div>
 </div>
@@ -3578,13 +3578,13 @@
             case &#039;truthy&#039;:
                 return !!val;
             case booleanOps.contains:
-                return !!~val.toLowerCase().indexOf(base.toLowerCase());
+                return !!~val.toString().toLowerCase().indexOf(base.toString().toLowerCase());
             case booleanOps.notContains:
-                return !~val.toLowerCase().indexOf(base.toLowerCase());
+                return !~val.toString().toLowerCase().indexOf(base.toString().toLowerCase());
             case booleanOps.startsWith:
-                return val.substring(0, base.length - 1) === base;
+                return val.toString().substring(0, base.toString().length - 1) === base.toString();
             case booleanOps.endsWith:
-                return val.substring((val.length - base.length), val.length - 1) === base;
+                return val.toString().substring((val.length - base.toString().length), val.length - 1) === base.toString();
         }
     }
 
@@ -4499,7 +4499,8 @@
                 }
             }
             else {
-                this._value = comparator(dataTypeValueNormalizer(this.dataType, this.getContext()[this.field]), dataTypeValueNormalizer(this.dataType, this.standard), this.operation);
+                this._value = comparator(dataTypeValueNormalizer(this.dataType == null ? this.getContext()[this.field] : this.dataType, this.getContext()[this.field]),
+                    dataTypeValueNormalizer(this.dataType == null ? this.getContext()[this.field] : this.dataType, this.standard), this.operation);
                 return this._value;
             }
         };

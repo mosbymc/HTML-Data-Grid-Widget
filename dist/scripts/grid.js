@@ -3487,13 +3487,13 @@ var grid = (function _grid($) {
             case 'truthy':
                 return !!val;
             case booleanOps.contains:
-                return !!~val.toLowerCase().indexOf(base.toLowerCase());
+                return !!~val.toString().toLowerCase().indexOf(base.toString().toLowerCase());
             case booleanOps.notContains:
-                return !~val.toLowerCase().indexOf(base.toLowerCase());
+                return !~val.toString().toLowerCase().indexOf(base.toString().toLowerCase());
             case booleanOps.startsWith:
-                return val.substring(0, base.length - 1) === base;
+                return val.toString().substring(0, base.toString().length - 1) === base.toString();
             case booleanOps.endsWith:
-                return val.substring((val.length - base.length), val.length - 1) === base;
+                return val.toString().substring((val.length - base.toString().length), val.length - 1) === base.toString();
         }
     }
 
@@ -4408,7 +4408,8 @@ var grid = (function _grid($) {
                 }
             }
             else {
-                this._value = comparator(dataTypeValueNormalizer(this.dataType, this.getContext()[this.field]), dataTypeValueNormalizer(this.dataType, this.standard), this.operation);
+                this._value = comparator(dataTypeValueNormalizer(this.dataType == null ? this.getContext()[this.field] : this.dataType, this.getContext()[this.field]),
+                    dataTypeValueNormalizer(this.dataType == null ? this.getContext()[this.field] : this.dataType, this.standard), this.operation);
                 return this._value;
             }
         };
