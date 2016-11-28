@@ -4654,14 +4654,19 @@ var grid = (function _grid($) {
     }
 
     /**
-     * Checks that a given variable is a number and not NaN
-     * @param {number} value - The number that is being checked
+     * Checks that a given value is a number and not NaN
+     * @param {*} value - The number that is being checked
      * @returns {boolean} Returns true if the value is a number, false if not
      */
     function isNumber(value) {
         return typeof value === jsTypes.number && value === value;
     }
 
+    /**
+     * Checks that a given value is an integer; relies on isNumber function
+     * @param {*} value - The value being check for integer status
+     * @returns {boolean} Returns true if the value is an integer, false if not
+     */
     function isInteger(value) {
         return isNumber(value) && value % 1 === 0;
     }
