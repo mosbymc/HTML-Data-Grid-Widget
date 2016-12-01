@@ -18,6 +18,9 @@ var dataStore = (function _createDataStore() {
                 create: function _create(field, operator, value, dataType) {
                     return Object.create(exsp).createExpression(field, operator, value, dataType);
                 }
+            },
+            from: function _from(data) {
+                return Object.create(queryable)._init(data, [identity]);
             }
         };
 
@@ -89,7 +92,258 @@ var dataStore = (function _createDataStore() {
         toMap: function _toMap() {
 
         },
+        select: function _select(fields) {
+            function _select_(data) {
+                var retArr = [];
+                if (typeof fields !== 'string') return _if(not(isArray), wrap, data);
+                fields = fields.split(',');
+                if (data !== undefined && (typeof data === 'object' || typeof data === 'function')) {
+                    if (fields.length === 1 && fields[0].trim() === '*')
+                        retArr = data;
+                    else {
+                        _if(not(isArray), wrap, data).forEach(function _selectFields(item) {
+                            var retObj = {};
+                            fields.forEach(function _getField(f) {
+                                retObj[f.trim()] = item[f.trim()];
+                            });
+                            retArr.push(retObj);
+                        });
+                    }
+                }
+                else retArr = undefined;
+                return retArr;
+            }
+            return Object.create(queryable).init(this._data, this._funcs.concat[_select_]);
+        },
+        insert: function _insert(values) {
+            function _insertData() {
+
+            }
+
+            var retObj = Object.create(queryable)._init(this._data, this._funcs.concat([identity]));
+            return Object.defineProperties(
+                retObj, {
+                    'data': {
+
+                    }
+                }
+            );
+        },
+        where: function _where(field, operator, value) {
+            var filterExpression = exsp.isPrototypeOf(field) ? field : Object.create(exsp).createExpression(field, operator, value);
+
+            function _data(data) {
+                data = _if(not(isArray), wrap, data);
+                return expressionParser.createFilterTreeFromFilterObject(filterExpression._expression)
+                    .filterCollection(data)
+                    .filteredDataMap.map(function _getFilteredMatches(item) {
+                        return data[item];
+                    });
+            }
+
+            function filterAppend(conjunct) {
+                return function _filterAppend(field, operator, value) {
+                    filterExpression = filterExpression[conjunct](field, operator, value);
+
+                    //here we don't want the last filter 'data func' in the list of data funcs since we're just appending expressions to
+                    //an already existing filter tree; otherwise we'd run each filter func n - x - 1 times
+                    //where n = total number of where filters, x = the index of the current where filter within collection
+                    var retObj = Object.create(queryable)._init(this._data, this._funcs.slice(0, this._funcs.length - 1).concat()[_data]);
+                    return Object.defineProperties(
+                        retObj, {
+                            'and': {
+                                value: filterAppend('and'),
+                                writable: false,
+                                configurable: false
+                            },
+                            'or': {
+                                value: filterAppend('or'),
+                                writable: false,
+                                configurable: false
+                            },
+                            'nand': {
+                                value: filterAppend('nand'),
+                                writable: false,
+                                configurable: false
+                            },
+                            'nor': {
+                                value: filterAppend('nor'),
+                                writable: false,
+                                configurable: false
+                            },
+                            'xand': {
+                                value: filterAppend('xand'),
+                                writable: false,
+                                configurable: false
+                            },
+                            'xor': {
+                                value: filterAppend('xor'),
+                                writable: false,
+                                configurable: false
+                            }
+                        }
+                    );
+                }
+            }
+
+            var retObj = Object.create(queryable)._init(this._data, this._funcs.concat([_data]));
+            return Object.defineProperties(
+                retObj, {
+                    'and': {
+                        value: filterAppend('and'),
+                        writable: false,
+                        configurable: false
+                    },
+                    'or': {
+                        value: filterAppend('or'),
+                        writable: false,
+                        configurable: false
+                    },
+                    'nand': {
+                        value: filterAppend('nand'),
+                        writable: false,
+                        configurable: false
+                    },
+                    'nor': {
+                        value: filterAppend('nor'),
+                        writable: false,
+                        configurable: false
+                    },
+                    'xand': {
+                        value: filterAppend('xand'),
+                        writable: false,
+                        configurable: false
+                    },
+                    'xor': {
+                        value: filterAppend('xor'),
+                        writable: false,
+                        configurable: false
+                    }
+                }
+            );
+        },
+        groupBy: function _groupBy(fields) {
+            function groupData(data) {
+                data = _if(not(isArray), wrap, data);
+                var sortedData = sortData(funcs.reduce(function _executePriorFuncs(allData, func) {
+                    return func(allData);
+                }, data), fields);
+
+                var retData = [];
+
+                sortedData.forEach(function _groupDataByField(item) {
+                    var grpArr = retData;
+                    fields.forEach(function _createGroupsByFields(field) {
+                        var group = findGroup(grpArr, item[field.key]);
+                        grpArr.push(group);
+                        grpArr = group[item[field.key]];
+                    });
+                    grpArr.push(item);
+                });
+
+                return retData;
+
+                function sortData(data, fields) {
+                    var sortedData = data;
+                    fields.forEach(function _sortItems(field, index) {
+                        if (index === 0) sortedData = mergeSort(data, field.key, field.direction, field.dataType);
+                        else {
+                            var sortedSubData = [],
+                                itemsToSort = [];
+                            sortedData.forEach(function _sortData(item, idx) {
+                                var prevField = fields[index - 1],
+                                    prevVal = itemsToSort.length ? itemsToSort[0][prevField] : null;
+                                if (!itemsToSort.length || comparator(dataTypeValueNormalizer(field.dataType, prevVal), dataTypeValueNormalizer(field.dataType, sortedData[idx][prevField]), 'eq'))
+                                    itemsToSort.push(item);
+                                else {
+                                    if (itemsToSort.length === 1) sortedSubData = sortedSubData.concat(itemsToSort);
+                                    else sortedSubData = sortedSubData.concat(mergeSort(itemsToSort, field.key, field.direction, field.dataType));
+                                    sortedSubData.length = 0;
+                                    sortedSubData.push(sortedData[idx]);
+                                }
+                                if (idx === sortedData.length - 1)
+                                    sortedSubData = sortedSubData.concat(mergeSort(itemsToSort, sortedSubData[idx], field.dataType));
+                            });
+                            sortedData = sortedSubData;
+                        }
+                    });
+                    return sortedData;
+                }
+
+                function mergeSort(data, field, direction, dataType) {
+                    if (data.length < 2) return data;
+                    var middle = parseInt(data.length / 2);
+                    return merge(mergeSort(data.slice(0, middle), field, direction, dataType), mergeSort(data.slice(middle, data.length), field, direction, dataType), field, direction, dataType);
+                }
+
+                function merge(left, right, field, direction, dataType) {
+                    if (!left.length) return right;
+                    if (!right.length) return left;
+
+                    var operator = direction === 'asc' ? 'lte' : 'gte';
+                    if (comparator(dataTypeValueNormalizer(dataType || typeof left[0][field], left[0][field]), dataTypeValueNormalizer(dataType || typeof right[0][field], right[0][field]), operator))
+                        return [[cloneGridData(left[0]), left[1]]].concat(merge(left.slice(1, left.length), right, field, direction, dataType));
+                    else  return [[cloneGridData(right[0]), right[1]]].concat(merge(left, right.slice(1, right.length), field, direction, dataType));
+                }
+
+                function findGroup(arr, field) {
+                    var grp;
+                    if (arr.some(function _findGroup(group) {
+                            if (group[field]) {
+                                grp = group;
+                                return true;
+                            }
+                        }))
+                        return grp;
+                    else {
+                        grp = {};
+                        grp[field] = [];
+                        return grp;
+                    }
+                }
+            }
+
+            return Object.create(queryable)._init(this._data, this._funcs.concat([groupData]));
+        },
+        distinct: function _distinct(fields) {
+            var filterFunc;
+            if (typeof fields === 'function') {
+                filterFunc = fields(this._getData);
+            }
+            else if (typeof fields === 'string') {
+                filterFunc = function _filterFunc(data) {
+                    data = _if(not(isArray), wrap, data);
+                    fields = fields.split(',');
+                    var fieldStr = '',
+                        objMap = {};
+
+                    data.forEach(function _getKeys(item, idx) {
+                        fields.forEach(function _getValues(field) {
+                            fieldStr += item[field.trim()].toString();
+                        });
+                        if (!(fieldStr in objMap)) objMap[fieldStr] = idx;
+                        fieldStr = '';
+                    });
+
+                    return Object.keys(objMap).map(function _returnMappedData(key) {
+                        return data[objMap[key]];
+                    });
+                }
+            }
+            else {
+                filterFunc = function _filterFunc(data) {
+                    data =  _if(isArray, wrap, data);
+                    return data.filter(function _findUniques(item, idx) {
+                        return data.indexOf(item) === idx;
+                    });
+                }
+            }
+
+            return Object.create(queryable)._init(this._data, this.funcs.concat([filterFunc]));
+        },
         flatten: function _flatten() {
+            //TODO: this won't work because I need access to the new queryable's data...
+            //TODO: ... I also need to apply "_if(not(isArray), wrap, data)" to the queryable's data beforehand
             return dataHandler.bind(Object.create(queryable)._init(this._data))(function _flattenDataThunk(data) { return flattenData(data); });
             function turnObjectsIntoArrays(data) {
                 if (Object.keys(data).every(function _isMadeOfArrays(key) {
@@ -119,10 +373,16 @@ var dataStore = (function _createDataStore() {
                 }));
             }
         },
-        _init: function _init_(data) {
+        _init: function _init_(data, funcs) {
             this._data = data;
+            this._funcs = funcs || [identity];
             this._iterator = it.bind(this)();
-            return this;
+            return addGetter(this);
+        },
+        _getData: function _getData() {
+            return this._funcs.reduce(function _executePriorFuncs(allData, func) {
+                return func(allData);
+            }, this._data)
         },
         take: function *_take() {
             let index = -1;
@@ -143,6 +403,15 @@ var dataStore = (function _createDataStore() {
         _data: []
     };
 
+    function addGetter(obj) {
+        return Object.defineProperty(
+            obj,
+            'data', {
+                get: this._getData
+            }
+        );
+    }
+
     function *it() {
         for (let item of this._data) {
             yield item;
@@ -153,6 +422,10 @@ var dataStore = (function _createDataStore() {
         func(this._data);
         return this;
     }
+
+    var enumerable = {
+
+    };
 
     var exsp = {
         createExpression: function _createExpression(field, operator, value, dataType) {
@@ -254,12 +527,19 @@ var dataStore = (function _createDataStore() {
         dataType: null
     };
 
-    function noop(item) { return item; }
+    function identity(item) { return item; };
 
     function _if(predicate, fn, data) {
         if (predicate(data))
             return fn(data);
         return data;
+    }
+
+    function ifElse(predicate, ifFunc, elseFunc, data) {
+        var ifData = _if(predicate, ifFunc, data);
+        if (data === ifData)
+            return elseFunc(data);
+        return ifData;
     }
 
     function wrap(data) {
@@ -285,353 +565,8 @@ var dataStore = (function _createDataStore() {
                 return prev[curr];
             });
 
-            function internalSelect(fields) {
-                return function _internalSelect(data) {
-                    var retArr = [];
-                    if (typeof fields !== 'string') {
-                        return data.constructor !== Array ? [data] : data;
-                    }
-                    fields = fields.split(',');
-                    if (data !== undefined && (typeof data === 'object' || typeof data === 'function')) {
-                        if (fields.length === 1 && fields[0].trim() === '*')
-                            retArr = data;
-                        else {
-                            _if(not(isArray), wrap, data).forEach(function _selectFields(item) {
-                                var retObj = {};
-                                fields.forEach(function _getField(f) {
-                                    retObj[f.trim()] = item[f.trim()];
-                                });
-                                retArr.push(retObj);
-                            });
-                        }
-                    }
-                    else retArr = undefined;
-                    return retArr;
-                }
-            }
-
-            return {
-                data: val,
-                select: function _select(fields) {
-                    function _selectData() {
-                        var retArr = [];
-                        if (typeof fields !== 'string') {
-                            return val.constructor !== Array ? [val] : val;
-                        }
-                        fields = fields.split(',');
-                        if (val !== undefined && (typeof val === 'object' || typeof val === 'function')) {
-                            if (fields.length === 1 && fields[0].trim() === '*')
-                                retArr = val;
-                            else {
-                                _if(not(isArray), wrap, val).forEach(function _selectFields(item) {
-                                    var retObj = {};
-                                    fields.forEach(function _getField(f) {
-                                        retObj[f.trim()] = item[f.trim()];
-                                    });
-                                    retArr.push(retObj);
-                                });
-                            }
-                        }
-                        else retArr = undefined;
-                        return retArr;
-                    }
-
-                    var retObj = {};
-
-                    return Object.defineProperties(
-                        retObj, {
-                            'data': {
-                                get: _selectData
-                            },
-                            'where': {
-                                value: where(val, [internalSelect(fields)]),
-                                writable: false,
-                                configurable: false
-                            },
-                            'distinct': {
-                                value: distinct(val, [internalSelect(fields)]),
-                                writable: false,
-                                configurable: false
-                            }
-                        }
-                    );
-                },
-                insert: function _insert(values) {
-                    function _insertData() {
-
-                    }
-
-                    var retObj = {};
-                    return Object.defineProperties(
-                        retObj, {
-                            'data': {
-
-                            }
-                        }
-                    );
-                },
-                where: where(val, [noop]),
-                groupBy: groupBy(val, [noop]),
-                distinct: distinct(val, [noop])
-            };
+            return Object.create(queryable)._init(val, [identity]);
         };
-
-        function distinct(data, funcs) {
-            return function _distinct(fields) {
-                data = _if(not(isArray), wrap, data);
-                var filterFunc;
-                if (typeof fields === 'function') {
-                    filterFunc = fields(data);
-                }
-                else if (typeof fields === 'string') {
-                    filterFunc = function _filterFunc() {
-                        fields = fields.split(',');
-                        var fieldStr = '',
-                            objMap = {};
-
-                        data.forEach(function _getKeys(item, idx) {
-                            fields.forEach(function _getValues(field) {
-                                fieldStr += item[field.trim()].toString();
-                            });
-                            if (!(fieldStr in objMap)) objMap[fieldStr] = idx;
-                            fieldStr = '';
-                        });
-
-                        return Object.keys(objMap).map(function _returnMappedData(key) {
-                            return data[objMap[key]];
-                        });
-                    }
-                }
-                else {
-                    filterFunc = function _filterFunc() {
-                        return data.filter(function _findUniques(item, idx) {
-                            return data.indexOf(item) === idx;
-                        });
-                    }
-                }
-
-                function _data() {
-                    return filterFunc(funcs.reduce(function _executePriorFuncs(allData, func) {
-                        return func(allData);
-                    }, data));
-                }
-
-                var retObj = {};
-                return Object.defineProperties(
-                    retObj, {
-                        'data': {
-                            get: _data
-                        }
-                    }
-                );
-            }
-        }
-
-        function groupBy(data, funcs) {
-            return function _groupBy(fields) {
-                data = _if(not(isArray), wrap, data);
-                function groupData() {
-                    var sortedData = sortData(funcs.reduce(function _executePriorFuncs(allData, func) {
-                        return func(allData);
-                    }, data), fields);
-
-                    var retData = [];
-
-                    sortedData.forEach(function _groupDataByField(item) {
-                        var grpArr = retData;
-                        fields.forEach(function _createGroupsByFields(field) {
-                            var group = findGroup(grpArr, item[field.key]);
-                            grpArr.push(group);
-                            grpArr = group[item[field.key]];
-                        });
-                        grpArr.push(item);
-                    });
-
-                    return retData;
-
-                    function sortData(data, fields) {
-                        var sortedData = data;
-                        fields.forEach(function _sortItems(field, index) {
-                            if (index === 0) sortedData = mergeSort(data, field.key, field.direction, field.dataType);
-                            else {
-                                var sortedSubData = [],
-                                    itemsToSort = [];
-                                sortedData.forEach(function _sortData(item, idx) {
-                                    var prevField = fields[index - 1],
-                                        prevVal = itemsToSort.length ? itemsToSort[0][prevField] : null;
-                                    if (!itemsToSort.length || comparator(dataTypeValueNormalizer(field.dataType, prevVal), dataTypeValueNormalizer(field.dataType, sortedData[idx][prevField]), 'eq'))
-                                        itemsToSort.push(item);
-                                    else {
-                                        if (itemsToSort.length === 1) sortedSubData = sortedSubData.concat(itemsToSort);
-                                        else sortedSubData = sortedSubData.concat(mergeSort(itemsToSort, field.key, field.direction, field.dataType));
-                                        sortedSubData.length = 0;
-                                        sortedSubData.push(sortedData[idx]);
-                                    }
-                                    if (idx === sortedData.length - 1)
-                                        sortedSubData = sortedSubData.concat(mergeSort(itemsToSort, sortedSubData[idx], field.dataType));
-                                });
-                                sortedData = sortedSubData;
-                            }
-                        });
-                        return sortedData;
-                    }
-
-                    function mergeSort(data, field, direction, dataType) {
-                        if (data.length < 2) return data;
-                        var middle = parseInt(data.length / 2);
-                        return merge(mergeSort(data.slice(0, middle), field, direction, dataType), mergeSort(data.slice(middle, data.length), field, direction, dataType), field, direction, dataType);
-                    }
-
-                    function merge(left, right, field, direction, dataType) {
-                        if (!left.length) return right;
-                        if (!right.length) return left;
-
-                        var operator = direction === 'asc' ? 'lte' : 'gte';
-                        if (comparator(dataTypeValueNormalizer(dataType || typeof left[0][field], left[0][field]), dataTypeValueNormalizer(dataType || typeof right[0][field], right[0][field]), operator))
-                            return [[cloneGridData(left[0]), left[1]]].concat(merge(left.slice(1, left.length), right, field, direction, dataType));
-                        else  return [[cloneGridData(right[0]), right[1]]].concat(merge(left, right.slice(1, right.length), field, direction, dataType));
-                    }
-                }
-
-                var retObj = {};
-                return Object.defineProperties(
-                    retObj, {
-                        'data': {
-                            get: groupData
-                        }
-                    }
-                );
-
-                function findGroup(arr, field) {
-                    var grp;
-                    if (arr.some(function _findGroup(group) {
-                            if (group[field]) {
-                                grp = group;
-                                return true;
-                            }
-                        }))
-                        return grp;
-                    else {
-                        grp = {};
-                        grp[field] = [];
-                        return grp;
-                    }
-                }
-            }
-        }
-
-        function where(data, funcs) {
-            return function _where(field, operator, value) {
-                data = _if(not(isArray), wrap, data);
-                var filterExpression = exsp.isPrototypeOf(field) ? field : Object.create(exsp).createExpression(field, operator, value);
-
-                function _data() {
-                    var curData = funcs.reduce(function _executePriorFuncs(allData, func) {
-                        return func(allData);
-                    }, data);
-
-                    return expressionParser.createFilterTreeFromFilterObject(filterExpression._expression)
-                        .filterCollection(curData)
-                        .filteredDataMap.map(function _getFilteredMatches(item) {
-                            return curData[item];
-                        });
-                }
-
-                function filterAppend(conjunct) {
-                    return function _filterAppend(field, operator, value) {
-                        filterExpression = filterExpression[conjunct](field, operator, value);
-
-                        var retObj = {};
-                        return Object.defineProperties(
-                            retObj, {
-                                'data': {
-                                    get: _data
-                                },
-                                'and': {
-                                    value: filterAppend('and'),
-                                    writable: false,
-                                    configurable: false
-                                },
-                                'or': {
-                                    value: filterAppend('or'),
-                                    writable: false,
-                                    configurable: false
-                                },
-                                'nand': {
-                                    value: filterAppend('nand'),
-                                    writable: false,
-                                    configurable: false
-                                },
-                                'nor': {
-                                    value: filterAppend('nor'),
-                                    writable: false,
-                                    configurable: false
-                                },
-                                'xand': {
-                                    value: filterAppend('xand'),
-                                    writable: false,
-                                    configurable: false
-                                },
-                                'xor': {
-                                    value: filterAppend('xor'),
-                                    writable: false,
-                                    configurable: false
-                                },
-                                'distinct': {
-                                    value: distinct(data, funcs),
-                                    writable: false,
-                                    configurable: false
-                                }
-                            }
-                        );
-                    }
-                }
-
-                var retObj = {};
-                return Object.defineProperties(
-                    retObj, {
-                        'data': {
-                            get: _data
-                        },
-                        'and': {
-                            value: filterAppend('and'),
-                            writable: false,
-                            configurable: false
-                        },
-                        'or': {
-                            value: filterAppend('or'),
-                            writable: false,
-                            configurable: false
-                        },
-                        'nand': {
-                            value: filterAppend('nand'),
-                            writable: false,
-                            configurable: false
-                        },
-                        'nor': {
-                            value: filterAppend('nor'),
-                            writable: false,
-                            configurable: false
-                        },
-                        'xand': {
-                            value: filterAppend('xand'),
-                            writable: false,
-                            configurable: false
-                        },
-                        'xor': {
-                            value: filterAppend('xor'),
-                            writable: false,
-                            configurable: false
-                        },
-                        'distinct': {
-                            value: distinct(data, funcs),
-                            writable: false,
-                            configurable: false
-                        }
-                    }
-                );
-            };
-        }
     }
 
     return Object.create(_dataStore);
