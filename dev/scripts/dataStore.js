@@ -21,6 +21,139 @@ var dataStore = (function _createDataStore() {
             }
         };
 
+    var queryable = {
+        //TODO: not sure that this should be kept in here as is - gives too much control over the internal state
+        //TODO: of the object to the user
+        forEach: function _forEach(callback, context) {
+            return dataHandler.bind(Object.create(queryable)._init(this._data))(function _forEachThunk(data) { return data.forEach(callback, context); });
+        },
+        map: function _map(callback, context) {
+            return dataHandler.bind(Object.create(queryable)._init(this._data))(function _mapThunk(data) { return data.map(callback, context); });
+        },
+        reduce: function _reduce(callback, initial) {
+            return dataHandler.bind(Object.create(queryable)._init(this._data))(function _reduceThunk(data) { return data.reduce(callback, initial); });
+        },
+        reduceRight: function _reduceRight(callback, initial) {
+            return dataHandler.bind(Object.create(queryable).init(this._data))(function _reduceRightThunk(data) { return data.reduceRight(callback, initial); });
+        },
+        filter: function _filter(callback, context) {
+            return dataHandler.bind(Object.create(queryable)._init(this._data))(function _filterThunk(data) { return data.filter(callback, context); });
+        },
+        reverse: function _reverse() {
+            return dataHandler.bind(Object.create(queryable)._init(this._data))(Array.prototype.reverse);
+        },
+        some: function _some(callback, context) {
+            return this._data.some(callback, context);
+        },
+        every: function _every(callback, context) {
+            return this._data.every(callback, context);
+        },
+        /*take: function *_take(amount = 1) {
+         if (!amount) return;    //TODO: should this return empty array or undefined?
+         var idx = 0;
+         for (let i of this._data) {
+         yield i;
+         if (++i === amount) break;
+         }
+
+         function* takeIterator(xs, n) {
+         if (n === 0) return;
+         let i = 0;
+         for (let x of xs) {
+         yield x;
+         if (++i === n) break;
+         }
+         }
+
+         var iterator = function(a, n) {
+         var current = 0,
+         l = a.length;
+         return function() {
+         end = current + n;
+         var part = a.slice(current,end);
+         if(end > l) {
+         end = end % l;
+         part = part.concat(a.slice(0, end));
+         }
+         current = end;
+         return part;
+         };
+         };
+         },*/
+        toArray: function _toArray() {
+            return this._data.map(function _shallowCloner(item) { return item; });
+        },
+        toSet: function _toSet() {
+
+        },
+        toMap: function _toMap() {
+
+        },
+        flatten: function _flatten() {
+            return dataHandler.bind(Object.create(queryable)._init(this._data))(function _flattenDataThunk(data) { return flattenData(data); });
+            function turnObjectsIntoArrays(data) {
+                if (Object.keys(data).every(function _isMadeOfArrays(key) {
+                        return Array.isArray(data[key]);
+                    }))
+                {
+                    return Object.keys(data).map(function _transmorgifier(key) {
+                        return dataFlattener(data[key]);
+                    });
+                }
+                return data;
+            }
+
+            function dataFlattener(data) {
+                return data.map(function _dataFlattener(item) {
+                    if (!Array.isArray(item) && typeof item === 'object')
+                        return turnObjectsIntoArrays(item);
+                    return item;
+                });
+            }
+
+            function flattenData(data) {
+                return [].concat.apply([], dataFlattener(data).map(function _flattenData(item) {
+                    if (Array.isArray(item))
+                        return flattenData(item);
+                    return item;
+                }));
+            }
+        },
+        _init: function _init_(data) {
+            this._data = data;
+            this._iterator = it.bind(this)();
+            return this;
+        },
+        take: function *_take() {
+            let index = -1;
+            for (let value of this._iterator) {
+                if (++index >= count)
+                    break;
+                yield value;
+            }
+        },
+        [Symbol.iterator]: function *_iterateCollection() {
+            yield *this._iterator;
+        },
+        /*[Symbol.iterator]: function *iterateCollection() {
+         var count = 0;
+         while (count < this._data.length)
+         yield this._data[count];
+         },*/
+        _data: []
+    };
+
+    function *it() {
+        for (let item of this._data) {
+            yield item;
+        }
+    }
+
+    function dataHandler(func) {
+        func(this._data);
+        return this;
+    }
+
     var exsp = {
         createExpression: function _createExpression(field, operator, value, dataType) {
             this._expression = Object.create(booleanExpression).createNewExpression(field, value, operator, dataType);
@@ -63,7 +196,7 @@ var dataStore = (function _createDataStore() {
         createNewExpression: function _createNewExpression(field, value, operator, dataType) {
             var filterObject = Object.create(filterObj);
             this.conjunct = 'and';
-            if (typeof field === 'function') this.filterGroup = [].concat([filterObject.createFunctionExpression(field)]);
+            if (typeof field === 'function') this.filterGroup = Array.prototype.concat([filterObject.createFunctionExpression(field)]);
             else this.filterGroup = [].concat([filterObject.createTokenExpression(field, value, operator, dataType)]);
             return this;
         },
@@ -121,6 +254,28 @@ var dataStore = (function _createDataStore() {
         dataType: null
     };
 
+    function noop(item) { return item; }
+
+    function _if(predicate, fn, data) {
+        if (predicate(data))
+            return fn(data);
+        return data;
+    }
+
+    function wrap(data) {
+        return [data];
+    }
+
+    function isArray(data) {
+        return Array.isArray(data);
+    }
+
+    function not(fn) {
+        return function _not(item) {
+            return !fn(item);
+        }
+    }
+
     function createInstanceMethods(instanceId) {
         var instance = store[instanceId].instance;
 
@@ -138,14 +293,17 @@ var dataStore = (function _createDataStore() {
                     }
                     fields = fields.split(',');
                     if (data !== undefined && (typeof data === 'object' || typeof data === 'function')) {
-                        if (data.constructor !== Array) data = [data];
-                        data.forEach(function _selectFields(item) {
-                            var retObj = {};
-                            fields.forEach(function _getField(f) {
-                                retObj[f.trim()] = item[f.trim()];
+                        if (fields.length === 1 && fields[0].trim() === '*')
+                            retArr = data;
+                        else {
+                            _if(not(isArray), wrap, data).forEach(function _selectFields(item) {
+                                var retObj = {};
+                                fields.forEach(function _getField(f) {
+                                    retObj[f.trim()] = item[f.trim()];
+                                });
+                                retArr.push(retObj);
                             });
-                            retArr.push(retObj);
-                        });
+                        }
                     }
                     else retArr = undefined;
                     return retArr;
@@ -162,18 +320,17 @@ var dataStore = (function _createDataStore() {
                         }
                         fields = fields.split(',');
                         if (val !== undefined && (typeof val === 'object' || typeof val === 'function')) {
-                            if (val.constructor !== Array) val = [val];
-                            val.forEach(function _selectFields(item) {
-                                var retObj = {};
-                                if (fields.length === 1 && fields[0].trim() === '*')
-                                    retObj = item;
-                                else {
+                            if (fields.length === 1 && fields[0].trim() === '*')
+                                retArr = val;
+                            else {
+                                _if(not(isArray), wrap, val).forEach(function _selectFields(item) {
+                                    var retObj = {};
                                     fields.forEach(function _getField(f) {
                                         retObj[f.trim()] = item[f.trim()];
                                     });
-                                }
-                                retArr.push(retObj);
-                            });
+                                    retArr.push(retObj);
+                                });
+                            }
                         }
                         else retArr = undefined;
                         return retArr;
@@ -187,7 +344,12 @@ var dataStore = (function _createDataStore() {
                                 get: _selectData
                             },
                             'where': {
-                                value: where(internalSelect(fields), val, fields),
+                                value: where(val, [internalSelect(fields)]),
+                                writable: false,
+                                configurable: false
+                            },
+                            'distinct': {
+                                value: distinct(val, [internalSelect(fields)]),
                                 writable: false,
                                 configurable: false
                             }
@@ -199,8 +361,6 @@ var dataStore = (function _createDataStore() {
 
                     }
 
-                    function _noop() {}
-
                     var retObj = {};
                     return Object.defineProperties(
                         retObj, {
@@ -210,21 +370,171 @@ var dataStore = (function _createDataStore() {
                         }
                     );
                 },
-                where: function _where() {
-
-                }
+                where: where(val, [noop]),
+                groupBy: groupBy(val, [noop]),
+                distinct: distinct(val, [noop])
             };
         };
 
-        function where(selectFunc, fullData, fields) {
+        function distinct(data, funcs) {
+            return function _distinct(fields) {
+                data = _if(not(isArray), wrap, data);
+                var filterFunc;
+                if (typeof fields === 'function') {
+                    filterFunc = fields(data);
+                }
+                else if (typeof fields === 'string') {
+                    filterFunc = function _filterFunc() {
+                        fields = fields.split(',');
+                        var fieldStr = '',
+                            objMap = {};
+
+                        data.forEach(function _getKeys(item, idx) {
+                            fields.forEach(function _getValues(field) {
+                                fieldStr += item[field.trim()].toString();
+                            });
+                            if (!(fieldStr in objMap)) objMap[fieldStr] = idx;
+                            fieldStr = '';
+                        });
+
+                        return Object.keys(objMap).map(function _returnMappedData(key) {
+                            return data[objMap[key]];
+                        });
+                    }
+                }
+                else {
+                    filterFunc = function _filterFunc() {
+                        return data.filter(function _findUniques(item, idx) {
+                            return data.indexOf(item) === idx;
+                        });
+                    }
+                }
+
+                function _data() {
+                    return filterFunc(funcs.reduce(function _executePriorFuncs(allData, func) {
+                        return func(allData);
+                    }, data));
+                }
+
+                var retObj = {};
+                return Object.defineProperties(
+                    retObj, {
+                        'data': {
+                            get: _data
+                        }
+                    }
+                );
+            }
+        }
+
+        function groupBy(data, funcs) {
+            return function _groupBy(fields) {
+                data = _if(not(isArray), wrap, data);
+                function groupData() {
+                    var sortedData = sortData(funcs.reduce(function _executePriorFuncs(allData, func) {
+                        return func(allData);
+                    }, data), fields);
+
+                    var retData = [];
+
+                    sortedData.forEach(function _groupDataByField(item) {
+                        var grpArr = retData;
+                        fields.forEach(function _createGroupsByFields(field) {
+                            var group = findGroup(grpArr, item[field.key]);
+                            grpArr.push(group);
+                            grpArr = group[item[field.key]];
+                        });
+                        grpArr.push(item);
+                    });
+
+                    return retData;
+
+                    function sortData(data, fields) {
+                        var sortedData = data;
+                        fields.forEach(function _sortItems(field, index) {
+                            if (index === 0) sortedData = mergeSort(data, field.key, field.direction, field.dataType);
+                            else {
+                                var sortedSubData = [],
+                                    itemsToSort = [];
+                                sortedData.forEach(function _sortData(item, idx) {
+                                    var prevField = fields[index - 1],
+                                        prevVal = itemsToSort.length ? itemsToSort[0][prevField] : null;
+                                    if (!itemsToSort.length || comparator(dataTypeValueNormalizer(field.dataType, prevVal), dataTypeValueNormalizer(field.dataType, sortedData[idx][prevField]), 'eq'))
+                                        itemsToSort.push(item);
+                                    else {
+                                        if (itemsToSort.length === 1) sortedSubData = sortedSubData.concat(itemsToSort);
+                                        else sortedSubData = sortedSubData.concat(mergeSort(itemsToSort, field.key, field.direction, field.dataType));
+                                        sortedSubData.length = 0;
+                                        sortedSubData.push(sortedData[idx]);
+                                    }
+                                    if (idx === sortedData.length - 1)
+                                        sortedSubData = sortedSubData.concat(mergeSort(itemsToSort, sortedSubData[idx], field.dataType));
+                                });
+                                sortedData = sortedSubData;
+                            }
+                        });
+                        return sortedData;
+                    }
+
+                    function mergeSort(data, field, direction, dataType) {
+                        if (data.length < 2) return data;
+                        var middle = parseInt(data.length / 2);
+                        return merge(mergeSort(data.slice(0, middle), field, direction, dataType), mergeSort(data.slice(middle, data.length), field, direction, dataType), field, direction, dataType);
+                    }
+
+                    function merge(left, right, field, direction, dataType) {
+                        if (!left.length) return right;
+                        if (!right.length) return left;
+
+                        var operator = direction === 'asc' ? 'lte' : 'gte';
+                        if (comparator(dataTypeValueNormalizer(dataType || typeof left[0][field], left[0][field]), dataTypeValueNormalizer(dataType || typeof right[0][field], right[0][field]), operator))
+                            return [[cloneGridData(left[0]), left[1]]].concat(merge(left.slice(1, left.length), right, field, direction, dataType));
+                        else  return [[cloneGridData(right[0]), right[1]]].concat(merge(left, right.slice(1, right.length), field, direction, dataType));
+                    }
+                }
+
+                var retObj = {};
+                return Object.defineProperties(
+                    retObj, {
+                        'data': {
+                            get: groupData
+                        }
+                    }
+                );
+
+                function findGroup(arr, field) {
+                    var grp;
+                    if (arr.some(function _findGroup(group) {
+                            if (group[field]) {
+                                grp = group;
+                                return true;
+                            }
+                        }))
+                        return grp;
+                    else {
+                        grp = {};
+                        grp[field] = [];
+                        return grp;
+                    }
+                }
+            }
+        }
+
+        function where(data, funcs) {
             return function _where(field, operator, value) {
+                data = _if(not(isArray), wrap, data);
                 var filterExpression = exsp.isPrototypeOf(field) ? field : Object.create(exsp).createExpression(field, operator, value);
 
                 function _data() {
-                    var data = expressionParser.createFilterTreeFromFilterObject(filterExpression._expression).filterCollection(fullData);
-                    return selectFunc(data.filteredDataMap.map(function _getFilteredMatches(item) {
-                        return fullData[item];
-                    }));
+                    var curData = funcs.reduce(function _executePriorFuncs(allData, func) {
+                        return func(allData);
+                    }, data);
+
+                    return expressionParser.createFilterTreeFromFilterObject(filterExpression._expression)
+                        .filterCollection(curData)
+                        .filteredDataMap.map(function _getFilteredMatches(item) {
+                            return curData[item];
+                        });
                 }
 
                 function filterAppend(conjunct) {
@@ -266,6 +576,11 @@ var dataStore = (function _createDataStore() {
                                     value: filterAppend('xor'),
                                     writable: false,
                                     configurable: false
+                                },
+                                'distinct': {
+                                    value: distinct(data, funcs),
+                                    writable: false,
+                                    configurable: false
                                 }
                             }
                         );
@@ -305,6 +620,11 @@ var dataStore = (function _createDataStore() {
                         },
                         'xor': {
                             value: filterAppend('xor'),
+                            writable: false,
+                            configurable: false
+                        },
+                        'distinct': {
+                            value: distinct(data, funcs),
                             writable: false,
                             configurable: false
                         }
