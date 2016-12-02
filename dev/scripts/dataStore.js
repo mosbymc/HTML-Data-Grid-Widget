@@ -95,13 +95,13 @@ var dataStore = (function _createDataStore() {
         select: function _select(fields) {
             function _select_(data) {
                 var retArr = [];
-                if (typeof fields !== 'string') return _if(not(isArray), wrap, data);
+                if (typeof fields !== 'string') return data = ifElse(not(isArray), wrap, identity, data);;
                 fields = fields.split(',');
                 if (data !== undefined && (typeof data === 'object' || typeof data === 'function')) {
                     if (fields.length === 1 && fields[0].trim() === '*')
                         retArr = data;
                     else {
-                        _if(not(isArray), wrap, data).forEach(function _selectFields(item) {
+                        ifElse(not(isArray), wrap, identity, data).forEach(function _selectFields(item) {
                             var retObj = {};
                             fields.forEach(function _getField(f) {
                                 retObj[f.trim()] = item[f.trim()];
@@ -113,7 +113,7 @@ var dataStore = (function _createDataStore() {
                 else retArr = undefined;
                 return retArr;
             }
-            return Object.create(queryable).init(this._data, this._funcs.concat[_select_]);
+            return Object.create(queryable)._init(this._data, this._funcs.concat[_select_]);
         },
         insert: function _insert(values) {
             function _insertData() {
@@ -133,7 +133,7 @@ var dataStore = (function _createDataStore() {
             var filterExpression = exsp.isPrototypeOf(field) ? field : Object.create(exsp).createExpression(field, operator, value);
 
             function _data(data) {
-                data = _if(not(isArray), wrap, data);
+                data = ifElse(not(isArray), wrap, identity, data);
                 return expressionParser.createFilterTreeFromFilterObject(filterExpression._expression)
                     .filterCollection(data)
                     .filteredDataMap.map(function _getFilteredMatches(item) {
@@ -224,12 +224,8 @@ var dataStore = (function _createDataStore() {
         },
         groupBy: function _groupBy(fields) {
             function groupData(data) {
-                data = _if(not(isArray), wrap, data);
-                var sortedData = sortData(funcs.reduce(function _executePriorFuncs(allData, func) {
-                    return func(allData);
-                }, data), fields);
-
-                var retData = [];
+                var sortedData = sortData(ifElse(not(isArray), wrap, identity, data), fields),
+                    retData = [];
 
                 sortedData.forEach(function _groupDataByField(item) {
                     var grpArr = retData;
@@ -312,7 +308,7 @@ var dataStore = (function _createDataStore() {
             }
             else if (typeof fields === 'string') {
                 filterFunc = function _filterFunc(data) {
-                    data = _if(not(isArray), wrap, data);
+                    data = ifElse(not(isArray), wrap, identity, data);
                     fields = fields.split(',');
                     var fieldStr = '',
                         objMap = {};
@@ -332,7 +328,7 @@ var dataStore = (function _createDataStore() {
             }
             else {
                 filterFunc = function _filterFunc(data) {
-                    data =  _if(isArray, wrap, data);
+                    data = ifElse(not(isArray), wrap, identity, data);
                     return data.filter(function _findUniques(item, idx) {
                         return data.indexOf(item) === idx;
                     });
@@ -527,19 +523,12 @@ var dataStore = (function _createDataStore() {
         dataType: null
     };
 
-    function identity(item) { return item; };
-
-    function _if(predicate, fn, data) {
-        if (predicate(data))
-            return fn(data);
-        return data;
-    }
+    function identity(item) { return item; }
 
     function ifElse(predicate, ifFunc, elseFunc, data) {
-        var ifData = _if(predicate, ifFunc, data);
-        if (data === ifData)
-            return elseFunc(data);
-        return ifData;
+        if (predicate(data))
+            return ifFunc(data);
+        return elseFunc(data);
     }
 
     function wrap(data) {
