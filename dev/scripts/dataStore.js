@@ -1,3 +1,7 @@
+
+
+//https://jsfiddle.net/jmitchell/zwtn1tdu/
+
 var dataStore = (function _createDataStore() {
     var store = {},
         _dataStore = {
@@ -28,22 +32,22 @@ var dataStore = (function _createDataStore() {
         //TODO: not sure that this should be kept in here as is - gives too much control over the internal state
         //TODO: of the object to the user
         forEach: function _forEach(callback, context) {
-            return dataHandler.bind(Object.create(queryable)._init(this._data))(function _forEachThunk(data) { return data.forEach(callback, context); });
+            return dataHandler.bind(Object.create(queryable)._init(this._data, this._funcs))(function _forEachThunk(data) { return data.forEach(callback, context); });
         },
         map: function _map(callback, context) {
-            return dataHandler.bind(Object.create(queryable)._init(this._data))(function _mapThunk(data) { return data.map(callback, context); });
+            return dataHandler.bind(Object.create(queryable)._init(this._data, this._funcs))(function _mapThunk(data) { return data.map(callback, context); });
         },
         reduce: function _reduce(callback, initial) {
-            return dataHandler.bind(Object.create(queryable)._init(this._data))(function _reduceThunk(data) { return data.reduce(callback, initial); });
+            return dataHandler.bind(Object.create(queryable)._init(this._data, this._funcs))(function _reduceThunk(data) { return data.reduce(callback, initial); });
         },
         reduceRight: function _reduceRight(callback, initial) {
-            return dataHandler.bind(Object.create(queryable).init(this._data))(function _reduceRightThunk(data) { return data.reduceRight(callback, initial); });
+            return dataHandler.bind(Object.create(queryable).init(this._data, this._funcs))(function _reduceRightThunk(data) { return data.reduceRight(callback, initial); });
         },
         filter: function _filter(callback, context) {
-            return dataHandler.bind(Object.create(queryable)._init(this._data))(function _filterThunk(data) { return data.filter(callback, context); });
+            return dataHandler.bind(Object.create(queryable)._init(this._data, this._funcs))(function _filterThunk(data) { return data.filter(callback, context); });
         },
         reverse: function _reverse() {
-            return dataHandler.bind(Object.create(queryable)._init(this._data))(Array.prototype.reverse);
+            return dataHandler.bind(Object.create(queryable)._init(this._data, this._funcs))(Array.prototype.reverse);
         },
         some: function _some(callback, context) {
             return this._data.some(callback, context);
@@ -113,7 +117,8 @@ var dataStore = (function _createDataStore() {
                 else retArr = undefined;
                 return retArr;
             }
-            return Object.create(queryable)._init(this._data, this._funcs.concat[_select_]);
+            var ret = Object.create(queryable);
+            return ret._init(this._data, this._funcs.concat([_select_]));
         },
         insert: function _insert(values) {
             function _insertData() {
@@ -134,11 +139,12 @@ var dataStore = (function _createDataStore() {
 
             function _data(data) {
                 data = ifElse(not(isArray), wrap, identity, data);
-                return expressionParser.createFilterTreeFromFilterObject(filterExpression._expression)
-                    .filterCollection(data)
-                    .filteredDataMap.map(function _getFilteredMatches(item) {
-                        return data[item];
-                    });
+                var expressionTree = expressionParser.createFilterTreeFromFilterObject(filterExpression._expression),
+                    retData = [];
+                for (var item of this) {
+                    retData = retData.concat(expressionTree.filterCollection(wrap(item)).filteredData);
+                }
+                return retData;
             }
 
             function filterAppend(conjunct) {
@@ -148,7 +154,8 @@ var dataStore = (function _createDataStore() {
                     //here we don't want the last filter 'data func' in the list of data funcs since we're just appending expressions to
                     //an already existing filter tree; otherwise we'd run each filter func n - x - 1 times
                     //where n = total number of where filters, x = the index of the current where filter within collection
-                    var retObj = Object.create(queryable)._init(this._data, this._funcs.slice(0, this._funcs.length - 1).concat()[_data]);
+                    var retObj = Object.create(queryable);
+                    retObj._init(this._data, this._funcs.slice(0, this._funcs.length - 1).concat([_data]));
                     return Object.defineProperties(
                         retObj, {
                             'and': {
@@ -186,7 +193,8 @@ var dataStore = (function _createDataStore() {
                 }
             }
 
-            var retObj = Object.create(queryable)._init(this._data, this._funcs.concat([_data]));
+            var retObj = Object.create(queryable);
+            retObj._init(this._data, this._funcs.concat([_data]));
             return Object.defineProperties(
                 retObj, {
                     'and': {
@@ -299,7 +307,8 @@ var dataStore = (function _createDataStore() {
                 }
             }
 
-            return Object.create(queryable)._init(this._data, this._funcs.concat([groupData]));
+            var ret = Object.create(queryable);
+            return ret._init(this._data, this._funcs.concat([groupData]));
         },
         distinct: function _distinct(fields) {
             var filterFunc;
@@ -335,11 +344,17 @@ var dataStore = (function _createDataStore() {
                 }
             }
 
-            return Object.create(queryable)._init(this._data, this.funcs.concat([filterFunc]));
+            var ret = Object.create(queryable);
+            return ret._init(this._data, this._funcs.concat([filterFunc]));
         },
         flatten: function _flatten() {
+            return this.flattenN();
+        },
+        flattenN: function _flattenN(n) {
             //TODO: this won't work because I need access to the new queryable's data...
             //TODO: ... I also need to apply "_if(not(isArray), wrap, data)" to the queryable's data beforehand
+            var retObj = Object.create(queryable);
+            retObj._init(this._data, this._funcs.concat([flattenData]));
             return dataHandler.bind(Object.create(queryable)._init(this._data))(function _flattenDataThunk(data) { return flattenData(data); });
             function turnObjectsIntoArrays(data) {
                 if (Object.keys(data).every(function _isMadeOfArrays(key) {
@@ -376,9 +391,17 @@ var dataStore = (function _createDataStore() {
             return addGetter(this);
         },
         _getData: function _getData() {
-            return this._funcs.reduce(function _executePriorFuncs(allData, func) {
-                return func(allData);
-            }, this._data)
+            //Need to bind the function that's being passed to Array.prototype.reduce here
+            //because otherwise the context inside each func will be the realm and no
+            //the current context outside of the reducer.
+
+            var reducerFunc = function _executePriorFuncs(allData, func) {
+                this._data = func.call(this, allData);
+                return this._data;
+            };
+            reducerFunc = reducerFunc.bind(this);
+            return this._funcs.reduce(reducerFunc, this._data);
+
         },
         take: function *_take() {
             let index = -1;
@@ -403,7 +426,7 @@ var dataStore = (function _createDataStore() {
         return Object.defineProperty(
             obj,
             'data', {
-                get: this._getData
+                get: obj._getData
             }
         );
     }
@@ -418,10 +441,6 @@ var dataStore = (function _createDataStore() {
         func(this._data);
         return this;
     }
-
-    var enumerable = {
-
-    };
 
     var exsp = {
         createExpression: function _createExpression(field, operator, value, dataType) {
@@ -554,7 +573,13 @@ var dataStore = (function _createDataStore() {
                 return prev[curr];
             });
 
-            return Object.create(queryable)._init(val, [identity]);
+            var ret = Object.create(queryable);
+            return ret._init(val, [identity]);
+        };
+
+        instance.insert = function _insert(item) {
+            var ret = Object.create(queryable);
+            return ret._init(item);
         };
     }
 
@@ -711,6 +736,7 @@ var expressionParser = (function _expressionParser() {
         return this;
     };
     booleanExpressionTree.filterCollection = function _filterCollection(collection) {
+        this.rootNode._value = null;
         var dataMap = [];
         this.collection = collection;
         return {
