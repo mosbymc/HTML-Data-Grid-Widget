@@ -91,10 +91,7 @@ var dataStore = (function _createDataStore() {
             return this._data.map(function _shallowCloner(item) { return item; });
         },
         toSet: function _toSet() {
-
-        },
-        toMap: function _toMap() {
-
+            return new Set(this._data);
         },
         select: function _select(fields) {
             function _select_(data) {
@@ -119,7 +116,7 @@ var dataStore = (function _createDataStore() {
             }
             return createNewQueryableInstance(this.data, this._funcs.concat([_select_]));
         },
-        insertInto: function _insertInto(values) {
+        insertInto: function _insertInto(namespace) {
             function _insertDataInto() {
 
             }
@@ -230,6 +227,7 @@ var dataStore = (function _createDataStore() {
         },
         groupBy: function _groupBy(fields) {
             function groupData(data) {
+                fields = Array.isArray(fields) ? fields : fields.split(',').map(function _trimmer(field) { return field.trim(); });
                 var sortedData = sortData(ifElse(not(isArray), wrap, identity, data), fields),
                     retData = [];
 
@@ -237,7 +235,7 @@ var dataStore = (function _createDataStore() {
                     var grpArr = retData;
                     fields.forEach(function _createGroupsByFields(field) {
                         var group = findGroup(grpArr, item[field.key]);
-                        grpArr.push(group);
+                        if (!grpArr.includes(group)) grpArr.push(group);
                         grpArr = group[item[field.key]];
                     });
                     grpArr.push(item);
@@ -284,8 +282,8 @@ var dataStore = (function _createDataStore() {
 
                     var operator = direction === 'asc' ? 'lte' : 'gte';
                     if (comparator(dataTypeValueNormalizer(dataType || typeof left[0][field], left[0][field]), dataTypeValueNormalizer(dataType || typeof right[0][field], right[0][field]), operator))
-                        return [[cloneGridData(left[0]), left[1]]].concat(merge(left.slice(1, left.length), right, field, direction, dataType));
-                    else  return [[cloneGridData(right[0]), right[1]]].concat(merge(left, right.slice(1, right.length), field, direction, dataType));
+                        return [cloneGridData(left[0])].concat(merge(left.slice(1, left.length), right, field, direction, dataType));
+                    else  return [cloneGridData(right[0])].concat(merge(left, right.slice(1, right.length), field, direction, dataType));
                 }
 
                 function findGroup(arr, field) {
@@ -310,7 +308,7 @@ var dataStore = (function _createDataStore() {
         distinct: function _distinct(fields) {
             var filterFunc;
             if (typeof fields === 'function') {
-                filterFunc = fields(this._getData);
+                filterFunc = fields;
             }
             else if (typeof fields === 'string') {
                 filterFunc = function _filterFunc(data) {
@@ -344,15 +342,15 @@ var dataStore = (function _createDataStore() {
             return createNewQueryableInstance(this.data, this._funcs.concat([filterFunc]));
         },
         flatten: function _flatten() {
-            return this.flattenN();
+            return createNewQueryableInstance(this._data, this._funcs.concat([]));
+
+            function flattenData(data) {
+                data = ifElse(not(isArray), wrap, identity, data);
+                return Array.prototype.concat.apply([], data);
+            }
         },
-        flattenN: function _flattenN(n) {
-            //TODO: this won't work because I need access to the new queryable's data...
-            //TODO: ... I also need to apply "_if(not(isArray), wrap, data)" to the queryable's data beforehand
-            var retObj = createNewQueryableInstance(this.data, this._funcs.concat([flattenData]));
-            //var retObj = Object.create(queryable);
-            //retObj._init(this._data, this._funcs.concat([flattenData]));
-            return dataHandler.bind(Object.create(queryable)._init(this._data))(function _flattenDataThunk(data) { return flattenData(data); });
+        deepFlatten: function _deepFlatten() {
+            return createNewQueryableInstance(this.data, this._funcs.concat([flattenData]));
             function turnObjectsIntoArrays(data) {
                 if (Object.keys(data).every(function _isMadeOfArrays(key) {
                         return Array.isArray(data[key]);
@@ -381,13 +379,6 @@ var dataStore = (function _createDataStore() {
                 }));
             }
         },
-        _init: function _init_(data, funcs) {
-            this._data = data;
-            this._dataComputed = false;
-            this._funcs = funcs || [identity];
-            this._iterator = it.bind(this)();
-            return addGetter(this);
-        },
         _getData: function _getData() {
             //Need to bind the function that's being passed to Array.prototype.reduce here
             //because otherwise the context inside each func will be the realm and no
@@ -414,18 +405,21 @@ var dataStore = (function _createDataStore() {
         },
         [Symbol.iterator]: function *_iterateCollection() {
             yield *this._iterator;
-        },
+        }
         /*[Symbol.iterator]: function *iterateCollection() {
          var count = 0;
          while (count < this._data.length)
          yield this._data[count];
          },*/
-        _data: []
     };
 
     function createNewQueryableInstance(data, funcs) {
         var obj = Object.create(queryable);
-        return obj._init(data, funcs);
+        obj._data = data;
+        obj._dataComputed = false;
+        obj._funcs = funcs;
+        obj._iterator = it.bind(obj)();
+        return addGetter(obj);
     }
 
     //Should a call to .data mutate the current obj's data, or only find the existing data and return it?
@@ -591,13 +585,11 @@ var dataStore = (function _createDataStore() {
                 return prev[curr];
             });
 
-            var ret = Object.create(queryable);
-            return ret._init(val, [identity]);
+            return createNewQueryableInstance(val, [identity]);
         };
 
         instance.insert = function _insert(item) {
-            var ret = Object.create(queryable);
-            return ret._init(item);
+            return createNewQueryableInstance(item, [identity]);
         };
     }
 
