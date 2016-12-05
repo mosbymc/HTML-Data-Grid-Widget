@@ -24,7 +24,7 @@ var dataStore = (function _createDataStore() {
                 }
             },
             from: function _from(data) {
-                return Object.create(queryable)._init(data, [identity]);
+                return createNewQueryableInstance(data, [identity]);
             }
         };
 
@@ -99,7 +99,7 @@ var dataStore = (function _createDataStore() {
         select: function _select(fields) {
             function _select_(data) {
                 var retArr = [];
-                if (typeof fields !== 'string') return data = ifElse(not(isArray), wrap, identity, data);;
+                if (typeof fields !== 'string') return data = ifElse(not(isArray), wrap, identity, data);
                 fields = fields.split(',');
                 if (data !== undefined && (typeof data === 'object' || typeof data === 'function')) {
                     if (fields.length === 1 && fields[0].trim() === '*')
@@ -117,22 +117,20 @@ var dataStore = (function _createDataStore() {
                 else retArr = undefined;
                 return retArr;
             }
-            var ret = Object.create(queryable);
-            return ret._init(this._data, this._funcs.concat([_select_]));
+            return createNewQueryableInstance(this.data, this._funcs.concat([_select_]));
         },
-        insert: function _insert(values) {
-            function _insertData() {
+        insertInto: function _insertInto(values) {
+            function _insertDataInto() {
 
             }
+            var data = this._data;
 
-            var retObj = Object.create(queryable)._init(this._data, this._funcs.concat([identity]));
-            return Object.defineProperties(
-                retObj, {
-                    'data': {
+            var val = [store[instanceId].state].concat(namespace.split('.')).reduce(function _findProperty(prev, curr) {
+                if (typeof prev[curr] !== 'object' && typeof prev[curr] !== 'function') return false;
+                return prev[curr];
+            });
 
-                    }
-                }
-            );
+            return createNewQueryableInstance(this.data, this._funcs.concat([_insertDataInto]));
         },
         where: function _where(field, operator, value) {
             var filterExpression = exsp.isPrototypeOf(field) ? field : Object.create(exsp).createExpression(field, operator, value);
@@ -140,9 +138,11 @@ var dataStore = (function _createDataStore() {
             function _data(data) {
                 data = ifElse(not(isArray), wrap, identity, data);
                 var expressionTree = expressionParser.createFilterTreeFromFilterObject(filterExpression._expression),
-                    retData = [];
+                    retData = [],
+                    idx = 0;
                 for (var item of this) {
-                    retData = retData.concat(expressionTree.filterCollection(wrap(item)).filteredData);
+                    retData = retData.concat(expressionTree.filterCollection(wrap(item), idx).filteredData);
+                    ++idx;
                 }
                 return retData;
             }
@@ -154,8 +154,7 @@ var dataStore = (function _createDataStore() {
                     //here we don't want the last filter 'data func' in the list of data funcs since we're just appending expressions to
                     //an already existing filter tree; otherwise we'd run each filter func n - x - 1 times
                     //where n = total number of where filters, x = the index of the current where filter within collection
-                    var retObj = Object.create(queryable);
-                    retObj._init(this._data, this._funcs.slice(0, this._funcs.length - 1).concat([_data]));
+                    var retObj = createNewQueryableInstance(this.data, this._funcs.concat([_data]));
                     return Object.defineProperties(
                         retObj, {
                             'and': {
@@ -193,8 +192,7 @@ var dataStore = (function _createDataStore() {
                 }
             }
 
-            var retObj = Object.create(queryable);
-            retObj._init(this._data, this._funcs.concat([_data]));
+            var retObj = createNewQueryableInstance(this.data, this._funcs.concat([_data]));
             return Object.defineProperties(
                 retObj, {
                     'and': {
@@ -307,8 +305,7 @@ var dataStore = (function _createDataStore() {
                 }
             }
 
-            var ret = Object.create(queryable);
-            return ret._init(this._data, this._funcs.concat([groupData]));
+            return createNewQueryableInstance(this.data, this._funcs.concat([groupData]));
         },
         distinct: function _distinct(fields) {
             var filterFunc;
@@ -344,8 +341,7 @@ var dataStore = (function _createDataStore() {
                 }
             }
 
-            var ret = Object.create(queryable);
-            return ret._init(this._data, this._funcs.concat([filterFunc]));
+            return createNewQueryableInstance(this.data, this._funcs.concat([filterFunc]));
         },
         flatten: function _flatten() {
             return this.flattenN();
@@ -353,8 +349,9 @@ var dataStore = (function _createDataStore() {
         flattenN: function _flattenN(n) {
             //TODO: this won't work because I need access to the new queryable's data...
             //TODO: ... I also need to apply "_if(not(isArray), wrap, data)" to the queryable's data beforehand
-            var retObj = Object.create(queryable);
-            retObj._init(this._data, this._funcs.concat([flattenData]));
+            var retObj = createNewQueryableInstance(this.data, this._funcs.concat([flattenData]));
+            //var retObj = Object.create(queryable);
+            //retObj._init(this._data, this._funcs.concat([flattenData]));
             return dataHandler.bind(Object.create(queryable)._init(this._data))(function _flattenDataThunk(data) { return flattenData(data); });
             function turnObjectsIntoArrays(data) {
                 if (Object.keys(data).every(function _isMadeOfArrays(key) {
@@ -386,6 +383,7 @@ var dataStore = (function _createDataStore() {
         },
         _init: function _init_(data, funcs) {
             this._data = data;
+            this._dataComputed = false;
             this._funcs = funcs || [identity];
             this._iterator = it.bind(this)();
             return addGetter(this);
@@ -400,7 +398,10 @@ var dataStore = (function _createDataStore() {
                 return this._data;
             };
             reducerFunc = reducerFunc.bind(this);
-            return this._funcs.reduce(reducerFunc, this._data);
+            var data = this._funcs.reduce(reducerFunc, this._data);
+            this._dataComputed = true;
+            this._funcs = [identity];
+            return data;
 
         },
         take: function *_take() {
@@ -422,11 +423,28 @@ var dataStore = (function _createDataStore() {
         _data: []
     };
 
+    function createNewQueryableInstance(data, funcs) {
+        var obj = Object.create(queryable);
+        return obj._init(data, funcs);
+    }
+
+    //Should a call to .data mutate the current obj's data, or only find the existing data and return it?
+    //If it mutates the existing object's data, then I'd need to remove all existing 'funcs' from the array and
+    //let it start fresh. The good thing about this approach is that once data is called, if a consumer later
+    //appends more mutating functions to it, the functions that were run up to the point of getting the data
+    //wouldn't need to be run again.
+
+    //I also should add a flag that is checked whenever .data is called. If set, then data is set, otherwise,
+    //I need to calculate it.
     function addGetter(obj) {
         return Object.defineProperty(
             obj,
             'data', {
-                get: obj._getData
+                get: function _data() {
+                    if (!this._dataComputed)
+                        return this._getData();
+                    return this._data;
+                }
             }
         );
     }
@@ -735,16 +753,18 @@ var expressionParser = (function _expressionParser() {
             this.rootNode.addChildren(this.queue);
         return this;
     };
-    booleanExpressionTree.filterCollection = function _filterCollection(collection) {
+    booleanExpressionTree.filterCollection = function _filterCollection(collection, startingIdx) {
         this.rootNode._value = null;
         var dataMap = [];
         this.collection = collection;
+        startingIdx = startingIdx || 0;
         return {
-            filteredData: collection.filter(function collectionFilter(curr, idx) {
+            filteredData: collection.filter(function collectionFilter(curr) {
                 this.context = curr;
-                this.collectionIndex = idx;
+                this.collectionIndex = startingIdx;
                 var isTrue = this.rootNode.evaluate();
-                if (isTrue) dataMap.push(idx);
+                if (isTrue) dataMap.push(startingIdx);
+                ++startingIdx;
                 return this.rootNode.value;
             }, this),
             filteredDataMap: dataMap
