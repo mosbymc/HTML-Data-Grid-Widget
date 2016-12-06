@@ -98,8 +98,7 @@ var dataStore = (function _createDataStore() {
             return createNewQueryableInstance(this.data, this._funcs.concat([_insertDataInto]));
         },
         where: function _where(field, operator, value) {
-            var filterExpression = exsp.isPrototypeOf(field) ? field : Object.create(exsp).createExpression(field, operator, value),
-                expressionTree;
+            var filterExpression = exsp.isPrototypeOf(field) ? field : Object.create(exsp).createExpression(field, operator, value);
 
             function _filterData(data) {
                 return expressionParser.createFilterTreeFromFilterObject(filterExpression._expression)
@@ -200,6 +199,23 @@ var dataStore = (function _createDataStore() {
                     }
                 }
             );
+        },
+        join: function _join(outer, inner, projector, comparer, collection) {
+            comparer = comparer || defaultEqualityComparer;
+            return createNewQueryableInstance(this._data, this._funcs.concat([_joinData]));
+
+            function _joinData(data) {
+                return Array.prototype.concat.apply([],
+                    ifElse(not(isArray), wrap, identity, data)
+                        .map(function (t) {
+                            return collection.filter(function (u) {
+                                return comparer(outer(t), inner(u));
+                            })
+                                .map(function (u) {
+                                    return result(t, u);
+                                });
+                        }));
+            }
         },
         groupBy: function _groupBy(fields) {
             function groupData(data) {
@@ -351,7 +367,7 @@ var dataStore = (function _createDataStore() {
                 data = ifElse(not(isArray), wrap, identity, data);
                 return [].concat.apply([], dataFlattener(data).map(function _flattenData(item) {
                     if (Array.isArray(item))
-                        return flattenData(item);
+                        return deepFlattenData(item);
                     return item;
                 }));
             }
@@ -398,6 +414,10 @@ var dataStore = (function _createDataStore() {
         [Symbol.iterator]: function *_iterateCollection() {
             yield *this._iterator;
         }
+    };
+
+    var defaultEqualityComparer = function _defaultEqualityComparer(a, b) {
+        return a === b;
     };
 
     function createNewQueryableInstance(data, funcs) {
