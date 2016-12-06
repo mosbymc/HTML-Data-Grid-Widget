@@ -55,38 +55,6 @@ var dataStore = (function _createDataStore() {
         every: function _every(callback, context) {
             return this._data.every(callback, context);
         },
-        /*take: function *_take(amount = 1) {
-         if (!amount) return;    //TODO: should this return empty array or undefined?
-         var idx = 0;
-         for (let i of this._data) {
-         yield i;
-         if (++i === amount) break;
-         }
-
-         function* takeIterator(xs, n) {
-         if (n === 0) return;
-         let i = 0;
-         for (let x of xs) {
-         yield x;
-         if (++i === n) break;
-         }
-         }
-
-         var iterator = function(a, n) {
-         var current = 0,
-         l = a.length;
-         return function() {
-         end = current + n;
-         var part = a.slice(current,end);
-         if(end > l) {
-         end = end % l;
-         part = part.concat(a.slice(0, end));
-         }
-         current = end;
-         return part;
-         };
-         };
-         },*/
         toArray: function _toArray() {
             return this._data.map(function _shallowCloner(item) { return item; });
         },
@@ -130,18 +98,26 @@ var dataStore = (function _createDataStore() {
             return createNewQueryableInstance(this.data, this._funcs.concat([_insertDataInto]));
         },
         where: function _where(field, operator, value) {
-            var filterExpression = exsp.isPrototypeOf(field) ? field : Object.create(exsp).createExpression(field, operator, value);
+            var filterExpression = exsp.isPrototypeOf(field) ? field : Object.create(exsp).createExpression(field, operator, value),
+                expressionTree;
 
-            function _data(data) {
-                data = ifElse(not(isArray), wrap, identity, data);
-                var expressionTree = expressionParser.createFilterTreeFromFilterObject(filterExpression._expression),
-                    retData = [],
-                    idx = 0;
-                for (var item of this) {
-                    retData = retData.concat(expressionTree.filterCollection(wrap(item), idx).filteredData);
-                    ++idx;
-                }
-                return retData;
+            function _filterData(data) {
+                return expressionParser.createFilterTreeFromFilterObject(filterExpression._expression)
+                    .filterCollection(data)
+                    .filteredDataMap.map(function _getFilteredMatches(item) {
+                        return data[item];
+                    });
+
+                /*data = ifElse(not(isArray), wrap, identity, data);
+                 if (expressionTree == null)
+                 expressionTree = expressionParser.createFilterTreeFromFilterObject(filterExpression._expression);
+                 var retData = [],
+                 idx = 0;
+                 for (var item of this) {
+                 retData = retData.concat(expressionTree.filterCollection(wrap(item), idx).filteredData);
+                 ++idx;
+                 }
+                 return retData;*/
             }
 
             function filterAppend(conjunct) {
@@ -151,7 +127,7 @@ var dataStore = (function _createDataStore() {
                     //here we don't want the last filter 'data func' in the list of data funcs since we're just appending expressions to
                     //an already existing filter tree; otherwise we'd run each filter func n - x - 1 times
                     //where n = total number of where filters, x = the index of the current where filter within collection
-                    var retObj = createNewQueryableInstance(this.data, this._funcs.concat([_data]));
+                    var retObj = createNewQueryableInstance(this.data, this._funcs.concat([_filterData]));
                     return Object.defineProperties(
                         retObj, {
                             'and': {
@@ -189,7 +165,7 @@ var dataStore = (function _createDataStore() {
                 }
             }
 
-            var retObj = createNewQueryableInstance(this.data, this._funcs.concat([_data]));
+            var retObj = createNewQueryableInstance(this.data, this._funcs.concat([_filterData]));
             return Object.defineProperties(
                 retObj, {
                     'and': {
@@ -342,7 +318,7 @@ var dataStore = (function _createDataStore() {
             return createNewQueryableInstance(this.data, this._funcs.concat([filterFunc]));
         },
         flatten: function _flatten() {
-            return createNewQueryableInstance(this._data, this._funcs.concat([]));
+            return createNewQueryableInstance(this._data, this._funcs.concat([flattenData]));
 
             function flattenData(data) {
                 data = ifElse(not(isArray), wrap, identity, data);
@@ -350,7 +326,7 @@ var dataStore = (function _createDataStore() {
             }
         },
         deepFlatten: function _deepFlatten() {
-            return createNewQueryableInstance(this.data, this._funcs.concat([flattenData]));
+            return createNewQueryableInstance(this.data, this._funcs.concat([deepFlattenData]));
             function turnObjectsIntoArrays(data) {
                 if (Object.keys(data).every(function _isMadeOfArrays(key) {
                         return Array.isArray(data[key]);
@@ -371,7 +347,8 @@ var dataStore = (function _createDataStore() {
                 });
             }
 
-            function flattenData(data) {
+            function deepFlattenData(data) {
+                data = ifElse(not(isArray), wrap, identity, data);
                 return [].concat.apply([], dataFlattener(data).map(function _flattenData(item) {
                     if (Array.isArray(item))
                         return flattenData(item);
@@ -383,9 +360,8 @@ var dataStore = (function _createDataStore() {
             //Need to bind the function that's being passed to Array.prototype.reduce here
             //because otherwise the context inside each func will be the realm and no
             //the current context outside of the reducer.
-
-            var reducerFunc = function _executePriorFuncs(allData, func) {
-                this._data = func.call(this, allData);
+            var reducerFunc = function _executePriorFuncs(data, func) {
+                this._data = func.call(this, data);
                 return this._data;
             };
             reducerFunc = reducerFunc.bind(this);
@@ -394,23 +370,34 @@ var dataStore = (function _createDataStore() {
             this._funcs = [identity];
             return data;
 
+            //var data = this.take(this._data.length);
+            //return data;
         },
-        take: function *_take() {
-            let index = -1;
-            for (let value of this._iterator) {
-                if (++index >= count)
-                    break;
-                yield value;
-            }
+        take: function *_take(amt = 1) {
+            if (!amt) return;
+            if (!this._dataComputed)
+                this._getData();
+            //var data = Array.from(_takeGenerator(this, _reduceGenerator(this._data, this._funcs), amt));
+            //return createNewQueryableInstance(data, [identity]);
+            return createNewQueryableInstance(Array.from(_takeGenerator(_iterator(this._data), amt)), [identity]);
+            /*let index = -1;
+             for (let value of this._iterator) {
+             if (++index >= count)
+             break;
+             yield value;
+             }*/
+        },
+        takeWhile: function *_takeWhile(predicate, amt = 1) {
+            if (!amt) return;
+            if (!this._dataComputed)
+                this._getData();
+            //var data = Array.from(_takeWhileGenerator(this, predicate, _reduceGenerator(this._data, this._funcs), amt));
+            //return createNewQueryableInstance(data, [identity]);
+            return createNewQueryableInstance(Array.from(_takeWhileGenerator(predicate, _iterator(this._data), amt)), [identity]);
         },
         [Symbol.iterator]: function *_iterateCollection() {
             yield *this._iterator;
         }
-        /*[Symbol.iterator]: function *iterateCollection() {
-         var count = 0;
-         while (count < this._data.length)
-         yield this._data[count];
-         },*/
     };
 
     function createNewQueryableInstance(data, funcs) {
@@ -421,6 +408,68 @@ var dataStore = (function _createDataStore() {
         obj._iterator = it.bind(obj)();
         return addGetter(obj);
     }
+
+    function *_reduceGenerator(context, data, funcs) {
+        var idx = 0,
+            reducerFunc = function _executePriorFuncs(item, func) {
+                return func.call(this, wrap(item), idx);
+                //this._data = func.call(this, item);
+                //return this._data;
+            };
+        reducerFunc = reducerFunc.bind(context);
+        for (var item of data) {
+            var ret = funcs.reduce(reducerFunc, data);
+            if (ret.length) yield ret;
+            ++idx;
+        }
+    }
+
+    function *_iterator(items) {
+        for (var item of items)
+            yield item;
+    }
+
+    function *_takeGenerator(items, amt = 1) {
+        if (!amt) return [];
+        var idx = 0;
+        for (var item of items) {
+            yield item;
+            ++idx;
+            if (idx >= amt) return;
+        }
+    }
+
+    function *_takeWhileGenerator(predicate, items, amt = 1) {
+        if (!amt) return [];
+        var idx = 0;
+        for (var item of items) {
+            if (!predicate(item)) return;
+            yield item;
+            ++idx;
+            if (idx >= amt) return;
+        }
+    }
+
+    /*function *_takeGenerator(queryable, items, amt = 1) {
+     if (!amt) return [];
+     var idx = 0;
+     for (var item of items) {
+     yield item;
+     ++idx;
+     if (idx >= amt) return;
+     }
+     }
+
+     function *_takeWhileGenerator(queryable, predicate, items, amt = 1) {
+     if (!amt) return [];
+     var idx = 0;
+     for (var item of items) {
+     if (!predicate(item)) return;
+     yield item;
+     ++idx;
+     if (idx >= amt) return;
+     }
+     }*/
 
     //Should a call to .data mutate the current obj's data, or only find the existing data and return it?
     //If it mutates the existing object's data, then I'd need to remove all existing 'funcs' from the array and
