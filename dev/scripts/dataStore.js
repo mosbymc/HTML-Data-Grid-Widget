@@ -217,6 +217,47 @@ var dataStore = (function _createDataStore() {
                         }));
             }
         },
+        union: function _union(comparer, collection) {
+            comparer = comparer ||
+                function _findUniques(item, idx) {
+                    return data.indexOf(item) === idx;
+                };
+
+            return createNewQueryableInstance(this._data, this._funcs.concat([_unionData]));
+
+            function _unionData(data) {
+                return data.concat(collection).filter(comparer);
+            }
+        },
+        zip: function _zip() {
+
+        },
+        except: function _except(comparer, collection) {
+            comparer = comparer || defaultEqualityComparer;
+            return createNewQueryableInstance(this._data, this._funcs.concat([_exceptData]));
+
+            function _exceptData(data) {
+                return data.filter(function _findExceptions(item, idx) {
+                    return ~collection.find(comparer);
+                });
+            }
+        },
+        intersect: function _intersect(comparer, collection) {
+            comparer = comparer ||
+                not(function _findUniques(item, idx) {
+                    return data.indexOf(item) === idx;
+                });
+
+            return createNewQueryableInstance(this._data, this._funcs.concat([_intersectData]));
+
+            function _intersectData(data) {
+                var ret = data.concat(collection)
+                    .filter(comparer);
+                return ret.filter(function _findUniques(item, idx) {
+                    return ret.indexOf(item) === idx;
+                });
+            }
+        },
         groupBy: function _groupBy(fields) {
             function groupData(data) {
                 fields = Array.isArray(fields) ? fields : fields.split(',').map(function _trimmer(field) { return field.trim(); });
