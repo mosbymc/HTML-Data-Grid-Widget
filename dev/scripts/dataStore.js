@@ -2,6 +2,25 @@
 
 //https://jsfiddle.net/jmitchell/zwtn1tdu/
 
+
+//TODO: rather than defining the functions directly on the queryable object, it would probably be best to have
+//two (possibly more?) types of function queries. One type that takes a single data point for an argument, and
+//the other requires the entire collection to operate. As I iterate over the functions in the pipeline, I can
+//inspect the type before sending the data and either send all data and call the function once, or send a single
+//data point and call the function once for each data point.
+
+//TODO: Look into making the .from() 'method' on the data store instance lazily evaluated
+
+//TODO: Try removing all 'unnecessary' identity function when creating the pipeline
+
+var functionTypes = {
+    discrete: 'discrete',
+    quantum: 'quantum',
+    atomic: 'atmoic',
+    collective: 'collective',
+    someOtherFunctionTypeButIForgetTheNameNow: 'someOtherFunctionTypeButIForgetTheNameNow'
+};
+
 var dataStore = (function _createDataStore() {
     var store = {},
         _dataStore = {
@@ -24,7 +43,8 @@ var dataStore = (function _createDataStore() {
                 }
             },
             from: function _from(data) {
-                return createNewQueryableInstance(data, [identity]);
+                //return createNewQueryableInstance(data, [identity]);
+                return createNewQueryableInstance(data, [{ fn: identity, functionType: functionTypes.collective }]);
             }
         };
 
@@ -32,22 +52,22 @@ var dataStore = (function _createDataStore() {
         //TODO: not sure that this should be kept in here as is - gives too much control over the internal state
         //TODO: of the object to the user
         forEach: function _forEach(callback, context) {
-            return dataHandler.bind(Object.create(queryable)._init(this._data, this._funcs))(function _forEachThunk(data) { return data.forEach(callback, context); });
+            return dataHandler.bind(Object.create(queryable)._init(this._data, this._pipeline))(function _forEachThunk(data) { return data.forEach(callback, context); });
         },
         map: function _map(callback, context) {
-            return dataHandler.bind(Object.create(queryable)._init(this._data, this._funcs))(function _mapThunk(data) { return data.map(callback, context); });
+            return dataHandler.bind(Object.create(queryable)._init(this._data, this._pipeline))(function _mapThunk(data) { return data.map(callback, context); });
         },
         reduce: function _reduce(callback, initial) {
-            return dataHandler.bind(Object.create(queryable)._init(this._data, this._funcs))(function _reduceThunk(data) { return data.reduce(callback, initial); });
+            return dataHandler.bind(Object.create(queryable)._init(this._data, this._pipeline))(function _reduceThunk(data) { return data.reduce(callback, initial); });
         },
         reduceRight: function _reduceRight(callback, initial) {
-            return dataHandler.bind(Object.create(queryable).init(this._data, this._funcs))(function _reduceRightThunk(data) { return data.reduceRight(callback, initial); });
+            return dataHandler.bind(Object.create(queryable).init(this._data, this._pipeline))(function _reduceRightThunk(data) { return data.reduceRight(callback, initial); });
         },
         filter: function _filter(callback, context) {
-            return dataHandler.bind(Object.create(queryable)._init(this._data, this._funcs))(function _filterThunk(data) { return data.filter(callback, context); });
+            return dataHandler.bind(Object.create(queryable)._init(this._data, this._pipeline))(function _filterThunk(data) { return data.filter(callback, context); });
         },
         reverse: function _reverse() {
-            return dataHandler.bind(Object.create(queryable)._init(this._data, this._funcs))(Array.prototype.reverse);
+            return dataHandler.bind(Object.create(queryable)._init(this._data, this._pipeline))(Array.prototype.reverse);
         },
         some: function _some(callback, context) {
             return this._data.some(callback, context);
@@ -82,7 +102,7 @@ var dataStore = (function _createDataStore() {
                 else retArr = undefined;
                 return retArr;
             }
-            return createNewQueryableInstance(this.data, this._funcs.concat([_select_]));
+            return createNewQueryableInstance(this.data, this._pipeline.concat([{ fn: _select, functionType: functionTypes.collective }]));
         },
         insertInto: function _insertInto(namespace) {
             function _insertDataInto() {
@@ -95,7 +115,7 @@ var dataStore = (function _createDataStore() {
                 return prev[curr];
             });
 
-            return createNewQueryableInstance(this.data, this._funcs.concat([_insertDataInto]));
+            return createNewQueryableInstance(this.data, this._pipeline.concat([{ fn: _insertDataInto, functionType: functionTypes.discrete }]));
         },
         where: function _where(field, operator, value) {
             var filterExpression = exsp.isPrototypeOf(field) ? field : Object.create(exsp).createExpression(field, operator, value);
@@ -126,7 +146,7 @@ var dataStore = (function _createDataStore() {
                     //here we don't want the last filter 'data func' in the list of data funcs since we're just appending expressions to
                     //an already existing filter tree; otherwise we'd run each filter func n - x - 1 times
                     //where n = total number of where filters, x = the index of the current where filter within collection
-                    var retObj = createNewQueryableInstance(this.data, this._funcs.concat([_filterData]));
+                    var retObj = createNewQueryableInstance(this.data, this._pipeline.concat([{ fn: _filterData, functionType: functionTypes.discrete }]));
                     return Object.defineProperties(
                         retObj, {
                             'and': {
@@ -164,7 +184,7 @@ var dataStore = (function _createDataStore() {
                 }
             }
 
-            var retObj = createNewQueryableInstance(this.data, this._funcs.concat([_filterData]));
+            var retObj = createNewQueryableInstance(this.data, this._pipeline.concat([{ fn: _filterData, functionType: functionTypes.discrete }]));
             return Object.defineProperties(
                 retObj, {
                     'and': {
@@ -202,7 +222,7 @@ var dataStore = (function _createDataStore() {
         },
         join: function _join(outer, inner, projector, comparer, collection) {
             comparer = comparer || defaultEqualityComparer;
-            return createNewQueryableInstance(this._data, this._funcs.concat([_joinData]));
+            return createNewQueryableInstance(this._data, this._pipeline.concat([{ fn: _joinData, functionType: functionTypes.discrete }]));
 
             function _joinData(data) {
                 return Array.prototype.concat.apply([],
@@ -218,12 +238,13 @@ var dataStore = (function _createDataStore() {
             }
         },
         union: function _union(comparer, collection) {
+            var previouslyViewed = memoizer();
             comparer = comparer ||
                 function _findUniques(item, idx) {
-                    return data.indexOf(item) === idx;
+                    if (!previouslyViewed(data)) return data;
                 };
 
-            return createNewQueryableInstance(this._data, this._funcs.concat([_unionData]));
+            return createNewQueryableInstance(this._data, this._pipeline.concat([_unionData]));
 
             function _unionData(data) {
                 return data.concat(collection).filter(comparer);
@@ -234,7 +255,7 @@ var dataStore = (function _createDataStore() {
         },
         except: function _except(comparer, collection) {
             comparer = comparer || defaultEqualityComparer;
-            return createNewQueryableInstance(this._data, this._funcs.concat([_exceptData]));
+            return createNewQueryableInstance(this._data, this._pipeline.concat([{ fn: _exceptData, functionType: functionTypes.discrete }]));
 
             function _exceptData(data) {
                 return data.filter(function _findExceptions(item, idx) {
@@ -248,7 +269,7 @@ var dataStore = (function _createDataStore() {
                     return data.indexOf(item) === idx;
                 });
 
-            return createNewQueryableInstance(this._data, this._funcs.concat([_intersectData]));
+            return createNewQueryableInstance(this._data, this._pipeline.concat([{ fn: _intersectData, functionType: functionTypes.discrete }]));
 
             function _intersectData(data) {
                 var ret = data.concat(collection)
@@ -336,46 +357,55 @@ var dataStore = (function _createDataStore() {
                 }
             }
 
-            return createNewQueryableInstance(this.data, this._funcs.concat([groupData]));
+            return createNewQueryableInstance(this.data, this._pipeline.concat([{ fn: groupData, functionType: functionTypes.collective }]));
         },
         distinct: function _distinct(fields) {
-            var filterFunc;
+            var filterFunc,
+                previouslyViewed = memoizer();
             if (typeof fields === 'function') {
                 filterFunc = fields;
             }
             else if (typeof fields === 'string') {
                 filterFunc = function _filterFunc(data) {
-                    data = ifElse(not(isArray), wrap, identity, data);
-                    fields = fields.split(',');
-                    var fieldStr = '',
-                        objMap = {};
-
-                    data.forEach(function _getKeys(item, idx) {
-                        fields.forEach(function _getValues(field) {
-                            fieldStr += item[field.trim()].toString();
-                        });
-                        if (!(fieldStr in objMap)) objMap[fieldStr] = idx;
-                        fieldStr = '';
+                    var key = '';
+                    fields = fields.split(',').forEach(function _concatValuesAsString(field) {
+                        key += data[field.trim()].toString() + '_';
                     });
 
-                    return Object.keys(objMap).map(function _returnMappedData(key) {
-                        return data[objMap[key]];
-                    });
+                    if (!previouslyViewed(key)) return data;
+
+                    /*data = ifElse(not(isArray), wrap, identity, data);
+                     fields = fields.split(',');
+                     var fieldStr = '',
+                     objMap = {};
+
+                     data.forEach(function _getKeys(item, idx) {
+                     fields.forEach(function _getValues(field) {
+                     fieldStr += item[field.trim()].toString();
+                     });
+                     if (!(fieldStr in objMap)) objMap[fieldStr] = idx;
+                     fieldStr = '';
+                     });
+
+                     return Object.keys(objMap).map(function _returnMappedData(key) {
+                     return data[objMap[key]];
+                     });*/
                 }
             }
             else {
                 filterFunc = function _filterFunc(data) {
-                    data = ifElse(not(isArray), wrap, identity, data);
-                    return data.filter(function _findUniques(item, idx) {
-                        return data.indexOf(item) === idx;
-                    });
+                    if (!previouslyViewed(data)) return data;
+                    /*data = ifElse(not(isArray), wrap, identity, data);
+                     return data.filter(function _findUniques(item, idx) {
+                     return data.indexOf(item) === idx;
+                     });*/
                 }
             }
 
-            return createNewQueryableInstance(this.data, this._funcs.concat([filterFunc]));
+            return createNewQueryableInstance(this.data, this._pipeline.concat([{ fn: filterFunc, functionType: functionTypes.discrete }]));
         },
         flatten: function _flatten() {
-            return createNewQueryableInstance(this._data, this._funcs.concat([flattenData]));
+            return createNewQueryableInstance(this._data, this._pipeline.concat([flattenData]));
 
             function flattenData(data) {
                 data = ifElse(not(isArray), wrap, identity, data);
@@ -383,79 +413,88 @@ var dataStore = (function _createDataStore() {
             }
         },
         deepFlatten: function _deepFlatten() {
-            return createNewQueryableInstance(this.data, this._funcs.concat([deepFlattenData]));
-            function turnObjectsIntoArrays(data) {
-                if (Object.keys(data).every(function _isMadeOfArrays(key) {
-                        return Array.isArray(data[key]);
-                    }))
-                {
-                    return Object.keys(data).map(function _transmorgifier(key) {
-                        return dataFlattener(data[key]);
-                    });
-                }
-                return data;
-            }
-
-            function dataFlattener(data) {
-                return data.map(function _dataFlattener(item) {
-                    if (!Array.isArray(item) && typeof item === 'object')
-                        return turnObjectsIntoArrays(item);
-                    return item;
-                });
-            }
+            return createNewQueryableInstance(this.data, this._pipeline.concat([{ fn: deepFlattenData, functionType: functionTypes.discrete }]));
 
             function deepFlattenData(data) {
-                data = ifElse(not(isArray), wrap, identity, data);
-                return [].concat.apply([], dataFlattener(data).map(function _flattenData(item) {
-                    if (Array.isArray(item))
-                        return deepFlattenData(item);
-                    return item;
+                return [].concat.apply([], dataMapper(wrap(data)).map(function _flattenData(item) {
+                    return ifElse(isArray, deepFlattenData, identity, item);
                 }));
+
+                function itemObjectTest(data) {
+                    return not(isArray(data)) && typeof data === 'object';
+                }
+
+                function objectContainsOnlyArrays(data) {
+                    return Object.keys(data).every(function _isMadeOfArrays(key) {
+                        return isArray(data[key]);
+                    });
+                }
+
+                function objectToArray(data) {
+                    return Object.keys(data).map(function _transmorgifier(key) {
+                        return dataMapper(data[key]);
+                    });
+                }
+
+                function dataMapper(data) {
+                    return data.map(function _dataMapper(item) {
+                        return ifElse(isObjectButNotArray, ifElse(objectContainsOnlyArrays, objectToArray, identity), identity, item);
+                    });
+                }
+
+                function isObjectButNotArray(item) {
+                    return and(not(isArray), function _isObject(item) { return typeof item === 'object'; }, item);
+                }
             }
         },
         _getData: function _getData() {
             //Need to bind the function that's being passed to Array.prototype.reduce here
-            //because otherwise the context inside each func will be the realm and no
+            //because otherwise the context inside each func will be the realm and not
             //the current context outside of the reducer.
             var reducerFunc = function _executePriorFuncs(data, func) {
                 this._data = func.call(this, data);
                 return this._data;
             };
             reducerFunc = reducerFunc.bind(this);
-            var data = this._funcs.reduce(reducerFunc, this._data);
+            var data = this._pipeline.reduce(reducerFunc, this._data);
             this._dataComputed = true;
-            this._funcs = [identity];
+            this._pipeline = [identity];
             return data;
 
             //var data = this.take(this._data.length);
             //return data;
         },
-        take: function *_take(amt = 1) {
+        take: function _take(amt = 1) {
             if (!amt) return;
             if (!this._dataComputed)
-                this._getData();
-            //var data = Array.from(_takeGenerator(this, _reduceGenerator(this._data, this._funcs), amt));
-            //return createNewQueryableInstance(data, [identity]);
-            return createNewQueryableInstance(Array.from(_takeGenerator(_iterator(this._data), amt)), [identity]);
-            /*let index = -1;
-             for (let value of this._iterator) {
-             if (++index >= count)
-             break;
-             yield value;
-             }*/
+                return Array.from(_takeGenerator(_pipelineGenerator(this._data, this._pipeline), amt));
+            return this._data.slice(0, amt);
         },
         takeWhile: function *_takeWhile(predicate, amt = 1) {
             if (!amt) return;
             if (!this._dataComputed)
-                this._getData();
-            //var data = Array.from(_takeWhileGenerator(this, predicate, _reduceGenerator(this._data, this._funcs), amt));
-            //return createNewQueryableInstance(data, [identity]);
-            return createNewQueryableInstance(Array.from(_takeWhileGenerator(predicate, _iterator(this._data), amt)), [identity]);
+                return Array.from(_takeWhileGenerator(predicate, _pipelineGenerator(this._data, this._pipeline), amt));
+
+            var ret = [];
+            for (var item of this._data) {
+                if (predicate(data)) ret = ret.concat([item]);
+                else return ret;
+            }
         },
         [Symbol.iterator]: function *_iterateCollection() {
             yield *this._iterator;
         }
     };
+
+    function *_iterator(items) {
+        if (this._dataComputed) {
+            for (var item of items)
+                yield item;
+        }
+        else {
+            yield _pipelineGenerator(this._data, this._pipeline);
+        }
+    }
 
     var defaultEqualityComparer = function _defaultEqualityComparer(a, b) {
         return a === b;
@@ -464,32 +503,63 @@ var dataStore = (function _createDataStore() {
     function createNewQueryableInstance(data, funcs) {
         var obj = Object.create(queryable);
         obj._data = data;
+        obj._evaluatedData = null;
         obj._dataComputed = false;
-        obj._funcs = funcs;
+        obj._pipeline = funcs;
         obj._iterator = it.bind(obj)();
         return addGetter(obj);
     }
 
-    function *_reduceGenerator(context, data, funcs) {
-        var idx = 0,
-            reducerFunc = function _executePriorFuncs(item, func) {
-                return func.call(this, wrap(item), idx);
-                //this._data = func.call(this, item);
-                //return this._data;
-            };
-        reducerFunc = reducerFunc.bind(context);
-        for (var item of data) {
-            var ret = funcs.reduce(reducerFunc, data);
-            if (ret.length) yield ret;
-            ++idx;
+    function *_pipelineGenerator(data, funcs) {
+        var partiallyPipedData = [],
+            itemIdx = 0,
+            funcIdx = 0,
+            priorFuncCatchUpIdx = 0,
+            curItem = data.slice(0, 1),
+            rest = data.slice(1, data.length);
+
+        for (var func of funcs) {
+            if (func.functionType === functionTypes.collective) {
+                var priorFuncs = funcs.slice(priorFuncCatchUpIdx, funcIdx);
+                rest = yield _atomicPipelineFunctionRunner(rest, priorFuncs);
+                var allData = func.fn.call(this, [curItem].concat(rest));
+                rest = allData.slice(1, allData.length);
+                curItem = allData.slice(0, 1);
+                priorFuncCatchUpIdx = funcIdx;
+            }
+            else {
+                curItem = func.fn.call(this, curItem, itemIdx);
+            }
+            ++funcIdx;
+        }
+        yield curItem;
+        ++itemIdx;
+
+        var remainingFuncs = funcs.slice(priorFuncCatchUpIdx + 1, funcs.length);
+        for (var item of rest) {
+            curItem = item;
+            for (var remFunc of remainingFuncs) {
+                curItem = remFunc.fn.call(this, curItem, itemIdx);
+            }
+            yield curItem;
+            ++itemIdx;
         }
     }
 
-    function *_iterator(items) {
-        for (var item of items)
-            yield item;
+    function _atomicPipelineFunctionRunner(items, funcs) {
+        var processedData = [],
+            curItem,
+            itemIdx = 0;
+        for (var item of items) {
+            curItem = item;
+            for (var func of funcs) {
+                curItem = func.fn.call(this, curItem, itemIdx);
+            }
+            processedData = processedData.concat([curItem]);
+            ++itemIdx;
+        }
+        return processedData;
     }
-
     function *_takeGenerator(items, amt = 1) {
         if (!amt) return [];
         var idx = 0;
@@ -510,27 +580,6 @@ var dataStore = (function _createDataStore() {
             if (idx >= amt) return;
         }
     }
-
-    /*function *_takeGenerator(queryable, items, amt = 1) {
-     if (!amt) return [];
-     var idx = 0;
-     for (var item of items) {
-     yield item;
-     ++idx;
-     if (idx >= amt) return;
-     }
-     }
-
-     function *_takeWhileGenerator(queryable, predicate, items, amt = 1) {
-     if (!amt) return [];
-     var idx = 0;
-     for (var item of items) {
-     if (!predicate(item)) return;
-     yield item;
-     ++idx;
-     if (idx >= amt) return;
-     }
-     }*/
 
     //Should a call to .data mutate the current obj's data, or only find the existing data and return it?
     //If it mutates the existing object's data, then I'd need to remove all existing 'funcs' from the array and
@@ -562,6 +611,17 @@ var dataStore = (function _createDataStore() {
     function dataHandler(func) {
         func(this._data);
         return this;
+    }
+
+    function memoizer() {
+        var cache = new Set();
+        return function memoizeForMeWillYa(item) {
+            if (!cache.has(item)) {
+                cache.add(item);
+                return false;
+            }
+            else return true;
+        }
     }
 
     var exsp = {
@@ -666,11 +726,11 @@ var dataStore = (function _createDataStore() {
 
     function identity(item) { return item; }
 
-    function ifElse(predicate, ifFunc, elseFunc, data) {
+    var ifElse = curry(function ifElse(predicate, ifFunc, elseFunc, data) {
         if (predicate(data))
             return ifFunc(data);
         return elseFunc(data);
-    }
+    });
 
     function wrap(data) {
         return [data];
@@ -686,16 +746,48 @@ var dataStore = (function _createDataStore() {
         }
     }
 
+    function or(a, b, item) {
+        return a(item) || b(item);
+    }
+
+    function and(a, b, item) {
+        return a(item) && b(item);
+    }
+
+    function curry(fn) {
+        return function curriedFunction() {
+            if (fn.length > arguments.length) {
+                var slice = Array.prototype.slice,
+                    args = slice.apply(arguments);
+
+                return function executedFunction() {
+                    return fn.apply(null, args.concat(slice.apply(arguments)));
+                }
+            }
+            return fn.apply(null, arguments);
+        }
+    }
+
     function createInstanceMethods(instanceId) {
         var instance = store[instanceId].instance;
 
         instance.from = function _from(namespace) {
-            var val = [store[instanceId].state].concat(namespace.split('.')).reduce(function _findProperty(prev, curr) {
-                if (typeof prev[curr] !== 'object' && typeof prev[curr] !== 'function') return false;
-                return prev[curr];
-            });
+            //TODO: see about making this function lazily evaluated... only issue I see if I'd want to break of the pipeline
+            //if there's no data, but initially there'd always be no data, so the issue becomes how do I evaluate initial no
+            //data from future no data?
+            function _fromData() {
+                return [store[instanceId].state].concat(namespace.split('.')).reduce(function _findProperty(prev, curr) {
+                    if (typeof prev !== 'object' && typeof prev !== 'function') return undefined;
+                    return prev[curr];
+                });
+            }
+            var val = [store[instanceId].state].concat(namespace.split('.'))
+                .reduce(function _findProperty(prev, curr) {
+                    if (typeof prev !== 'object' && typeof prev !== 'function') return undefined;
+                    return prev[curr];
+                });
 
-            return createNewQueryableInstance(val, [identity]);
+            return createNewQueryableInstance(val, []);
         };
 
         instance.insert = function _insert(item) {
