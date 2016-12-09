@@ -16,7 +16,7 @@
 var functionTypes = {
     discrete: 'discrete',
     quantum: 'quantum',
-    atomic: 'atmoic',
+    atomic: 'atomic',
     collective: 'collective',
     someOtherFunctionTypeButIForgetTheNameNow: 'someOtherFunctionTypeButIForgetTheNameNow'
 };
@@ -81,7 +81,7 @@ var dataStore = (function _createDataStore() {
         toSet: function _toSet() {
             return new Set(this._data);
         },
-        select: function _select(fields) {
+        Qselect: function _Qselect(fields) {
             function _select_(data) {
                 var retArr = [];
                 if (typeof fields !== 'string') return data = ifElse(not(isArray), wrap, identity, data);
@@ -104,7 +104,7 @@ var dataStore = (function _createDataStore() {
             }
             return createNewQueryableInstance(this.data, this._pipeline.concat([{ fn: _select, functionType: functionTypes.collective }]));
         },
-        insertInto: function _insertInto(namespace) {
+        qInsertInto: function _qInsertInto(namespace) {
             function _insertDataInto() {
 
             }
@@ -117,7 +117,7 @@ var dataStore = (function _createDataStore() {
 
             return createNewQueryableInstance(this.data, this._pipeline.concat([{ fn: _insertDataInto, functionType: functionTypes.discrete }]));
         },
-        where: function _where(field, operator, value) {
+        qWhere: function _qWhere(field, operator, value) {
             var filterExpression = exsp.isPrototypeOf(field) ? field : Object.create(exsp).createExpression(field, operator, value);
 
             function _filterData(data) {
@@ -146,7 +146,7 @@ var dataStore = (function _createDataStore() {
                     //here we don't want the last filter 'data func' in the list of data funcs since we're just appending expressions to
                     //an already existing filter tree; otherwise we'd run each filter func n - x - 1 times
                     //where n = total number of where filters, x = the index of the current where filter within collection
-                    var retObj = createNewQueryableInstance(this.data, this._pipeline.concat([{ fn: _filterData, functionType: functionTypes.discrete }]));
+                    var retObj = createNewQueryableInstance(this.data, this._pipeline.slice(0, this._pipeline.length - 1).concat([{ fn: _filterData, functionType: functionTypes.discrete }]));
                     return Object.defineProperties(
                         retObj, {
                             'and': {
@@ -220,7 +220,7 @@ var dataStore = (function _createDataStore() {
                 }
             );
         },
-        join: function _join(outer, inner, projector, comparer, collection) {
+        qJoin: function _qJoin(outer, inner, projector, comparer, collection) {
             comparer = comparer || defaultEqualityComparer;
             return createNewQueryableInstance(this._data, this._pipeline.concat([{ fn: _joinData, functionType: functionTypes.discrete }]));
 
@@ -237,7 +237,7 @@ var dataStore = (function _createDataStore() {
                         }));
             }
         },
-        union: function _union(comparer, collection) {
+        qUnion: function _qUnion(comparer, collection) {
             var previouslyViewed = memoizer();
             comparer = comparer ||
                 function _findUniques(item, idx) {
@@ -250,10 +250,10 @@ var dataStore = (function _createDataStore() {
                 return data.concat(collection).filter(comparer);
             }
         },
-        zip: function _zip() {
+        qZip: function _qZip() {
 
         },
-        except: function _except(comparer, collection) {
+        qExcept: function _qExcept(comparer, collection) {
             comparer = comparer || defaultEqualityComparer;
             return createNewQueryableInstance(this._data, this._pipeline.concat([{ fn: _exceptData, functionType: functionTypes.discrete }]));
 
@@ -263,7 +263,7 @@ var dataStore = (function _createDataStore() {
                 });
             }
         },
-        intersect: function _intersect(comparer, collection) {
+        qIntersect: function _qIntersect(comparer, collection) {
             comparer = comparer ||
                 not(function _findUniques(item, idx) {
                     return data.indexOf(item) === idx;
@@ -279,7 +279,7 @@ var dataStore = (function _createDataStore() {
                 });
             }
         },
-        groupBy: function _groupBy(fields) {
+        qGroupBy: function _qGroupBy(fields) {
             function groupData(data) {
                 fields = Array.isArray(fields) ? fields : fields.split(',').map(function _trimmer(field) { return field.trim(); });
                 var sortedData = sortData(ifElse(not(isArray), wrap, identity, data), fields),
@@ -359,7 +359,7 @@ var dataStore = (function _createDataStore() {
 
             return createNewQueryableInstance(this.data, this._pipeline.concat([{ fn: groupData, functionType: functionTypes.collective }]));
         },
-        distinct: function _distinct(fields) {
+        qDistinct: function _qDistinct(fields) {
             var filterFunc,
                 previouslyViewed = memoizer();
             if (typeof fields === 'function') {
@@ -404,7 +404,7 @@ var dataStore = (function _createDataStore() {
 
             return createNewQueryableInstance(this.data, this._pipeline.concat([{ fn: filterFunc, functionType: functionTypes.discrete }]));
         },
-        flatten: function _flatten() {
+        qFlatten: function _qFlatten() {
             return createNewQueryableInstance(this._data, this._pipeline.concat([flattenData]));
 
             function flattenData(data) {
@@ -412,7 +412,7 @@ var dataStore = (function _createDataStore() {
                 return Array.prototype.concat.apply([], data);
             }
         },
-        deepFlatten: function _deepFlatten() {
+        qFlattenDeep: function _qFlattenDeep() {
             return createNewQueryableInstance(this.data, this._pipeline.concat([{ fn: deepFlattenData, functionType: functionTypes.discrete }]));
 
             function deepFlattenData(data) {
@@ -447,7 +447,7 @@ var dataStore = (function _createDataStore() {
                 }
             }
         },
-        _getData: function _getData() {
+        _qGetData: function _qGetData() {
             //Need to bind the function that's being passed to Array.prototype.reduce here
             //because otherwise the context inside each func will be the realm and not
             //the current context outside of the reducer.
@@ -464,20 +464,19 @@ var dataStore = (function _createDataStore() {
             //var data = this.take(this._data.length);
             //return data;
         },
-        take: function _take(amt = 1) {
+        qTake: function _qTake(amt = 1) {
             if (!amt) return;
             if (!this._dataComputed)
                 return Array.from(_takeGenerator(_pipelineGenerator(this._data, this._pipeline), amt));
             return this._data.slice(0, amt);
         },
-        takeWhile: function *_takeWhile(predicate, amt = 1) {
-            if (!amt) return;
+        qTakeWhile: function _qTakeWhile(predicate) {
             if (!this._dataComputed)
                 return Array.from(_takeWhileGenerator(predicate, _pipelineGenerator(this._data, this._pipeline), amt));
 
             var ret = [];
             for (var item of this._data) {
-                if (predicate(data)) ret = ret.concat([item]);
+                if (predicate(item)) ret = ret.concat([item]);
                 else return ret;
             }
         },
@@ -506,7 +505,54 @@ var dataStore = (function _createDataStore() {
         obj._evaluatedData = null;
         obj._dataComputed = false;
         obj._pipeline = funcs;
-        obj._iterator = it.bind(obj)();
+        obj._currentPipelineIndex = 0;
+        obj._currentDataIndex = 0;
+        obj._iterator = _iterator.bind(obj)();
+        obj.select = function _select(fields) {
+            return this.qSelect(fields);
+        };
+        obj.insertInto = function _insertInto(nameSpace) {
+            return this.qInsertInto(nameSpace);
+        };
+        obj.where = function _where(field, operator, value) {
+            return this.qWhere(field, operator, value);
+        };
+        obj.join = function _join(outer, inner, projector, comparer, collection) {
+            return this.qJoin(outer, inner, projecter, comparer, collection);
+        };
+        obj.union = function _union(comparer, collection) {
+            return this.qUnion(comparer, collection);
+        };
+        obj.zip = function _zip() {
+            return this.qZip();
+        };
+        obj.except = function _except(comparer, collection) {
+            return this.qExcept(comparer, collection);
+        };
+        obj.intersect = function _intersect(comparer, collection) {
+            return this.qIntersect(comparer, collection);
+        };
+        obj.groupBy = function _groupBy(fields) {
+            return this.qGroupBy(fields);
+        };
+        obj.distinct = function _distinct(fields) {
+            return this.qDistinct(fields);
+        };
+        obj.flatten = function _flatten() {
+            return this.qFlatten();
+        };
+        obj.flattenDeep = function _flattenDeep() {
+            return this.qFlattenDeep();
+        };
+        obj._getData = function _getData() {
+            return this._getData();
+        };
+        obj.take = function _take(amt = 1) {
+            return this._qTake(amt);
+        };
+        obj.takeWhile = function _takeWhile(predicate) {
+            return this.qTakeWhile(predicate);
+        };
         return addGetter(obj);
     }
 
@@ -560,6 +606,7 @@ var dataStore = (function _createDataStore() {
         }
         return processedData;
     }
+
     function *_takeGenerator(items, amt = 1) {
         if (!amt) return [];
         var idx = 0;
@@ -570,14 +617,10 @@ var dataStore = (function _createDataStore() {
         }
     }
 
-    function *_takeWhileGenerator(predicate, items, amt = 1) {
-        if (!amt) return [];
-        var idx = 0;
+    function *_takeWhileGenerator(predicate, items) {
         for (var item of items) {
             if (!predicate(item)) return;
             yield item;
-            ++idx;
-            if (idx >= amt) return;
         }
     }
 
@@ -600,12 +643,6 @@ var dataStore = (function _createDataStore() {
                 }
             }
         );
-    }
-
-    function *it() {
-        for (let item of this._data) {
-            yield item;
-        }
     }
 
     function dataHandler(func) {
