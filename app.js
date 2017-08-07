@@ -13,7 +13,7 @@ app.use('/src/scripts', express.static('src/scripts'));
 app.use('/docs', express.static('yuidoc'));
 
 require('./routes')(router);
-app.use('/', router);
+app.use('/', router);   //localhost:3000/dev/grid.html
 
 app.listen(PORT);
 
