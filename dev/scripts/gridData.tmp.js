@@ -1,5 +1,5 @@
 var gridDataTmp = {
-    height: 400,
+    height: 250,
     useValidator: true,
     useFormatter: true,
     sortable: true,
@@ -10,46 +10,59 @@ var gridDataTmp = {
     selectable: 'multi-row',
     excelExport: true,
     columnToggle: true,
+    advancedFiltering: {
+        groupsCount: 4,
+        filtersCount: 8
+    },
+    resizable: true,
     drillDown: {
         reorderable: true,
         sortable: true,
         resizable: true,
         excelExport: true,
         pageSize: 5,
-        columns: {
-            MechanicName: {
+        columns: [
+            {
+                field: 'MechanicName',
                 title: 'Mechanic',
                 filterable: true,
                 width: 250,
                 type: 'string'
             },
-            Make: {
+            {
+                field: 'Make',
                 filterable: true,
                 width: 150,
                 type: 'string'
             },
-            Model: {
+            {
+                field: 'Model',
                 filterable: true,
                 width: 150,
                 type: 'string'
             },
-            Year: {
+            {
+                field: 'Year',
                 filterable: true,
                 width: 100,
-                type: 'date'
+                type: 'number',
+                format: '##00'
             },
-            Doors: {
+            {
+                field: 'Doors',
                 filterable: true,
                 width: 100,
                 type: 'number',
             },
-            EngineType: {
+            {
+                field: 'EngineType',
                 title: 'Engine Type',
                 width: 150,
                 type: 'string',
                 filterable: true
             },
-            EngineSize: {
+            {
+                field: 'EngineSize',
                 title: 'Engine Size',
                 width: 150,
                 type: 'number',
@@ -57,7 +70,7 @@ var gridDataTmp = {
                 format: '##.##',
                 filterable: true
             }
-        }
+        ],
     },
     pagingOptions: [25, 50, 100],
     menu: ['filter', 'excel', 'save', 'sort', 'selection'],
@@ -65,19 +78,12 @@ var gridDataTmp = {
         alternateRows: ["testAlt"],
         all: ["testAll"]
     },
-    aggregates: {
-        FirstName: {
-            type: "count"
-        },
-        Zip: {
-            type: "average"
-        },
-        positionAt: "top"
-    },
-    columns: {
-        FirstName: {
+    columns: [
+        {
+            field: 'FirstName',
             title: 'First Name',
             type: 'string',
+            nullable: true,
             filterable: true,
             editable: true,
             width: 160,
@@ -87,35 +93,41 @@ var gridDataTmp = {
                 headerClasses: ["custom-class"]
             }
         },
-        LastName: {
+        {
+            field: 'LastName',
             title: 'Last Name',
             type: "string",
             width: 180
         },
-        Phone: {
+        {
+            field: 'Phone',
             type: "string",
             editable: true,
             width: 130,
             inputFormat: "{{###}}-{{###}}-{{####}}",
             title: "Phone Number"
         },
-        Email: {
+        {
+            field: 'Email',
             type: "string",
             editable: true,
             width: 200
         },
-        Address: {
+        {
+            field: 'Address',
             width: 200,
             type: "string",
             filterable: true,
             editable: true
         },
-        City: {
+        {
+            field: 'City',
             type: "string",
             editable: true,
             width: 155
         },
-        State: {
+        {
+            field:' State',
             filterable: false,
             type: "string",
             width: 140,
@@ -125,8 +137,10 @@ var gridDataTmp = {
                 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
                 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY']
         },
-        Zip: {
+        {
+            field: 'Zip',
             title: 'Zip Code',
+            nullable: true,
             filterable: true,
             type: "number",
             format: '00000',
@@ -144,9 +158,23 @@ var gridDataTmp = {
                 }
             }
         }
-    },
+    ],
     dataSource: {
         rowCount: 54,
+        aggregates: [
+            {
+                field: 'FirstName',
+                aggregate: 'count'
+            },
+            {
+                field: 'Zip',
+                aggregate: 'average'
+            },
+            {
+                field: 'Zip',
+                aggregate: 'max'
+            }
+        ],
         data: [
             {
                 FirstName: 'Phillip J.',
@@ -656,8 +684,8 @@ var gridDataTmp = {
                 ]
             },
             {
-                FirstName: 'Mr. Panucci',
-                LastName: '',
+                FirstName: 'Mr.',
+                LastName: 'Panucci',
                 Phone: '123-456-7890',
                 Email: 'mrPanuccis@pizza.net',
                 Address: '999 Somewhere St.',
@@ -752,10 +780,10 @@ var gridDataTmp = {
                 ]
             },
             {
-                FirstName: 'Turanga',
-                LastName: 'Morris',
+                FirstName: 'Morris',
+                LastName: 'Leela',
                 Phone: '',
-                Email: 'mTurange@sewerlife.net',
+                Email: 'mLeela@sewerlife.net',
                 Address: '123 DungBeetle Ln.',
                 City: 'Old New York',
                 State: 'NY',
@@ -999,7 +1027,7 @@ var gridDataTmp = {
                 Address: '992 Gelatinous St.',
                 City: 'Asteroid Belt',
                 State: '',
-                Zip: '30154-232442',
+                Zip: '30154232442',
                 drillDownData: [
                     {
                         MechanicName: 'Headless Body of Agnew',
