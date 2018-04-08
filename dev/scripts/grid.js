@@ -848,7 +848,7 @@ var grid = (function _grid($) {
                 callback(null, data);
             });
         }
-        else if (dataSource && typeof dataSource.get == 'function') {
+        else if (dataSource && typeof dataSource.get === 'function') {
             dataSource.get({ pageSize: pageSize, pageNum: 1 },
                 function gridDataCallback(res) {
                     if (res) {
