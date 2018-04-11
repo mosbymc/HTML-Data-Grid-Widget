@@ -17,34 +17,37 @@ var grid = Object.defineProperties(
         'createGrid': {
             get: function create(gridData, gridElem) {
                 if (gridData && isDomElement(gridElem)) {
-                    //TODO: clean this tmp code up once jsHint will stop screaming
-                    /*var im = 2;
-                    if (!gridData) {
-                        var tmp = DataStore(gridData);
-                        im = tmp.getGridInstance();
-                    }
-                    var id = gridState.generateId(im);
-                    */
-
                     var gridConfig = initializeConfig(gridData, gridElem),
                         instanceId = gridState.createInstance(gridConfig);
 
                     gridElem = $(gridElem).addClass('grid_elem');
 
-                    var wrapperDiv = $('<div id="grid-wrapper-' + instanceId + '" data-grid_id="' + instanceId + '" class="grid-wrapper"></div>').appendTo(gridElem);
-                    var headerDiv = $('<div id="grid-header-' + instanceId + '" data-grid_header_id="' + instanceId + '" class="grid-header-div"></div>').appendTo(wrapperDiv);
-                    headerDiv.append('<div class="grid-header-wrapper"></div>');
-                    wrapperDiv.append('<div id="grid-content-' + instanceId + '" data-grid_content_id="' + instanceId + '" class="grid-content-div"></div>');
+                    var wrapperDiv = general_util.createElement({ element: 'div', id: 'grid-wrapper' + instanceId, attributes: [ { name: 'grid_id', value: instanceId } ], classes: ['grid-wrapper'] });
+                    general_util.appendTo(wrapperDiv, gridElem);
+
+                    var headerDiv = general_util.createElement({ element: 'div', id: 'grid-header' + instanceId, attributes: [{ name: 'grid_header_id', value: instanceId }], classes: ['grid-header-div']});
+                    general_util.appendTo(headerDiv, gridElem);
+
+                    general_util.appendTo(general_util.createElement({ element: 'div', classes: ['grid-header-wrapper'] }), headerDiv);
+                    general_util.appendTo(
+                        general_util.createElement({ element: 'div', id: 'grid-content' + instanceId, attributes: [{ name: 'grid-content-id', value: instanceId }], classes: ['grid-content-div']}), wrapperDiv);
+                    general_util.appendTo(
+                        general_util.createElement({ element: 'div', id: 'grid-pager-' + instanceId, attributes: { name: 'grid_pager_id', value: instanceId, classes: ['grid-pager-div'] }}), wrapperDiv);
+                    gridElem.grid = {};
+                    //var wrapperDiv = $('<div id="grid-wrapper-' + instanceId + '" data-grid_id="' + instanceId + '" class="grid-wrapper"></div>').appendTo(gridElem);
+                    //var headerDiv = $('<div id="grid-header-' + instanceId + '" data-grid_header_id="' + instanceId + '" class="grid-header-div"></div>').appendTo(wrapperDiv);
+                    //headerDiv.append('<div class="grid-header-wrapper"></div>');
+                    //wrapperDiv.append('<div id="grid-content-' + instanceId + '" data-grid_content_id="' + instanceId + '" class="grid-content-div"></div>');
                     //wrapperDiv.append('<div id="grid-footer-' + id + '" data-grid_footer_id="' + id + '" class=grid-footer-div></div>');
-                    wrapperDiv.append('<div id="grid-pager-' + instanceId + '" data-grid_pager_id="' + instanceId + '" class="grid-pager-div"></div>');
-                    gridElem[0].grid = {};
+                    //wrapperDiv.append('<div id="grid-pager-' + instanceId + '" data-grid_pager_id="' + instanceId + '" class="grid-pager-div"></div>');
+                    //gridElem[0].grid = {};
 
                     createGridInstanceFunctions(gridElem, instanceId);
 
                     (gridConfig.useValidator === true && window.validator && typeof validator.setAdditionalEvents === general_util.jsTypes.function) ?
                         validator.setAdditionalEvents(['blur', 'change']) : gridConfig.useValidator = false;
 
-                    viewGenerator.createHeaders(gridConfig, gridElem);
+                    viewGenerator.createHeaders(gridConfig);
                     getInitialGridData(gridConfig.dataSource, gridConfig.pageSize || 25, function initialGridDataCallback(err, res) {
                         if (!err) {
                             gridConfig.dataSource.data = res.data;

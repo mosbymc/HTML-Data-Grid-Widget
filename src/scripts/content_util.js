@@ -433,6 +433,18 @@ function attachDrillDownAccordionHandler(gridId) {
     });
 }
 
+/**
+ * For internal use only; called whenever a drill down grid needs to be created.
+ * Forwards to createGrid function after setting the drill down's parentGridId attribute.
+ * @param {Object} gridData - The grid config object for the drill down grid instance
+ * @param {Object} gridElem - The DOM element used to create the drill down grid within
+ * @param {number} parentId - The internal id of the parent grid
+ */
+function drillDownCreate(gridData, gridElem, parentId) {
+    gridData.parentGridId = parentId;
+    grid.createGrid(gridData, gridElem);
+}
+
 var content_util = {
     attachTableSelectHandler: attachTableSelectHandler,
     createGroupedRows: createGroupedRows,

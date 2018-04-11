@@ -106,13 +106,15 @@ var aggregates = { count: 'Count: ', average: 'Avg: ', max: 'Max: ', min: 'Min: 
 /**
  *
  * @param element
+ * @param id
  * @param attributes
  * @param classes
  * @param styles
  * @return {HTMLElement}
  */
-function createElement({ element = '', attributes = [], classes = [], styles = [] }) {
+function createElement({ element = '', id = '', attributes = [], classes = [], styles = [] }) {
     var elem = document.createElement(element);
+    if (id) elem.id = id;
     attributes.forEach(attr => elem.setAttribute(attr.name, attr.value));
     classes.forEach(cl => elem.addClass(cl));
     styles.forEach(style => elem.style[style.name] = style.value);
@@ -202,6 +204,7 @@ var general_util = {
     dataTypes: dataTypes,
     jsTypes: jsTypes,
     booleanOps: booleanOps,
+    groupMenuText: groupMenuText,
     isDomElement: isDomElement,
     isNumber: isNumber,
     isInteger: isInteger,
