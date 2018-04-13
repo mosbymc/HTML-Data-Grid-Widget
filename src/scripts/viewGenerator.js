@@ -4,20 +4,43 @@ import { attachGroupItemEventHandlers } from './toolbar_util';
 import { content_util } from './content_util';
 import { header_util } from './header_util';
 import { general_util } from './general_util';
+import { dominator } from './dominator';
 
 var viewGenerator = {
     createHeaders: function _createHeaders(gridConfig) {
-        var gridElem = gridConfig.grid,
+        var gridElem = dominator(gridConfig.grid),
             gridHeader = gridElem.find('.grid-header-div'),
-            gridHeadWrap = gridHeader.find('.grid-header-wrapper'),
-            headerTable = $('<table></table>').appendTo(gridHeadWrap);
-        headerTable.css('width','auto');
-        var colgroup = $('<colgroup></colgroup>').appendTo(headerTable),
-            headerTHead = $('<thead></thead>').appendTo(headerTable),
-            headerRow = $('<tr class=grid-headerRow></tr>').appendTo(headerTHead),
-            id = gridHeader.data('grid_header_id');
+            gridHeadWrap = gridElem.find('.grid-header-wrapper'),
+            headerTable = dominator({ type: 'table', styles: [{ name: 'width', value: 'auto' }] }).appendTo(gridHeadWrap);
+        var colgroup = dominator({ type: 'colgroup' }).appendTo(headerTable),
+            headerTHead = dominator({ type: 'thead' }).appendTo(headerTable),
+            headerRow = dominator({ type: 'tr', classes: ['grid-headerRow'] }).appendTo(headerTHead),
+            id = gridHeader.data('grid_header_id')[0];
 
         if (gridConfig.groupedBy) {
+            gridConfig.groupedBy.forEach(function _createGroupingCols() {
+                colgroup.prepend({ type: 'col', classes: ['group_col'] });
+                headerRow.prepend({ type: 'th', classes: ['group_spacer'] });
+            });
+        }
+
+        if (gridConfig.drillDown) {
+            colgroup.prepend({ type: 'col', classes: ['drill_down_col'] });
+            headerRow.prepend({ type: 'th', classes: ['drill_down_spacer'] });
+        }
+
+
+        //var gridElem = gridConfig.grid,
+            //gridHeader = gridElem.find('.grid-header-div'),
+            //gridHeadWrap = gridHeader.find('.grid-header-wrapper'),
+            //headerTable = $('<table></table>').appendTo(gridHeadWrap);
+        //headerTable.css('width','auto');
+        //var colgroup = $('<colgroup></colgroup>').appendTo(headerTable),
+            //headerTHead = $('<thead></thead>').appendTo(headerTable),
+            //headerRow = $('<tr class=grid-headerRow></tr>').appendTo(headerTHead),
+            //id = gridHeader.data('grid_header_id');
+
+        /*if (gridConfig.groupedBy) {
             gridConfig.groupedBy.forEach(function _createGroupingCols() {
                 colgroup.prepend('<col class="group_col"/>');
                 headerRow.prepend('<th class="group_spacer">&nbsp</th>');
@@ -27,12 +50,15 @@ var viewGenerator = {
         if (gridConfig.drillDown) {
             colgroup.prepend('<col class="drill_down_col"/>');
             headerRow.prepend('<th class="drill_down_spacer">&nbsp</th>');
-        }
+        }*/
 
         gridConfig.columns.forEach(function _createColumnHeaders(col, idx) {
             if (typeof col !== 'object') return;
-            $('<col/>').appendTo(colgroup);
-            var th = $('<th id="' + col.field + '_grid_id_' + id + '" data-field="' + col.field + '" data-index="' + idx + '" class=grid-header-cell></th>').appendTo(headerRow);
+            dominator({ type: 'col' }).appendTo(colgroup);
+            //$('<col/>').appendTo(colgroup);
+            var th = dominator({ type: 'th', id: col.field + '_grid_id_' + id, attributes: [{ name: 'field', value: col.field }, { name: 'index', value: idx }], classes: ['grid-header-cell'] })
+                .appendTo(headerRow);
+            //var th = $('<th id="' + col.field + '_grid_id_' + id + '" data-field="' + col.field + '" data-index="' + idx + '" class=grid-header-cell></th>').appendTo(headerRow);
 
             if (typeof col.attributes === 'object' && col.attributes.headerClasses && col.attributes.headerClasses.constructor ===  Array) {
                 col.attributes.headerClasses.forEach(function _applyHeaderClasses(className) {
@@ -56,10 +82,12 @@ var viewGenerator = {
                 if ((col.editable || gridConfig.selectable || gridConfig.groupable || gridConfig.columnToggle || gridConfig.excelExport || gridConfig.advancedFiltering))
                     viewGenerator.createToolbar(gridConfig, gridElem, col.editable);
 
-                $('<a class="header-anchor" href="#"></a>').appendTo(th).text(col.title || col.field);
+                dominator({ type: 'a', classes: ['header-anchor'], attributes: [{ name: 'href', value: '#' }], text: col.title || col.field }).appendTo(th);
+                //$('<a class="header-anchor" href="#"></a>').appendTo(th).text(col.title || col.field);
             }
             else
-                $('<span class="header-anchor"></span>').appendTo(th).text(col.title || col.field);
+                dominator({ type: 'span', classes: ['header-anchor'], text: col.title || col.field }).appendTo(th);
+                //$('<span class="header-anchor"></span>').appendTo(th).text(col.title || col.field);
 
             if (gridConfig.resizable) {
                 th.on('mouseleave', mouseLeaveHandlerCallback);

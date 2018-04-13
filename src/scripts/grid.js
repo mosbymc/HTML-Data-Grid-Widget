@@ -3,6 +3,7 @@ import { createGridInstanceFunctions } from './gridInstanceFunctions';
 import { viewGenerator } from './viewGenerator';
 import { general_util } from './general_util';
 import { getInitialGridData } from './pageRequests';
+import { dominator } from './dominator';
 
 var grid = Object.defineProperties(
     {}, {
@@ -22,17 +23,28 @@ var grid = Object.defineProperties(
 
                     gridElem = $(gridElem).addClass('grid_elem');
 
-                    var wrapperDiv = general_util.createElement({ element: 'div', id: 'grid-wrapper' + instanceId, attributes: [ { name: 'grid_id', value: instanceId } ], classes: ['grid-wrapper'] });
-                    general_util.appendTo(wrapperDiv, gridElem);
+                    var wrapperDiv = dominator({ type: 'div', id: 'grid-wrapper' + instanceId, attributes: [ { name: 'grid_id', value: instanceId } ], classes: ['grid-wrapper'] })
+                        .appendTo(gridElem);
+                    //var wrapperDiv = general_util.createElement({ element: 'div', id: 'grid-wrapper' + instanceId, attributes: [ { name: 'grid_id', value: instanceId } ], classes: ['grid-wrapper'] });
+                    //general_util.appendTo(wrapperDiv, gridElem);
 
-                    var headerDiv = general_util.createElement({ element: 'div', id: 'grid-header' + instanceId, attributes: [{ name: 'grid_header_id', value: instanceId }], classes: ['grid-header-div']});
-                    general_util.appendTo(headerDiv, gridElem);
+                    var headerDiv = dominator({ type: 'div', id: 'grid-header' + instanceId, attributes: [{ name: 'grid_header_id', value: instanceId }], classes: ['grid-header-div']})
+                        .appendTo(gridElem);
 
-                    general_util.appendTo(general_util.createElement({ element: 'div', classes: ['grid-header-wrapper'] }), headerDiv);
-                    general_util.appendTo(
-                        general_util.createElement({ element: 'div', id: 'grid-content' + instanceId, attributes: [{ name: 'grid-content-id', value: instanceId }], classes: ['grid-content-div']}), wrapperDiv);
-                    general_util.appendTo(
-                        general_util.createElement({ element: 'div', id: 'grid-pager-' + instanceId, attributes: { name: 'grid_pager_id', value: instanceId, classes: ['grid-pager-div'] }}), wrapperDiv);
+                    //var headerDiv = general_util.createElement({ element: 'div', id: 'grid-header' + instanceId, attributes: [{ name: 'grid_header_id', value: instanceId }], classes: ['grid-header-div']});
+                    //general_util.appendTo(headerDiv, gridElem);
+
+                    dominator({ type: 'div', classes: ['grid-header-wrapper'] }).appendTo(headerDiv);
+                    dominator({ type: 'div', id: 'grid-content' + instanceId, attributes: [{ name: 'grid-content-id', value: instanceId }], classes: ['grid-content-div']})
+                        .appendTo(wrapperDiv);
+                    dominator({ type: 'div', id: 'grid-pager-' + instanceId, attributes: { name: 'grid_pager_id', value: instanceId, classes: ['grid-pager-div'] }}).appendTo(wrapperDiv);
+
+
+                    //general_util.appendTo(general_util.createElement({ element: 'div', classes: ['grid-header-wrapper'] }), headerDiv);
+                    //general_util.appendTo(
+                        //general_util.createElement({ element: 'div', id: 'grid-content' + instanceId, attributes: [{ name: 'grid-content-id', value: instanceId }], classes: ['grid-content-div']}), wrapperDiv);
+                    //general_util.appendTo(
+                        //general_util.createElement({ element: 'div', id: 'grid-pager-' + instanceId, attributes: { name: 'grid_pager_id', value: instanceId, classes: ['grid-pager-div'] }}), wrapperDiv);
                     gridElem.grid = {};
                     //var wrapperDiv = $('<div id="grid-wrapper-' + instanceId + '" data-grid_id="' + instanceId + '" class="grid-wrapper"></div>').appendTo(gridElem);
                     //var headerDiv = $('<div id="grid-header-' + instanceId + '" data-grid_header_id="' + instanceId + '" class="grid-header-div"></div>').appendTo(wrapperDiv);
@@ -135,7 +147,7 @@ function initializeConfig(gridConfig, gridElem) {
         storageData.advancedFiltering.filtersCount = general_util.isInteger(storageData.advancedFiltering.filtersCount) ? storageData.advancedFiltering.filtersCount : 10;
     }
 
-    storageData.parentGridId = gridData.parentGridId != null ? gridData.parentGridId : null;
+    storageData.parentGridId = gridConfig.parentGridId != null ? gridConfig.parentGridId : null;
     if (storageData.dataSource.rowCount == null) storageData.dataSource.rowCount = gridConfig.dataSource.data.length;
 
     return storageData;

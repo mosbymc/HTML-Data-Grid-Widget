@@ -116,7 +116,7 @@ function createElement({ element = '', id = '', attributes = [], classes = [], s
     var elem = document.createElement(element);
     if (id) elem.id = id;
     attributes.forEach(attr => elem.setAttribute(attr.name, attr.value));
-    classes.forEach(cl => elem.addClass(cl));
+    classes.forEach(cl => elem.classList.add(cl));
     styles.forEach(style => elem.style[style.name] = style.value);
     return elem;
 }
@@ -130,7 +130,7 @@ function createElement({ element = '', id = '', attributes = [], classes = [], s
 function insertBefore(toInsert, before) {
     if ('string' === typeof before) {
         if (before.indexOf('#') === 0) {
-            document.body.insertBefore(toInsert, document.getElementById(before.substr(0)));
+            document.body.insertBefore(toInsert, document.getElementById(before.substr(1)));
             return toInsert;
         }
         else if (before.indexOf('.') === 0) {
@@ -155,7 +155,7 @@ function insertBefore(toInsert, before) {
 function insertAfter(toInsert, after) {
     if ('string' === typeof after) {
         if (after.indexOf('#') === 0) {
-            var afterElem = document.getElementById(after.substr(0));
+            var afterElem = document.getElementById(after.substr(1));
             afterElem.parentNode.insertBefore(toInsert, afterElem.nextSibling);
             return toInsert;
         }
@@ -181,7 +181,7 @@ function insertAfter(toInsert, after) {
 function appendTo(toAppend, to) {
     if ('string' === typeof to) {
         if (to.indexOf('#') === 0) {
-            var toElem = document.getElementById(to.substr(0));
+            var toElem = document.getElementById(to.substr(1));
             toElem.appendChild(toAppend);
             return toAppend;
         }
