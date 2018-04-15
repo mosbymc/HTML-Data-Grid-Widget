@@ -81,6 +81,18 @@ var _dominator = {
 
         return this;
     },
+    before: function _before(before, context) {
+        if (!_dominator.isPrototypeOf(before)) before = dominator(before, context);
+        this.elements.forEach(function _insertEachElementBefore(el) {
+            before.elements.forEach(function _insertEachElementBeforeNested(be, idx) {
+                if (dominator(el.parentNode).contains(be)) el.parentNode.removeChild(be);
+                let b = 0 === idx ? be : be.cloneNode(true);
+                document.body.insertBefore(b, el);
+            });
+        });
+
+        return this;
+    },
     insertBefore: function _insertBefore(before, context) {
         if (!_dominator.isPrototypeOf(before)) before = dominator(before, context);
 
@@ -89,6 +101,19 @@ var _dominator = {
                 if (dominator(be.parentNode).contains(el)) be.parentNode.removeChild(el);
                 let e = 0 === idx ? el : el.cloneNode(true);
                 document.body.insertBefore(e, be);
+            });
+        });
+
+        return this;
+    },
+    after: function _after(after, context) {
+        if (!_dominator.isPrototypeOf(after)) after = dominator(after, context);
+
+        this.elements.forEach(function _insertEachElementAfter(el) {
+            after.elements.forEach(function _insertEachElementAfterNested(af, idx) {
+                if (dominator(el).contains(af)) af.parentNode.removeChild(af);
+                let a = 0 === idx ? af : af.cloneNode(true);
+                el.parentNode.insertBefore(a, el.nextSibling);
             });
         });
 
@@ -104,6 +129,19 @@ var _dominator = {
                 af.parentNode.insertBefore(e, af.nextSibling);
             });
         });
+
+        return this;
+    },
+    remove: function _remove(remove) {
+        if (!_dominator.isPrototypeOf(remove)) remove = dominator(remove, this.context);
+
+        if (remove.elements.length) {
+            this.elements.forEach(function _removeElements(element) {
+                remove.elements.forEach(function _removeElementsNested(rm) {
+                    if (dominator(element).contains(rm)) rm.parentNode.removeChild(rm);
+                });
+            });
+        }
 
         return this;
     },
@@ -190,8 +228,21 @@ var _dominator = {
             return found;
         }
     },
+    text: function _text(text) {
+        this.elements.forEach(function _AddTextToElement(elem) {
+            let firstChild = elem.firstChild;
+            if (3 === firstChild.nodeType) {
+                firstChild.textContent = text;
+            }
+            else {
+                let innerHtml = elem.innerHTML;
+                elem.innerHTML = text + ' ' + innerHtml;
+            }
+        });
+        return this;
+    },
     forEach: function _forEach(fn) {
-        this.elems.forEach(fn);
+        this.elements.forEach(fn);
         return this;
     },
     [Symbol.iterator]: function dominatorIterator() {
@@ -217,13 +268,19 @@ function dominator(elem, context) {
     context = context || document;
 
     if (elem && elem.constructor === Array) {
-        return dominator.merge(elem.map(el => dominator(el)));
+        return dominator.merge(elem.map(el => dominator(el, context)));
     }
 
     if ('string' === typeof elem) {
         return Object.create(_dominator, {
             elements: {
                 value: Array.from(context.querySelectorAll(elem))
+            },
+            context: {
+                value: context
+            },
+            inserted: {
+                value: true
             }
         });
     }
@@ -231,6 +288,12 @@ function dominator(elem, context) {
         return Object.create(_dominator, {
             elements: {
                 value: [elem]
+            },
+            context: {
+                value: context
+            },
+            inserted: {
+                value: true
             }
         });
     }
@@ -239,6 +302,9 @@ function dominator(elem, context) {
         if (elem.id) element.id = id;
         if (elem.attributes) {
             elem.attributes.forEach(attr => element.setAttribute(attr.name, attr.value));
+        }
+        if (elem.data) {
+            elem.data.forEach(d => element.dataset[d.name] = d.value);
         }
         if (elem.classes) {
             elem.classes.forEach(cl => element.classList.add(cl));
@@ -252,6 +318,12 @@ function dominator(elem, context) {
         return Object.create(_dominator, {
             elements: {
                 value: [element]
+            },
+            context: {
+                value: context
+            },
+            inserted: {
+                value: false
             }
         });
     }

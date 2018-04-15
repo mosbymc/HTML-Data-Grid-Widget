@@ -106,28 +106,41 @@ var viewGenerator = {
             left = gcOffsets.left + (gridContent.width()/2) + $(window).scrollLeft();
         $('<span id="loader-span_' + id + '" class="spinner"></span>').appendTo(gridContent).css('top', top).css('left', left);
     },
-    createContent: function _createContent(gridData) {
-        var gridElem = gridData.grid,
+    createContent: function _createContent(gridConfig) {
+        var gridElem = dominator(gridConfig.grid),
+            gridContent = gridElem.find('.grid-content-div'),
+            id = gridContent.data('grid_content_id'),
+            contentTable = dominator({ type: 'table', id: gridElem.attributes('id') + '_content', styles: [{ name: height, value: 'auto' }] }).appendTo(gridContent),
+            colGroup = dominator({ type: 'colgroup' }).appendTo(contentTable),
+            contentTBody = dominator({ type: 'tbody' }).appendTo(contentTable),
+            text;
+
+        contentTBody.css('width', 'auto');
+
+        /*
+        var gridElem = gridConfig.grid,
             gridContent = gridElem.find('.grid-content-div'),
             id = gridContent.data('grid_content_id'),
             contentTable = $('<table id="' + gridElem[0].id + '_content" style="height:auto;"></table>').appendTo(gridContent),
             colGroup = $('<colgroup></colgroup>').appendTo(contentTable),
             contentTBody = $('<tbody></tbody>').appendTo(contentTable),
             text;
-        contentTBody.css('width', 'auto');
-        if (typeof gridData.parentGridId !== general_util.jsTypes.number && gridData.selectable) content_util.attachTableSelectHandler(contentTBody);
+        */
+        //contentTBody.css('width', 'auto');
+        if (typeof gridConfig.parentGridId !== general_util.jsTypes.number && gridConfig.selectable) content_util.attachTableSelectHandler(contentTBody);
 
-        var rows = gridData.rows,
+        var rows = gridConfig.rows,
             currentGroupingValues = {};
 
-        if (gridData.groupAggregates) gridData.groupAggregations = {};
+        if (gridConfig.groupAggregates) gridConfig.groupAggregations = {};
 
-        if (gridData.dataSource.data.length) {
-            gridData.dataSource.data.forEach(function _createGridContentRows(item, idx) {
-                if (gridData.groupedBy && gridData.groupedBy.length) content_util.createGroupedRows(id, idx, currentGroupingValues, contentTBody);
+        if (gridConfig.dataSource.data.length) {
+            gridConfig.dataSource.data.forEach(function _createGridContentRows(item, idx) {
+                if (gridConfig.groupedBy && gridConfig.groupedBy.length) content_util.createGroupedRows(id, idx, currentGroupingValues, contentTBody);
 
-                var tr = $('<tr class="data-row"></tr>').appendTo(contentTBody);
-                if (typeof gridData.parentGridId === general_util.jsTypes.number) tr.addClass('drill-down-row');
+                var tr = dominator({ type: 'tr', classes: ['data-row'] }).appendTo(contentTBody);
+                //var tr = $('<tr class="data-row"></tr>').appendTo(contentTBody);
+                if (typeof gridConfig.parentGridId === general_util.jsTypes.number) tr.addClass('drill-down-row');
                 if (idx % 2) {
                     tr.addClass('alt-row');
                     if (rows && rows.alternateRows && rows.alternateRows.constructor === Array)
@@ -142,17 +155,22 @@ var viewGenerator = {
                     });
                 }
 
-                if (gridData.groupedBy.length) {
-                    gridData.groupedBy.forEach(function _appendGroupingCells() {
-                        tr.append('<td class="grouped_cell">&nbsp</td>');
+                if (gridConfig.groupedBy.length) {
+                    gridConfig.groupedBy.forEach(function _appendGroupingCells() {
+                        tr.append({ type: 'td', classes: ['grouped_cell'], text: '&nbsp' });
+                        //tr.append('<td class="grouped_cell">&nbsp</td>');
                     });
                 }
 
-                if (gridData.drillDown)
-                    tr.append('<td class="drillDown_cell"><span class="drillDown_span" data-state="closed"><a class="drillDown-asc drillDown_acc"></a></span></td>');
+                if (gridConfig.drillDown) {
+                    tr.append(dominator({ type: 'td', classes: ['drillDown_cell'] }).append(dominator({ type: 'span', classes: ['drillDown_span'] })
+                        .append({ type: 'a', classes: ['drillDown-asc', 'drillDown_acc'] })));
+                    //tr.append('<td class="drillDown_cell"><span class="drillDown_span" data-state="closed"><a class="drillDown-asc drillDown_acc"></a></span></td>');
+                }
 
-                gridData.columns.forEach(function _createGridCells(col) {
-                    var td = $('<td data-field="' + col.field + '" class="grid-content-cell"></td>').appendTo(tr);
+                gridConfig.columns.forEach(function _createGridCells(col) {
+                    var td = dominator({ type: 'td', classes: ['grid-content-cell'], data: [{ name: 'field', value: col.field }] }).appendTo(tr);
+                    //var td = $('<td data-field="' + col.field + '" class="grid-content-cell"></td>').appendTo(tr);
                     if (col.attributes && col.attributes.cellClasses && col.attributes.cellClasses.constructor === Array) {
                         col.attributes.cellClasses.forEach(function _addColumnClasses(className) {
                             td.addClass(className);
@@ -161,6 +179,7 @@ var viewGenerator = {
                     if (col.type !== 'custom') {
                         text = getFormattedCellText(col, item[col.field]) || item[col.field];
                         text = text == null ? 'Null' : text;
+                        //TODO: figure out how to make this work
                         td.text(text);
                     }
                     else {
@@ -170,7 +189,7 @@ var viewGenerator = {
                         if (col.text) {
                             var customText;
                             if (typeof col.text === general_util.jsTypes.function) {
-                                col.text(gridData.originalData[gridData.dataMap[idx]]);
+                                col.text(gridConfig.originalData[gridConfig.dataMap[idx]]);
                             }
                             else customText = col.text;
                             td.text(customText);
@@ -180,28 +199,32 @@ var viewGenerator = {
                     if (typeof col.events === general_util.jsTypes.object) {
                         content_util.attachCustomCellHandler(col, td, id);
                     }
-                    if (gridData.dataSource.aggregates && typeof gridData.dataSource.get !== general_util.jsTypes.function) {
-                        if (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined)
-                            addValueToAggregations(id, col.field, item[col.field], gridData.gridAggregations);
+                    if (gridConfig.dataSource.aggregates && typeof gridConfig.dataSource.get !== general_util.jsTypes.function) {
+                        if (gridConfig.pageRequest.eventType === 'filter' || gridConfig.pageRequest.eventType === undefined)
+                            addValueToAggregations(id, col.field, item[col.field], gridConfig.gridAggregations);
                     }
                     //attach event handlers to save data
-                    if (typeof gridData.parentGridId !== general_util.jsTypes.number && (col.editable && col.editable !== 'drop-down')) {
+                    if (typeof gridConfig.parentGridId !== general_util.jsTypes.number && (col.editable && col.editable !== 'drop-down')) {
                         content_util.makeCellEditable(id, td);
-                        gridData.editable = true;
+                        gridConfig.editable = true;
                     }
-                    else if (typeof gridData.parentGridId !== general_util.jsTypes.number && (col.editable === 'drop-down')) {
+                    else if (typeof gridConfig.parentGridId !== general_util.jsTypes.number && (col.editable === 'drop-down')) {
                         content_util.makeCellSelectable(id, td);
-                        gridData.editable = true;
+                        gridConfig.editable = true;
                     }
                 });
             });
 
-            gridData.columns.forEach(function appendCols() { colGroup.append('<col/>'); });
-            gridData.groupedBy.forEach(function _prependCols() { colGroup.prepend('<col class="group_col"/>'); });
-            if (gridData.drillDown) colGroup.prepend('<col class="drill_down_col"/>');
+            gridConfig.columns.forEach(col => colGroup.append({ type: 'col' }));
+            gridConfig.groupedBy.forEach(group => colGroup.prepend({ type: 'col', classes: ['group_col'] }));
+            ////gridConfig.columns.forEach(function appendCols() { colGroup.append('<col/>'); });
+            //gridConfig.groupedBy.forEach(function _prependCols() { colGroup.prepend('<col class="group_col"/>'); });
+            if (gridConfig.drillDown) colGroup.prepend({ type: 'col', classes: ['drill_down_col'] });
+            //if (gridConfig.drillDown) colGroup.prepend('<col class="drill_down_col"/>');
 
-            if (gridData.dataSource.aggregates && (gridData.pageRequest.eventType === 'filter' || gridData.pageRequest.eventType === undefined)) {
-                gridData.grid.find('.grid-footer-div').remove();
+            if (gridConfig.dataSource.aggregates && (gridConfig.pageRequest.eventType === 'filter' || gridConfig.pageRequest.eventType === undefined)) {
+                dominator(gridConfig.grid).find('.grid-footer-div').remove();
+                gridConfig.grid.find('.grid-footer-div').remove();
                 viewGenerator.createAggregates(id);
             }
 
@@ -212,7 +235,7 @@ var viewGenerator = {
         gridContent[0].addEventListener('scroll', function contentDivScrollHandler() {
             var headWrap = gridContent.parents('.grid-wrapper').first().find('.grid-header-wrapper'),
                 footerWrap = gridContent.parents('.grid-wrapper').first().find('.grid-footer-wrapper');
-            if (gridData.resizing) return;
+            if (gridConfig.resizing) return;
             headWrap.scrollLeft(gridContent.scrollLeft());
             if (footerWrap.length)
                 footerWrap.scrollLeft(gridContent.scrollLeft());
@@ -232,9 +255,9 @@ var viewGenerator = {
         //the grid.
         copyGridWidth(gridElem);
 
-        gridState[id].dataSource.data = gridData.dataSource.data;
+        gridState[id].dataSource.data = gridConfig.dataSource.data;
         gridContent.find('#loader-span_' + id).remove();
-        gridData.updating = false;
+        gridConfig.updating = false;
     },
     createToolbar: function _createToolbar(gridData, gridElem, canEdit) {
         var id = gridElem.find('.grid-wrapper').data('grid_id');
