@@ -1,6 +1,8 @@
 import { gridState } from './gridState';
 import { viewGenerator } from './viewGenerator';
 import { general_util } from './general_util';
+import { header_util } from './header_util';
+import { copyGridWidth } from './grid_util';
 
 function createGridInstanceFunctions(gridId) {
     var gridConfig = gridState.getInstance(gridId),
@@ -27,7 +29,7 @@ function createGridInstanceFunctions(gridId) {
                     if (!funcs || (typeof funcs !== 'function' && !Array.isArray(funcs))) return false;
                     if (typeof funcs === 'function') funcs = [funcs];
                     if (events.includes(evt)) {
-                        gridConfig[gridId].events[evt] = gridConfig[gridId].events[evt].concat(funcs);
+                        gridConfig.events[evt] = gridConfig.events[evt].concat(funcs);
                         return true;
                     }
                     return false;
@@ -50,7 +52,7 @@ function createGridInstanceFunctions(gridId) {
                     if (general_util.events.includes(evt) && (funcs || (typeof funcs === 'function' || Array.isArray(funcs)))) {
                         if (typeof funcs === 'function') funcs = [funcs];
                         var tmpEvts = [];
-                        gridConfig[gridId].events[evt] = gridConfig[gridId].events[evt].filter(function _unbindEvents(e) {
+                        gridConfig.events[evt] = gridConfig.events[evt].filter(function _unbindEvents(e) {
                             return funcs.some(function _unBindEventFunctions(fn) {
                                 return e !== fn;
                             });
@@ -61,7 +63,7 @@ function createGridInstanceFunctions(gridId) {
                                     tmpEvts.push(gridState[gridId].events[evt][i]);
                             }
                         }*/
-                        gridConfig[gridId].events[evt] = tmpEvts;
+                        gridConfig.events[evt] = tmpEvts;
                         return true;
                     }
                     return false;
@@ -78,7 +80,7 @@ function createGridInstanceFunctions(gridId) {
                  */
                 value: function _removeAllEventHandlers() {
                     general_util.events.forEach(function _removeEventHandlers(evt) {
-                        gridConfig[gridId].events[evt] = [];
+                        gridConfig.events[evt] = [];
                     });
                 },
                 writable: false,
@@ -97,7 +99,7 @@ function createGridInstanceFunctions(gridId) {
                  */
                 value: function _getHandledEvents() {
                     return general_util.events.filter(function _findHandledEvents(evt) {
-                        return gridConfig[gridId].events[evt].length;
+                        return gridConfig.events[evt].length;
                     });
                     /*var evts = [];
                     events.forEach(function _returnHandledEvents(evt, idx) {
@@ -132,21 +134,21 @@ function createGridInstanceFunctions(gridId) {
                  * @param {string} col - The name of the column to hide
                  */
                 value: function _hideColumn(col) {
-                    var colIdx = gridConfig[gridId].columnIndices[col];
+                    var colIdx = gridConfig.columnIndices[col];
                     if (colIdx != null) {
-                        gridConfig[gridId].columns[colIdx].isHidden = true;
-                        var column = gridConfig[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]'),
+                        gridConfig.columns[colIdx].isHidden = true;
+                        var column = gridConfig.grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]'),
                             columnIdx = column.data('index');
                         column.css('display', 'none');
-                        gridConfig[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', 'none');
-                        var colGroups = gridConfig[gridId].grid.find('colgroup');
+                        gridConfig.grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', 'none');
+                        var colGroups = gridConfig.grid.find('colgroup');
                         var group1 = $(colGroups[0]).find('col');
                         var group2 = $(colGroups[1]).find('col');
                         var offset = columnIdx;
-                        if (gridConfig[gridId].drillDown)
+                        if (gridConfig.drillDown)
                             ++offset;
-                        if (gridConfig[gridId].groupedBy)
-                            offset += gridConfig[gridId].groupedBy.length;
+                        if (gridConfig.groupedBy)
+                            offset += gridConfig.groupedBy.length;
                         group1.eq(offset).remove();
                         group2.eq(offset).remove();
                     }
@@ -160,14 +162,14 @@ function createGridInstanceFunctions(gridId) {
                  * @param {string} col - The name of the hidden column
                  */
                 value: function _showColumn(col) {
-                    col = gridConfig[gridId].columnIndices[col];
-                    if (gridConfig[gridId].columns[col] && gridConfig[gridId].columns[col].isHidden) {
-                        gridConfig[gridId].columns[col].isHidden = false;
-                        gridConfig[gridId].grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
-                        gridConfig[gridId].grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
-                        gridConfig[gridId].grid.find('colgroup').append('<col>');
-                        setColWidth(gridConfig[gridId], gridConfig[gridId].grid);
-                        copyGridWidth(gridConfig[gridId].grid);
+                    col = gridConfig.columnIndices[col];
+                    if (gridConfig.columns[col] && gridConfig.columns[col].isHidden) {
+                        gridConfig.columns[col].isHidden = false;
+                        gridConfig.grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
+                        gridConfig.grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
+                        gridConfig.grid.find('colgroup').append('<col>');
+                        header_util.setColWidth(gridConfig, gridConfig.grid);
+                        copyGridWidth(gridConfig.grid);
                     }
                 },
                 writable: false,
@@ -186,9 +188,9 @@ function createGridInstanceFunctions(gridId) {
                         return;
                     var field = typeof column === 'object' ? column.field || 'field' : column,
                         newCol;
-                    if (!gridConfig[gridId].columnIndices[field]) {
-                        for (var i = 0; i < gridConfig[gridId].dataSource.data.length; i++) {
-                            gridConfig[gridId].dataSource.data[i][field] = data[i] ? data[i] : null;
+                    if (!gridConfig.columnIndices[field]) {
+                        for (var i = 0; i < gridConfig.dataSource.data.length; i++) {
+                            gridConfig.dataSource.data[i][field] = data[i] ? data[i] : null;
                         }
                         if (typeof column === 'object') newCol = column;
                         else {
@@ -200,19 +202,19 @@ function createGridInstanceFunctions(gridId) {
                         newCol.title = newCol.title || field;
                         newCol.type = newCol.type || 'string';
 
-                        gridConfig[gridId].columns.push(newCol);
-                        if (gridConfig[gridId].aggregates) gridConfig[gridId].aggregates[field] = {
+                        gridConfig.columns.push(newCol);
+                        if (gridConfig.aggregates) gridConfig.aggregates[field] = {
                             type: newCol.type
                         };
 
-                        gridConfig[gridId].hasAddedColumn = true;
-                        gridConfig[gridId].grid.find('.grid-header-wrapper').empty();
-                        viewGenerator.createHeaders(gridConfig[gridId], gridElem);
-                        gridConfig[gridId].grid.find('.grid-content-div').empty();
+                        gridConfig.hasAddedColumn = true;
+                        gridConfig.grid.find('.grid-header-wrapper').empty();
+                        viewGenerator.createHeaders(gridConfig, gridElem);
+                        gridConfig.grid.find('.grid-content-div').empty();
                         //setColWidth(gridState[gridId], gridState[gridId].grid);
-                        viewGenerator.createContent(gridConfig[gridId], gridConfig[gridId].grid);
-                        gridConfig[gridId].grid.find('.grid-pager-div').empty();
-                        viewGenerator.createPager(gridConfig[gridId], gridConfig[gridId].grid);
+                        viewGenerator.createContent(gridConfig, gridConfig.grid);
+                        gridConfig.grid.find('.grid-pager-div').empty();
+                        viewGenerator.createPager(gridConfig, gridConfig.grid);
                         viewGenerator.createAggregates(gridId);
                     }
                 },
@@ -226,19 +228,19 @@ function createGridInstanceFunctions(gridId) {
                  */
                 value: function _addRow(data) {
                     data = data || {};
-                    Object.keys(gridConfig[gridId].dataSource.data[0]).forEach(function _applyNullProps(prop) {
+                    Object.keys(gridConfig.dataSource.data[0]).forEach(function _applyNullProps(prop) {
                         if (data[prop] === undefined) data[prop] = null;
                     });
-                    gridConfig[gridId].originalData.push(cloneGridData(data));   //clone data here for original data
-                    gridConfig[gridId].dataSource.data.push(cloneGridData(data));    //clone here to keep cloned original data from being updated when data source data is updated
-                    gridConfig[gridId].dataSource.rowCount++;
-                    if (gridConfig[gridId].dataSource.dataMap)
-                        gridConfig[gridId].dataSource.dataMap[gridConfig[gridId].dataSource.rowCount] = gridConfig[gridId].dataSource.rowCount;
-                    gridConfig[gridId].pageSize++;
-                    gridConfig[gridId].grid.find('.grid-content-div').empty();
-                    viewGenerator.createContent(gridConfig[gridId], gridConfig[gridId].grid);
-                    gridConfig[gridId].grid.find('.grid-pager-div').empty();
-                    viewGenerator.createPager(gridConfig[gridId], gridConfig[gridId].grid);
+                    gridConfig.originalData.push(cloneGridData(data));   //clone data here for original data
+                    gridConfig.dataSource.data.push(cloneGridData(data));    //clone here to keep cloned original data from being updated when data source data is updated
+                    gridConfig.dataSource.rowCount++;
+                    if (gridConfig.dataSource.dataMap)
+                        gridConfig.dataSource.dataMap[gridConfig.dataSource.rowCount] = gridConfig.dataSource.rowCount;
+                    gridConfig.pageSize++;
+                    gridConfig.grid.find('.grid-content-div').empty();
+                    viewGenerator.createContent(gridConfig, gridConfig.grid);
+                    gridConfig.grid.find('.grid-pager-div').empty();
+                    viewGenerator.createPager(gridConfig, gridConfig.grid);
                     viewGenerator.createAggregates(gridId);
                 },
                 writable: false,
@@ -256,7 +258,7 @@ function createGridInstanceFunctions(gridId) {
                  * @returns {Object} - The aggregations that are currently in use for this page of the grid
                  */
                 value: function _getAggregates() {
-                    return gridConfig[gridId].gridAggregations;
+                    return gridConfig.gridAggregations;
                 },
                 writable: false,
                 configurable: false
@@ -279,12 +281,12 @@ function createGridInstanceFunctions(gridId) {
                         result = [],
                         tmpRowModel,
                         validRow;
-                    if (typeof index === 'number' && index > -1 && index <= gridConfig[gridId].dataSource.data.length) {
+                    if (typeof index === 'number' && index > -1 && index <= gridConfig.dataSource.data.length) {
                         validRow = findValidRows(index);
                         if (validRow) rows.push(validRow);
                     }
                     else {
-                        for (var i = 0; i < gridConfig[gridId].pageSize; i++) {
+                        for (var i = 0; i < gridConfig.pageSize; i++) {
                             validRow = findValidRows(i);
                             if (validRow) rows.push(validRow);
                         }
@@ -303,7 +305,7 @@ function createGridInstanceFunctions(gridId) {
                     function findValidRows(index) {
                         var counter = 0;
                         var row = null;
-                        gridConfig[gridId].grid.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
+                        gridConfig.grid.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
                             if ($(this).hasClass('grouped_row_header'))
                                 return true;
                             if (counter === index) {
@@ -329,9 +331,9 @@ function createGridInstanceFunctions(gridId) {
                  * valid index was passed to the function
                  */
                 value: function _getCurrentDataSourceData(index) {
-                    if (typeof index === 'number' && index > -1 && index <= gridConfig[gridId].dataSource.data.length)
-                        return cloneGridData([].concat(gridConfig[gridId].dataSource.data[index]));
-                    else return cloneGridData(gridConfig[gridId].dataSource.data);
+                    if (typeof index === 'number' && index > -1 && index <= gridConfig.dataSource.data.length)
+                        return cloneGridData([].concat(gridConfig.dataSource.data[index]));
+                    else return cloneGridData(gridConfig.dataSource.data);
                 },
                 writable: false,
                 configurable: false
@@ -346,13 +348,13 @@ function createGridInstanceFunctions(gridId) {
                  */
                 value: function _updatePageData(data) {
                     if (data != null && typeof data === 'object' && data.constructor === Array) {
-                        gridConfig[gridId].dataSource.data = data;
-                        gridConfig[gridId].pageSize = data.length;
-                        gridConfig[gridId].dataSource.rowCount = data.length;
-                        gridConfig[gridId].grid.find('.grid-content-div').empty();
-                        viewGenerator.createContent(gridConfig[gridId], gridConfig[gridId].grid);
-                        gridConfig[gridId].grid.find('.grid-pager-div').empty();
-                        viewGenerator.createPager(gridConfig[gridId], gridConfig[gridId].grid);
+                        gridConfig.dataSource.data = data;
+                        gridConfig.pageSize = data.length;
+                        gridConfig.dataSource.rowCount = data.length;
+                        gridConfig.grid.find('.grid-content-div').empty();
+                        viewGenerator.createContent(gridConfig, gridConfig.grid);
+                        gridConfig.grid.find('.grid-pager-div').empty();
+                        viewGenerator.createPager(gridConfig, gridConfig.grid);
                         viewGenerator.createAggregates(gridId);
                     }
                 },
@@ -373,22 +375,22 @@ function createGridInstanceFunctions(gridId) {
                         return;
                     if (rowData.constructor === Array) {
                         for (var i = 0; i < rowData.length; i++) {
-                            if (typeof rowData[i].index !== 'number' || rowData[i].index >= gridConfig[gridId].dataSource.data.length)
+                            if (typeof rowData[i].index !== 'number' || rowData[i].index >= gridConfig.dataSource.data.length)
                                 continue;
-                            gridConfig[gridId].dataSource.data[rowData[i].index] = rowData[i].data;
+                            gridConfig.dataSource.data[rowData[i].index] = rowData[i].data;
                             appliedUpdate = true;
                         }
                     }
                     else if (typeof rowData.index === 'number') {
-                        gridConfig[gridId].dataSource.data[rowData.index] = rowData.data;
+                        gridConfig.dataSource.data[rowData.index] = rowData.data;
                         appliedUpdate = true;
                     }
 
                     if (appliedUpdate) {
-                        gridConfig[gridId].grid.find('.grid-content-div').empty();
-                        viewGenerator.createContent(gridConfig[gridId], gridConfig[gridId].grid);
-                        gridConfig[gridId].grid.find('.grid-pager-div').empty();
-                        viewGenerator.createPager(gridConfig[gridId], gridConfig[gridId].grid);
+                        gridConfig.grid.find('.grid-content-div').empty();
+                        viewGenerator.createContent(gridConfig, gridConfig.grid);
+                        gridConfig.grid.find('.grid-pager-div').empty();
+                        viewGenerator.createPager(gridConfig, gridConfig.grid);
                         viewGenerator.createAggregates(gridId);
                     }
                 },
@@ -415,9 +417,9 @@ function createGridInstanceFunctions(gridId) {
                     else applyUpdate(cellData, setAsDirty);
 
                     function applyUpdate(cell, setAsDirty) {
-                        if (typeof cell.index !== 'number' || typeof cell.field !== 'string' || cell.index > gridConfig[gridId].dataSource.data.length)
+                        if (typeof cell.index !== 'number' || typeof cell.field !== 'string' || cell.index > gridConfig.dataSource.data.length)
                             return;
-                        var column = gridConfig[gridId].columns[gridConfig[gridId].columnIndices[cell.field]];
+                        var column = gridConfig.columns[gridConfig.columnIndices[cell.field]];
                         if (column) {
                             var dataType = column.type;
                             if (!dataType)
@@ -430,11 +432,11 @@ function createGridInstanceFunctions(gridId) {
                                 var re = new RegExp(dataTypes[dataType]);
                                 if (!re.test(cell.value)) return;
                             }
-                            gridConfig[gridId].dataSource.data[cell.index][cell.field] = cell.value;
+                            gridConfig.dataSource.data[cell.index][cell.field] = cell.value;
                             var tableCell;
-                            if (gridConfig[gridId].groupedBy) {
+                            if (gridConfig.groupedBy) {
                                 var counter = 0;
-                                gridConfig[gridId].grid.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
+                                gridConfig.grid.find('.grid-content-div').find('table').find('tr').each(function iterateTableRowsCallback() {
                                     if ($(this).hasClass('grouped_row_header'))
                                         return true;
                                     if (counter === cell.index) {
@@ -445,7 +447,7 @@ function createGridInstanceFunctions(gridId) {
                                 });
                             }
                             else
-                                tableCell = gridConfig[gridId].grid.find('.grid-content-div').find('table').find('tr:nth-child(' + (cell.index + 1) + ')').find('[data-field="' + cell.field + '"]');
+                                tableCell = gridConfig.grid.find('.grid-content-div').find('table').find('tr:nth-child(' + (cell.index + 1) + ')').find('[data-field="' + cell.field + '"]');
                             var text = getFormattedCellText(column, cell.value) || cell.value;
                             tableCell.text(text);
                             if (setAsDirty) tableCell.prepend('<span class="dirty"></span>');
@@ -463,11 +465,11 @@ function createGridInstanceFunctions(gridId) {
                  * @protected
                  */
                 value: function _destroy() {
-                    gridConfig[gridId].grid.children().each(function _removeChildrenFromDOM(child) {
+                    gridConfig.grid.children().each(function _removeChildrenFromDOM(child) {
                         $(child).remove();
                     });
-                    var gridElem = gridConfig[gridId].grid;
-                    delete gridConfig[gridId];
+                    var gridElem = gridConfig.grid;
+                    delete gridConfig;
                     return gridElem;
                 },
                 writable: false,

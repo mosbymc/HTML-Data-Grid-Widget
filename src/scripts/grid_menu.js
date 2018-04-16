@@ -1,3 +1,11 @@
+import { gridState } from './gridState';
+import { general_util } from './general_util';
+import { createGroupMenuItem } from './grouping_util';
+import { exportDataAsExcelFile } from './exporter';
+import { toggle } from './toggle';
+import { addNewAdvancedFilter, createFilterGroups, resetAllFilters } from './filter_util';
+import { preparePageDataGetRequest } from './pageRequests';
+
 /**
  * Attaches the click handlers for the save and delete buttons on the toolbar for saving/deleting changes made to the grid data
  * @param {number} id - the identifier of the grid instance
@@ -8,7 +16,7 @@
 function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
     saveAnchor.on('click', function saveChangesHandler(e) {
         e.preventDefault();
-        if (gridState[id].updating) return;
+        if (gridState.getInstance(id).updating) return;
         var gridMenu = $(e.currentTarget).parents('.grid_menu');
         if (gridMenu.length)
             $('.grid_menu').addClass('hiddenMenu');
@@ -19,12 +27,12 @@ function attachSaveAndDeleteHandlers(id, gridElem, saveAnchor, deleteAnchor) {
         });
 
         if (dirtyCells.length) {
-            if (typeof gridState[id].dataSource.put !== jsTypes.function) {
+            if (typeof gridState[id].dataSource.put !== general_util.jsTypes.function) {
                 for (i = 0; i < dirtyCells.length; i++) {
                     var index = dirtyCells[i].parents('tr').index();
                     var field = dirtyCells[i].data('field');
                     var idxOffset = 0;
-                    if (typeof gridState[id].dataSource.get !== jsTypes.function && gridState[id].pageNum > 1)
+                    if (typeof gridState[id].dataSource.get !== general_util.jsTypes.function && gridState[id].pageNum > 1)
                         idxOffset = ((gridState[id].pageNum - 1) * gridState[id].pageSize) - 1;
                     var origIndex = gridState[id].dataMap[index + idxOffset];
                     gridState[id].originalData[origIndex][field] = gridState[id].dataSource.data[index][field];
@@ -442,3 +450,6 @@ function createColumnToggleMenuOptions(menu, gridId) {
     menuList.append(menuItem.append(menuAnchor));
     return menuList;
 }
+
+export { attachMenuClickHandler, attachSaveAndDeleteHandlers, createExcelExportMenuItems, createDeselectMenuOption, createSaveDeleteMenuItems, createSortMenuItem, createFilterMenuItems,
+        createFilterModalMenuItem, createColumnToggleMenuOptions };

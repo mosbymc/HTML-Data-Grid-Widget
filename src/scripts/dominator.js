@@ -245,20 +245,12 @@ var _dominator = {
         this.elements.forEach(fn);
         return this;
     },
-    [Symbol.iterator]: function dominatorIterator() {
-        let hasSome = true,
-            val = this.elements,
-            idx = 0;
-        return {
-            next: function _next() {
-                if (hasSome) {
-                    idx++;
-                    hasSome = idx < val.length;
-                    return { done: false, value: val[idx - 1] };
-                }
-                return { done: true };
-            }
-        };
+    [Symbol.iterator]: function *_dominatorIterator() {
+        let i = 0;
+        while (i < this.elements.length) {
+            yield this.elements[i];
+            ++i;
+        }
     }
 };
 

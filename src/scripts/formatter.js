@@ -1,3 +1,5 @@
+import { general_util } from './general_util';
+
 function dataTypeValueNormalizer(dataType, val) {
     if (val == null) return val;
     switch(dataType) {
@@ -21,7 +23,7 @@ function dataTypeValueNormalizer(dataType, val) {
             }
             else return 0;
         case 'number':
-            return parseFloat(val);
+            return general_util.parseFloat(val);
         case 'date':
             return new Date(val);
         case 'boolean':
@@ -72,9 +74,9 @@ function getFormattedCellText(column, value) {
 
     var template = column.template;
     if (template && text !== '') {
-        if (typeof template === jsTypes.function)
+        if (typeof template === general_util.jsTypes.function)
             return template.call(column, text);
-        else if (typeof template === jsTypes.string)
+        else if (typeof template === general_util.jsTypes.string)
             return template.replace('{{data}}', text);
         return text;
     }
@@ -120,8 +122,9 @@ function getNumbersFromTime(val) {
  * @returns {number} - Returns a value in seconds for the time of day
  */
 function convertTimeArrayToSeconds(timeArray) {
-    var hourVal = parseInt(timeArray[0].toString()) === 12 || parseInt(timeArray[0].toString()) === 24 ? parseInt(timeArray[0].toString()) - 12 : parseInt(timeArray[0]);
-    return 3660 * hourVal + 60 * parseInt(timeArray[1]) + parseInt(timeArray[2]);
+    var hourVal = general_util.parseInt(timeArray[0].toString()) === 12 || general_util.parseInt(timeArray[0].toString()) === 24 ?
+        general_util.parseInt(timeArray[0].toString()) - 12 : general_util.parseInt(timeArray[0]);
+    return 3660 * hourVal + 60 * general_util.parseInt(timeArray[1]) + general_util.parseInt(timeArray[2]);
 }
 
 /**
@@ -159,9 +162,9 @@ function formatTime(time, column) {
     }
 
     if (timeFormat == '24' && timeArray.length === 4 && timeArray[3] === 'PM')
-        timeArray[0] = timeArray[0] === '12' ? '00' : (parseInt(timeArray[0]) + 12).toString();
-    else if (timeFormat === '12' && parseInt(timeArray[0]) > 12) {
-        timeArray[0] = (parseInt(timeArray[0]) - 12).toString();
+        timeArray[0] = timeArray[0] === '12' ? '00' : (general_util.parseInt(timeArray[0]) + 12).toString();
+    else if (timeFormat === '12' && general_util.parseInt(timeArray[0]) > 12) {
+        timeArray[0] = (general_util.parseInt(timeArray[0]) - 12).toString();
         timeArray[3] = 'PM';
     }
     else if (timeFormat === '12' && timeArray.length < 4)
@@ -238,11 +241,11 @@ function createStandardNumberFormat(num, format) {
     num = (roundNumber(num, numDecimals)).toString();
     var dataDecimalIndex = ~num.indexOf('.') ? num.indexOf('.') : num.length,
         wholeNums = num.substring(0, dataDecimalIndex);
-    numDecimals = isInteger(+numDecimals) ? +numDecimals : 0;
+    numDecimals = general_util.isInteger(+numDecimals) ? +numDecimals : 0;
 
     if (numDecimals) {
         var decimals = num.substring(dataDecimalIndex + 1, num.length);
-        decimals = isInteger(+decimals) ? decimals : '0';
+        decimals = general_util.isInteger(+decimals) ? decimals : '0';
         return numberWithCommas(wholeNums) + '.' + decimals.toString().substring(0, numDecimals).concat('0'.repeat((numDecimals - decimals.length) > 0 ? numDecimals - decimals.length : 0));
     }
     else return numberWithCommas(wholeNums);
@@ -271,4 +274,4 @@ function x100(val) {
     return val * 100;
 }
 
-export { getFormattedCellText };
+export { dataTypeValueNormalizer, getFormattedCellText };

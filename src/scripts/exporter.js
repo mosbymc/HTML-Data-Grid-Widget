@@ -1,3 +1,6 @@
+import { gridState } from './gridState';
+import { general_util } from './general_util';
+
 /**
  * Creates the excel export sub-menu options and attached handlers
  * @param {object} menu - The DOM menu-element
@@ -9,26 +12,27 @@ function createExcelExportMenuItems(menu, gridId) {
     var menuItem = $('<li class="menu_item"></li>');
     var menuAnchor = $('<a href="#" class="menu_option"><span class="excel_span">Export to Excel<span class="menu_arrow"/></span></a>');
     menuItem.on('mouseover', function excelMenuItemHoverHandler() {
-        var exportOptions = gridState[gridId].grid.find('#excel_grid_id_' + gridId);
+        var gridConfig = gridState.getInstance(gridId),
+            exportOptions = gridConfig.grid.find('#excel_grid_id_' + gridId);
         if (!exportOptions.length) {
             exportOptions = $('<div id="excel_grid_id_' + gridId + '" class="menu_item_options" data-grid_id="' + gridId + '" style="display: none;"></div>');
             var exportList = $('<ul class="menu-list"></ul>');
-            if (gridState[gridId].dataSource.rowCount <= gridState[gridId].pageSize)
+            if (gridConfig.dataSource.rowCount <= gridConfig.pageSize)
                 exportList.append('<li data-value="page" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Current Page Data</span></a></li>');
             exportList.append('<li data-value="all" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">All Page Data</span></a></li>');
-            if (gridState[gridId].selectable && gridState[gridId].grid.find('.selected').length) {
+            if (gridConfig.selectable && gridConfig.grid.find('.selected').length) {
                 exportList.append('<li data-value="select" class="menu_item"><a href="#" class="menu_option"><span class="excel_span">Selected Grid Data</span></a></li>');
             }
             var options = exportList.find('li');
             options.on('click', function excelExportItemClickHandler() {
                 exportDataAsExcelFile(gridId, this.dataset.value);
-                gridState[gridId].grid.find('.grid_menu').addClass('hiddenMenu');
+                gridConfig.grid.find('.grid_menu').addClass('hiddenMenu');
                 toggle(exportOptions, {duration: 20, callback: function checkForMouseOver() {
 
                     }});
             });
             exportOptions.append(exportList);
-            gridState[gridId].grid.append(exportOptions);
+            gridConfig.grid.append(exportOptions);
         }
         else exportOptions.removeClass('hidden_menu_item');
 
@@ -61,7 +65,7 @@ function createExcelExportMenuItems(menu, gridId) {
  * @param {string} option - The export option selected by the user
  */
 function exportDataAsExcelFile(gridId, option) {
-    if (excelExporter && typeof excelExporter.createWorkBook === jsTypes.function) {
+    if (excelExporter && typeof excelExporter.createWorkBook === general_util.jsTypes.function) {
         determineGridDataToExport(gridId, (option || 'page'), function gridDataCallback(excelDataAndColumns) {
             excelExporter.exportWorkBook(excelExporter.createWorkBook().createWorkSheet(excelDataAndColumns.data, excelDataAndColumns.columns, 'testSheet'));
         });
@@ -75,12 +79,13 @@ function exportDataAsExcelFile(gridId, option) {
  * @param {function} callback - The callback function; Needed for server-side data requests
  */
 function determineGridDataToExport(gridId, option, callback) {
-    var columns = getGridColumns(gridId);
+    var columns = getGridColumns(gridId),
+        gridConfig = gridState.getInstance(gridId);
     switch (option) {
         case 'select':
             //TODO: this is a bad namespace; need to rework the unfortunate grid.grid section
             //TODO: need to also create a better way to get the selected grid data as it appears in the dataSource
-            var selectedData = gridState[gridId].grid[0].grid.selectedData;
+            var selectedData = gridConfig.grid[0].grid.selectedData;
             if (!selectedData.length) return;
             var data = [], currentRow = selectedData[0].rowIndex;
             selectedData.forEach(function _constructObjects(item, idx) {
@@ -95,33 +100,33 @@ function determineGridDataToExport(gridId, option, callback) {
             callback({ data: data, columns: columns});
             break;
         case 'all':
-            if (typeof gridState[gridId].dataSource.get === jsTypes.function && gridState[gridId].dataSource.rowCount > gridState[gridId].pageSize) {
-                gridState[gridId].dataSource.get(createExcelRequestObject(gridId), function excelDataCallback(response) {
+            if (typeof gridConfig.dataSource.get === general_util.jsTypes.function && gridConfig.dataSource.rowCount > gridConfig.pageSize) {
+                gridConfig.dataSource.get(createExcelRequestObject(gridId), function excelDataCallback(response) {
                     callback({ data: response.data, columns: columns});
                 });
             }
-            else callback({ data: gridState[gridId].originalData, columns: columns });
+            else callback({ data: gridConfig.originalData, columns: columns });
             break;
         case 'page':
         default:
-            callback({ data: gridState[gridId].dataSource.data, columns: columns });
+            callback({ data: gridConfig.dataSource.data, columns: columns });
     }
 }
 
 function getGridColumns(gridId) {
-    return gridState[gridId].columns.filter(function _returnDisplayedColumns(col) {
+    return gridState.getInstance(gridId).columns.filter(function _returnDisplayedColumns(col) {
         return !col.isHidden;
     });
 }
 
 function createExcelRequestObject(gridId) {
-    var gridData = gridState[gridId],
+    var gridConfig = gridState.getInstance(gridId),
         requestObj = {};
-    if (gridData.sortable) requestObj.sortedOn = gridData.sortedOn.length ? gridData.sortedOn : [];
-    if (gridData.filterable) requestObj.filters = gridData.filters.filterGroup && gridData.filters.filterGroup.length? gridData.filters : { conjunct: null, filterGroup: [] };
-    if (gridData.groupable) requestObj.groupedBy = gridData.groupedBy.length? gridData.groupedBy : [];
+    if (gridConfig.sortable) requestObj.sortedOn = gridConfig.sortedOn.length ? gridConfig.sortedOn : [];
+    if (gridConfig.filterable) requestObj.filters = gridConfig.filters.filterGroup && gridConfig.filters.filterGroup.length? gridConfig.filters : { conjunct: null, filterGroup: [] };
+    if (gridConfig.groupable) requestObj.groupedBy = gridConfig.groupedBy.length? gridConfig.groupedBy : [];
 
-    requestObj.pageSize = gridData.dataSource.rowCount;
+    requestObj.pageSize = gridConfig.dataSource.rowCount;
     requestObj.pageNum = 1;
     return requestObj;
 }

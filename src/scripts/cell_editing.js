@@ -314,3 +314,29 @@ function saveCellSelectData(select) {
     }
     callGridEventHandlers(gridState[id].events.afterCellEdit, gridState[id].grid, null);
 }
+
+/**
+ * Attaches an event listener to a specific grid cell for the
+ * 'validated' event. Overrides the normal 'blur' behavior for cell editing
+ * @method attachValidationListener
+ * @for grid
+ * @private
+ * @param {object} elem
+ */
+function attachValidationListener(elem) {
+    $(document).one('validated', function validationHandlerCallback(e, eventData) {
+        if (eventData.element === elem) {
+            if (eventData.succeeded && elem.type !== 'select' && elem.type !== 'select-one')
+                saveCellEditData($(elem));
+            else if (eventData.succeeded)
+                saveCellSelectData($(elem));
+            else {
+                elem.focus();
+                attachValidationListener(elem);
+            }
+        }
+        else attachValidationListener(elem);
+    });
+}
+
+export { attachValidationListener, saveCellEditData, saveCellSelectData };

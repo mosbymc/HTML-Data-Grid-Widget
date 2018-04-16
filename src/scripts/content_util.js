@@ -1,81 +1,8 @@
-/**
- * Attaches handlers for click, mousemove, mousedown, mouseup, and scroll events depending on the value of the selectable attribute of the grid
- * @param {object} tableBody - The body of the grid's content table
- */
-function attachTableSelectHandler(tableBody) {
-    var gridId = tableBody.parents('.grid-wrapper').data('grid_id');
-    var isSelectable = gridState[gridId].selectable;
-    if (isSelectable) {
-        $(document).on('click', function tableBodySelectCallback(e) {
-            if (e.target === tableBody[0] || $(e.target).parents('tbody')[0] === tableBody[0]) {
-                if (gridState[gridId].selecting) {
-                    gridState[gridId].selecting = false;
-                    return;
-                }
-                gridState[gridId].grid.find('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
-                    $(elem).removeClass('selected');
-                });
-                var target = $(e.target);
-                if (target.hasClass('drill-down-parent') || target.parents('.drill-down-parent').length) return;
-                if (target.hasClass('drillDown_cell') || target.parents('.drillDown_cell').length) return;
-                if (isSelectable === 'cell' && target[0].tagName.toUpperCase() === 'TD')
-                    target.addClass('selected');
-                else if (target[0].tagName.toUpperCase() === 'TR')
-                    target.addClass('selected');
-                else
-                    target.parents('tr').first().addClass('selected');
-            }
-        });
-    }
-    if (isSelectable === 'multi-row' || isSelectable === 'multi-cell') {
-        $(document).on('mousedown', function mouseDownDragCallback(event) {
-            var target = $(event.target);
-            if (event.target === tableBody[0] || target.parents('tbody')[0] === tableBody[0]) {
-                if (target.hasClass('drill-down-parent') || target.parents('.drill-down-parent').length) return;
-                if (target.hasClass('drillDown_cell') || target.parents('.drillDown_cell').length) return;
-                gridState[gridId].selecting = true;
-                var contentDiv = tableBody.parents('.grid-content-div'),
-                    overlay = $('<div class="selection-highlighter"></div>').appendTo(gridState[gridId].grid);
-                overlay.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
-                overlay.data('origin-y', event.pageY + contentDiv.scrollTop()).data('origin-x', event.pageX + contentDiv.scrollLeft()).data('mouse-pos-x', event.pageX).data('mouse-pos-y', event.pageY);
-                overlay.data('previous-top', event.pageY).data('previous-left', event.pageX);
-                overlay.data('previous-bottom', event.pageY).data('previous-right', event.pageX);
-                overlay.data('origin-scroll_top', contentDiv.scrollTop()).data('origin-scroll_left', contentDiv.scrollLeft());
-                overlay.data('last-scroll_top_pos', contentDiv.scrollTop()).data('last-scroll_left_pos', contentDiv.scrollLeft());
-                overlay.data('actual-height', 0).data('actual-width', 0).data('event-type', 'mouse');
-
-                $(document).one('mouseup', function mouseUpDragCallback() {
-                    gridState[gridId].grid.find('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
-                        $(elem).removeClass('selected');
-                    });
-                    var overlay = $(".selection-highlighter");
-                    selectHighlighted(overlay, gridId);
-                    overlay.remove();
-                    contentDiv.off('scroll');
-                    $(document).off('mousemove');
-                });
-
-                contentDiv.on('scroll', function updateSelectOverlayOnScrollHandler() {
-                    if (gridState[gridId].selecting) {
-                        overlay.data('event-type', 'scroll');
-                        setOverlayDimensions(contentDiv, overlay);
-                    }
-                });
-
-                $(document).on('mousemove', function updateSelectOverlayOnMouseMoveHandler(ev) {
-                    if (gridState[gridId].selecting) {
-                        var domTag = ev.target.tagName.toUpperCase();
-                        if (domTag === 'INPUT' || domTag === 'SELECT') return;
-
-                        overlay.data('event-type', 'mouse');
-                        overlay.data('mouse-pos-x', ev.pageX).data('mouse-pos-y', ev.pageY);
-                        setOverlayDimensions(gridState[gridId].grid.find('.grid-content-div'), overlay);
-                    }
-                });
-            }
-        });
-    }
-}
+import { gridState } from './gridState';
+import { addValueToAggregations } from './aggregates_util';
+import { dataTypeValueNormalizer, getFormattedCellText } from './formatter';
+import { general_util } from './general_util';
+import { attachValidationListener, saveCellEditData, saveCellSelectData } from './cell_editing';
 
 /**
  * Creates group header rows, pads with extra columns based on number of grouped columns, and calculates/display group aggregatges
@@ -89,12 +16,12 @@ function createGroupedRows(gridId, rowIndex, currentGroupingValues, gridContent)
     var k,
         foundDiff = false,
         groupedDiff = [],
-        gridData = gridState[gridId];
-    gridData.groupedBy.forEach(function _createGroupedRows(item, idx) {
+        gridConfig = gridState.getInstance(gridId);
+    gridConfig.groupedBy.forEach(function _createGroupedRows(item, idx) {
         //If the current cached value for the same field is different than the current grid's data for the same field,
         //then cache the same value and note the diff.
-        if (!currentGroupingValues[item.field] || currentGroupingValues[item.field] !== gridData.dataSource.data[rowIndex][item.field]) {
-            currentGroupingValues[item.field] = gridData.dataSource.data[rowIndex][item.field];
+        if (!currentGroupingValues[item.field] || currentGroupingValues[item.field] !== gridConfig.dataSource.data[rowIndex][item.field]) {
+            currentGroupingValues[item.field] = gridConfig.dataSource.data[rowIndex][item.field];
             groupedDiff[idx] = 1;
             foundDiff = true;
         }
@@ -105,30 +32,30 @@ function createGroupedRows(gridId, rowIndex, currentGroupingValues, gridContent)
             else groupedDiff[idx] = 1;
         }
     });
-    if (foundDiff && rowIndex && gridData.groupAggregates) {   //If a diff was found...
+    if (foundDiff && rowIndex && gridConfig.groupAggregates) {   //If a diff was found...
         groupedDiff.reverse().forEach(function _findRowDiffs(item, idx) {
-            var numItems = gridData.groupAggregations[idx]._items_; //...save the current row's number of items...
+            var numItems = gridConfig.groupAggregations[idx]._items_; //...save the current row's number of items...
             if (item) {                               //...if there is a diff at the current row, print it to the screen
                 var groupAggregateRow = $('<tr class="grouped_row_header"></tr>').appendTo(gridContent);
                 groupedDiff.forEach(function _appendGroupingCells() {
                     groupAggregateRow.append('<td colspan="' + 1 + '" class="grouped_cell"></td>');
                 });
-                if (gridData.drillDown)
+                if (gridConfig.drillDown)
                     groupAggregateRow.append('<td colspan="1" class="grouped_cell"></td>');
-                gridData.columns.forEach(function _createAggregateCells(col) {
-                    if (col.field in gridData.groupAggregations[idx] && col.field !== '_items_'){
-                        groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridData.groupAggregations[idx][col.field].text || '') + '</td>');
+                gridConfig.columns.forEach(function _createAggregateCells(col) {
+                    if (col.field in gridConfig.groupAggregations[idx] && col.field !== '_items_'){
+                        groupAggregateRow.append('<td class="group_aggregate_cell">' + (gridConfig.groupAggregations[idx][col.field].text || '') + '</td>');
                     }
                     else
                         groupAggregateRow.append('<td class="group_aggregate_cell"> </td>');
                 });
-                gridData.groupAggregations[idx] = {       //Then reset the current row's aggregate object...
+                gridConfig.groupAggregations[idx] = {       //Then reset the current row's aggregate object...
                     _items_: 0
                 };
                 for (k = idx - 1; k >= 0; k--) {  //...and go backward through the diffs starting from the prior index, and compare the number of items in each diff...
-                    if (groupedDiff[k] && gridData.groupAggregations[k]._items_ == numItems) {    //...if the number of items are equal, reset that diff as well
+                    if (groupedDiff[k] && gridConfig.groupAggregations[k]._items_ == numItems) {    //...if the number of items are equal, reset that diff as well
                         groupedDiff[k] = 0;
-                        gridData.groupAggregations[k] = {
+                        gridConfig.groupAggregations[k] = {
                             _items_: 0
                         };
                     }
@@ -137,24 +64,24 @@ function createGroupedRows(gridId, rowIndex, currentGroupingValues, gridContent)
         });
     }
     groupedDiff.forEach(function _createGroupedAggregates(item, idx) {
-        if (gridData.groupAggregates) {
-            if (gridData.groupAggregations && !gridData.groupAggregations[idx]) {
-                gridData.groupAggregations[idx] = { _items_: 0 };
+        if (gridConfig.groupAggregates) {
+            if (gridConfig.groupAggregations && !gridConfig.groupAggregations[idx]) {
+                gridConfig.groupAggregations[idx] = { _items_: 0 };
             }
-            gridData.columns.forEach(function _aggregateValues(col) {
-                if (gridData.aggregates)
-                    addValueToAggregations(gridId, col.field, gridData.dataSource.data[rowIndex][col.field], gridData.groupAggregations[idx]);
+            gridConfig.columns.forEach(function _aggregateValues(col) {
+                if (gridConfig.aggregates)
+                    addValueToAggregations(gridId, col.field, gridConfig.dataSource.data[rowIndex][col.field], gridConfig.groupAggregations[idx]);
             });
-            gridData.groupAggregations[idx]._items_++;
+            gridConfig.groupAggregations[idx]._items_++;
         }
         if (groupedDiff[idx]) {
-            var groupedText = getFormattedCellText(gridData.columns[gridData.columnIndices[gridData.groupedBy[idx].field]], gridData.dataSource.data[rowIndex][gridData.groupedBy[idx].field]) ||
-                gridData.dataSource.data[rowIndex][gridData.groupedBy[idx].field];
+            var groupedText = getFormattedCellText(gridConfig.columns[gridConfig.columnIndices[gridConfig.groupedBy[idx].field]], gridConfig.dataSource.data[rowIndex][gridConfig.groupedBy[idx].field]) ||
+                gridConfig.dataSource.data[rowIndex][gridConfig.groupedBy[idx].field];
             var groupTr = $('<tr class="grouped_row_header"></tr>').appendTo(gridContent);
-            var groupTitle = gridData.columns[gridData.columnIndices[gridData.groupedBy[idx].field]].title || gridData.groupedBy[idx].field;
+            var groupTitle = gridConfig.columns[gridConfig.columnIndices[gridConfig.groupedBy[idx].field]].title || gridConfig.groupedBy[idx].field;
             for (k = 0; k <= idx; k++) {
-                var indent = k === idx ? (gridData.columns.length + gridData.groupedBy.length - k) : 1;
-                if (gridData.drillDown) ++indent;
+                var indent = k === idx ? (gridConfig.columns.length + gridConfig.groupedBy.length - k) : 1;
+                if (gridConfig.drillDown) ++indent;
                 groupTr.data('group-indent', indent);
                 var groupingCell = $('<td colspan="' + indent + '" class="grouped_cell"></td>').appendTo(groupTr);
                 if (k === idx) {
@@ -174,14 +101,14 @@ function createGroupedRows(gridId, rowIndex, currentGroupingValues, gridContent)
  */
 function attachCustomCellHandler(column, cellItem, gridId) {
     Object.keys(column.events).forEach(function _attachColumnEventHandlers(evt) {
-        if (typeof column.events[evt] === jsTypes.function) createEventHandler(cellItem, evt, column.events[evt]);
+        if (typeof column.events[evt] === general_util.jsTypes.function) createEventHandler(cellItem, evt, column.events[evt]);
     });
 
     function createEventHandler(cellItem, eventName, eventHandler) {
         cellItem.on(eventName, function genericEventHandler() {
             var row = $(this).parents('tr'),
                 rowIdx = row.index();
-            eventHandler.call(this, gridState[gridId].dataSource.data[rowIdx]);
+            eventHandler.call(this, gridState.getInstance(gridId).dataSource.data[rowIdx]);
         });
     }
 }
@@ -194,9 +121,9 @@ function attachCustomCellHandler(column, cellItem, gridId) {
  */
 function makeCellEditable(id, td) {
     td.on('click', function editableCellClickHandler(e) {
-        var gridContent = gridState[id].grid.find('.grid-content-div');
-        var gridData = gridState[id];
-        if (gridState[id].updating) return;
+        var gridConfig = gridState.getInstance(id),
+            gridContent = gridConfig.grid.find('.grid-content-div');
+        if (gridConfig.updating) return;
         if (e.target !== e.currentTarget) return;
         if (gridContent.find('.invalid').length) return;
         var cell = $(e.currentTarget);
@@ -206,16 +133,16 @@ function makeCellEditable(id, td) {
         cell.text('');
 
         var row = cell.parents('tr').first(),
-            index = gridData.grid.find('tr').filter(function removeGroupAndChildRows() {
+            index = gridConfig.grid.find('tr').filter(function removeGroupAndChildRows() {
                 var r =  $(this);
                 return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
             }).index(row),
             field = cell.data('field'),
-            column = gridState[id].columns[gridState[id].columnIndices[field]],
+            column = gridConfig.columns[gridConfig.columnIndices[field]],
             type = column.type || '',
-            val = column.nullable || gridState[id].dataSource.data[index][field] ? gridState[id].dataSource.data[index][field] : '',
+            val = column.nullable || gridConfig.dataSource.data[index][field] ? gridConfig.dataSource.data[index][field] : '',
             dataAttributes = '',
-            gridValidation = gridState[id].useValidator ? column.validation : null,
+            gridValidation = gridConfig.useValidator ? column.validation : null,
             dataType, input, inputVal;
 
         if (gridValidation) {
@@ -224,21 +151,21 @@ function makeCellEditable(id, td) {
             dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
         }
 
-        if (gridState[id].useFormatter && column.inputFormat)
+        if (gridConfig.useFormatter && column.inputFormat)
             dataAttributes += ' data-inputformat="' + column.inputFormat + '"';
 
         switch (type) {
             case 'boolean':
                 input = $('<input type="checkbox" class="input checkbox active-cell"' + dataAttributes + '/>').appendTo(cell);
-                val = typeof gridState[id].dataSource.data[index][field] === jsTypes.string ? gridState[id].dataSource.data[index][field] === 'true' : !!val;
+                val = typeof gridConfig.dataSource.data[index][field] === general_util.jsTypes.string ? gridConfig.dataSource.data[index][field] === 'true' : !!val;
                 input[0].checked = val;
                 dataType = 'boolean';
                 break;
             case 'number':
-                if (typeof gridState[id].dataSource.data[index][field] === jsTypes.string)
-                    val = isNumber(parseFloat(gridState[id].dataSource.data[index][field])) ? parseFloat(gridState[id].dataSource.data[index][field]) : 0;
+                if (typeof gridConfig.dataSource.data[index][field] === general_util.jsTypes.string)
+                    val = general_util.isNumber(general_util.parseFloat(gridConfig.dataSource.data[index][field])) ? general_util.parseFloat(gridConfig.dataSource.data[index][field]) : 0;
                 else
-                    val = isNumber(gridState[id].dataSource.data[index][field]) ? gridState[id].dataSource.data[index][field] : 0;
+                    val = general_util.isNumber(gridConfig.dataSource.data[index][field]) ? gridConfig.dataSource.data[index][field] : 0;
                 inputVal = val;
                 input = $('<input type="text" value="' + inputVal + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
                 dataType = 'number';
@@ -281,7 +208,7 @@ function makeCellEditable(id, td) {
                 saveCellEditData(input);
             });
         }
-        callGridEventHandlers(gridData.events.beforeCellEdit, gridData.grid, null);
+        callGridEventHandlers(gridConfig.events.beforeCellEdit, gridConfig.grid, null);
     });
 }
 
@@ -293,8 +220,8 @@ function makeCellEditable(id, td) {
  */
 function makeCellSelectable(id, td) {
     td.on('click', function selectableCellClickHandler(e) {
-        var gridContent = gridState[id].grid.find('.grid-content-div'),
-            gridData = gridState[id];
+        var gridConfig = gridState.getInstance(id),
+            gridContent = gridConfig.grid.find('.grid-content-div');
         if (e.target !== e.currentTarget) return;
         if (gridContent.find('.invalid').length) return;
         var cell = $(e.currentTarget);
@@ -303,16 +230,16 @@ function makeCellSelectable(id, td) {
         else cell.data('dirty', false);
         cell.text('');
         var row = cell.parents('tr').first(),
-            index = gridData.grid.find('tr').filter(function removeGroupAndChildRows() {
+            index = gridConfig.grid.find('tr').filter(function removeGroupAndChildRows() {
                 var r =  $(this);
                 return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
             }).index(row),
             field = cell.data('field');
-        if (gridState[id].updating) return;     //can't edit a cell if the grid is updating
+        if (gridConfig.updating) return;     //can't edit a cell if the grid is updating
 
-        var column = gridState[id].columns[gridState[id].columnIndices[field]],
-            value = gridState[id].dataSource.data[index][field],
-            gridValidation = gridState[id].useValidator ? column.validation : null,
+        var column = gridConfig.columns[gridConfig.columnIndices[field]],
+            value = gridConfig.dataSource.data[index][field],
+            gridValidation = gridConfig.useValidator ? column.validation : null,
             dataAttributes = '';
 
         if (gridValidation) {
@@ -326,7 +253,7 @@ function makeCellSelectable(id, td) {
         var dataType = column.type || 'string',
             normalizedValue = dataTypeValueNormalizer(dataType, value);
         if (!options.some(function _compareCellValueForUniqueness(opt) {
-            if (comparator(normalizedValue, dataTypeValueNormalizer(dataType, opt), booleanOps.strictEqual))
+            if (comparator(normalizedValue, dataTypeValueNormalizer(dataType, opt), general_util.booleanOps.strictEqual))
                 return true;
         })) {
             options.reverse().push(value).reverse();
@@ -345,7 +272,7 @@ function makeCellSelectable(id, td) {
                 saveCellSelectData(select);
             });
         }
-        callGridEventHandlers(gridData.events.beforeCellEdit, gridData.grid, null);
+        callGridEventHandlers(gridConfig.events.beforeCellEdit, gridConfig.grid, null);
     });
 }
 
@@ -387,10 +314,10 @@ function createGroupTrEventHandlers(gridId) {
  * @param {number} gridId - The id of the parent grid.
  */
 function attachDrillDownAccordionHandler(gridId) {
-    var gridData = gridState[gridId];
-    gridData.grid.find('.drillDown_span').on('click', function drillDownAccordionHandler() {
+    var gridConfig = gridState.getInstance(gridId);
+    gridConfig.grid.find('.drillDown_span').on('click', function drillDownAccordionHandler() {
         var accRow = $(this).parents('tr'),
-            accRowIdx = gridData.grid.find('.data-row').not('.drill-down-row').index(accRow);
+            accRowIdx = gridConfig.grid.find('.data-row').not('.drill-down-row').index(accRow);
         if (accRow.find('.drillDown_span').data('state') === 'open') {
             accRow.find('.drillDown_span').data('state', 'closed');
             accRow.next().css('display', 'none');
@@ -402,31 +329,31 @@ function attachDrillDownAccordionHandler(gridId) {
             }
             else {
                 var drillDownRow = $('<tr class="drill-down-parent"></tr>').insertAfter(accRow);
-                if (gridData.groupedBy && gridData.groupedBy.length) {
-                    for (var i = 0; i < gridData.groupedBy.length; i++) {
+                if (gridConfig.groupedBy && gridConfig.groupedBy.length) {
+                    for (var i = 0; i < gridConfig.groupedBy.length; i++) {
                         drillDownRow.append('<td class="grouped_cell"></td>');
                     }
                 }
                 drillDownRow.append('<td class="grouped_cell"></td>');
                 var drillDownCellLength = 0;
-                gridData.grid.find('.grid-header-div').find('col').each(function getTotalGridLength() {
+                gridConfig.grid.find('.grid-header-div').find('col').each(function getTotalGridLength() {
                     if (!$(this).hasClass('drill_down_col') && !$(this).hasClass('groupCol'))
                         drillDownCellLength += $(this).width();
                 });
-                var containerCell = $('<td class="drill-down-cell" colspan="' + gridData.columns.length + '" style="width: ' + drillDownCellLength + ';"></td>').appendTo(drillDownRow),
-                    newGridId = gridData.grid[0].id + generateId(),
+                var containerCell = $('<td class="drill-down-cell" colspan="' + gridConfig.columns.length + '" style="width: ' + drillDownCellLength + ';"></td>').appendTo(drillDownRow),
+                    newGridId = gridConfig.grid[0].id + generateId(),
                     gridDiv = $('<div id="' + newGridId + '" class="drill_down_grid"></div>').appendTo(containerCell);
                 accRow.find('.drillDown_span').data('state', 'open');
-                var parentRowData = gridData.grid[0].grid.getCurrentDataSourceData(accRowIdx);
+                var parentRowData = gridConfig.grid[0].grid.getCurrentDataSourceData(accRowIdx);
 
-                if (typeof gridData.drillDown === jsTypes.function) {
-                    drillDownCreate(gridData.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
+                if (typeof gridConfig.drillDown === general_util.jsTypes.function) {
+                    drillDownCreate(gridConfig.drillDown(accRowIdx, parentRowData[0]), gridDiv[0], gridId);
                 }
-                else if (typeof gridData.drillDown === jsTypes.object) {
-                    if (!gridData.drillDown.dataSource) gridData.drillDown.dataSource = {};
-                    gridData.drillDown.dataSource.data = parentRowData[0].drillDownData;
-                    gridData.drillDown.dataSource.rowCount = parentRowData[0].drillDownData ? parentRowData[0].drillDownData.length : 0;
-                    drillDownCreate(gridData.drillDown, gridDiv[0], gridId);
+                else if (typeof gridConfig.drillDown === general_util.jsTypes.object) {
+                    if (!gridConfig.drillDown.dataSource) gridConfig.drillDown.dataSource = {};
+                    gridConfig.drillDown.dataSource.data = parentRowData[0].drillDownData;
+                    gridConfig.drillDown.dataSource.rowCount = parentRowData[0].drillDownData ? parentRowData[0].drillDownData.length : 0;
+                    drillDownCreate(gridConfig.drillDown, gridDiv[0], gridId);
                 }
             }
         }

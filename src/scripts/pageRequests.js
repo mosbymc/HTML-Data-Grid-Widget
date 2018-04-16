@@ -1,5 +1,6 @@
 import { gridState } from './gridState';
-import { general_util } from './general_util';
+import { general_util } from './general_util'
+import { createFilterTreeFromFilterObject } from './expressionParser';
 
 /**
  * Abstraction for getting grid data so the 'create' function doesn't
@@ -156,7 +157,7 @@ function getPageDataFromDataSource(requestObj, id, callback) {
         return;
     }
     if (requestObj.filters && requestObj.filters.filterGroup && requestObj.filters.filterGroup.length) {
-        var filtered = expressionParser.createFilterTreeFromFilterObject(requestObj.filters).filterCollection(gridState[id].originalData);
+        var filtered = createFilterTreeFromFilterObject(requestObj.filters).filterCollection(gridState[id].originalData);
         fullGridData = filtered.filteredData;
         gridState[id].dataMap = filtered.filteredDataMap;
         requestObj.pageNum = 1;

@@ -290,4 +290,4 @@ function selectHighlighted(overlay, gridId) {
     });
 }
 
-export { attachTableSelectHandler };
+export { attachTableSelectHandler, selectHighlighted };

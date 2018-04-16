@@ -1,3 +1,7 @@
+import { gridState } from './gridState';
+import { getFormattedCellText } from './formatter';
+import { general_util } from './general_util';
+
 /**
  * Used for calculating both client-side full-grid aggregates, as well as grouped aggregates
  * @param {number} gridId - The id of the grid widget instance
@@ -8,10 +12,11 @@
 function addValueToAggregations(gridId, field, value, aggregationObj) {
     if (value == null) return;
     var text, total,
-        column = gridState[gridId].columns[gridState[gridId].columnIndices[field]];
+        gridConfig = gridState.getInstance(gridId),
+        column = gridConfig.columns[gridConfig.columnIndices[field]];
     if (!aggregationObj[field]) aggregationObj[field] = [];
     var aggregateArr = [];
-    gridState[gridId].dataSource.aggregates.filter(function _findMatchingAggregateColumn(item) {
+    gridConfig.dataSource.aggregates.filter(function _findMatchingAggregateColumn(item) {
         return item.field === field;
     }).forEach(function _calculateAggregate(col) {
         var aggregateObj = {},
@@ -21,7 +26,7 @@ function addValueToAggregations(gridId, field, value, aggregationObj) {
         switch (col.aggregate.toLowerCase()) {
             case 'count':
                 if (!prevAgg || !prevAgg.length) {
-                    aggregateObj.value = gridState[gridId].dataSource.rowCount || gridState[gridId].dataSource.data.length;
+                    aggregateObj.value = gridConfig.dataSource.rowCount || gridConfig.dataSource.data.length;
                     aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + aggregateObj.value;
                     aggregateObj.aggregate = col.aggregate.toLowerCase();
                     aggregateArr.push(aggregateObj);
@@ -30,8 +35,8 @@ function addValueToAggregations(gridId, field, value, aggregationObj) {
                 return;
             case 'average':
                 var count = prevAgg.length ? prevAgg[0].count + 1 : 1;
-                value = parseFloat(value.toString());
-                value = isNumber(value) ? value : 0;
+                value = general_util.parseFloat(value.toString());
+                value = general_util.isNumber(value) ? value : 0;
                 total = prevAgg.length ? prevAgg[0].total + value : value;
                 var avg = total/count;
                 text = getFormattedCellText(column, avg.toFixed(2)) || avg.toFixed(2);
@@ -63,7 +68,7 @@ function addValueToAggregations(gridId, field, value, aggregationObj) {
                 else aggregateArr = aggregateArr.concat(prevAgg);
                 return;
             case 'total':
-                total = (parseFloat(prevAgg[0].total) || 0) + parseFloat(value);
+                total = (general_util.parseFloat(prevAgg[0].total) || 0) + general_util.parseFloat(value);
                 text = getFormattedCellText(column, total) || total;
                 aggregateObj.total = total;
                 aggregateObj.text = aggregates[col.aggregate.toLowerCase()] + text;

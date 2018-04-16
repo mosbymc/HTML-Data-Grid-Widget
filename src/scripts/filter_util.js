@@ -1,3 +1,7 @@
+import { gridState } from './gridState';
+import { general_util } from './general_util';
+import { preparePageDataGetRequest } from './pageRequests';
+
 function createFilterGroups(groupContainer, filterObject) {
     var groupConjunct = groupContainer.parents('.filter_modal').find('span[data-filter_group_num="' + groupContainer.data('filter_group_num') + '"]').children('select');
     filterObject.filterGroup = [];
@@ -32,16 +36,19 @@ function createFilterObjects(filterDiv, filterGroupArr, gridId) {
     }
 
     if (value) {
-        filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState[gridId].columns[gridState[gridId].columnIndices[field]].type || 'string') });
+        filterGroupArr.push({ field: field, value: value, operation: operation, dataType: (gridState.getInstance(gridId)
+                .columns[gridState.getInstance(gridId).columnIndices[field]].type || 'string') });
     }
 }
 
 function addFilterButtonHandler(e) {
     var filterModal = $(e.currentTarget).parents('.filter_modal'),
         gridId = filterModal.data('grid_id'),
-        numFiltersAllowed = gridState[gridId].columns.length;
-    if (typeof gridState[gridId].advancedFiltering === jsTypes.object && typeof gridState[gridId].advancedFiltering.filtersCount === jsTypes.number)
-        numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
+        numFiltersAllowed = gridState[gridId].columns.length,
+        gridConfig = gridState.getInstance(gridId);
+    if (typeof gridConfig.advancedFiltering === general_util.jsTypes.object &&
+        typeof gridConfig.advancedFiltering.filtersCount === general_util.jsTypes.number)
+        numFiltersAllowed = gridConfig.advancedFiltering.filtersCount;
 
     if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
     else if (filterModal.find('.filter_row_div').length === numFiltersAllowed - 1) filterModal.find('.add_filter_group').prop('disabled', true);
@@ -123,17 +130,18 @@ function addFilterGroupHandler() {
         filterGroups = filterModal.find('.filter_group_container'),
         parentGroup = $(this).parents('.filter_group_container').first(),
         filterGroupCount = filterGroups.length,
-        numFiltersAllowed = gridState[gridId].columns.length;
-    if (typeof gridState[gridId].advancedFiltering === jsTypes.object && typeof gridState[gridId].advancedFiltering.groupsCount === jsTypes.number)
-        numGroupsAllowed = gridState[gridId].advancedFiltering.groupsCount;
+        numFiltersAllowed = gridState[gridId].columns.length,
+        gridConfig = gridState.getInstance(gridId);
+    if (typeof gridConfig.advancedFiltering === general_util.jsTypes.object && typeof gridConfig.advancedFiltering.groupsCount === general_util.jsTypes.number)
+        numGroupsAllowed = gridConfig.advancedFiltering.groupsCount;
     else numGroupsAllowed = 3;
 
     if (filterGroupCount >= numGroupsAllowed) return;
     else if (filterGroupCount === numGroupsAllowed - 1)
         filterModal.find('.add_filter_group').prop('disabled', true);
 
-    if (typeof gridState[gridId].advancedFiltering === jsTypes.object && typeof gridState[gridId].advancedFiltering.filtersCount === jsTypes.number)
-        numFiltersAllowed = gridState[gridId].advancedFiltering.filtersCount;
+    if (typeof gridConfig.advancedFiltering === general_util.jsTypes.object && typeof gridConfig.advancedFiltering.filtersCount === general_util.jsTypes.number)
+        numFiltersAllowed = gridConfig.advancedFiltering.filtersCount;
 
     if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
     else if (filterModal.find('.filter_row_div').length === numFiltersAllowed - 1) filterModal.find('.add_filter_group').prop('disabled', true);
@@ -177,8 +185,9 @@ function deleteFilterButtonHandler(e) {
 
     var gridId = filterModal.data('grid_id'),
         numFilters = filterModal.find('.filter_row_div').length,
-        allowedFilters = gridState[gridId].columns.length;
-    if (typeof gridState[gridId].advancedFiltering === jsTypes.object && typeof gridState[gridId].advancedFiltering.filtersCount === jsTypes.number)
+        allowedFilters = gridState[gridId].columns.length,
+        gridConfig = gridState.getInstance(gridId);
+    if (typeof gridConfig.advancedFiltering === general_util.jsTypes.object && typeof gridConfig.advancedFiltering.filtersCount === general_util.jsTypes.number)
         allowedFilters = gridState[gridId].advancedFiltering.filtersCount;
     if (allowedFilters > numFilters)
         filterModal.find('.add_filter_group').prop('disabled', false);
@@ -191,7 +200,7 @@ function clearFirstFilterButtonHandler(e) {
         gridId = filterRowDiv.parents('.filter_modal').data('grid_id');
     columnSelector.find('option').remove();
     columnSelector.append('<option value="">Select a column</option>');
-    gridState[gridId].columns.forEach(function _appendFilterableOption(col) {
+    gridState.getInstance(gridId).columns.forEach(function _appendFilterableOption(col) {
         if (col.filterable) columnSelector.append('<option value="' + col.field + '">' + (col.title || col.field) + '</option>');
     });
     filterRowDiv.find('.filterType').prop('disabled', true).find('option').remove();
@@ -201,3 +210,83 @@ function clearFirstFilterButtonHandler(e) {
 function getFilterRowIdx(filterModal) {
     return filterModal.find('.filter_row_div').length ? filterModal.find('.filter_row_div').last().data('filter_idx') + 1 : 1;
 }
+
+function resetAllFilters(e) {
+    var gridMenu = $(e.currentTarget).parents('.grid_menu'),
+        gridId = gridMenu.data('grid_id'),
+        gridConfig = gridState.getInstance(gridId);
+    if (gridConfig.updating) return;     //can't filter if grid is updating
+    $('.grid_menu').addClass('hiddenMenu');
+    gridConfig.grid.find('filterInput').val('');
+
+    var filterModal = gridConfig.grid.find('.filter_modal');
+    filterModal.find('.filter_group_container').each(function removeFilterGroups() {
+        var grpContainer = $(this);
+        if (grpContainer.data('filter_group_num') !== 1) grpContainer.remove();
+        else {
+            grpContainer.find('.filter_row_div').each(function removeFilterRows() {
+                var filterRow = $(this);
+                if (filterRow.data('filter_idx') !== 1) filterRow.remove();
+                else {
+                    var columnSelector = filterRow.find('.filter_column_selector');
+                    columnSelector.find('option').remove();
+                    columnSelector.append('<option value="">Select a column</option>');
+                    gridState[gridId].columns.forEach(function _addFilterableOption(col) {
+                        if (col.filterable) columnSelector.append('<option value="' + col.field + '">' + (col.title || col.field) + '</option>');
+                    });
+
+                    filterRow.find('.filterType').prop('disabled', true).find('option').remove();
+                    filterRow.find('.advanced_filter_value').prop('disabled', true).removeClass('invalid-grid-input').val('');
+                }
+            });
+        }
+    });
+
+    filterModal.find('filter_error').remove();
+
+    if (gridConfig.filters && Object.keys(gridConfig.filters.filterGroup).length) {
+        gridConfig.filters = {};
+        gridConfig.pageRequest.eventType = 'filter';
+        preparePageDataGetRequest(gridId);
+    }
+}
+
+function createFilterOptionsByDataType(select, type, isNullable) {
+    switch (type) {
+        case 'number':
+            select.append('<option value="gte">Greater than or equal to:</option>')
+                .append('<option value="gt">Greater than:</option>')
+                .append('<option value="lte">Less than or equal to:</option>')
+                .append('<option value="lt">Less than:</option>')
+                .append('<option value="eq">Equal to:</option>')
+                .append('<option value="neq">Not equal to:</option>');
+            break;
+        case 'date':
+        case 'time':
+        case 'datetime':
+            select.append('<option value="gte">Equal to or later than:</option>')
+                .append('<option value="gt">Later than:</option>')
+                .append('<option value="lte">Equal to or before:</option>')
+                .append('<option value="lt">Before:</option>')
+                .append('<option value="eq">Equal to:</option>')
+                .append('<option value="neq">Not equal to:</option>');
+            break;
+        case 'boolean':
+            select.append('<option value="true">True</option>')
+                .append('<option value="false">False</option>');
+            break;
+        case 'string':
+            select.append('<option value="ct">Contains:</option>')
+                .append('<option value="nct">Does not contain:</option>')
+                .append('<option value="eq">Equal to:</option>')
+                .append('<option value="neq">Not equal to:</option>');
+            break;
+    }
+
+    if (isNullable) {
+        select.append('<option value="null">Is null:</option>');
+        select.append('<option value="not_null">Is not null:</option>');
+    }
+}
+
+export { addNewAdvancedFilter, createFilterGroups, resetAllFilters };
