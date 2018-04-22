@@ -1,8 +1,10 @@
 import { gridState } from './gridState';
-import { viewGenerator } from './viewGenerator';
 import { general_util } from './general_util';
-import { header_util } from './header_util';
 import { copyGridWidth } from './grid_util';
+import { headerGenerator } from './headerGenerator';
+import { contentGenerator } from './contentGenerator';
+import { pagerGenerator } from './pagerGenerator';
+import { aggregateGenerator } from './aggregate_generator';
 
 function createGridInstanceFunctions(gridId) {
     var gridConfig = gridState.getInstance(gridId),
@@ -168,7 +170,7 @@ function createGridInstanceFunctions(gridId) {
                         gridConfig.grid.find('.grid-header-wrapper').find('[data-field="' + col + '"]').css('display', '');
                         gridConfig.grid.find('.grid-content-div').find('[data-field="' + col + '"]').css('display', '');
                         gridConfig.grid.find('colgroup').append('<col>');
-                        header_util.setColWidth(gridConfig, gridConfig.grid);
+                        headerGenerator.setColWidth(gridConfig, gridConfig.grid);
                         copyGridWidth(gridConfig.grid);
                     }
                 },
@@ -209,13 +211,13 @@ function createGridInstanceFunctions(gridId) {
 
                         gridConfig.hasAddedColumn = true;
                         gridConfig.grid.find('.grid-header-wrapper').empty();
-                        viewGenerator.createHeaders(gridConfig, gridElem);
+                        headerGenerator.createHeaders(gridConfig, gridElem);
                         gridConfig.grid.find('.grid-content-div').empty();
                         //setColWidth(gridState[gridId], gridState[gridId].grid);
-                        viewGenerator.createContent(gridConfig, gridConfig.grid);
+                        contentGenerator.createContent(gridConfig, gridConfig.grid);
                         gridConfig.grid.find('.grid-pager-div').empty();
-                        viewGenerator.createPager(gridConfig, gridConfig.grid);
-                        viewGenerator.createAggregates(gridId);
+                        pagerGenerator.createPager(gridConfig, gridConfig.grid);
+                        aggregateGenerator.createAggregates(gridId);
                     }
                 },
                 writable: false,
@@ -238,10 +240,10 @@ function createGridInstanceFunctions(gridId) {
                         gridConfig.dataSource.dataMap[gridConfig.dataSource.rowCount] = gridConfig.dataSource.rowCount;
                     gridConfig.pageSize++;
                     gridConfig.grid.find('.grid-content-div').empty();
-                    viewGenerator.createContent(gridConfig, gridConfig.grid);
+                    contentGenerator.createContent(gridConfig, gridConfig.grid);
                     gridConfig.grid.find('.grid-pager-div').empty();
-                    viewGenerator.createPager(gridConfig, gridConfig.grid);
-                    viewGenerator.createAggregates(gridId);
+                    pagerGenerator.createPager(gridConfig, gridConfig.grid);
+                    aggregateGenerator.createAggregates(gridId);
                 },
                 writable: false,
                 configurable: false
@@ -352,10 +354,10 @@ function createGridInstanceFunctions(gridId) {
                         gridConfig.pageSize = data.length;
                         gridConfig.dataSource.rowCount = data.length;
                         gridConfig.grid.find('.grid-content-div').empty();
-                        viewGenerator.createContent(gridConfig, gridConfig.grid);
+                        contentGenerator.createContent(gridConfig, gridConfig.grid);
                         gridConfig.grid.find('.grid-pager-div').empty();
-                        viewGenerator.createPager(gridConfig, gridConfig.grid);
-                        viewGenerator.createAggregates(gridId);
+                        pagerGenerator.createPager(gridConfig, gridConfig.grid);
+                        aggregateGenerator.createAggregates(gridId);
                     }
                 },
                 writable: false,
@@ -388,10 +390,10 @@ function createGridInstanceFunctions(gridId) {
 
                     if (appliedUpdate) {
                         gridConfig.grid.find('.grid-content-div').empty();
-                        viewGenerator.createContent(gridConfig, gridConfig.grid);
+                        contentGenerator.createContent(gridConfig, gridConfig.grid);
                         gridConfig.grid.find('.grid-pager-div').empty();
-                        viewGenerator.createPager(gridConfig, gridConfig.grid);
-                        viewGenerator.createAggregates(gridId);
+                        pagerGenerator.createPager(gridConfig, gridConfig.grid);
+                        aggregateGenerator.createAggregates(gridId);
                     }
                 },
                 writable: false,

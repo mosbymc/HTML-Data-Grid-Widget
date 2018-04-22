@@ -1,3 +1,5 @@
+import { general_util } from './general_util';
+
 function copyGridWidth(gridElem) {
     var headerCols = gridElem.find('.grid-header-div').find('col'),
         contentCols = gridElem.find('.grid-content-div').find('col'),
@@ -28,7 +30,7 @@ function copyGridWidth(gridElem) {
  * @returns {*} - Returns a new instance of whatever type was given to the function
  */
 function cloneGridData(gridData) { //Clones grid data so pass-by-reference doesn't mess up the values in other grids.
-    if (gridData == null || typeof (gridData) !== jsTypes.object)
+    if (gridData == null || typeof (gridData) !== general_util.jsTypes.object)
         return gridData;
 
     if (Object.prototype.toString.call(gridData) === '[object Array]')
@@ -56,4 +58,55 @@ function cloneArray(arr) {
     return newArr;
 }
 
-export { cloneArray, cloneGridData, copyGridWidth };
+function comparator(val, base, type) {
+    switch (type) {
+        case 'eq':
+        case '===':
+            return val === base;
+        case '==':
+            return val == base;
+        case 'neq':
+        case '!==':
+            return val !== base;
+        case '!=':
+            return val != base;
+        case 'gte':
+        case '>=':
+            return val >= base;
+        case 'gt':
+        case '>':
+            return val > base;
+        case 'lte':
+        case '<=':
+            return val <= base;
+        case 'lt':
+        case '<':
+            return val < base;
+        case 'not':
+        case '!':
+        case 'falsey':
+            return !val;
+        case 'truthy':
+            return !!val;
+        case 'ct':
+            return !!~val.toLowerCase().indexOf(base.toLowerCase());
+        case 'nct':
+            return !~val.toLowerCase().indexOf(base.toLowerCase());
+    }
+}
+
+/**
+ * Calls all registered event handlers for a collection of events
+ * @param {Array} events - A collection of events to
+ * @param {Object} context - An object, array, or function to set as the context of the event handler
+ * @param  {Object} param - An object that contains metadata about the event
+ */
+function callGridEventHandlers(events, context, param) {
+    if (events.length) {
+        events.forEach(function callEventHandlers(fn) {
+            fn.call(context, param);
+        });
+    }
+}
+
+export { callGridEventHandlers, cloneArray, cloneGridData, comparator, copyGridWidth };

@@ -1,6 +1,10 @@
 import { gridState } from './gridState';
 import { general_util } from './general_util'
 import { createFilterTreeFromFilterObject } from './expressionParser';
+import { callGridEventHandlers, cloneGridData } from './grid_util';
+import { getFormattedCellText } from './formatter';
+import { sortGridData } from './sorting_util';
+import { headerGenerator } from './headerGenerator';
 
 /**
  * Abstraction for getting grid data so the 'create' function doesn't
@@ -78,7 +82,7 @@ function preparePageDataGetRequest(id, updateContentCallback) {
             if (typeof gridConfig.dataSource.get === general_util.jsTypes.function) gridConfig.originalData = cloneGridData(response.data);
 
             if (gridConfig.pageRequest.eventType === 'newGrid' || gridConfig.pageRequest.eventType === 'group')
-                setColWidth(gridConfig, gridState[id].grid);
+                headerGenerator.setColWidth(gridConfig, gridState[id].grid);
 
             if (gridConfig.pageRequest.eventType === 'filter') {
                 gridConfig.gridAggregations = {};
@@ -108,32 +112,33 @@ function preparePageDataGetRequest(id, updateContentCallback) {
  * @param {number} id - The id of the grid widget instance
  */
 function prepareGridDataUpdateRequest(id) {
-    gridState[id].updating = true;
+    var gridConfig = gridState.getInstance(id);
+    gridConfig.updating = true;
     var requestObj = {
-        models: gridState[id].putRequest.models,
-        pageNum: gridState[id].putRequest.pageNum
+        models: gridConfig.putRequest.models,
+        pageNum: gridConfig.putRequest.pageNum
     };
 
-    gridState[id].dataSource.put(requestObj, updatePageDataPutRequestCallback);
+    gridConfig.dataSource.put(requestObj, updatePageDataPutRequestCallback);
 
     function updatePageDataPutRequestCallback(response) {
-        gridState[id].updating = false;
+        gridConfig.updating = false;
         if (response) {
-            gridState[id].grid.find('.dirty').add('.dirty-blank').each(function iterateDirtySpansCallback(idx, val) {
+            gridConfig.grid.find('.dirty').add('.dirty-blank').each(function iterateDirtySpansCallback(idx, val) {
                 var index = $(val).parents('tr').index();
                 var field = $(val).parents('td').data('field');
-                var origIdx = gridState[id].dataMap[index];
-                gridState[id].originalData[origIdx][field] = gridState[id].dataSource.data[index][field];
+                var origIdx = gridConfig.dataMap[index];
+                gridConfig.originalData[origIdx][field] = gridConfig.dataSource.data[index][field];
                 $(val).remove();
             });
         }
         else {
-            gridState[id].grid.find('.dirty').add('.dirty-blank').each(function iterateDirtySpansCallback(idx, val) {
+            gridConfig.grid.find('.dirty').add('.dirty-blank').each(function iterateDirtySpansCallback(idx, val) {
                 var cell = $(val).parents('td'),
                     index = cell.parents('tr').index(),
                     field = cell.data('field'),
-                    column = gridState[id].columns[gridState[id].columnIndices[field]],
-                    text = getFormattedCellText(column, gridState[id].originalData[index][field]) || gridState[id].originalData[index][field];
+                    column = gridConfig.columns[gridConfig.columnIndices[field]],
+                    text = getFormattedCellText(column, gridConfig.originalData[index][field]) || gridConfig.originalData[index][field];
                 cell.text(text);
                 $(val).remove();
             });
@@ -148,34 +153,35 @@ function prepareGridDataUpdateRequest(id) {
 //see if there is a faster way to manipulate the data.
 //TODO: update this function based both on the multi-sort addition and the comment above
 function getPageDataFromDataSource(requestObj, id, callback) {
-    var eventType = gridState[id].pageRequest.eventType,
-        fullGridData = cloneGridData(gridState[id].alteredData);
-    if (!gridState[id].dataMap) gridState[id].dataMap = [];
+    var gridConfig = gridState.getInstance(id),
+        eventType = gridConfig.pageRequest.eventType,
+        fullGridData = cloneGridData(gridConfig.alteredData);
+    if (!gridConfig.dataMap) gridConfig.dataMap = [];
 
     if (eventType === 'page' || eventType === 'pageSize' || eventType === 'newGrid') {
-        limitPageData(requestObj, cloneGridData(gridState[id].alteredData), callback);
+        limitPageData(requestObj, cloneGridData(gridConfig.alteredData), callback);
         return;
     }
     if (requestObj.filters && requestObj.filters.filterGroup && requestObj.filters.filterGroup.length) {
-        var filtered = createFilterTreeFromFilterObject(requestObj.filters).filterCollection(gridState[id].originalData);
+        var filtered = createFilterTreeFromFilterObject(requestObj.filters).filterCollection(gridConfig.originalData);
         fullGridData = filtered.filteredData;
-        gridState[id].dataMap = filtered.filteredDataMap;
+        gridConfig.dataMap = filtered.filteredDataMap;
         requestObj.pageNum = 1;
-        gridState[id].alteredData = fullGridData;
+        gridConfig.alteredData = fullGridData;
     }
     if (requestObj.groupedBy && requestObj.groupedBy.length || requestObj.sortedOn.length) {
-        var sorted_mapped_Data = sortGridData((requestObj.groupedBy || []).concat(requestObj.sortedOn), fullGridData || cloneGridData(gridState[id].originalData), id),
+        var sorted_mapped_Data = sortGridData((requestObj.groupedBy || []).concat(requestObj.sortedOn), fullGridData || cloneGridData(gridConfig.originalData), id),
             sortedData = sorted_mapped_Data.map(function _extractValues(item) {
                 return item[0];
             });
-        gridState[id].alteredData = sortedData;
-        gridState[id].dataMap = sorted_mapped_Data.map(function _extractIndices(item) {
+        gridConfig.alteredData = sortedData;
+        gridConfig.dataMap = sorted_mapped_Data.map(function _extractIndices(item) {
             return item[1];
         });
         limitPageData(requestObj, sortedData, callback);
         return;
     }
-    gridState[id].alteredData = fullGridData;
+    gridConfig.alteredData = fullGridData;
     limitPageData(requestObj, fullGridData, callback);
 }
 
@@ -184,7 +190,7 @@ function limitPageData(requestObj, fullGridData, callback) {
     if (requestObj.pageSize >= fullGridData.length) returnData = fullGridData;
     else {
         var startRow = (requestObj.pageNum-1) * (requestObj.pageSize);
-        var endRow = fullGridData.length >= (startRow + parseInt(requestObj.pageSize)) ? (startRow + parseInt(requestObj.pageSize)) : fullGridData.length;
+        var endRow = fullGridData.length >= (startRow + general_util.parseInt(requestObj.pageSize)) ? (startRow + general_util.parseInt(requestObj.pageSize)) : fullGridData.length;
         returnData = fullGridData.slice(startRow, endRow);
     }
 

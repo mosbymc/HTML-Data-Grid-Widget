@@ -1,27 +1,23 @@
 import { gridState } from './gridState';
 import { createGridInstanceFunctions } from './gridInstanceFunctions';
-import { viewGenerator } from './viewGenerator';
 import { general_util } from './general_util';
 import { getInitialGridData } from './pageRequests';
 import { dominator } from './dominator';
+import { contentGenerator } from './contentGenerator';
+import { headerGenerator } from './headerGenerator';
+import { pagerGenerator } from './pagerGenerator';
+import { callGridEventHandlers, cloneGridData } from './grid_util';
 
 var grid = Object.defineProperties(
     {}, {
-        'getGridInstance': {
-            value: function getGridInstance(elem) {
-                elem = $(elem);
-                return gridState.filter(gs => elem[0] === gs.grid[0]).grid;
-            },
-            writable: false,
-            configurable: false
-        },
         'createGrid': {
             get: function create(gridData, gridElem) {
-                if (gridData && isDomElement(gridElem)) {
+                if (gridData && general_util.isDomElement(gridElem)) {
                     var gridConfig = initializeConfig(gridData, gridElem),
                         instanceId = gridState.createInstance(gridConfig);
 
-                    gridElem = $(gridElem).addClass('grid_elem');
+                    gridElem = dominator(gridElem).addClass('grid_elem');
+                    //gridElem = $(gridElem).addClass('grid_elem');
 
                     var wrapperDiv = dominator({ type: 'div', id: 'grid-wrapper' + instanceId, attributes: [ { name: 'grid_id', value: instanceId } ], classes: ['grid-wrapper'] })
                         .appendTo(gridElem);
@@ -59,7 +55,7 @@ var grid = Object.defineProperties(
                     (gridConfig.useValidator === true && window.validator && typeof validator.setAdditionalEvents === general_util.jsTypes.function) ?
                         validator.setAdditionalEvents(['blur', 'change']) : gridConfig.useValidator = false;
 
-                    viewGenerator.createHeaders(gridConfig);
+                    headerGenerator.createHeaders(gridConfig);
                     getInitialGridData(gridConfig.dataSource, gridConfig.pageSize || 25, function initialGridDataCallback(err, res) {
                         if (!err) {
                             gridConfig.dataSource.data = res.data;
@@ -80,8 +76,8 @@ var grid = Object.defineProperties(
 
                         var eventObj = { element: gridConfig.grid };
                         callGridEventHandlers(gridConfig.events.beforeDataBind, gridConfig.grid, eventObj);
-                        createGridPager(gridConfig, gridElem);
-                        viewGenerator.createContent(gridConfig, gridElem);
+                        pagerGenerator.createPager(gridConfig, gridElem);
+                        contentGenerator.createContent(gridConfig, gridElem);
                         callGridEventHandlers(gridConfig.events.afterDataBind, gridConfig.grid, eventObj);
                     });
                 }
