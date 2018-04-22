@@ -14,6 +14,34 @@ var _dominator = {
         });
         return dominator(results);
     },
+    next: function _next(selector) {
+        if (null == selector) return dominator(this.elements.map(el => el.nextElementSibling));
+        return dominator(this.elements.filter(function _filterSiblings(el) {
+            return Array.from(el.parentElement.querySelectorAll(selector))
+                .includes(el.nextElementSibling);
+        })
+            .map(el => el.nextElementSibling));
+    },
+    nextAll: function _nextAll(selector) {
+        return all(this.elements, selector, 'shift');
+    },
+    nextUntil: function _nextUntil(filter) {
+        return 'string' === typeof filter || filter instanceof HTMLElement ? until(this.elements, filter, 'shift') : dominator.empty();
+    },
+    prev: function _prev(selector) {
+        if (null == selector) return dominator(this.elements.map(el => el.previousElementSibling));
+        return dominator(this.elements.filter(function _filterSiblings(el) {
+            return Array.from(el.parentElement.querySelectorAll(selector))
+                .includes(el.previousElementSibling);
+        })
+            .map(el => el.previousElementSibling));
+    },
+    prevAll: function _prevAll(selector) {
+        return all(this.elements, selector, 'pop');
+    },
+    prevUntil: function _prevUntil(filter) {
+        return 'string' === typeof filter || filter instanceof HTMLElement ? until(this.elements, filter, 'pop') : dominator.empty();
+    },
     /**
      * @description Accepts a selector string, an HTMLElement object, or an array of either as well
      * as an optional HTML context and append each child element to each element of the current dominator
@@ -328,5 +356,66 @@ dominator.merge = function _merge(doms) {
         }
     });
 };
+
+dominator.empty = function _empty() {
+    return Object.create(_dominator, {
+        elements: {
+            value: []
+        }
+    });
+};
+
+function until(elements, filter, which) {
+    return dominator(elements.map(function _findEachSiblingUntil(el) {
+        let found = false,
+            passed = false,
+            directChildren = Array.from(el.parentElement.children),
+            selectedChildren = 'string' === typeof filter ?
+                Array.from(el.parentElement.querySelectorAll(filter))
+                    .filter(e => directChildren.includes(e))
+                : directChildren.filter(e => e === filter),
+            child,
+            res = [];
+
+        while (child = directChildren[which]()) {
+            if (found && selectedChildren.includes(child)) return res;
+            if (found && !selectedChildren.includes(child)) res.push(child);
+            if (child === el) found = true;
+        }
+        return res;
+    }));
+}
+
+function all(elements, selector, which) {
+    if (null == selector) {
+        return dominator(elements.map(function _findEachSibling(el) {
+            let found = false,
+                children = Array.from(el.parentElement.children),
+                child,
+                res = [];
+
+            while (child = children[which]()) {
+                if (found) res.push(child);
+                else if (child === el) found = true;
+            }
+            return res;
+        }));
+    }
+
+    return dominator(elements.map(function _findEachSibling(el) {
+        let found = false,
+            directChildren = Array.from(el.parentElement.children),
+            selectedChildren = Array.from(el.parentElement.querySelectorAll(selector))
+                .filter(e => directChildren.includes(e)),
+            child,
+            res = [];
+
+        while (child = directChildren[which]()) {
+            if (found && selectedChildren.includes(child)) res.push(child);
+            else if (child === el) found = true;
+        }
+        return res;
+    }));
+}
 
 export { dominator };
