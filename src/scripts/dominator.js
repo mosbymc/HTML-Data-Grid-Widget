@@ -1,5 +1,8 @@
 var _dominator = {
     elements: [],
+    get length() {
+        return this.elems.length;
+    },
     /**
      * @description Accepts a selector string and returns any nodes that are found within the existing dominator
      * instance's elements
@@ -14,6 +17,29 @@ var _dominator = {
         });
         return dominator(results);
     },
+    children: function _children(selector) {
+        if (null == selector) return dominator(this.elements.map(el => Array.from(el.children)));
+        return dominator(this.elements.map(function _getChildElements(el) {
+            let allMatchingDesc = Array.from(el.querySelectorAll(selector)),
+                children = Array.from(el.children),
+                res = [];
+
+            children.forEach(function _matchChildren(child) {
+                if (allMatchingDesc.includes(child)) res.push(child);
+            });
+
+            return res;
+        }));
+    },
+    index: function _index(elem) {
+        if (!elem) return this.elements.length && this.elements[0].parentNode ? dominator(this.elements[0]).prevAll().length() : -1;
+        return this.elements.indexOf(elem);
+    },
+    /**
+     * @description d
+     * @param {string} [selector] - A selector string that can be used in the '.querySelectorAll' function of an HTML Element
+     * @return {_dominator} Returns a dominator object holding the matched siblings of each element in the current instance
+     */
     next: function _next(selector) {
         if (null == selector) return dominator(this.elements.map(el => el.nextElementSibling));
         return dominator(this.elements.filter(function _filterSiblings(el) {
@@ -22,12 +48,27 @@ var _dominator = {
         })
             .map(el => el.nextElementSibling));
     },
+    /**
+     * @description d
+     * @param {string} [selector] - a
+     * @return {_dominator} b
+     */
     nextAll: function _nextAll(selector) {
         return all(this.elements, selector, 'shift');
     },
+    /**
+     * @description d
+     * @param {string|HTMLElement} filter - a
+     * @return {_dominator} b
+     */
     nextUntil: function _nextUntil(filter) {
         return 'string' === typeof filter || filter instanceof HTMLElement ? until(this.elements, filter, 'shift') : dominator.empty();
     },
+    /**
+     * @description d
+     * @param {string} [selector] - a
+     * @return {_dominator} b
+     */
     prev: function _prev(selector) {
         if (null == selector) return dominator(this.elements.map(el => el.previousElementSibling));
         return dominator(this.elements.filter(function _filterSiblings(el) {
@@ -36,11 +77,138 @@ var _dominator = {
         })
             .map(el => el.previousElementSibling));
     },
+    /**
+     * @description d
+     * @param {string} [selector] - a
+     * @return {_dominator} b
+     */
     prevAll: function _prevAll(selector) {
         return all(this.elements, selector, 'pop');
     },
+    /**
+     * @description d
+     * @param {string|HTMLElement} filter - a
+     * @return {_dominator} b
+     */
     prevUntil: function _prevUntil(filter) {
         return 'string' === typeof filter || filter instanceof HTMLElement ? until(this.elements, filter, 'pop') : dominator.empty();
+    },
+    /**
+     * @description d
+     * @param {string} [selector] - a
+     * @return {_dominator} b
+     */
+    parent: function _parent(selector) {
+        let uniques = [];
+        if (null == selector) {
+            this.elements.forEach(function _getUniqueParents(el) {
+                if (!uniques.includes(el.parentElement)) uniques.push(el.parentElement);
+            });
+            return dominator(uniques);
+        }
+
+        this.elements.filter(function _filterElements(el) {
+            return Array.from(el.parentElement.parentElement.querySelectorAll(selector))
+                .includes(el.parentElement);
+        }).forEach(function _getUniqueParents(el) {
+            if (!uniques.includes(el.parentElement)) uniques.push(el.parentElement);
+        });
+
+        return dominator(uniques);
+    },
+    /**
+     * @description d
+     * @param {string} [selector] - a
+     * @return {_dominator} b
+     */
+    parents: function _parents(selector) {
+        let uniques = [];
+        if ('string' === typeof selector) {
+            let res = [];
+            this.elements.forEach(function _getEachAncestor(el) {
+                let parent,
+                    cur = el;
+                while (parent = cur.parentElement) {
+                    if (parent.parentElement && Array.from(parent.parentElement.querySelectorAll(selector)).includes(parent)) {
+                        if (!uniques.includes(parent) && document.body.parentElement !== parent) {
+                            uniques.push(parent);
+                            res.push(parent);
+                        }
+                    }
+                    cur = parent;
+                }
+            });
+            return dominator(res);
+        }
+        return dominator(this.elements.map(function _getAllAncestors(el) {
+            let res = [],
+                parent,
+                cur = el;
+
+            while (parent = cur.parentElement) {
+                if (!uniques.includes(parent) && document.body.parentElement !== parent) {
+                    uniques.push(parent);
+                    res.push(parent);
+                }
+                cur = parent;
+            }
+            return res;
+        }));
+    },
+    /**
+     * @description d
+     * @param {string|HTMLElement} filter - a
+     * @return {_dominator} b
+     */
+    parentsUntil: function _parentsUntil(filter) {
+        if ('string' === typeof filter || filter instanceof HTMLElement) {
+            let uniques = [];
+
+            this.elements.forEach(function _getAncestorsUntil(el) {
+                let parent,
+                    cur = el;
+
+                while (parent = cur.parentElement) {
+                    cur = parent;
+                    if ('string' === typeof filter && parent.parentElement && !Array.from(parent.parentElement.querySelectorAll(filter)).includes(parent)) {
+                        if (!uniques.includes(parent)) uniques.push(parent);
+                    }
+                    else if (filter instanceof HTMLElement && parent !== filter && !uniques.includes(parent)) uniques.push(parent);
+                    else break;
+                }
+            });
+
+            return dominator(uniques);
+        }
+        return dominator.empty();
+    },
+    /**
+     * @description d
+     * @param {string} [selector] - a
+     * @return {_dominator} b
+     */
+    siblings: function _siblings(selector) {
+        if (null == selector) {
+            return dominator(this.elements.map(function _getSiblingElements(el) {
+                let res = [];
+
+                Array.from(el.parentElement.children)
+                    .forEach(function _iterateChildren(child) {
+                        if (child !== el) res.push(child);
+                    });
+                return res;
+            }));
+        }
+
+        return dominator(this.elements.map(function _getSiblingElements(el) {
+            let parentDescendants = Array.from(el.parentElement.querySelectorAll(selector)),
+                res = [];
+
+            Array.from(el.parentElement.children).forEach(function _iterateChildren(child) {
+                if (child !== el && parentDescendants.includes(child)) res.push(child);
+            });
+            return res;
+        }));
     },
     /**
      * @description Accepts a selector string, an HTMLElement object, or an array of either as well
@@ -174,30 +342,15 @@ var _dominator = {
         return this;
     },
     attribute: function _attribute(name, value) {
-        if ('undefined' === typeof name) {
-            let res = [];
-            this.elements.forEach(function _getElementAttributes(element) {
-                for (let key of Array.from(element.attributes).filter(attr => !(attr.name.replace('data-', '') in element.dataset))) {
-                    res.push({ name: key.name, value: key.value });
-                }
-            });
-            return res;
-        }
-        if ('undefined' === typeof value) return Array.prototype.concat.apply([], this.elements.map(el => el.getAttribute(name)));
-        this.elements.forEach(el => el.setAttribute(name, value));
+        if (null == value) return this.elements.length ? this.elements[0].getAttribute(name) || this.elements[0][name] : undefined;
+        this.elements.forEach(function _setEachAttribute(element) {
+            if ('undefined' !== typeof element[name]) element[name] = value;
+            else element.setAttribute(name, value);
+        });
         return this;
     },
     data: function _data(name, value) {
-        if ('undefined' === typeof name) {
-            let res = [];
-            this.elements.forEach(function _getElementDataset(element) {
-                for (let key in element.dataset) res.push({ name: key, value: element.dataset[key] });
-            });
-            return res;
-        }
-        if ('undefined' === typeof value) {
-            return Array.prototype.concat.apply([], this.elements.map(element => element.dataset[name]));
-        }
+        if (null == value) return this.elements.length ? this.elements[0].dataset[name] : undefined;
         this.elements.forEach(element => element.dataset[name] = value);
         return this;
     },
@@ -211,6 +364,10 @@ var _dominator = {
     },
     hasClass: function _hasClass(className) {
         return this.elements.some(el => Array.from(el.classList).includes(className));
+    },
+    toggleClass: function _toggleClass(className) {
+        this.elements.forEach(el => Array.from(el.classList).includes(className) ? el.classList.remove(className) : el.classList.add(className));
+        return this;
     },
     css: function _css(style, value) {
         this.elements.forEach(el => el.style[style] = value);
@@ -235,14 +392,20 @@ var _dominator = {
         if (!_dominator.isPrototypeOf(dom)) return this;
         else return dominator(this.elements.concat(dom.elements));
     },
+    not: function _not(filter) {
+        let filterFn;
+        if (filter instanceof HTMLElement) filterFn = e => e !== filter;
+        else if (_dominator.isPrototypeOf(filter)) filterFn = el => !filter.elements.includes(el);
+        else if ('function' === typeof filter) filterFn = filter;
+        else if ('string' === typeof filter) filterFn = element => !Array.from(element.parentElement.querySelectorAll(filter)).includes(element);
+        else filterFn = () => true;
+
+        return dominator(this.elements.filter(filterFn));
+    },
     contains: function _contains(element) {
         element = _dominator.isPrototypeOf(element) ? element.elements[0] : element;
-        var result = false;
-
-        for (let el of this.elements) {
-            result = findChildElement(el);
-        }
-
+        var result;
+        for (let el of this.elements) result = findChildElement(el);
         return result;
 
         function findChildElement(parent) {
@@ -268,6 +431,24 @@ var _dominator = {
             }
         });
         return this;
+    },
+    val: function _val(val) {
+        if (undefined !== val) {
+            this.elements.forEach(el => el.value = val);
+            return this;
+        }
+        return this.elements.length ? this.elements[0].value : undefined;
+    },
+    filter: function _filter(predicate) {
+        return dominator(this.elements.filter(function _filterFn(el) {
+            return predicate.call(el);
+        }));
+    },
+    first: function _first() {
+        return this.elements.length ? dominator(this.elements[0]) : this;
+    },
+    last: function _last() {
+        return this.elements.length ? dominator(this.elements[this.elements.length - 1]) : this;
     },
     forEach: function _forEach(fn) {
         this.elements.forEach(fn);
@@ -319,9 +500,12 @@ function dominator(elem, context) {
     }
     else if ('object' === typeof elem) {
         var element = document.createElement(elem.type);
-        if (elem.id) element.id = id;
+        if (elem.id) element.id = elem.id;
         if (elem.attributes) {
-            elem.attributes.forEach(attr => element.setAttribute(attr.name, attr.value));
+            elem.attributes.forEach(function _setEachAttribute(attr) {
+                if ('undefined' !== typeof element[attr.name]) element[attr.name] = attr.value;
+                else element.setAttribute(attr.name, attr.value);
+            });
         }
         if (elem.data) {
             elem.data.forEach(d => element.dataset[d.name] = d.value);
@@ -333,7 +517,7 @@ function dominator(elem, context) {
             elem.styles.forEach(style => element.style[style.name] = style.value);
         }
         if (elem.text) {
-            elem.innerText = elem.text;
+            element.innerText = elem.text;
         }
         return Object.create(_dominator, {
             elements: {
@@ -365,8 +549,9 @@ dominator.empty = function _empty() {
     });
 };
 
-function until(elements, filter, which) {
-    return dominator(elements.map(function _findEachSiblingUntil(el) {
+function until(elems, filter, which) {
+    let res = [];
+    elems.forEach(function _findEachSiblingUntil(el) {
         let found = false,
             passed = false,
             directChildren = Array.from(el.parentElement.children),
@@ -374,48 +559,46 @@ function until(elements, filter, which) {
                 Array.from(el.parentElement.querySelectorAll(filter))
                     .filter(e => directChildren.includes(e))
                 : directChildren.filter(e => e === filter),
-            child,
-            res = [];
+            child;
 
         while (child = directChildren[which]()) {
-            if (found && selectedChildren.includes(child)) return res;
-            if (found && !selectedChildren.includes(child)) res.push(child);
+            if (found && selectedChildren.includes(child) && !res.includes(child)) break;
+            if (found && !selectedChildren.includes(child) && !res.includes(child)) res.push(child);
             if (child === el) found = true;
         }
-        return res;
-    }));
+    });
+    return dominator(res);
 }
 
-function all(elements, selector, which) {
+function all(elems, selector, which) {
+    let res = [];
     if (null == selector) {
-        return dominator(elements.map(function _findEachSibling(el) {
-            let found = false,
+        elems.forEach(function _findEachSibling(el) {
+            let found  = false,
                 children = Array.from(el.parentElement.children),
-                child,
-                res = [];
+                child;
 
             while (child = children[which]()) {
-                if (found) res.push(child);
+                if (found && !res.includes(child)) res.push(child);
                 else if (child === el) found = true;
             }
-            return res;
-        }));
+        });
+        return dominator(res);
     }
 
-    return dominator(elements.map(function _findEachSibling(el) {
+    elems.forEach(function _findEachSibling(el) {
         let found = false,
             directChildren = Array.from(el.parentElement.children),
             selectedChildren = Array.from(el.parentElement.querySelectorAll(selector))
                 .filter(e => directChildren.includes(e)),
-            child,
-            res = [];
+            child;
 
         while (child = directChildren[which]()) {
-            if (found && selectedChildren.includes(child)) res.push(child);
+            if (found && selectedChildren.includes(child) && !res.includes(child)) res.push(child);
             else if (child === el) found = true;
         }
-        return res;
-    }));
+    });
+    return dominator(res);
 }
 
 export { dominator };

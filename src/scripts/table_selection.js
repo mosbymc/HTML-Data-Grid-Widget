@@ -1,21 +1,26 @@
+import { gridState } from './gridState';
+import { dominator } from './dominator';
+import { general_util } from './general_util';
+
 /**
  * Attaches handlers for click, mousemove, mousedown, mouseup, and scroll events depending on the value of the selectable attribute of the grid
  * @param {object} tableBody - The body of the grid's content table
  */
 function attachTableSelectHandler(tableBody) {
-    var gridId = tableBody.parents('.grid-wrapper').data('grid_id');
-    var isSelectable = gridState[gridId].selectable;
+    var gridId = tableBody.parents('.grid-wrapper').data('grid_id'),
+        gridConfig = gridState.getInstance(gridId);
+    var isSelectable = gridConfig.selectable;
     if (isSelectable) {
-        $(document).on('click', function tableBodySelectCallback(e) {
-            if (e.target === tableBody[0] || $(e.target).parents('tbody')[0] === tableBody[0]) {
-                if (gridState[gridId].selecting) {
-                    gridState[gridId].selecting = false;
+        dominator(document).on('click', function tableBodySelectCallback(e) {
+            if (e.target === tableBody[0] || dominator(e.target).parents('tbody')[0] === tableBody[0]) {
+                if (gridConfig.selecting) {
+                    gridConfig.selecting = false;
                     return;
                 }
-                gridState[gridId].grid.find('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
-                    $(elem).removeClass('selected');
+                dominator(gridConfig.grid).find('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
+                    dominator(elem).removeClass('selected');
                 });
-                var target = $(e.target);
+                var target = dominator(e.target);
                 if (target.hasClass('drill-down-parent') || target.parents('.drill-down-parent').length) return;
                 if (target.hasClass('drillDown_cell') || target.parents('.drillDown_cell').length) return;
                 if (isSelectable === 'cell' && target[0].tagName.toUpperCase() === 'TD')
@@ -28,14 +33,14 @@ function attachTableSelectHandler(tableBody) {
         });
     }
     if (isSelectable === 'multi-row' || isSelectable === 'multi-cell') {
-        $(document).on('mousedown', function mouseDownDragCallback(event) {
-            var target = $(event.target);
+        dominator(document).on('mousedown', function mouseDownDragCallback(event) {
+            var target = dominator(event.target);
             if (event.target === tableBody[0] || target.parents('tbody')[0] === tableBody[0]) {
                 if (target.hasClass('drill-down-parent') || target.parents('.drill-down-parent').length) return;
                 if (target.hasClass('drillDown_cell') || target.parents('.drillDown_cell').length) return;
-                gridState[gridId].selecting = true;
+                gridConfig.selecting = true;
                 var contentDiv = tableBody.parents('.grid-content-div'),
-                    overlay = $('<div class="selection-highlighter"></div>').appendTo(gridState[gridId].grid);
+                    overlay = dominator('<div class="selection-highlighter"></div>').appendTo(gridConfig.grid);
                 overlay.css('top', event.pageY).css('left', event.pageX).css('width', 0).css('height', 0);
                 overlay.data('origin-y', event.pageY + contentDiv.scrollTop()).data('origin-x', event.pageX + contentDiv.scrollLeft()).data('mouse-pos-x', event.pageX).data('mouse-pos-y', event.pageY);
                 overlay.data('previous-top', event.pageY).data('previous-left', event.pageX);
@@ -44,32 +49,32 @@ function attachTableSelectHandler(tableBody) {
                 overlay.data('last-scroll_top_pos', contentDiv.scrollTop()).data('last-scroll_left_pos', contentDiv.scrollLeft());
                 overlay.data('actual-height', 0).data('actual-width', 0).data('event-type', 'mouse');
 
-                $(document).one('mouseup', function mouseUpDragCallback() {
-                    gridState[gridId].grid.find('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
-                        $(elem).removeClass('selected');
+                dominator(document).one('mouseup', function mouseUpDragCallback() {
+                    gridConfig.grid.find('.selected').each(function iterateSelectedItemsCallback(idx, elem) {
+                        dominator(elem).removeClass('selected');
                     });
-                    var overlay = $(".selection-highlighter");
+                    var overlay = dominator(".selection-highlighter");
                     selectHighlighted(overlay, gridId);
                     overlay.remove();
                     contentDiv.off('scroll');
-                    $(document).off('mousemove');
+                    dominator(document).off('mousemove');
                 });
 
                 contentDiv.on('scroll', function updateSelectOverlayOnScrollHandler() {
-                    if (gridState[gridId].selecting) {
+                    if (gridConfig.selecting) {
                         overlay.data('event-type', 'scroll');
                         setOverlayDimensions(contentDiv, overlay);
                     }
                 });
 
-                $(document).on('mousemove', function updateSelectOverlayOnMouseMoveHandler(ev) {
-                    if (gridState[gridId].selecting) {
+                dominator(document).on('mousemove', function updateSelectOverlayOnMouseMoveHandler(ev) {
+                    if (gridConfig.selecting) {
                         var domTag = ev.target.tagName.toUpperCase();
                         if (domTag === 'INPUT' || domTag === 'SELECT') return;
 
                         overlay.data('event-type', 'mouse');
                         overlay.data('mouse-pos-x', ev.pageX).data('mouse-pos-y', ev.pageY);
-                        setOverlayDimensions(gridState[gridId].grid.find('.grid-content-div'), overlay);
+                        setOverlayDimensions(gridConfig.grid.find('.grid-content-div'), overlay);
                     }
                 });
             }
@@ -243,7 +248,8 @@ function determineOverlayDimensions(context) {
  * @param {number} gridId - The id of the grid widget instance
  */
 function selectHighlighted(overlay, gridId) {
-    var contentDiv = gridState[gridId].grid.find('.grid-content-div'),
+    var gridConfig = gridState.getInstance(gridId),
+        contentDiv = dominator(gridConfig.grid).find('.grid-content-div'),
         ctOffset = contentDiv.offset(),
         ctHeight = contentDiv.height,
         ctWidth = contentDiv.width(),
@@ -252,8 +258,8 @@ function selectHighlighted(overlay, gridId) {
         offset = overlay.offset(),
         top = offset.top,
         left = offset.left,
-        right = parseFloat(overlay.data('actual-width')) + left,
-        bottom = parseFloat(overlay.data('actual-height')) + top;
+        right = general_util.parseFloat(overlay.data('actual-width')) + left,
+        bottom = general_util.parseFloat(overlay.data('actual-height')) + top;
 
     if (top + overlay.data('actual-height') > ctOffset.top + ctHeight || top + height - overlay.data('actual-height') < ctOffset.top) {
         if (overlay.data('origin-scroll_top') > overlay.data('last-scroll_top_pos')) bottom = top + overlay.data('actual-height');
@@ -271,19 +277,19 @@ function selectHighlighted(overlay, gridId) {
         }
     }
 
-    var gridElems = gridState[gridId].selectable === 'multi-cell' ? contentDiv.find('td') : contentDiv.find('tr');
+    var gridElems = gridConfig.selectable === 'multi-cell' ? contentDiv.find('td') : contentDiv.find('tr');
     gridElems = gridElems.filter(function filterDrillDownRows() {
         var gridElem = $(this);
         return !gridElem.hasClass('drill-down-parent') && !gridElem.parents('.drill-down-parent').length;
     });
 
-    gridElems.each(function highlightGridElemsCallback(idx, val) {
-        var element = $(val),
+    gridElems.forEach(function highlightGridElemsCallback(idx, val) {
+        var element = dominator(val),
             eOffset = element.offset(),
             eTop = eOffset.top,
             eLeft = eOffset.left,
-            eRight = parseFloat(element.css('width')) + eLeft,
-            eBottom = parseFloat(element.css('height')) + eTop;
+            eRight = general_util.parseFloat(element.css('width')) + eLeft,
+            eBottom = general_util.parseFloat(element.css('height')) + eTop;
 
         if (left > eRight || right < eLeft || top > eBottom || bottom < eTop) return;
         else element.addClass('selected');

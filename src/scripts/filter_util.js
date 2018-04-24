@@ -1,6 +1,7 @@
 import { gridState } from './gridState';
 import { general_util } from './general_util';
 import { preparePageDataGetRequest } from './pageRequests';
+import { dominator } from './dominator';
 
 function createFilterGroups(groupContainer, filterObject) {
     var groupConjunct = groupContainer.parents('.filter_modal').find('span[data-filter_group_num="' + groupContainer.data('filter_group_num') + '"]').children('select');
@@ -12,13 +13,13 @@ function createFilterGroups(groupContainer, filterObject) {
 function findFilters(groupContainer, filterObject) {
     var gridId = groupContainer.parents('.filter_modal').data('grid_id');
     groupContainer.children('.filter_row_div').each(function iterateFilterDivsCallback() {
-        createFilterObjects($(this), filterObject.filterGroup, gridId);
+        createFilterObjects(dominator(this), filterObject.filterGroup, gridId);
     });
 
     groupContainer.children('.filter_group_container').each(function createNestedFilterGroupsCallback(idx, val) {
         var nestedGroup = {};
         filterObject.filterGroup.push(nestedGroup);
-        createFilterGroups($(val), nestedGroup);
+        createFilterGroups(dominator(val), nestedGroup);
     });
 }
 
@@ -42,7 +43,7 @@ function createFilterObjects(filterDiv, filterGroupArr, gridId) {
 }
 
 function addFilterButtonHandler(e) {
-    var filterModal = $(e.currentTarget).parents('.filter_modal'),
+    var filterModal = dominator(e.currentTarget).parents('.filter_modal'),
         gridId = filterModal.data('grid_id'),
         numFiltersAllowed = gridState[gridId].columns.length,
         gridConfig = gridState.getInstance(gridId);
@@ -53,20 +54,24 @@ function addFilterButtonHandler(e) {
     if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
     else if (filterModal.find('.filter_row_div').length === numFiltersAllowed - 1) filterModal.find('.add_filter_group').prop('disabled', true);
 
-    addNewAdvancedFilter($(e.currentTarget).closest('.filter_group_container'), false /* isFirstFilter */);
+    addNewAdvancedFilter(dominator(e.currentTarget).closest('.filter_group_container'), false /* isFirstFilter */);
 }
 
 function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
     var gridId = advancedFiltersContainer.parents('.filter_modal').data('grid_id'),
         filterRowIdx = getFilterRowIdx(advancedFiltersContainer.parents('.filter_modal')),
-        filterRowDiv = $('<div class="filter_row_div" data-filter_idx="' + filterRowIdx + '"></div>');
+        filterRowDiv = dominator({ type: 'div', classes: ['filter_row_div'], data: [{ name: 'filter_idx', value: filterRowIdx }]});
+        //filterRowDiv = $('<div class="filter_row_div" data-filter_idx="' + filterRowIdx + '"></div>');
     isFirstFilter ? advancedFiltersContainer.append(filterRowDiv) : advancedFiltersContainer.children('.filter_row_div').last().after(filterRowDiv);
 
-    var columnSelector = $('<select class="input filter_column_selector"></select>').appendTo(filterRowDiv);
+    var columnSelector = dominator({ type: 'select', classes: ['input', 'filter_column_selector'] }).appendTo(filterRowDiv);
+    //var columnSelector = $('<select class="input filter_column_selector"></select>').appendTo(filterRowDiv);
     columnSelector.addClass('select');
-    columnSelector.append('<option value="">Select a column</option>');
+    columnSelector.append({ type: 'option', attributes: [{ name: 'value', value: '' }], text: 'Select a column' });
+    //columnSelector.append('<option value="">Select a column</option>');
     gridState[gridId].columns.forEach(function _appendFilterableOption(col) {
-        if (col.filterable) columnSelector.append('<option value="' + col.field + '">' + (col.title || col.field) + '</option>');
+        if (col.filterable) columnSelector.append({ type: 'option', attributes: [{ name: 'value', value: col.field }], text: col.title || col.field });
+        //if (col.filterable) columnSelector.append('<option value="' + col.field + '">' + (col.title || col.field) + '</option>');
     });
 
     var filterTypeSelector = $('<select class="input select filterType" disabled></select>').appendTo(filterRowDiv);

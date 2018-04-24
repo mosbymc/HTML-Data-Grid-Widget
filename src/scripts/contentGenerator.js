@@ -277,8 +277,10 @@ var contentGenerator = {
 
         function createEventHandler(cellItem, eventName, eventHandler) {
             cellItem.on(eventName, function genericEventHandler() {
-                var row = $(this).parents('tr'),
+                let row = dominator(this).parents('tr'),
                     rowIdx = row.index();
+                //var row = $(this).parents('tr'),
+                  //  rowIdx = row.index();
                 eventHandler.call(this, gridState.getInstance(gridId).dataSource.data[rowIdx]);
             });
         }
@@ -293,7 +295,9 @@ var contentGenerator = {
     makeCellEditable: function _makeCellEditable(id, td) {
         td.on('click', function editableCellClickHandler(e) {
             var gridConfig = gridState.getInstance(id),
-                gridContent = gridConfig.grid.find('.grid-content-div');
+                grid = dominator(gridConfig.grid),
+                //gridContent = gridConfig.grid.find('.grid-content-div');
+                gridContent = grid.find('.grid-content-div');
             if (gridConfig.updating) return;
             if (e.target !== e.currentTarget) return;
             if (gridContent.find('.invalid').length) return;
@@ -304,8 +308,8 @@ var contentGenerator = {
             cell.text('');
 
             var row = cell.parents('tr').first(),
-                index = gridConfig.grid.find('tr').filter(function removeGroupAndChildRows() {
-                    var r =  $(this);
+                index = grid.find('tr').filter(function removeGroupAndChildRows() {
+                    var r =  dominator(this);
                     return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
                 }).index(row),
                 field = cell.data('field'),
@@ -313,21 +317,28 @@ var contentGenerator = {
                 type = column.type || '',
                 val = column.nullable || gridConfig.dataSource.data[index][field] ? gridConfig.dataSource.data[index][field] : '',
                 dataAttributes = '',
+                da = [],
                 gridValidation = gridConfig.useValidator ? column.validation : null,
                 dataType, input, inputVal;
 
             if (gridValidation) {
-                dataAttributes = setupCellValidation(gridValidation, dataAttributes);
+                da = setupCellValidation2(gridValidation, da);
                 var gridBodyId = 'grid-content-' + id.toString();
+                da.push({ name: 'valudateon', value: 'blur' });
+                da.push({ name: 'offsetHeight', value: '-6' });
+                da.push({ name: 'offsetWidth', value: '8' });
+                da.push({ name: 'modalid', value: gridBodyId });
                 dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
             }
 
             if (gridConfig.useFormatter && column.inputFormat)
-                dataAttributes += ' data-inputformat="' + column.inputFormat + '"';
+                da.push({ name: 'inputformat', value: column.inputFormat });
+                //dataAttributes += ' data-inputformat="' + column.inputFormat + '"';
 
             switch (type) {
                 case 'boolean':
-                    input = $('<input type="checkbox" class="input checkbox active-cell"' + dataAttributes + '/>').appendTo(cell);
+                    input = dominator({ type: 'input', attributes: [{ name: 'type', value: 'checkbox' }], classes: ['input', 'checkbox', 'active-cell'], data: da }).appendTo(cell);
+                    //input = $('<input type="checkbox" class="input checkbox active-cell"' + dataAttributes + '/>').appendTo(cell);
                     val = typeof gridConfig.dataSource.data[index][field] === general_util.jsTypes.string ? gridConfig.dataSource.data[index][field] === 'true' : !!val;
                     input[0].checked = val;
                     dataType = 'boolean';
@@ -338,21 +349,29 @@ var contentGenerator = {
                     else
                         val = general_util.isNumber(gridConfig.dataSource.data[index][field]) ? gridConfig.dataSource.data[index][field] : 0;
                     inputVal = val;
-                    input = $('<input type="text" value="' + inputVal + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
+                    input = dominator({ type: 'input', attribute: [{ name: 'type', value: 'text' }, { name: 'value', value: inputVal }],
+                        data: da, classes: ['input', 'textbox', 'cell-edit-input', 'active-cell'] }).appendTo(cell);
+                    //input = $('<input type="text" value="' + inputVal + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
                     dataType = 'number';
                     break;
                 case 'time':
-                    input = $('<input type="text" value="' + val + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
+                    input = dominator({ type: 'input', attributes: [{ name: 'type', value: 'text' }, { name: 'value', value: val }], data: da,
+                        classes: ['input', 'textbox', 'cell-edit-input', 'active-cell'] }).appendTo(cell);
+                    //input = $('<input type="text" value="' + val + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
                     dataType = 'time';
                     break;
                 case 'date':
                     var dateVal = val == null ? new Date(Date.now()) : new Date(Date.parse(val));
                     inputVal = dateVal.toISOString().split('T')[0];
-                    input = $('<input type="date" value="' + inputVal + '" class="input textbox active-cell"' + dataAttributes + '/>').appendTo(cell);
+                    input = dominator({ type: 'input', attributes: [{ name: 'type', value: 'date' }, { name: 'value', value: inputVal }], data: da,
+                            classes: ['input', 'textbox', 'active-cell'] }).appendTo(cell);
+                    //input = $('<input type="date" value="' + inputVal + '" class="input textbox active-cell"' + dataAttributes + '/>').appendTo(cell);
                     dataType = 'date';
                     break;
                 default:
-                    input = $('<input type="text" value="' + (val || '') + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
+                    input = dominator({ type: 'input', attributes: [{ name: 'type', value: 'text' }, { name: 'value', value: val || '' }], data: da,
+                            classes: ['input', 'textbox', 'cell-edit-input', 'active-cell'] }).appendTo(cell);
+                    //input = $('<input type="text" value="' + (val || '') + '" class="input textbox cell-edit-input active-cell"' + dataAttributes + '/>').appendTo(cell);
                     dataType = 'string';
                     break;
             }
@@ -392,17 +411,19 @@ var contentGenerator = {
     makeCellSelectable: function _makeCellSelectable(id, td) {
         td.on('click', function selectableCellClickHandler(e) {
             var gridConfig = gridState.getInstance(id),
-                gridContent = gridConfig.grid.find('.grid-content-div');
+                grid = dominator(gridConfig.grid),
+                gridContent = grid.find('.grid-content-div');
             if (e.target !== e.currentTarget) return;
             if (gridContent.find('.invalid').length) return;
-            var cell = $(e.currentTarget);
+            var cell = dominator(e.currentTarget);
+            //var cell = $(e.currentTarget);
             if (cell.children('span').hasClass('dirty'))
                 cell.data('dirty', true);
             else cell.data('dirty', false);
             cell.text('');
             var row = cell.parents('tr').first(),
-                index = gridConfig.grid.find('tr').filter(function removeGroupAndChildRows() {
-                    var r =  $(this);
+                index = grid.find('tr').filter(function removeGroupAndChildRows() {
+                    var r =  dominator(this);
                     return r.hasClass('data-row') && !r.parents('.drill-down-parent').length && !r.hasClass('drill-down-parent');
                 }).index(row),
                 field = cell.data('field');
@@ -411,14 +432,20 @@ var contentGenerator = {
             var column = gridConfig.columns[gridConfig.columnIndices[field]],
                 value = gridConfig.dataSource.data[index][field],
                 gridValidation = gridConfig.useValidator ? column.validation : null,
-                dataAttributes = '';
+                dataAttributes = '',
+                da = [];
 
             if (gridValidation) {
-                dataAttributes = setupCellValidation(gridValidation, dataAttributes);
+                da = setupCellValidation2(gridValidation, da);
                 var gridBodyId = 'grid-content-' + id.toString();
-                dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
+                da.push({ name: 'validateon', value: 'blur' });
+                da.push({ name: 'offsetHeight', value: '-6' });
+                da.push({ name: 'offsetWidth', value: '8' });
+                da.push({ name: 'modalid', value: gridBodyId });
+                //dataAttributes += ' data-validateon="blur" data-offsetHeight="-6" data-offsetWidth="8" data-modalid="' + gridBodyId + '"';
             }
-            var select = $('<select class="input select active-cell"' + dataAttributes + '></select>').appendTo(cell),
+            var select = dominator({ type: 'select', data: da, classes: ['input', 'select', 'active-cell'] }).appendTo(cell),
+            //var select = $('<select class="input select active-cell"' + dataAttributes + '></select>').appendTo(cell),
                 options = column.options.map(function _copyColumnOptions(val) { return val; });
             value = column.nullable || value != null ? value : '';
             var dataType = column.type || 'string',
@@ -431,7 +458,8 @@ var contentGenerator = {
             }
 
             options.forEach(function _setSelectableColumnOptions(option) {
-                select.append('<option value="' + option + '">' + option + '</option>');
+                select.append({ type: 'option', attributes: [{ name: 'value', value: option }], text: option });
+                //select.append('<option value="' + option + '">' + option + '</option>');
             });
             if ('' !== value && (column.nullable || null !== value)) select.val(value);
             select[0].focus();
@@ -451,30 +479,19 @@ var contentGenerator = {
      * Attaches click event handlers for each grouped header row in the grid
      */
     createGroupTrEventHandlers: function _createGroupTrEventHandlers(gridId) {
-        gridState[gridId].grid.find('.group_acc_link').on('click', function groupedAccordionsClickListenerCallback() {
-            var elem = $(this),
+        dominator(gridState.getInstance(gridId).grid).find('.group_acc_link').on('click', function groupedAccordionsClickListenerCallback() {
+            var elem = dominator(this),
                 accRow = elem.parents('tr'),
                 indent = accRow.data('group-indent');
-            if (elem.data('state') === 'open') {
-                elem.data('state', 'closed').removeClass('group-desc').addClass('group-asc');
-                accRow.nextAll().each(function iterateAccordionRowSiblingsToCloseCallback(idx, val) {
-                    var row = $(val),
-                        rowIndent = row.data('group-indent');
-                    if (!rowIndent || rowIndent < indent)
-                        row.css('display', 'none');
-                    else return false;
-                });
-            }
-            else {
-                elem.data('state', 'open').removeClass('group-asc').addClass('group-desc');
-                accRow.nextAll().each(function iterateAccordionRowSiblingsToOpenCallback(idx, val) {
-                    var row = $(val),
-                        rowIndent = row.data('group-indent');
-                    if (!rowIndent || rowIndent < indent)
-                        row.css('display', 'table-row');
-                    else return false;
-                });
-            }
+
+            elem.toggleClass('group-desc').toggleClass('group-asc');
+            elem.data('state', elem.data('state') === 'open' ? 'closed' : 'open');
+            accRow.nextAll().forEach(function _iterateAccordionRowSiblings(idx, val) {
+                let row = dominator(val),
+                    rowIndent = row.data('group-indent');
+                if (!rowIndent || rowIndent < indent) row.css('display', elem.data('state') === 'open' ? 'table-row' : 'none');
+                else return false;
+            });
         });
     },
 
@@ -485,10 +502,13 @@ var contentGenerator = {
      * @param {number} gridId - The id of the parent grid.
      */
     attachDrillDownAccordionHandler: function _attachDrillDownAccordionHandler(gridId) {
-        var gridConfig = gridState.getInstance(gridId);
-        gridConfig.grid.find('.drillDown_span').on('click', function drillDownAccordionHandler() {
-            var accRow = $(this).parents('tr'),
-                accRowIdx = gridConfig.grid.find('.data-row').not('.drill-down-row').index(accRow);
+        var gridConfig = gridState.getInstance(gridId),
+            grid = dominator(gridConfig.grid);
+        grid.find('.drillDown_span').on('click', function drillDownAccordionHandler() {
+            var accRow = dominator(this).parents('tr'),
+                accRowIdx = grid.find('.data-row').not('.drill-down-row').index(accRow);
+            //var accRow = $(this).parents('tr'),
+                //accRowIdx = gridConfig.grid.find('.data-row').not('.drill-down-row').index(accRow);
             if (accRow.find('.drillDown_span').data('state') === 'open') {
                 accRow.find('.drillDown_span').data('state', 'closed');
                 accRow.next().css('display', 'none');
@@ -499,21 +519,30 @@ var contentGenerator = {
                     accRow.next().css('display', 'inline-block');
                 }
                 else {
-                    var drillDownRow = $('<tr class="drill-down-parent"></tr>').insertAfter(accRow);
+                    var drillDownRow = dominator({ type: 'tr', classes: ['drill-down-parent'] }).insertAfter(accRow);
+                    //var drillDownRow = $('<tr class="drill-down-parent"></tr>').insertAfter(accRow);
                     if (gridConfig.groupedBy && gridConfig.groupedBy.length) {
                         for (var i = 0; i < gridConfig.groupedBy.length; i++) {
-                            drillDownRow.append('<td class="grouped_cell"></td>');
+                            drillDownRow.append({ type: 'td', classes: ['grouped_cell'] });
+                            //drillDownRow.append('<td class="grouped_cell"></td>');
                         }
                     }
-                    drillDownRow.append('<td class="grouped_cell"></td>');
+                    drillDownRow.append({ type: 'td', classes: ['grouped_cell'] });
+                    //drillDownRow.append('<td class="grouped_cell"></td>');
                     var drillDownCellLength = 0;
-                    gridConfig.grid.find('.grid-header-div').find('col').each(function getTotalGridLength() {
-                        if (!$(this).hasClass('drill_down_col') && !$(this).hasClass('groupCol'))
-                            drillDownCellLength += $(this).width();
+                    grid.find('.grid-header-div').find('col').forEach(function getTotalGridLength() {
+                        var t = dominator(this);
+                        if (!t.hasClass('drill_down_col') && !t.hasClass('groupCol'))
+                            drillDownCellLength += t.css('width');
+                        //if (!$(this).hasClass('drill_down_col') && !$(this).hasClass('groupCol'))
+                            //drillDownCellLength += $(this).width();
                     });
-                    var containerCell = $('<td class="drill-down-cell" colspan="' + gridConfig.columns.length + '" style="width: ' + drillDownCellLength + ';"></td>').appendTo(drillDownRow),
-                        newGridId = gridConfig.grid[0].id + generateId(),
-                        gridDiv = $('<div id="' + newGridId + '" class="drill_down_grid"></div>').appendTo(containerCell);
+                    var containerCell = dominator({ type: 'td', attributes: [{ name: 'colspan', value: gridConfig.columns.length }],
+                                        classes: ['drill-down-cell'], styles: [{ name: 'width', value: drillDownCellLength }] }).appendTo(drillDownRow),
+                        gridDiv = dominator({ type: 'div', id: gridConfig.grid.id + gridState.generateId(), classes: ['drill_down_grid'] }).appendTo(containerCell);
+                    //var containerCell = $('<td class="drill-down-cell" colspan="' + gridConfig.columns.length + '" style="width: ' + drillDownCellLength + ';"></td>').appendTo(drillDownRow),
+                        //newGridId = gridConfig.grid[0].id + generateId(),
+                        //gridDiv = $('<div id="' + newGridId + '" class="drill_down_grid"></div>').appendTo(containerCell);
                     accRow.find('.drillDown_span').data('state', 'open');
                     var parentRowData = gridConfig.grid[0].grid.getCurrentDataSourceData(accRowIdx);
 
@@ -574,6 +603,33 @@ function setupCellValidation(columnValidation, dataAttributes) {
             }
         });
         dataAttributes += '"';
+    }
+    return dataAttributes;
+}
+
+function setupCellValidation2(columnValidation, dataAttributes) {
+    if (!grid.validation) {
+        Object.defineProperty(
+            grid,
+            'validation',
+            { value: {}, writable: false }
+        );
+    }
+    if (columnValidation.required) dataAttributes.push({ name: 'required', value: '' });
+    if (columnValidation.customRules) {
+        let attributeIdx = dataAttributes.length;
+        dataAttributes.push({ name: 'customrules', value: '' });
+        Object.keys(columnValidation.customRules).forEach(function _applyCustomValidation(rule) {
+            dataAttributes[attributeIdx].value += 'grid.validation.' + rule + ',';
+            if (!grid.validation[rule]) {
+                Object.defineProperty(
+                    grid.validation,
+                    rule,
+                    { value: columnValidation.customRules[rule], writable: false, configurable: false }
+                );
+            }
+        });
+        dataAttributes[attributeIdx].value += '"';
     }
     return dataAttributes;
 }
