@@ -12,7 +12,7 @@ function createFilterGroups(groupContainer, filterObject) {
 
 function findFilters(groupContainer, filterObject) {
     var gridId = groupContainer.parents('.filter_modal').data('grid_id');
-    groupContainer.children('.filter_row_div').each(function iterateFilterDivsCallback() {
+    groupContainer.children('.filter_row_div').forEach(function iterateFilterDivsCallback() {
         createFilterObjects(dominator(this), filterObject.filterGroup, gridId);
     });
 
@@ -74,12 +74,14 @@ function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
         //if (col.filterable) columnSelector.append('<option value="' + col.field + '">' + (col.title || col.field) + '</option>');
     });
 
-    var filterTypeSelector = $('<select class="input select filterType" disabled></select>').appendTo(filterRowDiv);
-    var filterValue = $('<input type="text" class="advanced_filter_value" disabled />');
+    var filterTypeSelector = dominator({ type: 'select', classes: ['input', 'select', 'filterType'], attributes: [{ name: 'disabled', value: true }] }).appendTo(filterRowDiv),
+        filterValue = dominator({ type: 'input', attributes: [{ name: 'type', value: 'text' }, { name: 'disabled', value: true }], classes: ['advanced_filter_value'] });
+    //var filterTypeSelector = $('<select class="input select filterType" disabled></select>').appendTo(filterRowDiv);
+    //var filterValue = $('<input type="text" class="advanced_filter_value" disabled />');
     filterValue.appendTo(filterRowDiv);
     filterValue.on('keypress', function validateFilterValueHandler(e) {
         var code = e.charCode? e.charCode : e.keyCode,
-            type = $(this).data('type');
+            type = dominator(this).data('type');
         if (!validateCharacter.call(this, code, type)) {
             e.preventDefault();
             return false;
@@ -94,7 +96,8 @@ function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
 
     var deleteHandler = isFirstFilter ? clearFirstFilterButtonHandler : deleteFilterButtonHandler;
 
-    $('<input type="button" value="X" class="filter_row_button"/>').appendTo(filterRowDiv).on('click', deleteHandler);
+    dominator({ type: 'input', attributes: [{ name: 'type', value: 'button' }, { name: 'value', value: 'X' }], classes: ['filter_row_button'] }).appnedTo(filterRowDiv).on('click', deleteHandler);
+    //$('<input type="button" value="X" class="filter_row_button"/>').appendTo(filterRowDiv).on('click', deleteHandler);
 
     if (!isFirstFilter) {
         var addNewFilterButton = filterRowDiv.prev().find('.new_filter'),
@@ -104,6 +107,14 @@ function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
         filterRowDiv.append(addNewFilterButton).append(addFilterGroup);
     }
     else {
+        dominator({ type: 'input', attributes: [{ name: 'type', value: 'button' }], classes: ['filter_row_button', 'new_filter'] })
+            .appendTo(filterRowDiv)
+            .on('click', addFilterButtonHandler);
+
+        dominator({ type: 'input', attributes: [{ name: 'type', value: 'button' }, { name: 'value', value: '+' }], classes: ['filter_row_button', 'new_filter'] })
+            .appendTo(filterRowDiv)
+            .on('click', addFilterGroupHandler);
+        /*
         $('<input type="button" value="+" class="filter_row_button new_filter"/>')
             .appendTo(filterRowDiv)
             .on('click', addFilterButtonHandler);
@@ -111,6 +122,7 @@ function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
         $('<input type="button" value="+ Group" class="advanced_filters_button add_filter_group"/>')
             .appendTo(filterRowDiv)
             .on('click', addFilterGroupHandler);
+        */
     }
 
     columnSelector.on('change', function columnSelectorCallback() {
@@ -130,13 +142,13 @@ function addNewAdvancedFilter(advancedFiltersContainer, isFirstFilter) {
 
 function addFilterGroupHandler() {
     var numGroupsAllowed = 0,
-        filterModal = $(this).parents('.filter_modal'),
+        filterModal = dominator(this).parents('.filter_modal'),
         gridId = filterModal.data('grid_id'),
+        gridConfig = gridState.getInstance(gridId),
         filterGroups = filterModal.find('.filter_group_container'),
-        parentGroup = $(this).parents('.filter_group_container').first(),
+        parentGroup = dominator(this).parents('.filter_group_container').first(),
         filterGroupCount = filterGroups.length,
-        numFiltersAllowed = gridState[gridId].columns.length,
-        gridConfig = gridState.getInstance(gridId);
+        numFiltersAllowed = gridConfig.columns.length;
     if (typeof gridConfig.advancedFiltering === general_util.jsTypes.object && typeof gridConfig.advancedFiltering.groupsCount === general_util.jsTypes.number)
         numGroupsAllowed = gridConfig.advancedFiltering.groupsCount;
     else numGroupsAllowed = 3;
@@ -151,16 +163,24 @@ function addFilterGroupHandler() {
     if (filterModal.find('.filter_row_div').length >= numFiltersAllowed) return;
     else if (filterModal.find('.filter_row_div').length === numFiltersAllowed - 1) filterModal.find('.add_filter_group').prop('disabled', true);
 
-    var previousGroupNum = parseInt(filterGroups.last().data('filter_group_num'));
+    var previousGroupNum = general_util.parseInt(filterGroups.last().data('filter_group_num'));
 
-    var groupSelector = '<select class="input group_conjunction"><option value="and">All</option><option value="or">Any</option></select> of the following:</span>';
-    parentGroup.append('<span class="group-select" data-filter_group_num="' + (previousGroupNum + 1) + '">Match' + groupSelector);
+    var groupSelector = dominator({ type: 'select', classes: ['input', 'group_conjunction'] })
+        .append({ type: 'option', attributes: [{ name: 'value', value: 'and' }], text: 'All' })
+        .append({ type: 'option', attributes: [{ name: 'value', value: 'or' }], text: 'Any' });
+    parentGroup.append(dominator({ type: 'span', classes: ['group-select'], data: [{ name: 'filter_group_num', value: previousGroupNum + 1}], text: 'Match' }).append(groupSelector));
+    //var groupSelector = '<select class="input group_conjunction"><option value="and">All</option><option value="or">Any</option></select> of the following:</span>';
+    //parentGroup.append('<span class="group-select" data-filter_group_num="' + (previousGroupNum + 1) + '">Match' + groupSelector);
 
-    var filterGroupContainer = $('<div class="filter_group_container" data-filter_group_num="' + (previousGroupNum + 1) + '"></div>');
+    var filterGroupContainer = dominator({ type: 'div', classes: ['filter_group_container'], data: [{ name: 'filter_group_num', value: previousGroupNum + 1 }] });
+    //var filterGroupContainer = $('<div class="filter_group_container" data-filter_group_num="' + (previousGroupNum + 1) + '"></div>');
     parentGroup.append(filterGroupContainer);
-    var removeGroup = $('<span class="remove_filter_group"></span>')
+    var removeGroup = dominator({ type: 'span', classes: ['remove_filter_group'] });
+    //var removeGroup = $('<span class="remove_filter_group"></span>')
         .on('click', function closeFilterGroupHandler(e) {
-            var filterContainerGroup = $(e.currentTarget).closest('.filter_group_container');
+            //TODO figure out how jQuery implements 'closest' and what I need to do here
+             var filterContainerGroup = dominator(e.currentTarget);
+            //var filterContainerGroup = $(e.currentTarget).closest('.filter_group_container');
             filterContainerGroup.prev('.group-select').remove();
             filterContainerGroup.remove();
 
@@ -175,7 +195,7 @@ function addFilterGroupHandler() {
 }
 
 function deleteFilterButtonHandler(e) {
-    var target = $(e.currentTarget);
+    var target = dominator(e.currentTarget);
     var filterRowDiv = target.parents('.filter_row_div'),
         addNewFilterButton = filterRowDiv.find('.new_filter'),
         filterModal = target.parents('.filter_modal'),
@@ -190,8 +210,8 @@ function deleteFilterButtonHandler(e) {
 
     var gridId = filterModal.data('grid_id'),
         numFilters = filterModal.find('.filter_row_div').length,
-        allowedFilters = gridState[gridId].columns.length,
-        gridConfig = gridState.getInstance(gridId);
+        gridConfig = gridState.getInstance(gridId),
+        allowedFilters = gridConfig.columns.length;
     if (typeof gridConfig.advancedFiltering === general_util.jsTypes.object && typeof gridConfig.advancedFiltering.filtersCount === general_util.jsTypes.number)
         allowedFilters = gridState[gridId].advancedFiltering.filtersCount;
     if (allowedFilters > numFilters)
@@ -200,13 +220,15 @@ function deleteFilterButtonHandler(e) {
 }
 
 function clearFirstFilterButtonHandler(e) {
-    var filterRowDiv = $(e.currentTarget).parents('.filter_row_div'),
+    var filterRowDiv = dominator(e.currentTarget).parents('.filter_row_div'),
         columnSelector = filterRowDiv.find('.filter_column_selector'),
         gridId = filterRowDiv.parents('.filter_modal').data('grid_id');
     columnSelector.find('option').remove();
-    columnSelector.append('<option value="">Select a column</option>');
+    columnSelector.append({ type: 'option', attributes: [{ name: 'value', value: '' }], text: 'Select a column' });
+    //columnSelector.append('<option value="">Select a column</option>');
     gridState.getInstance(gridId).columns.forEach(function _appendFilterableOption(col) {
-        if (col.filterable) columnSelector.append('<option value="' + col.field + '">' + (col.title || col.field) + '</option>');
+        if (col.filterable) columnSelector.append({ type: 'option', attributes: [{ name: 'value', value: col.field }], text: col.title || col.field });
+        //if (col.filterable) columnSelector.append('<option value="' + col.field + '">' + (col.title || col.field) + '</option>');
     });
     filterRowDiv.find('.filterType').prop('disabled', true).find('option').remove();
     filterRowDiv.find('.advanced_filter_value').val('').prop('disabled', true);
