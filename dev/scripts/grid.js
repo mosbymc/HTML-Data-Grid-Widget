@@ -36,7 +36,7 @@
  - Figure out loader placement - DONE
  - Fix column resizing after column reordering (resize, then reorder, then resize) - DONE
  - Fix saving the new value to work on empty string/undefined - DONE
- - Should probably clone grid data on create. Maintain a separate copy of data from what Devs have access to - DONE
+ - Should probably clone grid data on create. Maintain a separate copy of data from what developers have access to - DONE
  - Need to create grid content from "create" function, not headers function - DONE
  - Add a "rowCount" field to the dateSource for server-side actions - DONE
  - Fix page size changing to stay on correct page, and display the correct rows - DONE
@@ -61,7 +61,7 @@
  - Add getters for page data, selected row, column, cell - DONE
  - Add 'destroy' function to remove dom elements and events - DONE
  - Figure out how to get correct row index of 'originalData' when updating cell data on save - DONE
- - Add function to programatically update grid display data; dirty flag - DONE
+ - Add function to programmatically update grid display data; dirty flag - DONE
  - Implement true aggregates + fix naming of row grouping - DONE
  - Check aggregations for existence of column before trying to build row's aggregates - DONE
  - Fix filtering/sorting on time - DONE
@@ -168,7 +168,7 @@ var grid = (function _grid($) {
 
             createGridInstanceMethods(gridElem, id);
 
-            (gridData.useValidator === true && window.validator && typeof validator.setAdditionalEvents === 'function') ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
+            (gridData.useValidator === true && validator && typeof validator.setAdditionalEvents === 'function') ? validator.setAdditionalEvents(['blur', 'change']) : gridData.useValidator = false;
             gridData.useFormatter = gridData.useFormatter === true && window.formatter && typeof formatter.getFormattedInput === 'function';
 
             //if (Array.isArray(gridData)) createGridColumnsFromArray(gridData, gridElem);
@@ -405,7 +405,6 @@ var grid = (function _grid($) {
                      * @protected
                      * @readonly
                      * @default Array of grid events that currently have registered a handler
-                     * @type Array
                      * @returns {Array} - The list of events that currently have a handler
                      */
                     value: function _getHandledEvents() {
@@ -427,7 +426,6 @@ var grid = (function _grid($) {
                      * @protected
                      * @readonly
                      * @default Array of available grid events to listen for
-                     * @type Array
                      * @returns {Array} - The list of all events that a handler can be registered for
                      */
                     value: function _getAvailableEvents() {
@@ -569,7 +567,6 @@ var grid = (function _grid($) {
                      * @protected
                      * @readonly
                      * @default aggregates object
-                     * @type object
                      * @returns {Object} - The aggregations that are currently in use for this page of the grid
                      */
                     value: function _getAggregates() {
@@ -586,8 +583,7 @@ var grid = (function _grid($) {
                      * @protected
                      * @readOnly
                      * @default dataSource.data
-                     * @type Array
-                     * @param {int} index - The index of the grid page to return the data for.
+                     * @param {number} index - The index of the grid page to return the data for.
                      * @returns {Array} - An array with either all grid page data, or a single index's data if a
                      * valid index was passed to the function
                      */
@@ -3299,10 +3295,10 @@ var grid = (function _grid($) {
             var filterAnchor = $(e.target);
             var filterCell = filterAnchor.parents('th');
             var type = filterAnchor.data('type');
-            var grid = filterElem.parents('.grid-wrapper').first();
-            var id = grid.data('grid_id');
+            var grd = filterElem.parents('.grid-wrapper').first();
+            var id = grd.data('grid_id');
             if (gridState[id].updating) return;     //can't filter when the grid is updating
-            var filters = grid.find('.filter-div');
+            var filters = grd.find('.filter-div');
             var currFilter = null;
             var field = filterAnchor.data('field');
             var title = gridState[id].columns[field].title || field;
@@ -3319,8 +3315,8 @@ var grid = (function _grid($) {
             }
 
             if (!currFilter) {
-                createFilterDiv(type, field, grid, title);
-                currFilter = grid.find('.filter-div');
+                createFilterDiv(type, field, grd, title);
+                currFilter = grd.find('.filter-div');
             }
             var filterCellOffset = filterCell.offset();
             currFilter.css('top', (filterCellOffset.top + filterCell.height() - $(window).scrollTop()));
@@ -3631,7 +3627,7 @@ var grid = (function _grid($) {
         droppedClone[0].dataset.index = targetIndex;
         targetClone[0].dataset.index = droppedIndex;
 
-        swapContentCells(parentDivId, droppedIndex, targetIndex);
+        swapContentCells(parentDivId, parseInt(droppedIndex), parseInt(targetIndex));
 
         if (gridState[id].groupedBy && gridState[id].groupedBy.length && gridState[id].groupedBy !== 'none') {
             ++droppedIndex;
@@ -3928,8 +3924,8 @@ var grid = (function _grid($) {
         }).each(function iterateContentRowsCallback(idx, val) {
             if ($(val).hasClass('grouped_row_header'))
                 return true;
-            var droppedIdx = 1 + parseInt(droppedIndex);
-            var targetIdx = 1 + parseInt(targetIndex);
+            var droppedIdx = 1 + droppedIndex;
+            var targetIdx = 1 + targetIndex;
             if (gridData.groupedBy && gridData.groupedBy.length && gridData.groupedBy !== 'none') {
                 droppedIdx++;
                 targetIdx++;
@@ -3948,8 +3944,8 @@ var grid = (function _grid($) {
             targetCell.replaceWith(droppedClone);
             droppedCell.replaceWith(targetClone);
 
-            droppedClone[0].dataset.index = targetIndex;
-            targetClone[0].dataset.index = droppedIndex;
+            droppedClone[0].dataset.index = `${targetIndex}`;
+            targetClone[0].dataset.index = `${droppedIndex}`;
         });
     }
 
@@ -4194,7 +4190,7 @@ var grid = (function _grid($) {
      */
     function mergeSort(data, sortObj, type) {
         if (data.length < 2) return data;
-        var middle = parseInt(data.length / 2);
+        var middle = data.length / 2;// parseInt(data.length / 2); TODO: not sure why I was parsing this....
         var left   = data.slice(0, middle);
         var right  = data.slice(middle, data.length);
         return merge(mergeSort(left, sortObj, type), mergeSort(right, sortObj, type), sortObj, type);
@@ -4630,9 +4626,9 @@ var grid = (function _grid($) {
         if (!format) return date;
         var parseDate = Date.parse(date);
         var jsDate = new Date(parseDate);
-        if (!isNaN(parseDate) && format)
+        if (!Number.isNaN(parseDate) && format)
             return format.replace('mm', (jsDate.getUTCMonth() + 1).toString()).replace('dd', jsDate.getUTCDate().toString()).replace('yyyy', jsDate.getUTCFullYear().toString());
-        else if (!isNaN(parseDate))
+        else if (!Number.isNaN(parseDate))
             return new Date(jsDate);
         return '';
     }
