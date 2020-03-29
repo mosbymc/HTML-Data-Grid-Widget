@@ -36,7 +36,7 @@
  - Figure out loader placement - DONE
  - Fix column resizing after column reordering (resize, then reorder, then resize) - DONE
  - Fix saving the new value to work on empty string/undefined - DONE
- - Should probably clone grid data on create. Maintain a separate copy of data from what Devs have access to - DONE
+ - Should probably clone grid data on create. Maintain a separate copy of data from what developers have access to - DONE
  - Need to create grid content from "create" function, not headers function - DONE
  - Add a "rowCount" field to the dateSource for server-side actions - DONE
  - Fix page size changing to stay on correct page, and display the correct rows - DONE
@@ -61,7 +61,7 @@
  - Add getters for page data, selected row, column, cell - DONE
  - Add 'destroy' function to remove dom elements and events - DONE
  - Figure out how to get correct row index of 'originalData' when updating cell data on save - DONE
- - Add function to programatically update grid display data; dirty flag - DONE
+ - Add function to programmatically update grid display data; dirty flag - DONE
  - Implement true aggregates + fix naming of row grouping - DONE
  - Check aggregations for existence of column before trying to build row's aggregates - DONE
  - Fix filtering/sorting on time - DONE

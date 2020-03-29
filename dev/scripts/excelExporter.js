@@ -590,7 +590,8 @@ var excelExporter = (function _excelExporter(global) {
 
         for (i = 0; i < columns.length; i++) {
             var attrs = {};
-            if (columns[i].width) attrs = { width: columns[i].width };
+            var col = columns[i];
+            if (col.width) attrs = { width: col.width };
             attrs.min = i + 1;
             attrs.max = i + 1;
             attrs.width = '10';
@@ -601,8 +602,8 @@ var excelExporter = (function _excelExporter(global) {
                 attributes: attrs
             });
             //TODO: Need to update logic here to check first if header is a string or not
-            sharedStrings.push(columns[i].toString());
-            sharedStringsMap[columns[i].toString()] = count.toString();
+            sharedStrings.push(col.title ? col.title.toString() : col.field.toString());
+            sharedStringsMap[col.title ? col.title.toString() : col.field.toString()] = count.toString();
             headerRowPos = positionToLetterRef((i + 1), 1);
 
             headerRow.createChildReturnChild({
@@ -630,9 +631,10 @@ var excelExporter = (function _excelExporter(global) {
 
             for (var j = 0; j < columns.length; j++) {
                 var cellLoc = positionToLetterRef((j + 1), (i + 2));
-                if (typeof data[i][columns[j]] !== 'number') {
+                var val = data[i][columns[j].title] || data[i][columns[j].field];
+                if (typeof val !== 'number') {
                     total += 1;
-                    var sharedString = (data[i][columns[j]] || '').toString();
+                    var sharedString = (val || '').toString();
                     if (!sharedStringsMap[sharedString]) {
                         sharedStrings.push(sharedString);
                         sharedStringsMap[sharedString] = count.toString();
@@ -671,7 +673,7 @@ var excelExporter = (function _excelExporter(global) {
                         }
                     }).createChild({
                         nodeType: 'v',
-                        textValue: data[i][columns[j]].toString()
+                        textValue: data[i][columns[j].title || columns[j].field].toString()
                     });
                 }
             }
@@ -746,7 +748,7 @@ var excelExporter = (function _excelExporter(global) {
 
         for (var i = 0; i < columns.length; i++) {
             var columnName = '';
-            if (typeof columns[i] === 'object') columnName = columns[i].displayName || columns[i].name;
+            if (typeof columns[i] === 'object') columnName = columns[i].displayName || columns[i].name || columns[i].title || columns[i].field;
             else columnName = columns[i];
 
             tableCols.createChild({
@@ -1018,7 +1020,7 @@ var excelExporter = (function _excelExporter(global) {
                     size: '1',
                     baseType: 'lpstr'
                 }
-            }).createChildReturnRoot({ nodeType: 'vt:lpstr', textValue: 'sheet1' })
+            }).createChildReturnRoot({ nodeType: 'vt:lpstr', textValue: 'Sheet1' })
             .createChild({ nodeType: 'Company', textValue: '' })
             .createChild({ nodeType: 'LinksUpToDate', textValue: 'false' })
             .createChild({ nodeType: 'SharedDoc', textValue: 'false' })

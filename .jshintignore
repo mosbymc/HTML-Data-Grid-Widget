@@ -7,3 +7,7 @@ dist/**
 node_modules/**
 tests/**
 yuidoc/**
+app.js
+closureExterns.js
+gulp.config.js
+gulpfile.js

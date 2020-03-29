@@ -1,5 +1,5 @@
 var gridData2 = {
-    height: 250,
+    height: 500,
     useValidator: true,
     useFormatter: true,
     sortable: true,
@@ -15,7 +15,7 @@ var gridData2 = {
         filtersCount: 8
     },
     pagingOptions: [25, 50, 100],
-    //menu: ['filter', 'excel', 'save', 'sort', 'selection'],
+    menu: ['filter', 'excel', 'save', 'sort', 'selection'],
     //pageSize: 50,
     rows: {
         alternateRows: ["testAlt"],

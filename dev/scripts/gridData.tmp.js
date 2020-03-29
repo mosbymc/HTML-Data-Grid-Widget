@@ -1,5 +1,5 @@
 var gridDataTmp = {
-    height: 250,
+    height: 500,
     useValidator: true,
     useFormatter: true,
     sortable: true,
@@ -11,6 +11,10 @@ var gridDataTmp = {
     excelExport: true,
     columnToggle: true,
     resizable: true,
+    advancedFiltering: {
+        groupsCount: 4,
+        filtersCount: 8
+    },
     drillDown: {
         reorderable: true,
         sortable: true,
