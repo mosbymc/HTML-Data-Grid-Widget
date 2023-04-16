@@ -22,7 +22,7 @@
   "devDependencies": {
     "babel-cli": "^6.14.0",
     "babel-preset-latest": "^6.14.0",
-    "browser-sync": "^2.11.1",
+    "browser-sync": "^2.29.1",
     "chai": "^3.5.0",
     "del": "^2.2.0",
     "gulp": "^3.9.1",
